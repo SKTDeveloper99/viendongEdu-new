@@ -497,21 +497,21 @@ class _ScheduleCardState extends State<_ScheduleCard> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 6),
-                      ],
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: buoi.color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: buoi.color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(buoi.label,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: buoi.color)),
                         ),
-                        child: Text(buoi.label,
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: buoi.color)),
-                      ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
