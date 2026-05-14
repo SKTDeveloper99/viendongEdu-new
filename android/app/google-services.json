@@ -1,13 +1,32 @@
 {
   "project_info": {
-    "project_number": "251079478957",
-    "project_id": "notification-app-35cf5",
-    "storage_bucket": "notification-app-35cf5.firebasestorage.app"
+    "project_number": "266252919227",
+    "project_id": "vido-student-beta",
+    "storage_bucket": "vido-student-beta.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:251079478957:android:278b57a6b9bf6fa4b80024",
+        "mobilesdk_app_id": "1:266252919227:android:1564af481b89248feee49e",
+        "android_client_info": {
+          "package_name": "com.demoviendong"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_6q-wuYTeprW-wlkTIUnTWwEGOh1nLM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266252919227:android:17e346c21609b18feee49e",
         "android_client_info": {
           "package_name": "com.viendong.vidostudentbeta"
         }
@@ -15,7 +34,45 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBB5Cv8_20vitYQLvkUNKc37LmCGiGcDMY"
+          "current_key": "AIzaSyC_6q-wuYTeprW-wlkTIUnTWwEGOh1nLM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266252919227:android:fde9a30aee459e66eee49e",
+        "android_client_info": {
+          "package_name": "com.viendongedu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_6q-wuYTeprW-wlkTIUnTWwEGOh1nLM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266252919227:android:0a5e25f041fba7f7eee49e",
+        "android_client_info": {
+          "package_name": "com.viendongedu.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_6q-wuYTeprW-wlkTIUnTWwEGOh1nLM8"
         }
       ],
       "services": {

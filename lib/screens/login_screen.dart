@@ -59,6 +59,8 @@ class _LoginScreenState extends State<LoginScreen> {
       // Đăng ký FCM token (chỉ sinh viên)
       final hv = AppSession.instance.hocVien;
       if (hv != null) {
+        final fcmToken = await NotificationService.instance.getToken();
+        print('[FCM] iOS token: $fcmToken');
         NotificationService.instance.registerToken(
           hv.id.toString(),
           mssv: hv.mshv,

@@ -420,6 +420,8 @@ class _ScheduleCardState extends State<_ScheduleCard> {
     final endRaw = d['thoigiankt'] as String? ?? '';
     final end = endRaw.length >= 16 ? endRaw.substring(11, 16) : '';
     final buoi = _buoiInfo(d['buoi']?.toString());
+    final baonghiyn = d['baonghiyn'];
+    final daBaoNghi = baonghiyn != null && baonghiyn != false && baonghiyn != 0;
 
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
@@ -431,7 +433,10 @@ class _ScheduleCardState extends State<_ScheduleCard> {
           boxShadow: const [
             BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
           ],
-          border: Border(left: BorderSide(color: buoi.color, width: 5)),
+          border: Border(left: BorderSide(
+            color: daBaoNghi ? const Color(0xFF9E9E9E) : buoi.color,
+            width: 5,
+          )),
         ),
         child: Column(
           children: [
@@ -470,6 +475,30 @@ class _ScheduleCardState extends State<_ScheduleCard> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold)),
                       ),
+                      if (daBaoNghi) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5F5F5),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.event_busy_outlined,
+                                  size: 12, color: Color(0xFF757575)),
+                              SizedBox(width: 4),
+                              Text('Báo nghỉ',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF757575))),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),

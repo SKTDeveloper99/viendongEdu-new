@@ -50,19 +50,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBB5Cv8_20vitYQLvkUNKc37LmCGiGcDMY',
-    appId: '1:251079478957:android:278b57a6b9bf6fa4b80024',
-    messagingSenderId: '251079478957',
-    projectId: 'notification-app-35cf5',
-    storageBucket: 'notification-app-35cf5.firebasestorage.app',
+    apiKey: 'AIzaSyC_6q-wuYTeprW-wlkTIUnTWwEGOh1nLM8',
+    appId: '1:266252919227:android:17e346c21609b18feee49e',
+    messagingSenderId: '266252919227',
+    projectId: 'vido-student-beta',
+    storageBucket: 'vido-student-beta.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyC9AVodMP6yjVZnPU8K_ogs1pRb8zPAbDw',
-    appId: '1:251079478957:ios:3f091819e80f7b51b80024',
-    messagingSenderId: '251079478957',
-    projectId: 'notification-app-35cf5',
-    storageBucket: 'notification-app-35cf5.firebasestorage.app',
+    apiKey: 'AIzaSyCsjb1sMdNbSF8t8-UAjRwkoy_8ica_XtI',
+    appId: '1:266252919227:ios:9ce22f044d7dc0ebeee49e',
+    messagingSenderId: '266252919227',
+    projectId: 'vido-student-beta',
+    storageBucket: 'vido-student-beta.appspot.com',
     iosBundleId: 'org.reactjs.native.viendongedu',
   );
 

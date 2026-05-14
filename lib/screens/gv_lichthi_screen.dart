@@ -64,13 +64,35 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
   Future<void> _fetchExams(_Semester sem) async {
     setState(() { _selected = sem; _loadingExams = true; _error = null; });
     try {
-      final data = await ApiService.getGvLichThi(sem.ngayBatDau, sem.ngayKetThuc);
+      final results = await Future.wait([
+        ApiService.getGvLichThi(sem.ngayBatDau, sem.ngayKetThuc),
+        ApiService.getGvDanhSachLop(sem.id),
+      ]);
       if (!mounted) return;
-      final list = data.map((e) => e as Map<String, dynamic>).toList();
+
+      final lopMap = {
+        for (final e in results[1].cast<Map<String, dynamic>>())
+          e['id'] as int: e,
+      };
+
+      final list = results[0]
+          .map((e) => e as Map<String, dynamic>)
+          .where((e) => lopMap.containsKey(e['lopId'] as int?))
+          .map((e) {
+            final lop = lopMap[e['lopId'] as int]!;
+            final monHoc = lop['monHoc'] as Map<String, dynamic>? ?? {};
+            return {
+              ...e,
+              '_tenMon': monHoc['ten']?.toString() ?? '',
+              '_maLop': lop['ma']?.toString() ?? '',
+            };
+          })
+          .toList();
+
       list.sort((a, b) {
         final da = a['ngayThi'] as String? ?? '';
         final db = b['ngayThi'] as String? ?? '';
-        return db.compareTo(da);
+        return da.compareTo(db);
       });
       setState(() {
         _exams = list;
@@ -249,7 +271,9 @@ class _ExamCardState extends State<_ExamCard> {
   @override
   Widget build(BuildContext context) {
     final d = widget.data;
-    final maNhom = d['maNhom']?.toString() ?? '';
+    final tenMon = d['_tenMon']?.toString() ?? '';
+    final maLop = d['_maLop']?.toString() ?? '';
+    final displayName = tenMon.isNotEmpty ? tenMon : (d['maNhom']?.toString() ?? '');
     final loaiThi = d['loaiThi']?.toString() ?? '';
     final ngayThi = _formatDate(d['ngayThi'] as String?);
     final gioBatDau = d['gioBatDau']?.toString() ?? '';
@@ -300,9 +324,19 @@ class _ExamCardState extends State<_ExamCard> {
                           Row(
                             children: [
                               Expanded(
-                                child: Text(maNhom,
-                                    style: const TextStyle(
-                                        fontSize: 14, fontWeight: FontWeight.bold)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(displayName,
+                                        style: const TextStyle(
+                                            fontSize: 14, fontWeight: FontWeight.bold)),
+                                    if (maLop.isNotEmpty)
+                                      Text(maLop,
+                                          style: const TextStyle(
+                                              fontSize: 11, color: Colors.grey),
+                                          overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
                               ),
                               if (loaiThi.isNotEmpty)
                                 Container(

@@ -342,6 +342,7 @@ class _ScheduleCard extends StatelessWidget {
     final end = _parseEndTime(data['thoigiankt']?.toString());
     final hienDienYN = data['hienDienYN'];
     final baonghiyn = data['baonghiyn'];
+    final isLichThi = data['loaitkb']?.toString() == 'lichthi';
     final status = baonghiyn == true
         ? 'excused'
         : hienDienYN == null
@@ -353,7 +354,7 @@ class _ScheduleCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isLichThi ? const Color(0xFFF3E5F5) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -362,17 +363,19 @@ class _ScheduleCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Thanh màu trái — đổi màu theo điểm danh
+          // Thanh màu trái — đổi màu theo điểm danh / loại tkb
           Container(
             width: 5,
             height: 90,
             decoration: BoxDecoration(
-              color: switch (status) {
-                'present' => const Color(0xFF4CAF50),
-                'absent'  => const Color(0xFFF44336),
-                'excused' => const Color(0xFF9E9E9E),
-                _         => const Color(0xFF2196F3),
-              },
+              color: isLichThi
+                  ? const Color(0xFF7B1FA2)
+                  : switch (status) {
+                      'present' => const Color(0xFF4CAF50),
+                      'absent'  => const Color(0xFFF44336),
+                      'excused' => const Color(0xFF9E9E9E),
+                      _         => const Color(0xFF2196F3),
+                    },
               borderRadius:
                   const BorderRadius.horizontal(left: Radius.circular(16)),
             ),
@@ -393,6 +396,29 @@ class _ScheduleCard extends StatelessWidget {
                               fontSize: 15, fontWeight: FontWeight.bold),
                         ),
                       ),
+                      if (isLichThi)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7B1FA2).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.assignment_outlined,
+                                  size: 12, color: Color(0xFF7B1FA2)),
+                              SizedBox(width: 4),
+                              Text('Lịch thi',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF7B1FA2))),
+                            ],
+                          ),
+                        ),
                       _StatusBadge(status: status),
                       const SizedBox(width: 12),
                     ],
