@@ -21,13 +21,13 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     if (restored && AppSession.instance.token != null) {
       // Đăng ký lại token cho session cũ (app update / token refresh)
-      final hv = AppSession.instance.hocVien;
-      if (hv != null) {
+      final gv = AppSession.instance.giangVien;
+      if (gv != null) {
         NotificationService.instance.registerToken(
-          hv.id.toString(),
-          mssv: hv.mshv,
-          hoTen: hv.fullName,
-          ngaysinh: hv.ngaysinh,
+          'gv_${gv.id}',
+          mssv: gv.ma,
+          hoTen: gv.ten,
+          userid: AppSession.instance.userid,
         );
       }
 

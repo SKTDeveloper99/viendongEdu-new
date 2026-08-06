@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-void showSuccessSnack(BuildContext context, String msg) {
+void showSuccessSnack(BuildContext context, String msg, {Duration duration = const Duration(seconds: 3)}) {
   final h = MediaQuery.of(context).size.height;
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
@@ -16,11 +16,11 @@ void showSuccessSnack(BuildContext context, String msg) {
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       margin: EdgeInsets.only(bottom: h - 160, left: 16, right: 16),
-      duration: const Duration(seconds: 3),
+      duration: duration,
     ));
 }
 
-void showErrorSnack(BuildContext context, String msg) {
+void showErrorSnack(BuildContext context, String msg, {Duration duration = const Duration(seconds: 4)}) {
   final h = MediaQuery.of(context).size.height;
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
@@ -36,6 +36,6 @@ void showErrorSnack(BuildContext context, String msg) {
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       margin: EdgeInsets.only(bottom: h - 160, left: 16, right: 16),
-      duration: const Duration(seconds: 4),
+      duration: duration,
     ));
 }

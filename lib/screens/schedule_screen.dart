@@ -336,7 +336,8 @@ class _ScheduleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subject = data['mhten']?.toString() ?? '';
-    final room = data['phongten']?.toString() ?? '';
+    final classCode = data['lmhma']?.toString() ?? '';
+    final room = data['phongten']?.toString().trim() ?? '';
     final teacher = data['gvten']?.toString() ?? '';
     final start = data['thoigianbd']?.toString() ?? '';
     final end = _parseEndTime(data['thoigiankt']?.toString());
@@ -361,12 +362,13 @@ class _ScheduleCard extends StatelessWidget {
               color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
-      child: Row(
+      child: IntrinsicHeight(
+        child: Row(
         children: [
           // Thanh màu trái — đổi màu theo điểm danh / loại tkb
           Container(
             width: 5,
-            height: 90,
+            height: double.infinity,
             decoration: BoxDecoration(
               color: isLichThi
                   ? const Color(0xFF7B1FA2)
@@ -423,6 +425,17 @@ class _ScheduleCard extends StatelessWidget {
                       const SizedBox(width: 12),
                     ],
                   ),
+                  if (classCode.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, right: 12),
+                      child: Text(
+                        classCode,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF444444),
+                            fontWeight: FontWeight.w400),
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -434,25 +447,32 @@ class _ScheduleCard extends StatelessWidget {
                         style: const TextStyle(
                             fontSize: 12, color: Color.fromARGB(255, 0, 0, 0)),
                       ),
-                      const SizedBox(width: 12),
-                      const Icon(Icons.room,
-                          size: 13, color: Color(0xFFE65100)),
-                      const SizedBox(width: 4),
-                      Text(room,
-                          style: const TextStyle(
-                              fontSize: 12, color: Color.fromARGB(255, 0, 0, 0))),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
+                      const SizedBox(width: 10),
                       const Icon(Icons.person_outline,
                           size: 13, color: Color(0xFFE65100)),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: Text(teacher,
-                            style: const TextStyle(
-                                fontSize: 12, color: Color.fromARGB(255, 0, 0, 0))),
+                        child: Text(
+                          teacher,
+                          style: const TextStyle(
+                              fontSize: 12, color: Color.fromARGB(255, 0, 0, 0)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.room,
+                          size: 13, color: Color(0xFFE65100)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          room,
+                          style: const TextStyle(
+                              fontSize: 12, color: Color.fromARGB(255, 0, 0, 0)),
+                        ),
                       ),
                     ],
                   ),
@@ -461,6 +481,7 @@ class _ScheduleCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

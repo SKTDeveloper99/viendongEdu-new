@@ -56,16 +56,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await AppSession.instance.persist();
 
-      // Đăng ký FCM token (chỉ sinh viên)
+      // Đăng ký FCM token cho cả Sinh viên và Giảng viên vào Firebase
+      final gv = AppSession.instance.giangVien;
       final hv = AppSession.instance.hocVien;
-      if (hv != null) {
-        final fcmToken = await NotificationService.instance.getToken();
-        print('[FCM] iOS token: $fcmToken');
-        NotificationService.instance.registerToken(
-          hv.id.toString(),
+      if (gv != null) {
+        await NotificationService.instance.registerToken(
+          'gv_${gv.id}',
+          mssv: gv.ma,
+          hoTen: gv.ten,
+          userid: AppSession.instance.userid,
+        );
+      } else if (hv != null) {
+        await NotificationService.instance.registerToken(
+          'hv_${hv.id}',
           mssv: hv.mshv,
           hoTen: hv.fullName,
           ngaysinh: hv.ngaysinh,
+          userid: AppSession.instance.userid,
         );
       }
 

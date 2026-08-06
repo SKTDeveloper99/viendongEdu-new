@@ -534,8 +534,7 @@ class _ScheduleCardState extends State<_ScheduleCard> {
                       Expanded(
                         child: Text(classCode,
                             style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
-                            overflow: TextOverflow.ellipsis),
+                                fontSize: 12, color: Color(0xFF444444))),
                       ),
                     ],
                   ),

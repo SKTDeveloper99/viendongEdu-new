@@ -313,7 +313,7 @@ class _LopCard extends StatelessWidget {
                     Text(
                       ma,
                       style: const TextStyle(
-                          fontSize: 12, color: Colors.grey),
+                          fontSize: 12, color: Color(0xFF444444)),
                       softWrap: true,
                     ),
                     const SizedBox(height: 6),
@@ -322,11 +322,11 @@ class _LopCard extends StatelessWidget {
                       children: [
                         if (sotinchi > 0) ...[
                           const Icon(Icons.school_outlined,
-                              size: 13, color: Colors.grey),
+                              size: 13, color: Color(0xFF555555)),
                           const SizedBox(width: 4),
                           Text('$sotinchi tín chỉ',
                               style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey)),
+                                  fontSize: 12, color: Color(0xFF555555))),
                           const SizedBox(width: 12),
                         ],
                         // Container(
@@ -598,7 +598,7 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                         const SizedBox(
                           width: 90,
                           child: Text('Tỷ lệ điểm',
-                              style: TextStyle(fontSize: 13, color: Colors.grey)),
+                              style: TextStyle(fontSize: 13, color: Color(0xFF555555))),
                         ),
                         Expanded(child: _ScoreDonut(cc: cc, gk: gk, ck: ck)),
                       ],
@@ -692,7 +692,7 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                               const SizedBox(height: 2),
                                               Text(mshv,
                                                   style: const TextStyle(
-                                                      fontSize: 12, color: Colors.grey)),
+                                                      fontSize: 12, color: Color(0xFF555555))),
                                             ],
                                           ),
                                         ),
@@ -803,7 +803,7 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                                               const SizedBox(width: 8),
                                                               Text('$tbd – $tkt',
                                                                   style: const TextStyle(
-                                                                      fontSize: 12, color: Colors.grey)),
+                                                                      fontSize: 12, color: Color(0xFF555555))),
                                                             ],
                                                           ),
                                                           const SizedBox(height: 6),
@@ -811,7 +811,7 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                                             children: [
                                                               Text('$hiendien / $siso hiện diện',
                                                                   style: const TextStyle(
-                                                                      fontSize: 13, color: Colors.grey)),
+                                                                      fontSize: 13, color: Color(0xFF444444))),
                                                             ],
                                                           ),
                                                           const SizedBox(height: 6),

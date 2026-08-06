@@ -741,7 +741,8 @@ class _ClassChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subject = data['mhten']?.toString() ?? '';
-    final room = data['phongten']?.toString() ?? '';
+    final classCode = data['lmhma']?.toString() ?? '';
+    final room = data['phongten']?.toString().trim() ?? '';
     final teacher = data['gvten']?.toString() ?? '';
     final start = data['thoigianbd']?.toString() ?? '';
     final end = _parseEndTime(data['thoigiankt']?.toString());
@@ -750,89 +751,99 @@ class _ClassChip extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
         ],
         border: Border(left: BorderSide(color: buoi.color, width: 4)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Giờ
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(start,
-                  style: TextStyle(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    subject,
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: buoi.color)),
-              Text(end,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Container(width: 1, height: 36, color: const Color(0xFFEEEEEE)),
-          const SizedBox(width: 12),
-          // Thông tin môn
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(subject,
-                          style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.bold)),
                     ),
-                    if (buoi.label.isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: buoi.color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(buoi.label,
-                            style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: buoi.color)),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.room, size: 12, color: Color(0xFFE65100)),
-                    const SizedBox(width: 3),
-                    Text(room,
-                        style: const TextStyle(
-                            fontSize: 11, color: Colors.grey)),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.person_outline,
-                        size: 12, color: Color(0xFFE65100)),
-                    const SizedBox(width: 3),
-                    Expanded(
-                      child: Text(teacher,
-                          style: const TextStyle(
-                              fontSize: 11, color: Colors.grey),
-                          overflow: TextOverflow.ellipsis),
+                if (buoi.label.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: buoi.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
+                    child: Text(
+                      buoi.label,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: buoi.color,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            if (classCode.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Text(
+                  classCode,
+                  style: const TextStyle(fontSize: 10, color: Color(0xFF999999)),
+                ),
+              ),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 12, color: buoi.color),
+                const SizedBox(width: 3),
+                Text(
+                  end.isNotEmpty ? '$start – $end' : start,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: buoi.color,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Icon(Icons.person_outline, size: 12, color: Color(0xFFE65100)),
+                const SizedBox(width: 3),
+                Expanded(
+                  child: Text(
+                    teacher,
+                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 3),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.room, size: 12, color: Color(0xFFE65100)),
+                const SizedBox(width: 3),
+                Expanded(
+                  child: Text(
+                    room,
+                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -85,11 +85,14 @@ class NotificationService {
 
   /// Lưu token lên server sau khi login
   Future<void> registerToken(String hocVienId,
-      {String? mssv, String? hoTen, String? ngaysinh}) async {
+      {String? mssv, String? hoTen, String? ngaysinh, String? userid}) async {
     final token = await getToken();
-    if (token == null) return;
+    if (token == null) {
+      debugPrint('[FCM] Token is null, skipping registration');
+      return;
+    }
     try {
-      await http
+      final res = await http
           .post(
             Uri.parse('$_notiBase/api/token/register-token'),
             headers: {'Content-Type': 'application/json'},
@@ -99,10 +102,14 @@ class NotificationService {
               if (mssv != null) 'mssv': mssv,
               if (hoTen != null) 'hoTen': hoTen,
               if (ngaysinh != null) 'ngaysinh': ngaysinh,
+              if (userid != null) 'userid': userid,
             }),
           )
           .timeout(const Duration(seconds: 10));
-    } catch (_) {}
+      debugPrint('[FCM] Register token: ${res.statusCode} ${res.body}');
+    } catch (e) {
+      debugPrint('[FCM] Register token error: $e');
+    }
   }
 
   /// Xóa token khỏi server khi logout

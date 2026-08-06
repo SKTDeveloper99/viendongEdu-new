@@ -579,7 +579,7 @@ class _GvClassChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subject = data['mhten']?.toString() ?? '';
-    final room = data['phongten']?.toString() ?? '';
+    final room = data['phongten']?.toString().trim() ?? '';
     final classCode = data['lmhma']?.toString() ?? '';
     final start = data['thoigianbd']?.toString() ?? '';
     final endRaw = data['thoigiankt'] as String? ?? '';
@@ -589,7 +589,6 @@ class _GvClassChip extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -598,88 +597,88 @@ class _GvClassChip extends StatelessWidget {
         ],
         border: Border(left: BorderSide(color: buoi.color, width: 5)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Giờ
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(start,
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: buoi.color)),
-              const SizedBox(height: 2),
-              Text(end,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey)),
-            ],
-          ),
-          const SizedBox(width: 14),
-          Container(width: 1, height: 44, color: const Color(0xFFEEEEEE)),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Tên môn + badge buổi
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(subject,
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.bold)),
-                    ),
-                    if (buoi.label.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: buoi.color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(buoi.label,
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: buoi.color)),
-                      ),
-                  ],
+                Expanded(
+                  child: Text(
+                    subject,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                const SizedBox(height: 6),
-                if (room.isNotEmpty)
-                  Row(
-                    children: [
-                      const Icon(Icons.room, size: 14, color: Color(0xFFE65100)),
-                      const SizedBox(width: 4),
-                      Text(room,
-                          style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                    ],
-                  ),
-                if (classCode.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 2),
-                        child: Icon(Icons.class_outlined,
-                            size: 14, color: Color(0xFFE65100)),
+                if (buoi.label.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: buoi.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      buoi.label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: buoi.color,
                       ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(classCode,
-                            style: const TextStyle(
-                                fontSize: 13, color: Colors.grey),
-                            softWrap: true),
-                      ),
-                    ],
+                    ),
                   ),
-                ],
               ],
             ),
-          ),
-        ],
+            // Mã lớp — subtitle
+            if (classCode.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Text(
+                  classCode,
+                  style: const TextStyle(
+                      fontSize: 11, color: Color(0xFF444444)),
+                ),
+              ),
+            const SizedBox(height: 6),
+            // Giờ học
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 13, color: buoi.color),
+                const SizedBox(width: 4),
+                Text(
+                  end.isNotEmpty ? '$start – $end' : start,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: buoi.color,
+                  ),
+                ),
+              ],
+            ),
+            // Phòng học
+            if (room.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.room, size: 13, color: Color(0xFFE65100)),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      room,
+                      style: const TextStyle(
+                          fontSize: 12, color: Colors.black87),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
