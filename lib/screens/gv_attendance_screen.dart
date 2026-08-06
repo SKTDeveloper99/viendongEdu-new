@@ -414,7 +414,7 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
                       child: OutlinedButton.icon(
                         onPressed: _saving ? null : _syncZkFace,
                         icon: const Icon(Icons.face_retouching_natural),
-                        label: const Text('Đồng bộ từ máy ZKTeco', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        label: const Text('Đồng bộ từ máy điểm danh FaceID', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFFE65100),
                           side: const BorderSide(color: Color(0xFFE65100), width: 1.5),
