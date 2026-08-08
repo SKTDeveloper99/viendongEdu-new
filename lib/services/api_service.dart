@@ -43,7 +43,7 @@ class ApiService {
           )
           .timeout(const Duration(seconds: 15));
     } catch (e) {
-      throw ApiException('Không thể kết nối đến máy chủ. Kiểm tra lại mạng.');
+      throw ApiException('Lỗi kết nối iOS: ${e.toString()}');
     }
 
     final body = _decode(res);
