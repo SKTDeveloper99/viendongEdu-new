@@ -77,7 +77,8 @@ class NotificationService {
   /// Lấy FCM token của thiết bị
   Future<String?> getToken() async {
     try {
-      return await _fcm.getToken();
+      // Thêm timeout 5s để tránh iOS bị treo (hang) khi chưa có APNs/Push Notifications entitlement
+      return await _fcm.getToken().timeout(const Duration(seconds: 5));
     } catch (_) {
       return null;
     }

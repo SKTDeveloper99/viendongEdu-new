@@ -60,14 +60,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final gv = AppSession.instance.giangVien;
       final hv = AppSession.instance.hocVien;
       if (gv != null) {
-        await NotificationService.instance.registerToken(
+        NotificationService.instance.registerToken(
           'gv_${gv.id}',
           mssv: gv.ma,
           hoTen: gv.ten,
           userid: AppSession.instance.userid,
         );
       } else if (hv != null) {
-        await NotificationService.instance.registerToken(
+        NotificationService.instance.registerToken(
           'hv_${hv.id}',
           mssv: hv.mshv,
           hoTen: hv.fullName,
