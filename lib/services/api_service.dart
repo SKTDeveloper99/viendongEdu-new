@@ -211,27 +211,38 @@ class ApiService {
   }
 
   // ── Lưu điểm danh ───────────────────────────────────
+  // Timeout 60s + tự retry tối đa 3 lần khi mạng yếu
   static Future<void> postDiemDanhLuu({
     required Map<String, dynamic> tkb,
     required List<Map<String, dynamic>> hocviens,
   }) async {
     final uri = Uri.parse('$_base/giangvien/diemdanh/luu');
-    final http.Response res;
-    try {
-      res = await http
-          .post(
-            uri,
-            headers: _headers,
-            body: jsonEncode({'tkb': tkb, 'hocviens': hocviens}),
-          )
-          .timeout(const Duration(seconds: 15));
-    } catch (e) {
-      throw ApiException('Không thể kết nối đến máy chủ.');
+    final bodyStr = jsonEncode({'tkb': tkb, 'hocviens': hocviens});
+    const maxRetries = 3;
+
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final res = await http
+            .post(uri, headers: _headers, body: bodyStr)
+            .timeout(const Duration(seconds: 60));
+        final body = _decode(res);
+        if (body['success'] != true) {
+          // Lỗi nghiệp vụ từ server (không retry) → ném ngay
+          throw ApiException(body['message']?.toString() ?? 'Lưu thất bại.');
+        }
+        return; // Thành công → thoát
+      } on ApiException {
+        rethrow; // Lỗi server / nghiệp vụ → không retry
+      } catch (_) {
+        if (attempt < maxRetries) {
+          // Mạng lỗi / timeout → chờ 3s rồi thử lại
+          await Future.delayed(const Duration(seconds: 3));
+        }
+      }
     }
-    final body = _decode(res);
-    if (body['success'] != true) {
-      throw ApiException(body['message']?.toString() ?? 'Lưu thất bại.');
-    }
+
+    // Sau 3 lần đều thất bại
+    throw ApiException('Mạng yếu, đã thử $maxRetries lần nhưng không lưu được. Vui lòng thử lại.');
   }
 
   // ── Điểm danh danh sách ─────────────────────────────

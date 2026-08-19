@@ -40,7 +40,7 @@ class ZkApiService {
     final uri = Uri.parse('$baseUrl/api/logs');
     final res = await http.get(uri, headers: {
       'Bypass-Tunnel-Reminder': 'true'
-    }).timeout(const Duration(seconds: 10));
+    }).timeout(const Duration(seconds: 30));
     
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
@@ -58,7 +58,7 @@ class ZkApiService {
     final uri = Uri.parse('$baseUrl/api/users');
     final res = await http.get(uri, headers: {
       'Bypass-Tunnel-Reminder': 'true'
-    }).timeout(const Duration(seconds: 10));
+    }).timeout(const Duration(seconds: 30));
     
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
@@ -76,7 +76,7 @@ class ZkApiService {
     final uri = Uri.parse('$baseUrl/api/students');
     final res = await http.get(uri, headers: {
       'Bypass-Tunnel-Reminder': 'true'
-    }).timeout(const Duration(seconds: 10));
+    }).timeout(const Duration(seconds: 30));
     
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/zk_api_service.dart';
 import '../utils/snack.dart';
@@ -46,6 +47,13 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
   bool _saving = false;
   Timer? _autoSyncTimer;
 
+  /// Key cache theo tkbid + ngay để phân biệt từng buổi học
+  String get _cacheKey {
+    final tkbid = widget.tkbParams['tkbid']?.toString() ?? 'unknown';
+    final ngay = widget.ngay;
+    return 'attendance_cache_${tkbid}_$ngay';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,14 +64,63 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
         final tb = _vnSort('${b['ten'] ?? ''} ${b['ho'] ?? ''}');
         return ta.compareTo(tb);
       });
+    // Khởi tạo attendance từ dữ liệu server
     _attendance = {
       for (final s in _sorted)
         s['hocvienid'] as int: s['hiendienyn'] as bool? ?? false,
     };
+    // Merge với cache local (nếu có) — ưu tiên trạng thái local
+    // để tránh mất dữ liệu khi mạng lỗi hoặc GV mở lại màn hình
+    _loadAndMergeCache();
+  }
 
-    // GV bấm nút "Đồng bộ từ máy ZKTeco" để đồng bộ thủ công
-    // (Không tự động sync nữa để tránh nút lưu bị xoay liên tục)
+  /// Đọc cache từ SharedPreferences và merge vào _attendance.
+  /// Trạng thái local LUÔN được ưu tiên hơn dữ liệu server.
+  Future<void> _loadAndMergeCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_cacheKey);
+      if (raw == null || raw.isEmpty) return;
+      final cached = jsonDecode(raw) as Map<String, dynamic>;
+      if (!mounted) return;
+      setState(() {
+        for (final entry in cached.entries) {
+          final id = int.tryParse(entry.key);
+          if (id != null && _attendance.containsKey(id)) {
+            // Chỉ merge nếu cache đánh dấu có mặt (true),
+            // không override trạng thái có mặt đã có về vắng
+            if (entry.value == true) {
+              _attendance[id] = true;
+            }
+          }
+        }
+      });
+      debugPrint('[AttendanceCache] Đã restore cache cho $_cacheKey');
+    } catch (e) {
+      debugPrint('[AttendanceCache] Lỗi đọc cache: $e');
+    }
+  }
 
+  /// Lưu trạng thái điểm danh hiện tại vào SharedPreferences.
+  Future<void> _saveCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = _attendance.map((k, v) => MapEntry(k.toString(), v));
+      await prefs.setString(_cacheKey, jsonEncode(data));
+    } catch (e) {
+      debugPrint('[AttendanceCache] Lỗi lưu cache: $e');
+    }
+  }
+
+  /// Xóa cache sau khi lưu server thành công.
+  Future<void> _clearCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_cacheKey);
+      debugPrint('[AttendanceCache] Đã xóa cache $_cacheKey');
+    } catch (e) {
+      debugPrint('[AttendanceCache] Lỗi xóa cache: $e');
+    }
   }
 
   @override
@@ -78,29 +135,64 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
   List<Map<String, dynamic>> get _absent =>
       _sorted.where((s) => _attendance[s['hocvienid'] as int] != true).toList();
 
-  void _toggle(int hocvienid) =>
-      setState(() => _attendance[hocvienid] = !(_attendance[hocvienid] ?? false));
+  void _toggle(int hocvienid) {
+    setState(() => _attendance[hocvienid] = !(_attendance[hocvienid] ?? false));
+    // Auto-save vào local cache mỗi khi GV tick/untick
+    _saveCache();
+  }
+
+  /// Build payload cho API lưu điểm danh (không gửi hinhanh để giảm khiểu payload)
+  List<Map<String, dynamic>> _buildHocviens() {
+    return _sorted.map((m) {
+      final id = m['hocvienid'] as int;
+      return {
+        'hocvienid': id,
+        'mshv': m['mshv'] ?? '',
+        'ho': m['ho'] ?? '',
+        'ten': m['ten'] ?? '',
+        'diemdanhid': m['diemdanhid'],
+        'hiendienyn': _attendance[id] ?? false,
+      };
+    }).toList();
+  }
+
+  /// Tự động lưu lên server ngầm sau khi sync FaceID thành công.
+  /// API đã có sẵn retry 3 lần nếu mạng yếu.
+  Future<void> _autoSaveAfterSync() async {
+    try {
+      await ApiService.postDiemDanhLuu(
+        tkb: widget.tkbParams,
+        hocviens: _buildHocviens(),
+      );
+      await _clearCache();
+      if (!mounted) return;
+      showSuccessSnack(context, '✅ Đã tự động lưu lên server thành công!');
+    } catch (e) {
+      // Không pop màn hình — cache vẫn giữ data, GV có thể bấm Lưu thủ công sau
+      debugPrint('[AutoSave] Lỗi tự lưu sau sync: $e');
+      if (!mounted) return;
+      showErrorSnack(
+        context,
+        'Mạng yếu, chưa lưu được lên server. Dữ liệu vẫn được giữ trong máy, nhớ bấm Lưu lại!',
+        duration: const Duration(seconds: 5),
+      );
+    }
+  }
 
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      final hocviens = _sorted.map((m) {
-        final id = m['hocvienid'] as int;
-        return {
-          'hocvienid': id,
-          'mshv': m['mshv'] ?? '',
-          'ho': m['ho'] ?? '',
-          'ten': m['ten'] ?? '',
-          'hinhanh': m['hinhanh'],
-          'diemdanhid': m['diemdanhid'],
-          'hiendienyn': _attendance[id] ?? false,
-        };
-      }).toList();
+      // Không gửi 'hinhanh' (ảnh base64) để giảm kích thước payload
+      // — ảnh chỉ cần cho UI, server không cần khi lưu điểm danh
+      final hocviens = _buildHocviens();
 
       await ApiService.postDiemDanhLuu(
         tkb: widget.tkbParams,
         hocviens: hocviens,
       );
+
+      // Xóa cache local sau khi server xác nhận lưu thành công
+      await _clearCache();
 
       if (widget.classCode.contains('CD15')) {
         await ApiService.sendSMS(
@@ -282,6 +374,10 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
         }
       } else {
         showSuccessSnack(context, '🎉 Đã tự động điểm danh $matchCount sinh viên theo MSSV từ máy quét ZKTeco!');
+        // Lưu cache ngay để không mất dữ liệu nếu GV chưa kịp bấm Lưu
+        _saveCache();
+        // Tự động lưu lên server ngay (API có retry 3 lần nếu mạng yếu)
+        _autoSaveAfterSync();
         // Gửi push notification ngay cho sinh viên vừa được phát hiện
         _sendAttendanceNotification(newlyMatched).ignore();
       }

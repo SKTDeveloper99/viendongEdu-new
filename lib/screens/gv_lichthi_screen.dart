@@ -64,8 +64,16 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
   Future<void> _fetchExams(_Semester sem) async {
     setState(() { _selected = sem; _loadingExams = true; _error = null; });
     try {
+      String extendedEnd = sem.ngayKetThuc;
+      try {
+        final dt = DateTime.parse(sem.ngayKetThuc);
+        // Cộng thêm 60 ngày để bao gồm lịch thi cuối kỳ (thường diễn ra sau khi kết thúc học kỳ)
+        // Các môn thi của học kỳ khác nếu bị lọt vào cũng sẽ bị filter bởi lopMap bên dưới
+        extendedEnd = dt.add(const Duration(days: 60)).toIso8601String();
+      } catch (_) {}
+
       final results = await Future.wait([
-        ApiService.getGvLichThi(sem.ngayBatDau, sem.ngayKetThuc),
+        ApiService.getGvLichThi(sem.ngayBatDau, extendedEnd),
         ApiService.getGvDanhSachLop(sem.id),
       ]);
       if (!mounted) return;
@@ -198,7 +206,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                           children: [
                             const Icon(Icons.error_outline, size: 48, color: Colors.grey),
                             const SizedBox(height: 12),
-                            Text(_error!, style: const TextStyle(color: Colors.grey),
+                            Text(_error!, style: const TextStyle(color: Color(0xFF616161)),
                                 textAlign: TextAlign.center),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -221,7 +229,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                                     Icon(Icons.event_busy, size: 64, color: Colors.grey),
                                     SizedBox(height: 12),
                                     Text('Không có lịch thi',
-                                        style: TextStyle(color: Colors.grey)),
+                                        style: TextStyle(color: Color(0xFF616161))),
                                   ],
                                 ),
                               )
@@ -333,7 +341,7 @@ class _ExamCardState extends State<_ExamCard> {
                                     if (maLop.isNotEmpty)
                                       Text(maLop,
                                           style: const TextStyle(
-                                              fontSize: 11, color: Colors.grey),
+                                              fontSize: 11, color: Color(0xFF616161)),
                                           overflow: TextOverflow.ellipsis),
                                   ],
                                 ),
@@ -370,7 +378,7 @@ class _ExamCardState extends State<_ExamCard> {
                               const SizedBox(width: 4),
                               Text(ngayThi,
                                   style: const TextStyle(
-                                      fontSize: 12, color: Colors.grey)),
+                                      fontSize: 12, color: Color(0xFF616161))),
                               if (gioBatDau.isNotEmpty) ...[
                                 const SizedBox(width: 12),
                                 const Icon(Icons.access_time,
@@ -378,7 +386,7 @@ class _ExamCardState extends State<_ExamCard> {
                                 const SizedBox(width: 4),
                                 Text(gioBatDau,
                                     style: const TextStyle(
-                                        fontSize: 12, color: Colors.grey)),
+                                        fontSize: 12, color: Color(0xFF616161))),
                               ],
                               if (thoiGian > 0) ...[
                                 const SizedBox(width: 12),
@@ -387,7 +395,7 @@ class _ExamCardState extends State<_ExamCard> {
                                 const SizedBox(width: 4),
                                 Text('$thoiGian phút',
                                     style: const TextStyle(
-                                        fontSize: 12, color: Colors.grey)),
+                                        fontSize: 12, color: Color(0xFF616161))),
                               ],
                             ],
                           ),
@@ -450,7 +458,7 @@ class _DetailRow extends StatelessWidget {
           SizedBox(
             width: 100,
             child: Text(label,
-                style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF616161))),
           ),
           Expanded(
             child: Text(value,
