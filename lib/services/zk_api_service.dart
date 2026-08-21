@@ -40,7 +40,7 @@ class ZkApiService {
     final uri = Uri.parse('$baseUrl/api/logs');
     final res = await http.get(uri, headers: {
       'Bypass-Tunnel-Reminder': 'true'
-    }).timeout(const Duration(seconds: 30));
+    }).timeout(const Duration(seconds: 60));
     
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
@@ -58,7 +58,7 @@ class ZkApiService {
     final uri = Uri.parse('$baseUrl/api/users');
     final res = await http.get(uri, headers: {
       'Bypass-Tunnel-Reminder': 'true'
-    }).timeout(const Duration(seconds: 30));
+    }).timeout(const Duration(seconds: 60));
     
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
@@ -73,10 +73,10 @@ class ZkApiService {
 
   static Future<List<dynamic>> getStudents(String ip) async {
     final baseUrl = _buildBaseUrl(ip);
-    final uri = Uri.parse('$baseUrl/api/students');
+    final uri = Uri.parse('$baseUrl/api/students/sync');
     final res = await http.get(uri, headers: {
       'Bypass-Tunnel-Reminder': 'true'
-    }).timeout(const Duration(seconds: 30));
+    }).timeout(const Duration(seconds: 60));
     
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
