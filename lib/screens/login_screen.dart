@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/hoc_vien_model.dart';
 import '../models/giang_vien_model.dart';
@@ -75,6 +76,11 @@ class _LoginScreenState extends State<LoginScreen> {
           userid: AppSession.instance.userid,
         );
       }
+
+      // Đối chiếu sang EMS. CỐ Ý không await-chặn và không bắt lỗi ra ngoài:
+      // refreshEmsToken() tự nuốt mọi lỗi, nên EMS hỏng/chậm/từ chối cũng
+      // không giữ người dùng lại ở màn hình đăng nhập IMS.
+      unawaited(AppSession.instance.refreshEmsToken());
 
       if (!mounted) return;
       final route = AppSession.instance.isGiangVien ? '/gv_home' : '/home';
