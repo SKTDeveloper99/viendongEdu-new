@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -17,7 +20,28 @@ class NotificationService {
 
   final _fcm = FirebaseMessaging.instance;
 
+  // Danh tính đã đăng ký gần nhất — dùng để đăng ký lại khi FCM xoay token
+  String? _lastHocVienId;
+  String? _lastMssv;
+  String? _lastHoTen;
+  String? _lastNgaysinh;
+  String? _lastUserid;
+
+  final Completer<void> _initialMessageReady = Completer<void>();
+
+  /// Splash chờ cái này trước khi hỏi consumePendingInitialMessage()
+  Future<void> get initialMessageReady => _initialMessageReady.future;
+
   Future<void> init() async {
+    // Đọc initial message TRƯỚC tiên và báo cho splash biết ngay,
+    // để splash không phải chờ requestPermission (người dùng có thể để yên hộp thoại)
+    try {
+      _pendingInitialMessage = await _fcm.getInitialMessage();
+    } catch (e) {
+      debugPrint('[FCM] getInitialMessage error: $e');
+    }
+    if (!_initialMessageReady.isCompleted) _initialMessageReady.complete();
+
     // Xin permission
     await _fcm.requestPermission(
       alert: true,
@@ -44,6 +68,42 @@ class NotificationService {
         _showInAppBanner(title, body);
       }
     });
+
+    // FCM xoay token (cài lại app, khôi phục iCloud, xoay định kỳ) →
+    // đăng ký lại ngay, nếu không thì server giữ token cũ và notification chết im lặng
+    _fcm.onTokenRefresh.listen((token) {
+      debugPrint('[FCM] token refreshed');
+      final id = _lastHocVienId;
+      if (id == null) return;
+      _postToken(
+        id,
+        token,
+        mssv: _lastMssv,
+        hoTen: _lastHoTen,
+        ngaysinh: _lastNgaysinh,
+        userid: _lastUserid,
+      );
+    });
+
+    // Người dùng bấm vào notification khi app đang ở background
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+
+  }
+
+  RemoteMessage? _pendingInitialMessage;
+
+  /// Splash gọi sau khi đã vào home — trả true nếu app được mở từ notification
+  bool consumePendingInitialMessage() {
+    final had = _pendingInitialMessage != null;
+    _pendingInitialMessage = null;
+    return had;
+  }
+
+  void _handleNotificationTap(RemoteMessage message) {
+    debugPrint('[FCM] notification tapped: ${message.notification?.title}');
+    final nav = _globalNavigatorKey?.currentState;
+    if (nav == null) return;
+    nav.pushNamed('/notifications');
   }
 
   void _showInAppBanner(String title, String body) {
@@ -74,24 +134,65 @@ class NotificationService {
     });
   }
 
-  /// Lấy FCM token của thiết bị
+  /// Lấy FCM token của thiết bị.
+  /// Trên iOS phải đợi APNs cấp token trước, nếu không getToken() sẽ ném lỗi
+  /// ở lần chạy đầu tiên sau khi cài app.
   Future<String?> getToken() async {
     try {
-      // Thêm timeout 5s để tránh iOS bị treo (hang) khi chưa có APNs/Push Notifications entitlement
-      return await _fcm.getToken().timeout(const Duration(seconds: 5));
-    } catch (_) {
+      if (Platform.isIOS || Platform.isMacOS) {
+        final apns = await _waitForApnsToken();
+        if (apns == null) {
+          debugPrint('[FCM] APNs token chưa sẵn sàng');
+          return null;
+        }
+      }
+      final token = await _fcm.getToken().timeout(const Duration(seconds: 10));
+      // Chỉ in ở bản debug — dùng để dán vào Firebase "Send test message"
+      if (kDebugMode && token != null) {
+        debugPrint('[FCM] ===== TOKEN BEGIN =====');
+        debugPrint(token);
+        debugPrint('[FCM] ===== TOKEN END =====');
+      }
+      return token;
+    } catch (e) {
+      debugPrint('[FCM] getToken error: $e');
       return null;
     }
+  }
+
+  /// Hỏi APNs token nhiều lần — ngay sau khi cài app, iOS cần vài giây
+  /// để đăng ký với APNs xong.
+  Future<String?> _waitForApnsToken() async {
+    for (var i = 0; i < 10; i++) {
+      final apns = await _fcm.getAPNSToken();
+      if (apns != null) return apns;
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    return null;
   }
 
   /// Lưu token lên server sau khi login
   Future<void> registerToken(String hocVienId,
       {String? mssv, String? hoTen, String? ngaysinh, String? userid}) async {
+    // Nhớ danh tính trước, để onTokenRefresh còn đăng ký lại được
+    _lastHocVienId = hocVienId;
+    _lastMssv = mssv;
+    _lastHoTen = hoTen;
+    _lastNgaysinh = ngaysinh;
+    _lastUserid = userid;
+
     final token = await getToken();
     if (token == null) {
-      debugPrint('[FCM] Token is null, skipping registration');
+      // Không bỏ cuộc: onTokenRefresh sẽ bắn khi FCM cấp được token
+      debugPrint('[FCM] Token chưa có, chờ onTokenRefresh');
       return;
     }
+    await _postToken(hocVienId, token,
+        mssv: mssv, hoTen: hoTen, ngaysinh: ngaysinh, userid: userid);
+  }
+
+  Future<void> _postToken(String hocVienId, String token,
+      {String? mssv, String? hoTen, String? ngaysinh, String? userid}) async {
     try {
       final res = await http
           .post(
@@ -115,6 +216,11 @@ class NotificationService {
 
   /// Xóa token khỏi server khi logout
   Future<void> unregisterToken(String hocVienId) async {
+    _lastHocVienId = null;
+    _lastMssv = null;
+    _lastHoTen = null;
+    _lastNgaysinh = null;
+    _lastUserid = null;
     final token = await getToken();
     if (token == null) return;
     try {
