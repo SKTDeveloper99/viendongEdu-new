@@ -141,6 +141,10 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
                 const SizedBox(height: 14),
                 SelectableText(item.body,
                     style: const TextStyle(fontSize: 15, height: 1.65)),
+                if (item.images.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  for (final img in item.images) _BoardImage(image: img),
+                ],
                 const SizedBox(height: 24),
                 if (item.mustRead)
                   item.acknowledgedAt != null
@@ -263,6 +267,57 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
   }
 }
 
+/// Ảnh của bảng tin. Nằm sau Bearer token nên phải gửi kèm header; giữ đúng tỉ
+/// lệ thật để danh sách không nhảy khi ảnh tải xong, và hỏng ảnh thì hiện ô
+/// xám có biểu tượng chứ không phải một vệt đỏ giữa thông báo.
+class _BoardImage extends StatelessWidget {
+  const _BoardImage({required this.image, this.inCard = false});
+  final AnnouncementImage image;
+  final bool inCard;
+
+  @override
+  Widget build(BuildContext context) {
+    final img = Image.network(
+      image.absoluteUrl,
+      headers: EmsApiService.authHeaders,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      loadingBuilder: (_, child, progress) => progress == null
+          ? child
+          : Container(
+              height: inCard ? null : 180,
+              color: Colors.grey[200],
+              child: const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Color(0xFFE65100)),
+                ),
+              ),
+            ),
+      errorBuilder: (_, __, ___) => Container(
+        height: inCard ? null : 140,
+        color: Colors.grey[200],
+        child: Icon(Icons.broken_image_outlined,
+            color: Colors.grey[500], size: 28),
+      ),
+    );
+
+    if (inCard) return img;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: image.aspectRatio != null
+            ? AspectRatio(aspectRatio: image.aspectRatio!, child: img)
+            : img,
+      ),
+    );
+  }
+}
+
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({required this.item});
   final AnnouncementItem item;
@@ -366,6 +421,21 @@ class _AnnouncementCard extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 13, height: 1.45, color: Colors.grey[700]),
                 ),
+                if (item.images.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: AspectRatio(
+                      aspectRatio: item.images.first.aspectRatio ?? 16 / 9,
+                      child: _BoardImage(image: item.images.first, inCard: true),
+                    ),
+                  ),
+                  if (item.images.length > 1) ...[
+                    const SizedBox(height: 6),
+                    Text('+${item.images.length - 1} ảnh nữa',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                  ],
+                ],
                 const SizedBox(height: 8),
                 Row(children: [
                   Icon(Icons.schedule, size: 13, color: Colors.grey[500]),

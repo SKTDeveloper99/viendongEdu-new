@@ -39,6 +39,12 @@ class EmsApiService {
   /// TLS — không có chế độ bỏ qua chứng chỉ).
   static http.Client client = http.Client();
 
+  /// Header cho widget ảnh (Image.network) — ảnh cũng nằm sau Bearer token.
+  static Map<String, String> get authHeaders {
+    final t = AppSession.instance.emsToken;
+    return (t == null || t.isEmpty) ? const {} : {'Authorization': 'Bearer $t'};
+  }
+
   static Map<String, String> _headers({bool auth = true}) {
     final h = <String, String>{'Content-Type': 'application/json'};
     if (auth) {
@@ -189,6 +195,42 @@ class EmsApiService {
   }
 }
 
+/// Một tấm ảnh kèm theo thông báo.
+///
+/// [url] là đường dẫn tương đối server trả về; [absoluteUrl] ghép với base để
+/// widget ảnh dùng trực tiếp. Ảnh cần Bearer token nên phải kèm [authHeaders].
+class AnnouncementImage {
+  final String id;
+  final String url;
+  final int? width;
+  final int? height;
+
+  const AnnouncementImage({
+    required this.id,
+    required this.url,
+    this.width,
+    this.height,
+  });
+
+  factory AnnouncementImage.fromJson(Map<String, dynamic> j) => AnnouncementImage(
+        id: j['id']?.toString() ?? '',
+        url: j['url']?.toString() ?? '',
+        width: (j['width'] as num?)?.toInt(),
+        height: (j['height'] as num?)?.toInt(),
+      );
+
+  /// Server trả '/api/v1/...' còn baseUrl đã kết thúc bằng '/api' — cắt phần
+  /// '/api' trùng để không thành '/api/api/v1/...'.
+  String get absoluteUrl {
+    final base = EmsApiService.baseUrl;
+    final path = url.startsWith('/api') ? url.substring(4) : url;
+    return '$base$path';
+  }
+
+  double? get aspectRatio =>
+      (width != null && height != null && height! > 0) ? width! / height! : null;
+}
+
 class BoardUnread {
   final int unread;
   final int mustReadPending;
@@ -207,6 +249,7 @@ class AnnouncementItem {
   final bool mustRead;
   final bool isCorrection;
   final DateTime? publishedAt;
+  final List<AnnouncementImage> images;
   DateTime? readAt;
   DateTime? acknowledgedAt;
 
@@ -218,6 +261,7 @@ class AnnouncementItem {
     this.mustRead = false,
     this.isCorrection = false,
     this.publishedAt,
+    this.images = const [],
     this.readAt,
     this.acknowledgedAt,
   });
@@ -238,6 +282,12 @@ class AnnouncementItem {
         mustRead: j['must_read'] == true,
         isCorrection: j['is_correction'] == true,
         publishedAt: _date(j['published_at']),
+        images: (j['images'] is List)
+            ? (j['images'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(AnnouncementImage.fromJson)
+                .toList()
+            : const [],
         readAt: _date(j['read_at']),
         acknowledgedAt: _date(j['acknowledged_at']),
       );

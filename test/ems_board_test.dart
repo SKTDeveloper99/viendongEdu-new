@@ -67,6 +67,37 @@ void main() {
     });
   });
 
+  group('AnnouncementImage', () {
+    test('đọc ảnh kèm theo và giữ tỉ lệ để danh sách không nhảy', () {
+      final item = AnnouncementItem.fromJson({
+        'id': 'x',
+        'images': [
+          {'id': 'img-1', 'url': '/api/v1/student/board/images/img-1',
+           'width': 1920, 'height': 1280},
+        ],
+      });
+      expect(item.images, hasLength(1));
+      expect(item.images.first.aspectRatio, closeTo(1.5, 0.001));
+    });
+
+    test('ghép URL tuyệt đối KHÔNG lặp lại /api', () {
+      const img = AnnouncementImage(
+          id: 'img-1', url: '/api/v1/student/board/images/img-1');
+      expect(img.absoluteUrl, '${EmsApiService.baseUrl}/v1/student/board/images/img-1');
+      expect(img.absoluteUrl.contains('/api/api'), isFalse);
+    });
+
+    test('thông báo không ảnh trả về danh sách rỗng, không null', () {
+      expect(AnnouncementItem.fromJson({'id': 'x'}).images, isEmpty);
+      expect(AnnouncementItem.fromJson({'id': 'x', 'images': 'hỏng'}).images, isEmpty);
+    });
+
+    test('thiếu kích thước thì không có tỉ lệ (widget dùng mặc định)', () {
+      const img = AnnouncementImage(id: 'i', url: '/api/x');
+      expect(img.aspectRatio, isNull);
+    });
+  });
+
   group('EmsException', () {
     test('401/403/404 là từ chối dứt khoát — không thử lại thành bão request', () {
       expect(EmsException('x', statusCode: 401).isDeliberateDenial, isTrue);
