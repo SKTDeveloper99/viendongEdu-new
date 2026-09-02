@@ -92,7 +92,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
       _maybeShowMustRead(items);
     } catch (_) {
-      if (mounted) setState(() => _boardFailed = true);
+      // A DELIBERATE denial (no EMS account for this student, or a deactivated
+      // one) is not a failure to retry — most students today have no EMS
+      // account at all, and showing them "không tải được" forever would be a
+      // permanent false alarm on the home screen. Only a real fault gets the
+      // retry card.
+      if (mounted) {
+        setState(() => _boardFailed = !AppSession.instance.emsDenied);
+      }
     } finally {
       _boardLoading = false;
     }
@@ -179,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ── Bảng tin card ────────────────────────────────────
   Widget _buildBoardCard() {
     // Chưa có gì để nói và cũng không lỗi → không chiếm chỗ trên trang chủ.
+    // Học viên chưa có tài khoản EMS cũng không thấy thẻ này (emsDenied).
     if (_latestBoardItem == null && !_boardFailed) return const SizedBox.shrink();
 
     return Padding(
