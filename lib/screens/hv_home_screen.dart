@@ -178,6 +178,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       };
 
   Future<void> _logout() async {
+    // Reset the once-per-session must-read prompt so a different student who
+    // logs in on the SAME app process still gets their acknowledgement sheet.
+    _mustReadShown = false;
     await AppSession.instance.clear();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/');
