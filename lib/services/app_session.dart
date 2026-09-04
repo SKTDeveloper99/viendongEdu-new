@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/hoc_vien_model.dart';
 import '../models/giang_vien_model.dart';
@@ -122,6 +123,14 @@ class AppSession {
           ? await EmsApiService.mirrorTeacher(imsToken)
           : await EmsApiService.mirrorStudent(imsToken);
       await persist();
+      if (gv == null) {
+        // Push registration is optional reachability. A Firebase/network
+        // failure must never discard an otherwise valid EMS session.
+        try {
+          final fcmToken = await NotificationService.instance.getToken();
+          if (fcmToken != null) await registerStudentDeviceToken(fcmToken);
+        } catch (_) {}
+      }
       return true;
     } on EmsException catch (e) {
       if (e.isDeliberateDenial) emsDenied = true;
@@ -131,5 +140,22 @@ class AppSession {
       emsToken = null;
       return false;
     }
+  }
+
+  Future<void> registerStudentDeviceToken(String token) async {
+    if (hocVien == null || !hasEms) return;
+    await EmsApiService.registerStudentDevice(
+      token,
+      platform: defaultTargetPlatform == TargetPlatform.iOS
+          ? 'ios'
+          : defaultTargetPlatform == TargetPlatform.android
+          ? 'android'
+          : 'web',
+    );
+  }
+
+  Future<void> revokeStudentDeviceToken(String token) async {
+    if (hocVien == null || !hasEms) return;
+    await EmsApiService.revokeStudentDevice(token);
   }
 }

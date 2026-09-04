@@ -55,17 +55,21 @@ class _SplashScreenState extends State<SplashScreen> {
       // vào thẳng màn hình thông báo — sau khi đã vào home để nút back còn hoạt động
       // Chờ tối đa 2s để biết app có được mở từ notification hay không.
       // Có timeout để dù FCM lỗi thì app vẫn vào home bình thường.
-      await NotificationService.instance.initialMessageReady
-          .timeout(const Duration(seconds: 2), onTimeout: () {});
+      await NotificationService.instance.initialMessageReady.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {},
+      );
       if (!mounted) return;
 
-      if (NotificationService.instance.consumePendingInitialMessage()) {
-        Navigator.pushNamed(context, '/notifications');
+      final notificationRoute = NotificationService.instance
+          .consumePendingInitialMessageRoute();
+      if (notificationRoute != null) {
+        Navigator.pushNamed(context, notificationRoute);
       }
     } else {
       // Chưa đăng nhập thì bỏ qua notification đang chờ, tránh mở
       // màn hình thông báo khi không có session
-      NotificationService.instance.consumePendingInitialMessage();
+      NotificationService.instance.consumePendingInitialMessageRoute();
       Navigator.pushReplacementNamed(context, '/login');
     }
   }

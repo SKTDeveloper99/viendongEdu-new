@@ -71,8 +71,10 @@ class EmsApiService {
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (body == null) {
-        throw EmsException('Máy chủ trả về dữ liệu không đọc được.',
-            statusCode: res.statusCode);
+        throw EmsException(
+          'Máy chủ trả về dữ liệu không đọc được.',
+          statusCode: res.statusCode,
+        );
       }
       return body;
     }
@@ -97,10 +99,13 @@ class EmsApiService {
     try {
       final headers = _headers(auth: auth);
       final encoded = body == null ? null : jsonEncode(body);
-      res = await (method == 'POST'
-              ? client.post(uri, headers: headers, body: encoded)
-              : client.get(uri, headers: headers))
-          .timeout(_timeout);
+      res =
+          await (method == 'POST'
+                  ? client.post(uri, headers: headers, body: encoded)
+                  : method == 'DELETE'
+                  ? client.delete(uri, headers: headers, body: encoded)
+                  : client.get(uri, headers: headers))
+              .timeout(_timeout);
     } catch (e) {
       // Mạng hỏng / quá hạn / DNS — không có statusCode, nên không bị coi là
       // từ chối có chủ đích và màn hình sẽ hiện nút "Thử lại".
@@ -114,8 +119,12 @@ class EmsApiService {
 
   /// Đổi token IMS của học viên lấy token EMS. Trả về token EMS.
   static Future<String> mirrorStudent(String imsToken) async {
-    final body = await _send('POST', '/v1/identity/mirror',
-        body: {'ims_token': imsToken}, auth: false);
+    final body = await _send(
+      'POST',
+      '/v1/identity/mirror',
+      body: {'ims_token': imsToken},
+      auth: false,
+    );
     final token = body['crm_token']?.toString();
     if (token == null || token.isEmpty) {
       throw EmsException('Máy chủ thông tin không cấp được phiên đăng nhập.');
@@ -130,13 +139,18 @@ class EmsApiService {
     String? platform,
     String? appVersion,
   }) async {
-    final body = await _send('POST', '/v1/identity/teacher-mirror', body: {
-      'ims_token': imsToken,
-      // Null-aware entries: bỏ hẳn khoá khi giá trị null, không gửi null.
-      'fcm_token': ?fcmToken,
-      'platform': ?platform,
-      'app_version': ?appVersion,
-    }, auth: false);
+    final body = await _send(
+      'POST',
+      '/v1/identity/teacher-mirror',
+      body: {
+        'ims_token': imsToken,
+        // Null-aware entries: bỏ hẳn khoá khi giá trị null, không gửi null.
+        'fcm_token': ?fcmToken,
+        'platform': ?platform,
+        'app_version': ?appVersion,
+      },
+      auth: false,
+    );
     final token = body['crm_token']?.toString();
     if (token == null || token.isEmpty) {
       throw EmsException('Máy chủ thông tin không cấp được phiên đăng nhập.');
@@ -183,6 +197,32 @@ class EmsApiService {
     });
   }
 
+  /// Gắn installation Firebase hiện tại với chính học viên đã đăng nhập EMS.
+  /// MSSV không nằm trong body: server lấy nó từ token EMS đã ký.
+  static Future<void> registerStudentDevice(
+    String fcmToken, {
+    String? platform,
+    String? appVersion,
+  }) async {
+    await _send(
+      'POST',
+      '/v1/student/board/devices',
+      body: {
+        'fcm_token': fcmToken,
+        'platform': ?platform,
+        'app_version': ?appVersion,
+      },
+    );
+  }
+
+  static Future<void> revokeStudentDevice(String fcmToken) async {
+    await _send(
+      'DELETE',
+      '/v1/student/board/devices',
+      body: {'fcm_token': fcmToken},
+    );
+  }
+
   /// Đóng dấu đã đọc. Idempotent ở phía server: gọi lại không đổi mốc thời gian.
   static Future<void> markRead(String id) {
     return _withReMirror(() => _send('POST', '/v1/student/board/$id/read'));
@@ -191,7 +231,8 @@ class EmsApiService {
   /// Xác nhận đã đọc và hiểu. Server đóng cả hai mốc trong một câu lệnh.
   static Future<void> acknowledge(String id) {
     return _withReMirror(
-        () => _send('POST', '/v1/student/board/$id/acknowledge'));
+      () => _send('POST', '/v1/student/board/$id/acknowledge'),
+    );
   }
 }
 
@@ -212,7 +253,8 @@ class AnnouncementImage {
     this.height,
   });
 
-  factory AnnouncementImage.fromJson(Map<String, dynamic> j) => AnnouncementImage(
+  factory AnnouncementImage.fromJson(Map<String, dynamic> j) =>
+      AnnouncementImage(
         id: j['id']?.toString() ?? '',
         url: j['url']?.toString() ?? '',
         width: (j['width'] as num?)?.toInt(),
@@ -227,8 +269,9 @@ class AnnouncementImage {
     return '$base$path';
   }
 
-  double? get aspectRatio =>
-      (width != null && height != null && height! > 0) ? width! / height! : null;
+  double? get aspectRatio => (width != null && height != null && height! > 0)
+      ? width! / height!
+      : null;
 }
 
 class BoardUnread {
@@ -275,22 +318,22 @@ class AnnouncementItem {
   }
 
   factory AnnouncementItem.fromJson(Map<String, dynamic> j) => AnnouncementItem(
-        id: j['id']?.toString() ?? '',
-        title: j['title']?.toString() ?? '',
-        body: j['body']?.toString() ?? '',
-        category: j['category']?.toString(),
-        mustRead: j['must_read'] == true,
-        isCorrection: j['is_correction'] == true,
-        publishedAt: _date(j['published_at']),
-        images: (j['images'] is List)
-            ? (j['images'] as List)
-                .whereType<Map<String, dynamic>>()
-                .map(AnnouncementImage.fromJson)
-                .toList()
-            : const [],
-        readAt: _date(j['read_at']),
-        acknowledgedAt: _date(j['acknowledged_at']),
-      );
+    id: j['id']?.toString() ?? '',
+    title: j['title']?.toString() ?? '',
+    body: j['body']?.toString() ?? '',
+    category: j['category']?.toString(),
+    mustRead: j['must_read'] == true,
+    isCorrection: j['is_correction'] == true,
+    publishedAt: _date(j['published_at']),
+    images: (j['images'] is List)
+        ? (j['images'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(AnnouncementImage.fromJson)
+              .toList()
+        : const [],
+    readAt: _date(j['read_at']),
+    acknowledgedAt: _date(j['acknowledged_at']),
+  );
 
   static const Map<String, String> categoryLabels = {
     'general': 'Thông báo chung',

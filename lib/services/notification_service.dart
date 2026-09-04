@@ -19,6 +19,8 @@ class NotificationService {
   static final NotificationService instance = NotificationService._();
 
   final _fcm = FirebaseMessaging.instance;
+  Future<void> Function(String token)? _emsStudentRegister;
+  Future<void> Function(String token)? _emsStudentRevoke;
 
   // Danh tính đã đăng ký gần nhất — dùng để đăng ký lại khi FCM xoay token
   String? _lastHocVienId;
@@ -43,11 +45,7 @@ class NotificationService {
     if (!_initialMessageReady.isCompleted) _initialMessageReady.complete();
 
     // Xin permission
-    await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    await _fcm.requestPermission(alert: true, badge: true, sound: true);
 
     // Đăng ký background handler
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
@@ -65,7 +63,7 @@ class NotificationService {
       final title = message.notification?.title ?? '';
       final body = message.notification?.body ?? '';
       if (title.isNotEmpty || body.isNotEmpty) {
-        _showInAppBanner(title, body);
+        _showInAppBanner(title, body, _routeFor(message));
       }
     });
 
@@ -87,26 +85,32 @@ class NotificationService {
 
     // Người dùng bấm vào notification khi app đang ở background
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-
   }
 
   RemoteMessage? _pendingInitialMessage;
 
-  /// Splash gọi sau khi đã vào home — trả true nếu app được mở từ notification
-  bool consumePendingInitialMessage() {
-    final had = _pendingInitialMessage != null;
+  /// Splash gọi sau khi đã vào home — trả đúng màn hình mà push yêu cầu.
+  String? consumePendingInitialMessageRoute() {
+    final route = _pendingInitialMessage == null
+        ? null
+        : _routeFor(_pendingInitialMessage!);
     _pendingInitialMessage = null;
-    return had;
+    return route;
   }
+
+  String _routeFor(RemoteMessage message) =>
+      message.data['route'] == '/student/board'
+      ? '/student_board'
+      : '/notifications';
 
   void _handleNotificationTap(RemoteMessage message) {
     debugPrint('[FCM] notification tapped: ${message.notification?.title}');
     final nav = _globalNavigatorKey?.currentState;
     if (nav == null) return;
-    nav.pushNamed('/notifications');
+    nav.pushNamed(_routeFor(message));
   }
 
-  void _showInAppBanner(String title, String body) {
+  void _showInAppBanner(String title, String body, String route) {
     final overlay = _globalNavigatorKey?.currentState?.overlay;
     if (overlay == null) return;
 
@@ -121,7 +125,7 @@ class NotificationService {
         },
         onTap: () {
           if (entry.mounted) entry.remove();
-          _globalNavigatorKey?.currentState?.pushNamed('/notifications');
+          _globalNavigatorKey?.currentState?.pushNamed(route);
         },
       ),
     );
@@ -172,8 +176,13 @@ class NotificationService {
   }
 
   /// Lưu token lên server sau khi login
-  Future<void> registerToken(String hocVienId,
-      {String? mssv, String? hoTen, String? ngaysinh, String? userid}) async {
+  Future<void> registerToken(
+    String hocVienId, {
+    String? mssv,
+    String? hoTen,
+    String? ngaysinh,
+    String? userid,
+  }) async {
     // Nhớ danh tính trước, để onTokenRefresh còn đăng ký lại được
     _lastHocVienId = hocVienId;
     _lastMssv = mssv;
@@ -187,12 +196,32 @@ class NotificationService {
       debugPrint('[FCM] Token chưa có, chờ onTokenRefresh');
       return;
     }
-    await _postToken(hocVienId, token,
-        mssv: mssv, hoTen: hoTen, ngaysinh: ngaysinh, userid: userid);
+    await _postToken(
+      hocVienId,
+      token,
+      mssv: mssv,
+      hoTen: hoTen,
+      ngaysinh: ngaysinh,
+      userid: userid,
+    );
   }
 
-  Future<void> _postToken(String hocVienId, String token,
-      {String? mssv, String? hoTen, String? ngaysinh, String? userid}) async {
+  Future<void> _postToken(
+    String hocVienId,
+    String token, {
+    String? mssv,
+    String? hoTen,
+    String? ngaysinh,
+    String? userid,
+  }) async {
+    // EMS delivery must not depend on the legacy notification host being up.
+    if (hocVienId.startsWith('hv_')) {
+      try {
+        await _emsStudentRegister?.call(token);
+      } catch (e) {
+        debugPrint('[FCM] EMS register token error: $e');
+      }
+    }
     try {
       final res = await http
           .post(
@@ -223,6 +252,11 @@ class NotificationService {
     _lastUserid = null;
     final token = await getToken();
     if (token == null) return;
+    if (hocVienId.startsWith('hv_')) {
+      try {
+        await _emsStudentRevoke?.call(token);
+      } catch (_) {}
+    }
     try {
       await http
           .delete(
@@ -232,6 +266,14 @@ class NotificationService {
           )
           .timeout(const Duration(seconds: 10));
     } catch (_) {}
+  }
+
+  void configureEmsStudentDevice({
+    required Future<void> Function(String token) register,
+    required Future<void> Function(String token) revoke,
+  }) {
+    _emsStudentRegister = register;
+    _emsStudentRevoke = revoke;
   }
 }
 
@@ -271,7 +313,9 @@ class _NotiiBannerState extends State<_NotiiBanner>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 380));
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
     _slide = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
@@ -316,13 +360,12 @@ class _NotiiBannerState extends State<_NotiiBanner>
                       offset: const Offset(0, 6),
                     ),
                   ],
-                  border: Border.all(
-                    color: const Color(0xFFFFCC80),
-                    width: 1,
-                  ),
+                  border: Border.all(color: const Color(0xFFFFCC80), width: 1),
                 ),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -336,8 +379,11 @@ class _NotiiBannerState extends State<_NotiiBanner>
                         ),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.notifications_active,
-                          color: Colors.white, size: 22),
+                      child: const Icon(
+                        Icons.notifications_active,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -375,8 +421,11 @@ class _NotiiBannerState extends State<_NotiiBanner>
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _dismiss,
-                      child: const Icon(Icons.close,
-                          color: Colors.grey, size: 18),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.grey,
+                        size: 18,
+                      ),
                     ),
                   ],
                 ),

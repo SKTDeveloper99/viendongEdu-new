@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
+import 'services/app_session.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/hv_home_screen.dart';
@@ -33,11 +34,17 @@ void main() async {
   // Firebase phải xong trước khi dùng FCM, nhưng không được để lỗi mạng
   // làm app trắng màn hình — nếu lỗi thì vẫn chạy app, chỉ mất notification
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     debugPrint('[Firebase] init failed: $e');
   }
   setNotificationNavigatorKey(navigatorKey);
+  NotificationService.instance.configureEmsStudentDevice(
+    register: AppSession.instance.registerStudentDeviceToken,
+    revoke: AppSession.instance.revokeStudentDeviceToken,
+  );
 
   // Vẽ giao diện TRƯỚC. Không await notification init ở đây:
   // requestPermission chờ người dùng bấm nút, sẽ treo màn hình trắng.
@@ -59,10 +66,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('vi', 'VN'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('vi', 'VN'), Locale('en', 'US')],
       locale: const Locale('vi', 'VN'),
       initialRoute: '/',
       routes: {
