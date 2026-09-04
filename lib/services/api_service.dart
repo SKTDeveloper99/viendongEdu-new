@@ -218,6 +218,8 @@ class ApiService {
   }) async {
     final uri = Uri.parse('$_base/giangvien/diemdanh/luu');
     final bodyStr = jsonEncode({'tkb': tkb, 'hocviens': hocviens});
+    print('🚀 [postDiemDanhLuu] URL: $uri');
+    print('📦 [postDiemDanhLuu] Payload: $bodyStr');
     const maxRetries = 3;
 
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
