@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/hoc_vien_model.dart';
 import '../models/giang_vien_model.dart';
@@ -237,6 +238,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                 ),
               ),
+
+              // Cửa chạy thử CHỈ Ở BẢN DEBUG: mở thẳng màn hình điểm danh giáo
+              // viên bằng token EMS nạp qua --dart-define=EMS_DEBUG_TOKEN, để
+              // kiểm tra luồng giáo viên mà không cần đăng nhập IMS. Bản release
+              // (kDebugMode = false) cắt bỏ hoàn toàn nút này.
+              if (kDebugMode && AppSession.instance.emsToken != null &&
+                  AppSession.instance.emsToken!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/ems_attendance_gv'),
+                  icon: const Icon(Icons.fact_check_outlined, size: 18),
+                  label: const Text('DEBUG · Điểm danh giáo viên'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE65100),
+                    minimumSize: const Size.fromHeight(46),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

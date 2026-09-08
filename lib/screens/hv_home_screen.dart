@@ -693,34 +693,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       },
                     ),
 
-                    // Điểm danh chính thức từ EMS. Nằm ngoài lưới menu cũ để
-                    // luôn hiện ngay cả khi cấu hình menu IMS không tải được.
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-                      child: GestureDetector(
-                        // Chạm: màn hình HỌC VIÊN. Nhấn giữ: màn hình GIÁO VIÊN.
-                        // Chỉ ở bản debug, để một máy diễn được cả hai vai mà
-                        // không cần đăng nhập lại.
-                        onLongPress: kDebugMode
-                            ? () => Navigator.pushNamed(
-                                context,
-                                '/ems_attendance_gv',
-                              )
-                            : null,
-                        child: OutlinedButton.icon(
-                          onPressed: () => Navigator.pushNamed(
-                            context,
-                            '/ems_attendance_hv',
-                          ),
-                          icon: const Icon(Icons.fact_check_outlined, size: 18),
-                          label: const Text('Điểm danh EMS'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFE65100),
-                            minimumSize: const Size.fromHeight(40),
-                          ),
-                        ),
-                      ),
-                    ),
+                    // (Nút "Điểm danh EMS" đã bỏ khỏi màn hình học viên: điểm
+                    // danh của học viên nay nằm trong "Lớp học" — cùng biểu đồ,
+                    // đọc thẳng từ EMS. Học viên không có lối vào màn hình giáo
+                    // viên.)
                   ],
                 ),
               ),
