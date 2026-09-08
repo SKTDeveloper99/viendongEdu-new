@@ -403,6 +403,14 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                         onTap: () =>
                             Navigator.pushNamed(context, '/gv_quanly_lop'),
                       ),
+                      // THỬ NGHIỆM — điểm danh EMS, chạy song song với IMS.
+                      // Gỡ nút này là gỡ đường thử nghiệm khỏi màn hình GV.
+                      MenuItemWidget(
+                        icon: Icons.fact_check_outlined,
+                        label: 'Điểm danh EMS (thử)',
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/ems_attendance_gv'),
+                      ),
                     ],
                   ),
                 ],

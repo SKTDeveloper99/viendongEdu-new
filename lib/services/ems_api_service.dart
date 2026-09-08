@@ -81,6 +81,31 @@ class EmsApiService {
 
     final rawError = body?['error']?.toString();
     final rawMessage = body?['message']?.toString();
+
+    // 422 riêng của điểm danh: có học viên đã quẹt cổng mà bị ghi VẮNG không
+    // kèm lý do. Không phải lỗi — là câu hỏi. Màn hình hỏi lý do rồi gửi lại,
+    // nên nó cần biết ĐÍCH DANH ai, không chỉ là "lưu thất bại".
+    if (body?['code'] == 'punch_conflict_needs_reason') {
+      final raw = body?['students'];
+      throw EmsPunchConflict(
+        rawError ?? 'Cần nêu lý do.',
+        students: (raw is List)
+            ? raw
+                  .whereType<Map<String, dynamic>>()
+                  .map(
+                    (e) => EmsPunchedStudent(
+                      mssv: e['mssv']?.toString() ?? '',
+                      punchedAt: DateTime.tryParse(
+                        e['punched_at']?.toString() ?? '',
+                      )?.toLocal(),
+                    ),
+                  )
+                  .toList()
+            : const [],
+        statusCode: res.statusCode,
+      );
+    }
+
     throw EmsException(
       rawMessage ?? rawError ?? 'Không kết nối được máy chủ thông tin.',
       code: rawError,
@@ -156,6 +181,80 @@ class EmsApiService {
       throw EmsException('Máy chủ thông tin không cấp được phiên đăng nhập.');
     }
     return token;
+  }
+
+  // ── Điểm danh EMS (thử nghiệm) ─────────────────────────────────────────────
+  //
+  // Đường riêng, KHÔNG đụng vào điểm danh IMS. EMS chỉ ghi bảng của nó; IMS vẫn
+  // là nơi giáo viên điểm danh chính thức cho tới khi có quyết định cắt chuyển.
+  //
+  // Khác biệt cốt lõi so với IMS, và cũng là lý do màn hình này tồn tại:
+  //   - chưa điểm danh KHÔNG phải là vắng (status = null, không mặc định absent);
+  //   - lưu lại nhiều lần cũng chỉ ra một dòng (UNIQUE session_key + mssv);
+  //   - muốn ghi VẮNG cho học viên ĐÃ QUẸT CỔNG thì phải nêu lý do (422).
+
+  static Future<List<EmsSession>> mySessions({String? date}) {
+    return _withReMirror(() async {
+      final q = (date == null || date.isEmpty) ? '' : '?date=$date';
+      final body = await _send('GET', '/attendance/my-sessions$q');
+      final list = body['sessions'];
+      if (list is! List) return <EmsSession>[];
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(EmsSession.fromJson)
+          .toList();
+    });
+  }
+
+  static Future<EmsRoster> roster(EmsSession s) {
+    return _withReMirror(() async {
+      final q =
+          '?section_id=${Uri.encodeQueryComponent(s.sectionId)}'
+          '&date=${Uri.encodeQueryComponent(s.sessionDate)}'
+          '&start_time=${Uri.encodeQueryComponent(s.startTime ?? '')}'
+          '&end_time=${Uri.encodeQueryComponent(s.endTime ?? '')}';
+      final body = await _send('GET', '/attendance/roster$q');
+      return EmsRoster.fromJson(body);
+    });
+  }
+
+  /// Lưu điểm danh. Ném [EmsPunchConflict] khi có học viên đã quẹt cổng mà bị
+  /// ghi vắng không kèm lý do — màn hình bắt lỗi này để hỏi lý do rồi gửi lại.
+  static Future<EmsSaveResult> saveMarks(EmsSession s, List<EmsMark> marks) {
+    return _withReMirror(() async {
+      try {
+        final body = await _send(
+          'POST',
+          '/attendance/marks',
+          body: {
+            'section_id': s.sectionId,
+            'date': s.sessionDate,
+            'start_time': ?s.startTime,
+            'end_time': ?s.endTime,
+            'marks': marks.map((m) => m.toJson()).toList(),
+          },
+        );
+        return EmsSaveResult.fromJson(body);
+      } on EmsPunchConflict {
+        rethrow;
+      }
+    });
+  }
+
+  /// Học viên xem điểm danh EMS của chính mình.
+  static Future<List<EmsStudentMark>> myAttendance({int limit = 100}) {
+    return _withReMirror(() async {
+      final body = await _send(
+        'GET',
+        '/student/me/attendance-ems?limit=$limit',
+      );
+      final list = body['marks'] ?? body['history'] ?? body['items'];
+      if (list is! List) return <EmsStudentMark>[];
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(EmsStudentMark.fromJson)
+          .toList();
+    });
   }
 
   // ── Bảng tin ───────────────────────────────────────────────────────────────
@@ -343,4 +442,196 @@ class AnnouncementItem {
   };
 
   String get categoryLabel => categoryLabels[category] ?? 'Thông báo';
+}
+
+// ── Mô hình điểm danh EMS ────────────────────────────────────────────────────
+
+/// Học viên đã quẹt cổng nhưng đang bị ghi VẮNG mà chưa có lý do.
+class EmsPunchedStudent {
+  final String mssv;
+  final DateTime? punchedAt;
+  const EmsPunchedStudent({required this.mssv, this.punchedAt});
+}
+
+/// 422 có chủ đích từ EMS, không phải sự cố. Kế thừa [EmsException] để mọi
+/// `catch (EmsException)` sẵn có vẫn bắt được, nhưng mang theo danh sách người.
+class EmsPunchConflict extends EmsException {
+  final List<EmsPunchedStudent> students;
+  EmsPunchConflict(super.message, {required this.students, super.statusCode})
+    : super(code: 'punch_conflict_needs_reason');
+}
+
+/// Một buổi dạy trong ngày, lấy từ thời khoá biểu IMS qua EMS.
+class EmsSession {
+  final String sectionId;
+  final String sectionCode;
+  final String? subjectName;
+  final String? room;
+  final String sessionDate;
+  final String? startTime;
+  final String? endTime;
+  final int rosterSize;
+  final int markedCount;
+  final String sessionKey;
+
+  const EmsSession({
+    required this.sectionId,
+    required this.sectionCode,
+    required this.sessionDate,
+    required this.sessionKey,
+    this.subjectName,
+    this.room,
+    this.startTime,
+    this.endTime,
+    this.rosterSize = 0,
+    this.markedCount = 0,
+  });
+
+  bool get isMarked => markedCount > 0;
+
+  String get timeLabel => (startTime == null || endTime == null)
+      ? 'Chưa có giờ'
+      : '$startTime – $endTime';
+
+  factory EmsSession.fromJson(Map<String, dynamic> j) => EmsSession(
+    sectionId: j['section_id']?.toString() ?? '',
+    sectionCode: j['section_code']?.toString() ?? '',
+    subjectName: j['subject_name']?.toString(),
+    room: j['room']?.toString(),
+    sessionDate: j['session_date']?.toString() ?? '',
+    startTime: j['start_time']?.toString(),
+    endTime: j['end_time']?.toString(),
+    rosterSize: (j['roster_size'] as num?)?.toInt() ?? 0,
+    markedCount: (j['marked_count'] as num?)?.toInt() ?? 0,
+    sessionKey: j['session_key']?.toString() ?? '',
+  );
+}
+
+/// Một dòng trong danh sách lớp.
+///
+/// [status] null nghĩa là CHƯA ĐIỂM DANH — không phải vắng. Đây là khác biệt
+/// quan trọng nhất so với IMS và giao diện phải thể hiện đúng như vậy.
+class EmsRosterStudent {
+  final String mssv;
+  final String fullName;
+  final String? classCode;
+  final bool inScope;
+  final String? status;
+  final String? note;
+  final bool scanned;
+  final DateTime? scannedAt;
+
+  const EmsRosterStudent({
+    required this.mssv,
+    required this.fullName,
+    this.classCode,
+    this.inScope = false,
+    this.status,
+    this.note,
+    this.scanned = false,
+    this.scannedAt,
+  });
+
+  factory EmsRosterStudent.fromJson(Map<String, dynamic> j) => EmsRosterStudent(
+    mssv: j['mssv']?.toString() ?? '',
+    fullName: j['full_name']?.toString() ?? '',
+    classCode: j['class_code']?.toString(),
+    inScope: j['in_scope'] == true,
+    status: j['status']?.toString(),
+    note: j['note']?.toString(),
+    scanned: j['scanned'] == true,
+    scannedAt: DateTime.tryParse(j['scanned_at']?.toString() ?? '')?.toLocal(),
+  );
+}
+
+class EmsRoster {
+  final String sessionKey;
+  final List<EmsRosterStudent> students;
+  final int unmatchedScans;
+
+  const EmsRoster({
+    required this.sessionKey,
+    required this.students,
+    this.unmatchedScans = 0,
+  });
+
+  factory EmsRoster.fromJson(Map<String, dynamic> j) => EmsRoster(
+    sessionKey: j['session_key']?.toString() ?? '',
+    students: (j['students'] is List)
+        ? (j['students'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(EmsRosterStudent.fromJson)
+              .toList()
+        : const [],
+    unmatchedScans: (j['unmatched_scans'] is List)
+        ? (j['unmatched_scans'] as List).length
+        : 0,
+  );
+}
+
+class EmsMark {
+  final String mssv;
+  final String status; // 'present' | 'absent'
+  final String? note;
+  const EmsMark({required this.mssv, required this.status, this.note});
+
+  Map<String, dynamic> toJson() => {
+    'mssv': mssv,
+    'status': status,
+    'note': ?note,
+  };
+}
+
+class EmsSaveResult {
+  final int saved;
+  final int inserted;
+  final int updated;
+  final bool late;
+  final DateTime? deadline;
+  final List<String> overriddenPunches;
+
+  const EmsSaveResult({
+    this.saved = 0,
+    this.inserted = 0,
+    this.updated = 0,
+    this.late = false,
+    this.deadline,
+    this.overriddenPunches = const [],
+  });
+
+  factory EmsSaveResult.fromJson(Map<String, dynamic> j) => EmsSaveResult(
+    saved: (j['saved'] as num?)?.toInt() ?? 0,
+    inserted: (j['inserted'] as num?)?.toInt() ?? 0,
+    updated: (j['updated'] as num?)?.toInt() ?? 0,
+    late: j['late'] == true,
+    deadline: DateTime.tryParse(j['deadline']?.toString() ?? '')?.toLocal(),
+    overriddenPunches: (j['overridden_punches'] is List)
+        ? (j['overridden_punches'] as List).map((e) => e.toString()).toList()
+        : const [],
+  );
+}
+
+/// Một dòng điểm danh EMS mà học viên tự xem.
+class EmsStudentMark {
+  final String? sessionDate;
+  final String? status;
+  final String? subjectName;
+  final String? sectionCode;
+  final String? note;
+
+  const EmsStudentMark({
+    this.sessionDate,
+    this.status,
+    this.subjectName,
+    this.sectionCode,
+    this.note,
+  });
+
+  factory EmsStudentMark.fromJson(Map<String, dynamic> j) => EmsStudentMark(
+    sessionDate: j['session_date']?.toString(),
+    status: j['status']?.toString(),
+    subjectName: j['subject_name']?.toString(),
+    sectionCode: j['section_code']?.toString(),
+    note: j['note']?.toString(),
+  );
 }

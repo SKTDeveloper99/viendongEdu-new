@@ -626,6 +626,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       );
                     },
                   ),
+
+                  // THỬ NGHIỆM — điểm danh EMS. Nằm NGOÀI lưới menu do máy chủ
+                  // cấu hình, vì nội dung lưới đó do IMS quyết định.
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/ems_attendance_hv'),
+                      icon: const Icon(Icons.fact_check_outlined, size: 18),
+                      label: const Text('Điểm danh EMS (thử nghiệm)'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFE65100),
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
