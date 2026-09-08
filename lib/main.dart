@@ -28,7 +28,6 @@ import 'screens/notifications_screen.dart';
 import 'screens/student_board_screen.dart';
 import 'screens/ems_attendance_teacher_screen.dart';
 import 'screens/ems_attendance_student_screen.dart';
-import 'screens/ems_debug_session_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -44,6 +43,24 @@ void main() async {
   } catch (e) {
     debugPrint('[Firebase] init failed: $e');
   }
+  // Phiên chạy thử: token EMS nạp thẳng lúc build, không phải dán tay.
+  //
+  // Dán tay qua ô nhập là nguồn của mọi rắc rối trong buổi thử đầu: clipboard
+  // của máy giả lập đồng bộ với clipboard của máy Mac nên bị ghi đè, và ô nhập
+  // giữ focus khi rời màn hình gây crash. Nạp bằng --dart-define thì không có
+  // gì để dán, không có ô nhập, không có gì hỏng.
+  //
+  // kDebugMode là hằng số biên dịch: ở bản release nhánh này bị cắt bỏ hoàn
+  // toàn, và giá trị --dart-define cũng không được truyền vào bản phát hành.
+  if (kDebugMode) {
+    const baked = String.fromEnvironment('EMS_DEBUG_TOKEN');
+    if (baked.isNotEmpty) {
+      AppSession.instance.emsToken = baked;
+      AppSession.instance.emsDenied = false;
+      debugPrint('[EMS] phiên chạy thử: đã nạp token từ --dart-define');
+    }
+  }
+
   setNotificationNavigatorKey(navigatorKey);
   NotificationService.instance.configureEmsStudentDevice(
     register: AppSession.instance.registerStudentDeviceToken,
@@ -95,13 +112,9 @@ class MyApp extends StatelessWidget {
         // Bảng tin — thông tin từ EMS. Tách hẳn khỏi chuông thông báo Vercel
         // ở trên: đây là một mặt kéo (pull) riêng, không thay thế chuông.
         '/student_board': (context) => const StudentBoardScreen(),
-        // Điểm danh EMS — hai mặt thử nghiệm chạy SONG SONG với IMS, không thay.
+        // Điểm danh EMS — EMS là nguồn dữ liệu điểm danh chính thức.
         '/ems_attendance_gv': (context) => const EmsAttendanceTeacherScreen(),
         '/ems_attendance_hv': (context) => const EmsAttendanceStudentScreen(),
-        // Cửa vào buổi chạy thử. kDebugMode là hằng số false ở bản release nên
-        // route này biến mất hoàn toàn khi build phát hành.
-        if (kDebugMode)
-          '/ems_debug': (context) => const EmsDebugSessionScreen(),
       },
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
@@ -23,11 +24,11 @@ String _parseEndTime(String? raw) {
 
 // Helper: buoi code → label + color
 ({String label, Color color}) _buoiInfo(String? b) => switch (b) {
-      'S' => (label: 'Sáng', color: const Color(0xFF2196F3)),
-      'C' => (label: 'Chiều', color: const Color(0xFFFF9800)),
-      'T' => (label: 'Tối', color: const Color(0xFF9C27B0)),
-      _ => (label: '', color: Colors.grey),
-    };
+  'S' => (label: 'Sáng', color: const Color(0xFF2196F3)),
+  'C' => (label: 'Chiều', color: const Color(0xFFFF9800)),
+  'T' => (label: 'Tối', color: const Color(0xFF9C27B0)),
+  _ => (label: '', color: Colors.grey),
+};
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -114,8 +115,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _mustReadShown = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      await Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const StudentBoardScreen()));
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const StudentBoardScreen()),
+      );
       _loadBoard();
     });
   }
@@ -125,7 +128,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (id == null) return;
     try {
       final res = await http
-          .get(Uri.parse('https://noti-backend-eight.vercel.app/api/notifications?studentID=$id'))
+          .get(
+            Uri.parse(
+              'https://noti-backend-eight.vercel.app/api/notifications?studentID=$id',
+            ),
+          )
           .timeout(const Duration(seconds: 10));
       final json = jsonDecode(res.body) as Map<String, dynamic>;
       if (json['success'] == true) {
@@ -141,8 +148,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final data = await ApiService.getTodaySchedule();
       if (mounted) {
         setState(() {
-          _todayClasses =
-              data.map((e) => e as Map<String, dynamic>).toList();
+          _todayClasses = data.map((e) => e as Map<String, dynamic>).toList();
           _scheduleLoading = false;
         });
       }
@@ -165,17 +171,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   IconData _mapStringToIcon(String? name) => switch (name) {
-        'calendar_today' => Icons.calendar_today,
-        'assignment' => Icons.assignment,
-        'account_balance' => Icons.account_balance,
-        'add_circle' => Icons.add_circle,
-        'bar_chart' => Icons.bar_chart,
-        'people' => Icons.people,
-        'payments' => Icons.payments,
-        'receipt_long' => Icons.receipt_long,
-        'campaign' => Icons.campaign,
-        _ => Icons.help_outline,
-      };
+    'calendar_today' => Icons.calendar_today,
+    'assignment' => Icons.assignment,
+    'account_balance' => Icons.account_balance,
+    'add_circle' => Icons.add_circle,
+    'bar_chart' => Icons.bar_chart,
+    'people' => Icons.people,
+    'payments' => Icons.payments,
+    'receipt_long' => Icons.receipt_long,
+    'campaign' => Icons.campaign,
+    _ => Icons.help_outline,
+  };
 
   Future<void> _logout() async {
     // Reset the once-per-session must-read prompt so a different student who
@@ -190,7 +196,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _buildBoardCard() {
     // Chưa có gì để nói và cũng không lỗi → không chiếm chỗ trên trang chủ.
     // Học viên chưa có tài khoản EMS cũng không thấy thẻ này (emsDenied).
-    if (_latestBoardItem == null && !_boardFailed) return const SizedBox.shrink();
+    if (_latestBoardItem == null && !_boardFailed)
+      return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
@@ -218,37 +225,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     color: const Color(0xFFFFF3E0),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.campaign_outlined,
-                      color: Color(0xFFE65100), size: 21),
+                  child: const Icon(
+                    Icons.campaign_outlined,
+                    color: Color(0xFFE65100),
+                    size: 21,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        const Text('Thông tin mới từ trung tâm',
+                      Row(
+                        children: [
+                          const Text(
+                            'Thông tin mới từ trung tâm',
                             style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFE65100))),
-                        if (_boardUnread > 0) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFE65100),
                             ),
-                            child: Text('$_boardUnread chưa đọc',
-                                style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold)),
                           ),
+                          if (_boardUnread > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '$_boardUnread chưa đọc',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ]),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         _latestBoardItem?.title ??
@@ -256,9 +276,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 13.5,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600),
+                          fontSize: 13.5,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -275,7 +296,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ── Today schedule section ───────────────────────────
   Widget _buildTodaySchedule() {
     final now = DateTime.now();
-    final weekdays = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+    final weekdays = [
+      '',
+      'Thứ 2',
+      'Thứ 3',
+      'Thứ 4',
+      'Thứ 5',
+      'Thứ 6',
+      'Thứ 7',
+      'Chủ nhật',
+    ];
     final dayLabel = weekdays[now.weekday];
     final dateLabel =
         '$dayLabel, ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
@@ -297,20 +327,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today,
-                          size: 16, color: Color(0xFFE65100)),
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Color(0xFFE65100),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Lịch học hôm nay',
                         style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
                     dateLabel,
-                    style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -320,7 +359,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 onTap: () =>
                     setState(() => _scheduleExpanded = !_scheduleExpanded),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Color(0xFFE65100).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -360,7 +402,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Color(0xFFE65100)),
+                  strokeWidth: 2,
+                  color: Color(0xFFE65100),
+                ),
               ),
             ),
           )
@@ -372,15 +416,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: const [
                     BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(0, 2)),
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -393,13 +440,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     const SizedBox(width: 8),
                     Expanded(
                       child: n == 0
-                          ? Text(summaryText,
+                          ? Text(
+                              summaryText,
                               style: const TextStyle(
-                                  fontSize: 13, color: Colors.grey))
+                                fontSize: 13,
+                                color: Colors.grey,
+                              ),
+                            )
                           : RichText(
                               text: TextSpan(
                                 style: const TextStyle(
-                                    fontSize: 13, color: Colors.grey),
+                                  fontSize: 13,
+                                  color: Colors.grey,
+                                ),
                                 children: [
                                   const TextSpan(text: 'Hôm nay bạn có '),
                                   TextSpan(
@@ -410,7 +463,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     ),
                                   ),
                                   const TextSpan(
-                                      text: ' lịch học — nhấn để xem chi tiết'),
+                                    text: ' lịch học — nhấn để xem chi tiết',
+                                  ),
                                 ],
                               ),
                             ),
@@ -425,22 +479,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: const [
                   BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2)),
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
                 ],
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.event_available,
-                      size: 18, color: Colors.green),
+                  Icon(Icons.event_available, size: 18, color: Colors.green),
                   SizedBox(width: 8),
                   Text(
                     'Không có lịch học hôm nay',
@@ -455,11 +508,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Column(
               children: _todayClasses
-                  .map((d) => GestureDetector(
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/schedule'),
-                        child: _ClassChip(data: d),
-                      ))
+                  .map(
+                    (d) => GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/schedule'),
+                      child: _ClassChip(data: d),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -485,8 +539,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(28)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
             child: Row(
               children: [
@@ -497,8 +550,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     color: Colors.white.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person,
-                      color: Colors.white, size: 32),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -517,12 +573,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       Text(
                         'MSSV: $_mssv',
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 13),
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(20),
@@ -554,8 +614,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.notifications_outlined,
-                            color: Colors.white, size: 24),
+                        child: const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                       if (_unreadCount > 0)
                         Positioned(
@@ -568,13 +631,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               shape: BoxShape.circle,
                             ),
                             constraints: const BoxConstraints(
-                                minWidth: 18, minHeight: 18),
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
                             child: Text(
                               _unreadCount > 99 ? '99+' : '$_unreadCount',
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -592,61 +658,74 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               color: const Color(0xFFE65100),
               onRefresh: _loadTodaySchedule,
               child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Lịch học hôm nay
-                  _buildTodaySchedule(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Lịch học hôm nay
+                    _buildTodaySchedule(),
 
-                  // Thông tin mới từ trung tâm
-                  _buildBoardCard(),
+                    // Thông tin mới từ trung tâm
+                    _buildBoardCard(),
 
-                  // Menu grid
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
-                    itemCount: items.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      childAspectRatio: 0.9,
-                      crossAxisSpacing: 6,
-                      mainAxisSpacing: 6,
+                    // Menu grid
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+                      itemCount: items.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            childAspectRatio: 0.9,
+                            crossAxisSpacing: 6,
+                            mainAxisSpacing: 6,
+                          ),
+                      itemBuilder: (context, index) {
+                        final m = items[index];
+                        return MenuItemWidget(
+                          icon: _mapStringToIcon(m['icon']?.toString()),
+                          label: m['label']?.toString() ?? '',
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            m['route']?.toString() ?? '/home',
+                          ),
+                        );
+                      },
                     ),
-                    itemBuilder: (context, index) {
-                      final m = items[index];
-                      return MenuItemWidget(
-                        icon: _mapStringToIcon(m['icon']?.toString()),
-                        label: m['label']?.toString() ?? '',
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          m['route']?.toString() ?? '/home',
-                        ),
-                      );
-                    },
-                  ),
 
-                  // THỬ NGHIỆM — điểm danh EMS. Nằm NGOÀI lưới menu do máy chủ
-                  // cấu hình, vì nội dung lưới đó do IMS quyết định.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-                    child: OutlinedButton.icon(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, '/ems_attendance_hv'),
-                      icon: const Icon(Icons.fact_check_outlined, size: 18),
-                      label: const Text('Điểm danh EMS (thử nghiệm)'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFE65100),
-                        minimumSize: const Size.fromHeight(40),
+                    // Điểm danh chính thức từ EMS. Nằm ngoài lưới menu cũ để
+                    // luôn hiện ngay cả khi cấu hình menu IMS không tải được.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                      child: GestureDetector(
+                        // Chạm: màn hình HỌC VIÊN. Nhấn giữ: màn hình GIÁO VIÊN.
+                        // Chỉ ở bản debug, để một máy diễn được cả hai vai mà
+                        // không cần đăng nhập lại.
+                        onLongPress: kDebugMode
+                            ? () => Navigator.pushNamed(
+                                context,
+                                '/ems_attendance_gv',
+                              )
+                            : null,
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.pushNamed(
+                            context,
+                            '/ems_attendance_hv',
+                          ),
+                          icon: const Icon(Icons.fact_check_outlined, size: 18),
+                          label: const Text('Điểm danh EMS'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE65100),
+                            minimumSize: const Size.fromHeight(40),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         ],
       ),
 
@@ -664,8 +743,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(28)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(28),
+                ),
               ),
               child: Column(
                 children: [
@@ -681,8 +761,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   const SizedBox(height: 6),
                   Text(
                     'MSSV: $_mssv',
-                    style: const TextStyle(
-                        fontSize: 14, color: Colors.white70),
+                    style: const TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                 ],
               ),
@@ -695,15 +774,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: const [
                   BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 20,
-                      offset: Offset(0, 8)),
+                    color: Colors.black12,
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
                 ],
               ),
-              child: QrImageView(
-                data: _mssv,
-                size: 220,
-              ),
+              child: QrImageView(data: _mssv, size: 220),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -730,7 +807,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(28),
+                ),
               ),
               child: Row(
                 children: [
@@ -742,7 +821,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2.5),
                     ),
-                    child: const Icon(Icons.person, color: Colors.white, size: 36),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 36,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -760,7 +843,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         const SizedBox(height: 4),
                         Text(
                           _mssv,
-                          style: const TextStyle(fontSize: 14, color: Colors.white70),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
                         ),
                       ],
                     ),
@@ -781,7 +867,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const HvProfileInfoScreen()),
+                          builder: (_) => const HvProfileInfoScreen(),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -833,81 +920,82 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            height: 64,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              height: 64,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
                     color: Colors.black12,
                     blurRadius: 8,
-                    offset: Offset(0, -2)),
-              ],
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _NavItem(
+                    icon: Icons.dashboard_rounded,
+                    label: 'Trang chủ',
+                    selected: _currentIndex == 0,
+                    onTap: () => setState(() => _currentIndex = 0),
+                  ),
+                  const SizedBox(width: 64),
+                  _NavItem(
+                    icon: Icons.person_rounded,
+                    label: 'Cá nhân',
+                    selected: _currentIndex == 2,
+                    onTap: () => setState(() => _currentIndex = 2),
+                  ),
+                ],
+              ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavItem(
-                  icon: Icons.dashboard_rounded,
-                  label: 'Trang chủ',
-                  selected: _currentIndex == 0,
-                  onTap: () => setState(() => _currentIndex = 0),
-                ),
-                const SizedBox(width: 64),
-                _NavItem(
-                  icon: Icons.person_rounded,
-                  label: 'Cá nhân',
-                  selected: _currentIndex == 2,
-                  onTap: () => setState(() => _currentIndex = 2),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: -24,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: () => setState(() => _currentIndex = 1),
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: _currentIndex == 1
-                        ? const LinearGradient(
-                            colors: [Colors.white, Colors.white])
-                        : const LinearGradient(
-                            colors: [
-                              Color(0xFFE65100),
-                              Color(0xFFFF8C00),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Color(0xFFE65100), width: 3),
-                    boxShadow: const [
-                      BoxShadow(
+            Positioned(
+              top: -24,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () => setState(() => _currentIndex = 1),
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      gradient: _currentIndex == 1
+                          ? const LinearGradient(
+                              colors: [Colors.white, Colors.white],
+                            )
+                          : const LinearGradient(
+                              colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Color(0xFFE65100), width: 3),
+                      boxShadow: const [
+                        BoxShadow(
                           color: Colors.black26,
                           blurRadius: 8,
-                          offset: Offset(0, 4)),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.qr_code_rounded,
-                    size: 34,
-                    color:
-                        _currentIndex == 1 ? Color(0xFFE65100) : Colors.white,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.qr_code_rounded,
+                      size: 34,
+                      color: _currentIndex == 1
+                          ? Color(0xFFE65100)
+                          : Colors.white,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -959,7 +1047,10 @@ class _ClassChip extends StatelessWidget {
                 if (buoi.label.isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(left: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: buoi.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
@@ -980,7 +1071,10 @@ class _ClassChip extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 1),
                 child: Text(
                   classCode,
-                  style: const TextStyle(fontSize: 10, color: Color(0xFF999999)),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF999999),
+                  ),
                 ),
               ),
             const SizedBox(height: 5),
@@ -997,7 +1091,11 @@ class _ClassChip extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Icon(Icons.person_outline, size: 12, color: Color(0xFFE65100)),
+                const Icon(
+                  Icons.person_outline,
+                  size: 12,
+                  color: Color(0xFFE65100),
+                ),
                 const SizedBox(width: 3),
                 Expanded(
                   child: Text(
@@ -1071,9 +1169,13 @@ class _ProfileMenuCard extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(label,
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600)),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
             ],
@@ -1090,8 +1192,11 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoRow(
-      {required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1103,13 +1208,16 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 80,
-            child: Text(label,
-                style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -1121,7 +1229,11 @@ class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Divider(
-        height: 1, indent: 48, endIndent: 16, color: Color(0xFFF0F0F0));
+      height: 1,
+      indent: 48,
+      endIndent: 16,
+      color: Color(0xFFF0F0F0),
+    );
   }
 }
 
@@ -1131,11 +1243,12 @@ class _NavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _NavItem(
-      {required this.icon,
-      required this.label,
-      required this.selected,
-      required this.onTap});
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1147,16 +1260,18 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                color: selected ? Color(0xFFE65100) : Colors.grey, size: 26),
+            Icon(
+              icon,
+              color: selected ? Color(0xFFE65100) : Colors.grey,
+              size: 26,
+            ),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11,
                 color: selected ? Color(0xFFE65100) : Colors.grey,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
@@ -1165,4 +1280,3 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
-

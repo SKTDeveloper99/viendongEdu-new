@@ -183,15 +183,14 @@ class EmsApiService {
     return token;
   }
 
-  // ── Điểm danh EMS (thử nghiệm) ─────────────────────────────────────────────
+  // ── Điểm danh EMS ──────────────────────────────────────────────────────────
   //
-  // Đường riêng, KHÔNG đụng vào điểm danh IMS. EMS chỉ ghi bảng của nó; IMS vẫn
-  // là nơi giáo viên điểm danh chính thức cho tới khi có quyết định cắt chuyển.
+  // EMS là nguồn dữ liệu điểm danh chính thức. Không đọc/ghi IMS khi vận hành.
   //
   // Khác biệt cốt lõi so với IMS, và cũng là lý do màn hình này tồn tại:
   //   - chưa điểm danh KHÔNG phải là vắng (status = null, không mặc định absent);
   //   - lưu lại nhiều lần cũng chỉ ra một dòng (UNIQUE session_key + mssv);
-  //   - muốn ghi VẮNG cho học viên ĐÃ QUẸT CỔNG thì phải nêu lý do (422).
+  //   - trường hợp lạ vẫn được ghi và gắn cờ để xem lại, không bị chặn.
 
   static Future<List<EmsSession>> mySessions({String? date}) {
     return _withReMirror(() async {
@@ -218,9 +217,12 @@ class EmsApiService {
     });
   }
 
-  /// Lưu điểm danh. Ném [EmsPunchConflict] khi có học viên đã quẹt cổng mà bị
-  /// ghi vắng không kèm lý do — màn hình bắt lỗi này để hỏi lý do rồi gửi lại.
-  static Future<EmsSaveResult> saveMarks(EmsSession s, List<EmsMark> marks) {
+  /// Lưu điểm danh. Những trường hợp lạ vẫn được lưu và gắn cờ để xem lại.
+  static Future<EmsSaveResult> saveMarks(
+    EmsSession s,
+    List<EmsMark> marks, {
+    List<String> remove = const [],
+  }) {
     return _withReMirror(() async {
       try {
         final body = await _send(
@@ -232,6 +234,8 @@ class EmsApiService {
             'start_time': ?s.startTime,
             'end_time': ?s.endTime,
             'marks': marks.map((m) => m.toJson()).toList(),
+            // Bỏ điểm danh những học viên giáo viên đã bỏ chọn.
+            if (remove.isNotEmpty) 'remove': remove,
           },
         );
         return EmsSaveResult.fromJson(body);
@@ -461,7 +465,7 @@ class EmsPunchConflict extends EmsException {
     : super(code: 'punch_conflict_needs_reason');
 }
 
-/// Một buổi dạy trong ngày, lấy từ thời khoá biểu IMS qua EMS.
+/// Một buổi dạy trong sổ lịch bền vững của EMS.
 class EmsSession {
   final String sectionId;
   final String sectionCode;
@@ -473,6 +477,7 @@ class EmsSession {
   final int rosterSize;
   final int markedCount;
   final String sessionKey;
+  final String reportState;
 
   const EmsSession({
     required this.sectionId,
@@ -485,6 +490,7 @@ class EmsSession {
     this.endTime,
     this.rosterSize = 0,
     this.markedCount = 0,
+    this.reportState = 'open',
   });
 
   bool get isMarked => markedCount > 0;
@@ -504,7 +510,22 @@ class EmsSession {
     rosterSize: (j['roster_size'] as num?)?.toInt() ?? 0,
     markedCount: (j['marked_count'] as num?)?.toInt() ?? 0,
     sessionKey: j['session_key']?.toString() ?? '',
+    reportState: j['report_state']?.toString() ?? 'open',
   );
+
+  Map<String, dynamic> toJson() => {
+    'section_id': sectionId,
+    'section_code': sectionCode,
+    'subject_name': ?subjectName,
+    'room': ?room,
+    'session_date': sessionDate,
+    'start_time': ?startTime,
+    'end_time': ?endTime,
+    'roster_size': rosterSize,
+    'marked_count': markedCount,
+    'session_key': sessionKey,
+    'report_state': reportState,
+  };
 }
 
 /// Một dòng trong danh sách lớp.
@@ -520,6 +541,7 @@ class EmsRosterStudent {
   final String? note;
   final bool scanned;
   final DateTime? scannedAt;
+  final int? punchId;
 
   const EmsRosterStudent({
     required this.mssv,
@@ -530,6 +552,7 @@ class EmsRosterStudent {
     this.note,
     this.scanned = false,
     this.scannedAt,
+    this.punchId,
   });
 
   factory EmsRosterStudent.fromJson(Map<String, dynamic> j) => EmsRosterStudent(
@@ -541,7 +564,20 @@ class EmsRosterStudent {
     note: j['note']?.toString(),
     scanned: j['scanned'] == true,
     scannedAt: DateTime.tryParse(j['scanned_at']?.toString() ?? '')?.toLocal(),
+    punchId: (j['punch_id'] as num?)?.toInt(),
   );
+
+  Map<String, dynamic> toJson() => {
+    'mssv': mssv,
+    'full_name': fullName,
+    'class_code': ?classCode,
+    'in_scope': inScope,
+    'status': ?status,
+    'note': ?note,
+    'scanned': scanned,
+    'scanned_at': ?scannedAt?.toIso8601String(),
+    'punch_id': ?punchId,
+  };
 }
 
 class EmsRoster {
@@ -573,12 +609,19 @@ class EmsMark {
   final String mssv;
   final String status; // 'present' | 'absent'
   final String? note;
-  const EmsMark({required this.mssv, required this.status, this.note});
+  final int? punchId;
+  const EmsMark({
+    required this.mssv,
+    required this.status,
+    this.note,
+    this.punchId,
+  });
 
   Map<String, dynamic> toJson() => {
     'mssv': mssv,
     'status': status,
     'note': ?note,
+    'punch_id': ?punchId,
   };
 }
 
@@ -613,25 +656,65 @@ class EmsSaveResult {
 
 /// Một dòng điểm danh EMS mà học viên tự xem.
 class EmsStudentMark {
+  final String? sessionKey;
   final String? sessionDate;
   final String? status;
   final String? subjectName;
   final String? sectionCode;
   final String? note;
+  final String? startTime;
+  final String? endTime;
+  final DateTime? arrivedAt;
+  final bool? arrivalOnTime;
 
   const EmsStudentMark({
+    this.sessionKey,
     this.sessionDate,
     this.status,
     this.subjectName,
     this.sectionCode,
     this.note,
+    this.startTime,
+    this.endTime,
+    this.arrivedAt,
+    this.arrivalOnTime,
   });
 
   factory EmsStudentMark.fromJson(Map<String, dynamic> j) => EmsStudentMark(
+    sessionKey: j['session_key']?.toString(),
     sessionDate: j['session_date']?.toString(),
     status: j['status']?.toString(),
     subjectName: j['subject_name']?.toString(),
     sectionCode: j['section_code']?.toString(),
     note: j['note']?.toString(),
+    startTime: j['start_time']?.toString(),
+    endTime: j['end_time']?.toString(),
+    arrivedAt: DateTime.tryParse(j['arrived_at']?.toString() ?? '')?.toLocal(),
+    arrivalOnTime: j['arrival_on_time'] as bool?,
   );
+
+  Map<String, dynamic> toJson() => {
+    'session_key': ?sessionKey,
+    'session_date': ?sessionDate,
+    'status': ?status,
+    'subject_name': ?subjectName,
+    'section_code': ?sectionCode,
+    'note': ?note,
+    'start_time': ?startTime,
+    'end_time': ?endTime,
+    'arrived_at': ?arrivedAt?.toIso8601String(),
+    'arrival_on_time': ?arrivalOnTime,
+  };
+
+  /// Ngày buổi học dạng dd/MM/yyyy.
+  ///
+  /// session_date của EMS là một Postgres DATE, về tới đây dưới dạng
+  /// 'YYYY-MM-DDT00:00:00.000Z'. KHÔNG đưa qua DateTime.parse().toLocal() —
+  /// nửa đêm UTC quy về giờ Việt Nam (+7) sẽ nhảy về NGÀY HÔM TRƯỚC. Đây là
+  /// một mốc lịch, không phải một thời điểm: đọc thẳng Y-M-D từ chuỗi.
+  String get sessionDateVN {
+    final s = sessionDate ?? '';
+    final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})').firstMatch(s);
+    return m == null ? s : '${m.group(3)}/${m.group(2)}/${m.group(1)}';
+  }
 }

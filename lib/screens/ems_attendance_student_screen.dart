@@ -1,14 +1,17 @@
 // lib/screens/ems_attendance_student_screen.dart
 //
-// Điểm danh EMS của chính học viên (THỬ NGHIỆM).
+// Điểm danh EMS của chính học viên — nguồn dữ liệu điểm danh chính thức.
 //
 // Khác màn hình "Lớp môn học" (đọc thẳng IMS): đây là bản ghi của EMS, nơi
 // mỗi buổi chỉ có ĐÚNG MỘT dòng. Trong IMS một buổi có thể tồn tại hai dòng
 // mâu thuẫn nhau — có mặt và vắng cùng lúc — và bản hiển thị đếm cả hai.
 //
-// Buổi chưa được thầy/cô ghi thì KHÔNG hiện là vắng; nó không hiện gì cả.
+// Buổi chưa được thầy/cô ghi vẫn hiện là CHỜ XÁC NHẬN, tuyệt đối không là vắng.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../services/ems_attendance_cache.dart';
 import '../services/ems_api_service.dart';
 
 class EmsAttendanceStudentScreen extends StatefulWidget {
@@ -19,45 +22,80 @@ class EmsAttendanceStudentScreen extends StatefulWidget {
       _EmsAttendanceStudentScreenState();
 }
 
-class _EmsAttendanceStudentScreenState
-    extends State<EmsAttendanceStudentScreen> {
+class _EmsAttendanceStudentScreenState extends State<EmsAttendanceStudentScreen>
+    with WidgetsBindingObserver {
   static const _orange = Color(0xFFE65100);
   static const _green = Color(0xFF2E7D32);
   static const _red = Color(0xFFC62828);
 
   bool _loading = true;
+  bool _offline = false;
   String? _error;
   List<EmsStudentMark> _marks = const [];
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _load(background: true),
+    );
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load(background: true);
+  }
+
+  Future<void> _load({bool background = false}) async {
+    if (!background) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final m = await EmsApiService.myAttendance();
+      await EmsAttendanceCache.saveStudentHistory(m);
       if (!mounted) return;
       setState(() {
         _marks = m;
         _loading = false;
+        _offline = false;
+        _error = null;
       });
     } on EmsException catch (e) {
+      final cached = await EmsAttendanceCache.loadStudentHistory();
       if (!mounted) return;
-      setState(() {
-        _error = e.message;
-        _loading = false;
-      });
+      if (cached.isNotEmpty) {
+        setState(() {
+          _marks = cached;
+          _loading = false;
+          _offline = true;
+          _error = null;
+        });
+      } else if (!background) {
+        setState(() {
+          _error = e.message;
+          _loading = false;
+        });
+      }
     }
   }
 
   int get _present => _marks.where((m) => m.status == 'present').length;
   int get _absent => _marks.where((m) => m.status == 'absent').length;
+  int get _pending => _marks.where((m) => m.status == null).length;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +104,7 @@ class _EmsAttendanceStudentScreenState
       appBar: AppBar(
         backgroundColor: _orange,
         foregroundColor: Colors.white,
-        title: const Text('Điểm danh EMS (thử nghiệm)'),
+        title: const Text('Điểm danh EMS'),
         actions: [
           IconButton(
             onPressed: _loading ? null : _load,
@@ -92,8 +130,8 @@ class _EmsAttendanceStudentScreenState
       return _center(
         Icons.inbox_outlined,
         'Chưa có buổi nào được ghi',
-        'Hệ thống mới này đang chạy song song để đối chiếu. Buổi nào thầy/cô '
-            'chưa ghi thì ở đây trống — trống KHÔNG có nghĩa là vắng.',
+        'Chưa có lịch hoặc kết quả điểm danh EMS. Nếu đã quẹt cổng, bằng chứng '
+            'vào trường sẽ hiện ngay khi thiết bị đồng bộ.',
       );
     }
     return RefreshIndicator(
@@ -102,6 +140,21 @@ class _EmsAttendanceStudentScreenState
       child: ListView(
         padding: const EdgeInsets.all(12),
         children: [
+          if (_offline) ...[
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E0),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'Mạng yếu: đang hiển thị kết quả đã lưu gần nhất. '
+                'Ứng dụng sẽ tự cập nhật khi có mạng.',
+                style: TextStyle(fontSize: 12, color: _orange),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           _summary(),
           const SizedBox(height: 12),
           for (final m in _marks) ...[_row(m), const SizedBox(height: 6)],
@@ -121,7 +174,7 @@ class _EmsAttendanceStudentScreenState
         children: [
           _stat('Có mặt', _present, _green),
           _stat('Vắng', _absent, _red),
-          _stat('Tổng buổi đã ghi', _marks.length, Colors.grey[800]!),
+          _stat('Chờ GV', _pending, _orange),
         ],
       ),
     );
@@ -145,7 +198,13 @@ class _EmsAttendanceStudentScreenState
   );
 
   Widget _row(EmsStudentMark m) {
-    final absent = m.status == 'absent';
+    final (label, color) = switch (m.status) {
+      'present' => ('Có mặt', _green),
+      'late' => ('Đi muộn', _orange),
+      'absent' => ('Vắng', _red),
+      'excused' => ('Vắng có phép', Colors.blueGrey),
+      _ => ('Chờ giáo viên xác nhận', Colors.grey),
+    };
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -156,13 +215,13 @@ class _EmsAttendanceStudentScreenState
         children: [
           Container(
             width: 8,
-            height: 38,
+            height: 54,
             decoration: BoxDecoration(
-              color: absent ? _red : _green,
+              color: color,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,38 +230,38 @@ class _EmsAttendanceStudentScreenState
                   m.subjectName?.isNotEmpty == true
                       ? m.subjectName!
                       : (m.sectionCode ?? 'Buổi học'),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
-                  m.sessionDate ?? '',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  '${m.sessionDateVN}'
+                  '${m.startTime == null ? '' : ' • ${m.startTime}-${m.endTime ?? ''}'}'
+                  ' • $label',
+                  style: TextStyle(fontSize: 12, color: color),
                 ),
-                if (absent && (m.note?.isNotEmpty ?? false))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Lý do: ${m.note}',
-                      style: const TextStyle(fontSize: 11, color: _red),
-                    ),
+                if (m.arrivedAt != null)
+                  Text(
+                    'Đã vào trường lúc ${_hhmm(m.arrivedAt!)}'
+                    '${m.arrivalOnTime == true ? ' • trước giờ học' : ''}',
+                    style: const TextStyle(fontSize: 11, color: _green),
+                  ),
+                if (m.note?.isNotEmpty == true)
+                  Text(
+                    'Ghi chú: ${m.note}',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[700]),
                   ),
               ],
-            ),
-          ),
-          Text(
-            absent ? 'Vắng' : 'Có mặt',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: absent ? _red : _green,
             ),
           ),
         ],
       ),
     );
+  }
+
+  static String _hhmm(DateTime d) {
+    final school = d.toUtc().add(const Duration(hours: 7));
+    return '${school.hour.toString().padLeft(2, '0')}:'
+        '${school.minute.toString().padLeft(2, '0')}';
   }
 
   Widget _center(

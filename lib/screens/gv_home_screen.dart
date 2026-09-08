@@ -8,11 +8,11 @@ import '../components/skeleton.dart';
 import 'gv_profile_info_screen.dart';
 
 ({String label, Color color}) _gvBuoiInfo(String? b) => switch (b) {
-      'S' => (label: 'Sáng', color: const Color(0xFF2196F3)),
-      'C' => (label: 'Chiều', color: const Color(0xFFFF9800)),
-      'T' => (label: 'Tối', color: const Color(0xFF9C27B0)),
-      _ => (label: '', color: Colors.grey),
-    };
+  'S' => (label: 'Sáng', color: const Color(0xFF2196F3)),
+  'C' => (label: 'Chiều', color: const Color(0xFFFF9800)),
+  'T' => (label: 'Tối', color: const Color(0xFF9C27B0)),
+  _ => (label: '', color: Colors.grey),
+};
 
 class GvHomeScreen extends StatefulWidget {
   const GvHomeScreen({super.key});
@@ -41,7 +41,11 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
     if (id == null) return;
     try {
       final res = await http
-          .get(Uri.parse('https://noti-backend-eight.vercel.app/api/notifications?studentID=$id'))
+          .get(
+            Uri.parse(
+              'https://noti-backend-eight.vercel.app/api/notifications?studentID=$id',
+            ),
+          )
           .timeout(const Duration(seconds: 10));
       final json = jsonDecode(res.body) as Map<String, dynamic>;
       if (json['success'] == true) {
@@ -77,7 +81,16 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
 
   Widget _buildTodaySchedule() {
     final now = DateTime.now();
-    final weekdays = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+    final weekdays = [
+      '',
+      'Thứ 2',
+      'Thứ 3',
+      'Thứ 4',
+      'Thứ 5',
+      'Thứ 6',
+      'Thứ 7',
+      'Chủ nhật',
+    ];
     final dateLabel =
         '${weekdays[now.weekday]}, ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
 
@@ -98,15 +111,30 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 16, color: Color(0xFFE65100)),
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Color(0xFFE65100),
+                      ),
                       const SizedBox(width: 6),
-                      const Text('Lịch dạy hôm nay',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Lịch dạy hôm nay',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(dateLabel,
-                      style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w500)),
+                  Text(
+                    dateLabel,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
               const Spacer(),
@@ -115,7 +143,10 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                 onTap: () =>
                     setState(() => _scheduleExpanded = !_scheduleExpanded),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE65100).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -149,9 +180,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
         if (_scheduleLoading)
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Column(
-              children: [SkeletonChip(), SkeletonChip()],
-            ),
+            child: Column(children: [SkeletonChip(), SkeletonChip()]),
           )
         else if (!_scheduleExpanded)
           Padding(
@@ -160,12 +189,19 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
               onTap: () => Navigator.pushNamed(context, '/gv_schedule'),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -178,13 +214,19 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: n == 0
-                          ? Text(summaryText,
+                          ? Text(
+                              summaryText,
                               style: const TextStyle(
-                                  fontSize: 13, color: Colors.grey))
+                                fontSize: 13,
+                                color: Colors.grey,
+                              ),
+                            )
                           : RichText(
                               text: TextSpan(
                                 style: const TextStyle(
-                                    fontSize: 13, color: Colors.grey),
+                                  fontSize: 13,
+                                  color: Colors.grey,
+                                ),
                                 children: [
                                   const TextSpan(text: 'Hôm nay bạn có '),
                                   TextSpan(
@@ -195,7 +237,8 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                                     ),
                                   ),
                                   const TextSpan(
-                                      text: ' lịch dạy — nhấn để xem chi tiết'),
+                                    text: ' lịch dạy — nhấn để xem chi tiết',
+                                  ),
                                 ],
                               ),
                             ),
@@ -215,15 +258,21 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
                 ],
               ),
               child: const Row(
                 children: [
                   Icon(Icons.event_available, size: 18, color: Colors.green),
                   SizedBox(width: 8),
-                  Text('Không có lịch dạy hôm nay',
-                      style: TextStyle(fontSize: 13, color: Colors.grey)),
+                  Text(
+                    'Không có lịch dạy hôm nay',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
                 ],
               ),
             ),
@@ -233,11 +282,12 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Column(
               children: _todayClasses
-                  .map((d) => GestureDetector(
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/gv_schedule'),
-                        child: _GvClassChip(data: d),
-                      ))
+                  .map(
+                    (d) => GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/gv_schedule'),
+                      child: _GvClassChip(data: d),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -263,8 +313,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(28)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
             child: Row(
               children: [
@@ -275,47 +324,55 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                     color: Colors.white.withValues(alpha: 0.25),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person,
-                      color: Colors.white, size: 32),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      gv?.ten ?? '–',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Mã GV: $userid',
-                      style: const TextStyle(
-                          fontSize: 13, color: Colors.white70),
-                    ),
-                    if (gv?.gvcohuuyn == true) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(20),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        gv?.ten ?? '–',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
-                        child: const Text(
-                          'Cơ hữu',
-                          style: TextStyle(
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Mã GV: $userid',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      if (gv?.gvcohuuyn == true) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Cơ hữu',
+                            style: TextStyle(
                               fontSize: 11,
                               color: Colors.white,
-                              fontWeight: FontWeight.w600),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
                   ),
                 ),
                 GestureDetector(
@@ -333,8 +390,11 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                           color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.notifications_outlined,
-                            color: Colors.white, size: 24),
+                        child: const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                       if (_unreadCount > 0)
                         Positioned(
@@ -347,13 +407,16 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                               shape: BoxShape.circle,
                             ),
                             constraints: const BoxConstraints(
-                                minWidth: 18, minHeight: 18),
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
                             child: Text(
                               _unreadCount > 99 ? '99+' : '$_unreadCount',
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -388,8 +451,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                       MenuItemWidget(
                         icon: Icons.class_rounded,
                         label: 'Lớp học',
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/gv_lophoc'),
+                        onTap: () => Navigator.pushNamed(context, '/gv_lophoc'),
                       ),
                       MenuItemWidget(
                         icon: Icons.assignment_outlined,
@@ -403,11 +465,9 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                         onTap: () =>
                             Navigator.pushNamed(context, '/gv_quanly_lop'),
                       ),
-                      // THỬ NGHIỆM — điểm danh EMS, chạy song song với IMS.
-                      // Gỡ nút này là gỡ đường thử nghiệm khỏi màn hình GV.
                       MenuItemWidget(
                         icon: Icons.fact_check_outlined,
-                        label: 'Điểm danh EMS (thử)',
+                        label: 'Điểm danh EMS',
                         onTap: () =>
                             Navigator.pushNamed(context, '/ems_attendance_gv'),
                       ),
@@ -435,7 +495,9 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(28),
+                ),
               ),
               child: Row(
                 children: [
@@ -447,7 +509,11 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2.5),
                     ),
-                    child: const Icon(Icons.person, color: Colors.white, size: 36),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 36,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -467,7 +533,10 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                         const SizedBox(height: 4),
                         Text(
                           userid,
-                          style: const TextStyle(fontSize: 14, color: Colors.white70),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
                         ),
                       ],
                     ),
@@ -490,8 +559,8 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => GvProfileInfoScreen(
-                                  gv: gv!, userid: userid),
+                              builder: (_) =>
+                                  GvProfileInfoScreen(gv: gv!, userid: userid),
                             ),
                           );
                         }
@@ -546,34 +615,35 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-        height: 64,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
+          height: 64,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
                 color: Colors.black12,
                 blurRadius: 8,
-                offset: Offset(0, -2)),
-          ],
+                offset: Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavItem(
+                icon: Icons.dashboard_rounded,
+                label: 'Trang chủ',
+                selected: _currentIndex == 0,
+                onTap: () => setState(() => _currentIndex = 0),
+              ),
+              _NavItem(
+                icon: Icons.person_rounded,
+                label: 'Cá nhân',
+                selected: _currentIndex == 1,
+                onTap: () => setState(() => _currentIndex = 1),
+              ),
+            ],
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(
-              icon: Icons.dashboard_rounded,
-              label: 'Trang chủ',
-              selected: _currentIndex == 0,
-              onTap: () => setState(() => _currentIndex = 0),
-            ),
-            _NavItem(
-              icon: Icons.person_rounded,
-              label: 'Cá nhân',
-              selected: _currentIndex == 1,
-              onTap: () => setState(() => _currentIndex = 1),
-            ),
-          ],
-        ),
-      ),
       ),
     );
   }
@@ -618,14 +688,18 @@ class _GvClassChip extends StatelessWidget {
                   child: Text(
                     subject,
                     style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 if (buoi.label.isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(left: 6),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: buoi.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
@@ -648,7 +722,9 @@ class _GvClassChip extends StatelessWidget {
                 child: Text(
                   classCode,
                   style: const TextStyle(
-                      fontSize: 11, color: Color(0xFF444444)),
+                    fontSize: 11,
+                    color: Color(0xFF444444),
+                  ),
                 ),
               ),
             const SizedBox(height: 6),
@@ -679,7 +755,9 @@ class _GvClassChip extends StatelessWidget {
                     child: Text(
                       room,
                       style: const TextStyle(
-                          fontSize: 12, color: Colors.black87),
+                        fontSize: 12,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
                 ],
@@ -732,9 +810,13 @@ class _ProfileMenuCard extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(label,
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600)),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
             ],
@@ -749,8 +831,11 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow(
-      {required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -762,13 +847,16 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 60,
-            child: Text(label,
-                style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -779,7 +867,11 @@ class _InfoRow extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Divider(
-      height: 1, indent: 48, endIndent: 16, color: Color(0xFFF0F0F0));
+    height: 1,
+    indent: 48,
+    endIndent: 16,
+    color: Color(0xFFF0F0F0),
+  );
 }
 
 class _NavItem extends StatelessWidget {
@@ -788,11 +880,12 @@ class _NavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _NavItem(
-      {required this.icon,
-      required this.label,
-      required this.selected,
-      required this.onTap});
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -804,17 +897,18 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                color: selected ? const Color(0xFFE65100) : Colors.grey,
-                size: 26),
+            Icon(
+              icon,
+              color: selected ? const Color(0xFFE65100) : Colors.grey,
+              size: 26,
+            ),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11,
                 color: selected ? const Color(0xFFE65100) : Colors.grey,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
@@ -823,4 +917,3 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
-

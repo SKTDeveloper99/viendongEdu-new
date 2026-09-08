@@ -151,11 +151,8 @@ class NotificationService {
         }
       }
       final token = await _fcm.getToken().timeout(const Duration(seconds: 10));
-      // Chỉ in ở bản debug — dùng để dán vào Firebase "Send test message"
       if (kDebugMode && token != null) {
-        debugPrint('[FCM] ===== TOKEN BEGIN =====');
-        debugPrint(token);
-        debugPrint('[FCM] ===== TOKEN END =====');
+        debugPrint('[FCM] device token ready');
       }
       return token;
     } catch (e) {
@@ -237,7 +234,7 @@ class NotificationService {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      debugPrint('[FCM] Register token: ${res.statusCode} ${res.body}');
+      debugPrint('[FCM] Register token status: ${res.statusCode}');
     } catch (e) {
       debugPrint('[FCM] Register token error: $e');
     }

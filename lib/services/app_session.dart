@@ -59,7 +59,15 @@ class AppSession {
 
     token = savedToken;
     userid = prefs.getString('userid');
-    emsToken = prefs.getString('ems_token');
+    // Phiên chạy thử: token nạp lúc build LUÔN thắng token đã lưu.
+    //
+    // tryRestore() chạy SAU main(), nên trước đây nó ghi đè token vừa nạp
+    // bằng token của lần thử trước — app im lặng đăng nhập nhầm giáo viên.
+    // Đó đúng là cái bẫy đã làm hỏng buổi thử đầu tiên.
+    const baked = String.fromEnvironment('EMS_DEBUG_TOKEN');
+    emsToken = (kDebugMode && baked.isNotEmpty)
+        ? baked
+        : prefs.getString('ems_token');
     emsDenied = false;
 
     final userType = prefs.getString('user_type');
