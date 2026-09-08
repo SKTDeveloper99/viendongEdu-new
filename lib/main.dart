@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -27,6 +28,7 @@ import 'screens/notifications_screen.dart';
 import 'screens/student_board_screen.dart';
 import 'screens/ems_attendance_teacher_screen.dart';
 import 'screens/ems_attendance_student_screen.dart';
+import 'screens/ems_debug_session_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -96,6 +98,10 @@ class MyApp extends StatelessWidget {
         // Điểm danh EMS — hai mặt thử nghiệm chạy SONG SONG với IMS, không thay.
         '/ems_attendance_gv': (context) => const EmsAttendanceTeacherScreen(),
         '/ems_attendance_hv': (context) => const EmsAttendanceStudentScreen(),
+        // Cửa vào buổi chạy thử. kDebugMode là hằng số false ở bản release nên
+        // route này biến mất hoàn toàn khi build phát hành.
+        if (kDebugMode)
+          '/ems_debug': (context) => const EmsDebugSessionScreen(),
       },
     );
   }
