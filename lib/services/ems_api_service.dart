@@ -507,8 +507,9 @@ class EmsSession {
     sessionDate: j['session_date']?.toString() ?? '',
     startTime: j['start_time']?.toString(),
     endTime: j['end_time']?.toString(),
-    rosterSize: (j['roster_size'] as num?)?.toInt() ?? 0,
-    markedCount: (j['marked_count'] as num?)?.toInt() ?? 0,
+    // count(*) của Postgres là bigint — có thể về dạng chuỗi. Parse cho chắc.
+    rosterSize: int.tryParse('${j['roster_size'] ?? 0}') ?? 0,
+    markedCount: int.tryParse('${j['marked_count'] ?? 0}') ?? 0,
     sessionKey: j['session_key']?.toString() ?? '',
     reportState: j['report_state']?.toString() ?? 'open',
   );
@@ -564,7 +565,9 @@ class EmsRosterStudent {
     note: j['note']?.toString(),
     scanned: j['scanned'] == true,
     scannedAt: DateTime.tryParse(j['scanned_at']?.toString() ?? '')?.toLocal(),
-    punchId: (j['punch_id'] as num?)?.toInt(),
+    // punch_id là bigint của Postgres — tuỳ driver trả về SỐ hoặc CHUỖI. Ép
+    // 'as num' sẽ nổ khi nó là chuỗi. Parse từ toString() cho chắc.
+    punchId: j['punch_id'] == null ? null : int.tryParse(j['punch_id'].toString()),
   );
 
   Map<String, dynamic> toJson() => {
