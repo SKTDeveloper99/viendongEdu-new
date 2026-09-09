@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/app_session.dart';
 import '../components/skeleton.dart';
 import '../utils/snack.dart';
 import 'gv_attendance_screen.dart';
+import 'ems_attendance_teacher_screen.dart';
 import 'gv_qr_attendance_screen.dart';
 
 class GvScheduleScreen extends StatefulWidget {
@@ -342,6 +344,38 @@ class _ScheduleCardState extends State<_ScheduleCard> {
     setState(() => _loading = true);
     try {
       final d = widget.data;
+
+      // ── CUTOVER 2026-09-12: điểm danh ghi vào EMS, không ghi vào IMS ───────
+      //
+      // IMS chỉ còn là nơi LẤY danh sách học viên của lớp môn học (đã scrape sang
+      // `enrollments`, khớp 612/613 lớp HK261 theo ims_lop_mon_hoc_id). Việc GHI
+      // điểm danh chuyển hẳn sang EMS.
+      //
+      // Vì sao phải chuyển chứ không vá tiếp: `giangvien/diemdanh/luu` của IMS là
+      // INSERT chứ không phải UPSERT, nên lưu hai lần là sinh ra hai bản ghi mâu
+      // thuẫn. Đo trên IMS thật ngày 09/09/2026: từ 01/08 có 11.075 nhóm trùng /
+      // 31.462 dòng, 2.633 mâu thuẫn trên 1.490 học viên, và 1.250 trường hợp
+      // dòng VẮNG thắng — 916 em đang bị báo vắng dù có đi học. Bản vá phía app
+      // (a07222a) làm giảm, nhưng KHÔNG thể diệt: endpoint không idempotent thì
+      // mạng chập chờn vẫn ghi trùng.
+      // `attendance_marks` của EMS có UNIQUE (session_key, mssv), nên lưu hai lần
+      // là KHÔNG THỂ tạo ra dòng thứ hai. Đó là lý do chuyển, không phải vì mới.
+      //
+      // Token EMS đã được AppSession đổi từ token IMS lúc đăng nhập
+      // (mirrorTeacher), nên giáo viên KHÔNG phải đăng nhập thêm lần nào.
+      // Không có token EMS (mirror hỏng, mạng lỗi) thì rơi về đường IMS cũ —
+      // thà điểm danh được bằng đường cũ còn hơn không điểm danh được.
+      if (AppSession.instance.hasEms) {
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const EmsAttendanceTeacherScreen(),
+          ),
+        );
+        return;
+      }
+
       final ngayRaw = d['ngay'] as String? ?? '';
       final ngay = ngayRaw.length >= 10 ? ngayRaw.substring(0, 10) : ngayRaw;
       final ktRaw = d['thoigiankt'] as String? ?? '';
