@@ -26,6 +26,8 @@ class AppSession {
   /// Khi bật, app ngừng thử đối chiếu lại — chỉ tắt riêng tính năng EMS.
   bool emsDenied = false;
 
+  Future<bool>? _emsRefreshInFlight;
+
   bool get hasEms => emsToken != null && emsToken!.isNotEmpty;
 
   bool get isGiangVien => giangVien != null && hocVien == null;
@@ -120,7 +122,27 @@ class AppSession {
   ///
   /// 403 `account_deactivated` và 404 `not_provisioned` là câu trả lời DỨT
   /// KHOÁT của EMS — đánh dấu [emsDenied] để không thử lại thành bão request.
-  Future<bool> refreshEmsToken() async {
+  Future<bool> refreshEmsToken({bool force = false}) async {
+    if (force) emsDenied = false;
+
+    // Login, splash restore, and an immediate attendance tap can all arrive at
+    // once. Share one mirror request so an older response cannot overwrite a
+    // newer EMS session.
+    final running = _emsRefreshInFlight;
+    if (running != null) return running;
+
+    final refresh = _refreshEmsTokenOnce();
+    _emsRefreshInFlight = refresh;
+    try {
+      return await refresh;
+    } finally {
+      if (identical(_emsRefreshInFlight, refresh)) {
+        _emsRefreshInFlight = null;
+      }
+    }
+  }
+
+  Future<bool> _refreshEmsTokenOnce() async {
     final imsToken = token;
     if (imsToken == null || imsToken.isEmpty) return false;
     if (emsDenied) return false;

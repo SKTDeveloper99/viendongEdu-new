@@ -10,9 +10,12 @@ class EmsException implements Exception {
   final int? statusCode;
   EmsException(this.message, {this.code, this.statusCode});
 
-  /// EMS đã trả lời và từ chối có chủ đích — KHÔNG phải lỗi mạng, không thử lại.
-  bool get isDeliberateDenial =>
-      statusCode == 403 || statusCode == 404 || statusCode == 401;
+  /// EMS đã trả lời rằng tài khoản không được phép dùng EMS.
+  ///
+  /// 401 thường chỉ có nghĩa là một token đã hết hạn. Giữ nó ở đường thử lại;
+  /// nếu coi 401 là từ chối vĩnh viễn, một phiên cũ có thể khoá EMS cho tới khi
+  /// tiến trình ứng dụng được khởi động lại.
+  bool get isDeliberateDenial => statusCode == 403 || statusCode == 404;
 
   @override
   String toString() => message;
