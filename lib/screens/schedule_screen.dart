@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/app_session.dart';
+import '../services/ems_api_service.dart';
 
 // "1970-01-01T20:30:00.000Z" → "20:30"
 String _parseEndTime(String? raw) {
@@ -29,6 +31,73 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // Cache kết quả theo ngày để không gọi API lại
   final Map<String, List<Map<String, dynamic>>> _cache = {};
   bool _loading = false;
+
+  // ── Trạng thái điểm danh: CHỈ đọc từ EMS ─────────────────────────────────
+  // Trước 2026-09-11 huy hiệu trên thẻ lấy `hienDienYN` của IMS. Từ khi giáo
+  // viên điểm danh trên EMS, IMS không còn là nơi ghi nhận: một sinh viên bị
+  // đánh VẮNG trên EMS vẫn hiện "Có mặt" ở đây vì IMS còn giữ dòng cũ. Lịch
+  // (giờ, phòng, giáo viên) vẫn là IMS; trạng thái là EMS — hai nguồn, không
+  // trộn. Khoá: mã lớp môn học + ngày (+ giờ bắt đầu nếu EMS có).
+  final Map<String, EmsStudentMark> _emsByKey = {};
+  bool _emsLoaded = false;
+
+  static String _markKey(String sectionCode, String date, [String? hhmm]) =>
+      '$sectionCode|$date|${hhmm ?? ''}';
+
+  Future<void> _loadEmsMarks() async {
+    if (_emsLoaded || !AppSession.instance.hasEms) return;
+    try {
+      final marks = await EmsApiService.myAttendance(limit: 400);
+      if (!mounted) return;
+      setState(() {
+        _emsByKey.clear();
+        for (final m in marks) {
+          final code = m.sectionCode ?? '';
+          final date = m.sessionDate ?? '';
+          if (code.isEmpty || date.isEmpty) continue;
+          final hhmm = _startFromSessionKey(m.sessionKey) ?? m.startTime;
+          // EMS thắng IMS cho cùng một buổi; không bao giờ ngược lại.
+          void put(String k) {
+            final cur = _emsByKey[k];
+            if (cur == null || (cur.source != 'ems' && m.source == 'ems')) {
+              _emsByKey[k] = m;
+            }
+          }
+          put(_markKey(code, date));
+          if (hhmm != null) put(_markKey(code, date, hhmm));
+        }
+        _emsLoaded = true;
+      });
+    } catch (_) {
+      // EMS chết thì thẻ hiện "Chưa điểm danh" — không bao giờ rơi về IMS.
+    }
+  }
+
+  /// `43371:07-30:2026-09-11` → `07:30`. Khoá IMS (`ims:<id>`) → null.
+  static String? _startFromSessionKey(String? key) {
+    if (key == null) return null;
+    final parts = key.split(':');
+    if (parts.length < 3) return null;
+    final m = RegExp(r'^(\d{2})-(\d{2})$').firstMatch(parts[1]);
+    return m == null ? null : '${m.group(1)}:${m.group(2)}';
+  }
+
+  String _statusFor(Map<String, dynamic> data, String date) {
+    final code = data['lmhma']?.toString() ?? '';
+    final start = (data['thoigianbd']?.toString() ?? '').trim();
+    final hhmm = start.length >= 5 ? start.substring(0, 5) : null;
+    final m = (hhmm != null ? _emsByKey[_markKey(code, date, hhmm)] : null) ??
+        _emsByKey[_markKey(code, date)];
+    if (m?.status != null) {
+      return switch (m!.status) {
+        'present' || 'late' => 'present',
+        'absent' => 'absent',
+        'excused' => 'excused',
+        _ => 'pending',
+      };
+    }
+    return data['baonghiyn'] == true ? 'excused' : 'pending';
+  }
   final ScrollController _chipScroll = ScrollController();
 
   @override
@@ -38,6 +107,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _currentMonday = _findMonday(now);
     _selectedDate = now;
     _fetchDate(now);
+    _loadEmsMarks();
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
 
@@ -318,7 +388,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                               itemCount: classes.length,
                               itemBuilder: (context, i) =>
-                                  _ScheduleCard(data: classes[i]),
+                                  _ScheduleCard(
+                                    data: classes[i],
+                                    status: _statusFor(
+                                        classes[i], _fmtDate(_selectedDate)),
+                                  ),
                             ),
                           ),
           ),
@@ -331,7 +405,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 // ── Schedule Card ────────────────────────────────────────
 class _ScheduleCard extends StatelessWidget {
   final Map<String, dynamic> data;
-  const _ScheduleCard({required this.data});
+  /// Từ EMS (xem `_ScheduleScreenState._statusFor`), không phải IMS.
+  final String status;
+  const _ScheduleCard({required this.data, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -341,16 +417,7 @@ class _ScheduleCard extends StatelessWidget {
     final teacher = data['gvten']?.toString() ?? '';
     final start = data['thoigianbd']?.toString() ?? '';
     final end = _parseEndTime(data['thoigiankt']?.toString());
-    final hienDienYN = data['hienDienYN'];
-    final baonghiyn = data['baonghiyn'];
     final isLichThi = data['loaitkb']?.toString() == 'lichthi';
-    final status = baonghiyn == true
-        ? 'excused'
-        : hienDienYN == null
-            ? 'pending'
-            : hienDienYN == true
-                ? 'present'
-                : 'absent';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
