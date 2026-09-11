@@ -176,6 +176,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     'account_balance' => Icons.account_balance,
     'add_circle' => Icons.add_circle,
     'bar_chart' => Icons.bar_chart,
+    'fact_check' => Icons.fact_check_outlined,
     'people' => Icons.people,
     'payments' => Icons.payments,
     'receipt_long' => Icons.receipt_long,
@@ -692,11 +693,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         );
                       },
                     ),
-
-                    // (Nút "Điểm danh EMS" đã bỏ khỏi màn hình học viên: điểm
-                    // danh của học viên nay nằm trong "Lớp học" — cùng biểu đồ,
-                    // đọc thẳng từ EMS. Học viên không có lối vào màn hình giáo
-                    // viên.)
                   ],
                 ),
               ),

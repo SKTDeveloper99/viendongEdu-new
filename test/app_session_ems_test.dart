@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:viendongedu2_flutter/models/mock_data.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 
@@ -106,5 +107,13 @@ void main() {
     expect(source, isNot(contains('GvQrAttendanceScreen')));
     expect(source, isNot(contains('postDiemDanhLuu')));
     expect(source, contains('EmsAttendanceTeacherScreen'));
+  });
+
+  test('student home has a one-tap attendance destination', () {
+    final attendance = MockData.menuItems.where(
+      (item) => item['route'] == '/ems_attendance_hv',
+    );
+    expect(attendance, hasLength(1));
+    expect(attendance.single['label'], 'Điểm danh');
   });
 }
