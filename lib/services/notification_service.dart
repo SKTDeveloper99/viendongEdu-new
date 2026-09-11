@@ -30,6 +30,7 @@ class NotificationService {
   String? _lastUserid;
 
   final Completer<void> _initialMessageReady = Completer<void>();
+  final Completer<void> _permissionReady = Completer<void>();
 
   /// Splash chờ cái này trước khi hỏi consumePendingInitialMessage()
   Future<void> get initialMessageReady => _initialMessageReady.future;
@@ -44,8 +45,15 @@ class NotificationService {
     }
     if (!_initialMessageReady.isCompleted) _initialMessageReady.complete();
 
-    // Xin permission
-    await _fcm.requestPermission(alert: true, badge: true, sound: true);
+    // Xin permission — trên iOS bước này hiện hộp thoại, phải await.
+    // (Sửa của tdat535 11/09, lấy lại sạch từ bản có xung đột trên upstream.)
+    try {
+      await _fcm.requestPermission(alert: true, badge: true, sound: true);
+    } finally {
+      // Dù người dùng chọn "Cho phép" hay "Từ chối", vẫn báo done
+      // để registerToken không bị chờ mãi mãi.
+      if (!_permissionReady.isCompleted) _permissionReady.complete();
+    }
 
     // Đăng ký background handler
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
@@ -186,6 +194,14 @@ class NotificationService {
     _lastHoTen = hoTen;
     _lastNgaysinh = ngaysinh;
     _lastUserid = userid;
+
+    // Trên iOS: phải đợi requestPermission hoàn tất trước khi lấy APNs token.
+    // Nếu init() vẫn đang chờ người dùng bấm hộp thoại, getToken() sẽ trả null.
+    // Timeout 30s phòng trường hợp init() gặp lỗi bất ngờ.
+    await _permissionReady.future.timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {},
+    );
 
     final token = await getToken();
     if (token == null) {
