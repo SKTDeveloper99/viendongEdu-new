@@ -44,8 +44,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   static String _markKey(String sectionCode, String date, [String? hhmm]) =>
       '$sectionCode|$date|${hhmm ?? ''}';
 
-  Future<void> _loadEmsMarks() async {
-    if (_emsLoaded || !AppSession.instance.hasEms) return;
+  Future<void> _loadEmsMarks({bool force = false}) async {
+    if (_emsLoaded && !force) return;
+    // 2026-09-11: a student (2652092061) was marked VẮNG on EMS but saw "Chưa
+    // điểm danh". The mirror at login had timed out on the phone (IMS edge
+    // 302-ing) while the server finished it later, so this screen opened with
+    // no EMS token, skipped silently, and never asked again. Never skip
+    // silently: without a token, ask for one here; on failure the cards show
+    // "Chưa điểm danh" and pull-to-refresh tries the whole thing again.
+    if (!AppSession.instance.hasEms) {
+      await AppSession.instance.refreshEmsToken(force: force);
+      if (!mounted || !AppSession.instance.hasEms) return;
+    }
     try {
       final marks = await EmsApiService.myAttendance(limit: 400);
       if (!mounted) return;
@@ -383,7 +393,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           )
                         : RefreshIndicator(
                             color: const Color(0xFFE65100),
-                            onRefresh: () => _fetchDate(_selectedDate),
+                            onRefresh: () async {
+                              _cache.remove(_fmtDate(_selectedDate));
+                              await Future.wait([
+                                _fetchDate(_selectedDate),
+                                _loadEmsMarks(force: true),
+                              ]);
+                            },
                             child: ListView.builder(
                               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                               itemCount: classes.length,
