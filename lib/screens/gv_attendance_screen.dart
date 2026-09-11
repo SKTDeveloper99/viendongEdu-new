@@ -151,6 +151,7 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
         'ho': m['ho'] ?? '',
         'ten': m['ten'] ?? '',
         'diemdanhid': m['diemdanhid'],
+        'dkid': m['dkid'],
         'hiendienyn': _attendance[id] ?? false,
       };
     }).toList();

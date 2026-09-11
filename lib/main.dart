@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -21,15 +23,27 @@ import 'screens/capbu_screen.dart';
 import 'screens/change_password_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/student_board_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Firebase phải xong trước khi dùng FCM, nhưng không được để lỗi mạng
+  // làm app trắng màn hình — nếu lỗi thì vẫn chạy app, chỉ mất notification
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('[Firebase] init failed: $e');
+  }
   setNotificationNavigatorKey(navigatorKey);
-  await NotificationService.instance.init();
+
+  // Vẽ giao diện TRƯỚC. Không await notification init ở đây:
+  // requestPermission chờ người dùng bấm nút, sẽ treo màn hình trắng.
   runApp(const MyApp());
+
+  unawaited(NotificationService.instance.init());
 }
 
 class MyApp extends StatelessWidget {
@@ -70,6 +84,9 @@ class MyApp extends StatelessWidget {
         '/change_password': (context) => const ChangePasswordScreen(),
         '/registration': (context) => const RegistrationScreen(),
         '/notifications': (context) => const NotificationsScreen(),
+        // Bảng tin — thông tin từ EMS. Tách hẳn khỏi chuông thông báo Vercel
+        // ở trên: đây là một mặt kéo (pull) riêng, không thay thế chuông.
+        '/student_board': (context) => const StudentBoardScreen(),
       },
     );
   }

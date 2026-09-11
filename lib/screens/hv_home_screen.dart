@@ -5,8 +5,10 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../models/mock_data.dart';
 import '../services/api_service.dart';
 import '../services/app_session.dart';
+import '../services/ems_api_service.dart';
 import '../components/menu_item.dart';
 import 'hv_profile_info_screen.dart';
+import 'student_board_screen.dart';
 
 // "1970-01-01T20:30:00.000Z" → "20:30"
 String _parseEndTime(String? raw) {
@@ -34,7 +36,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   List<Map<String, dynamic>> _todayClasses = [];
@@ -42,11 +44,80 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _scheduleExpanded = true;
   int _unreadCount = 0;
 
+  // ── Bảng tin (EMS) ─────────────────────────────────────────────────────────
+  // Tách hẳn khỏi _unreadCount của chuông Vercel ở trên: hai nguồn khác nhau,
+  // và EMS hỏng thì phần còn lại của trang chủ vẫn phải chạy.
+  AnnouncementItem? _latestBoardItem;
+  int _boardUnread = 0;
+  bool _boardFailed = false;
+  bool _boardLoading = false;
+  // Một phiên chỉ nhắc "bắt buộc đọc" một lần.
+  static bool _mustReadShown = false;
+
   @override
   void initState() {
     super.initState();
     _loadTodaySchedule();
     _loadUnreadCount();
+    _loadBoard();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadBoard();
+  }
+
+  /// Thẻ mới nhất + số chưa đọc của Bảng tin.
+  ///
+  /// Nuốt mọi lỗi: một EMS chết KHÔNG được phép làm hỏng trang chủ IMS. Thẻ chỉ
+  /// đơn giản là không hiện, và _boardFailed cho phép hiện trạng thái thử lại.
+  Future<void> _loadBoard() async {
+    if (_boardLoading) return;
+    _boardLoading = true;
+    try {
+      final items = await EmsApiService.board(limit: 20);
+      final unread = items.where((i) => i.isUnread).length;
+      if (!mounted) return;
+      setState(() {
+        _latestBoardItem = items.isEmpty ? null : items.first;
+        _boardUnread = unread;
+        _boardFailed = false;
+      });
+      _maybeShowMustRead(items);
+    } catch (_) {
+      // A DELIBERATE denial (no EMS account for this student, or a deactivated
+      // one) is not a failure to retry — most students today have no EMS
+      // account at all, and showing them "không tải được" forever would be a
+      // permanent false alarm on the home screen. Only a real fault gets the
+      // retry card.
+      if (mounted) {
+        setState(() => _boardFailed = !AppSession.instance.emsDenied);
+      }
+    } finally {
+      _boardLoading = false;
+    }
+  }
+
+  /// Nhiều nhất MỘT lần mỗi phiên: nhắc thông báo bắt buộc đọc chưa xác nhận.
+  /// Nếu không chặn, mỗi lần resume app sẽ bung lại một tấm che mặt màn hình.
+  void _maybeShowMustRead(List<AnnouncementItem> items) {
+    if (_mustReadShown) return;
+    final pending = items.where((i) => i.needsAcknowledgement).toList();
+    if (pending.isEmpty) return;
+    _mustReadShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const StudentBoardScreen()));
+      _loadBoard();
+    });
   }
 
   Future<void> _loadUnreadCount() async {
@@ -102,13 +173,103 @@ class _HomeScreenState extends State<HomeScreen> {
         'people' => Icons.people,
         'payments' => Icons.payments,
         'receipt_long' => Icons.receipt_long,
+        'campaign' => Icons.campaign,
         _ => Icons.help_outline,
       };
 
   Future<void> _logout() async {
+    // Reset the once-per-session must-read prompt so a different student who
+    // logs in on the SAME app process still gets their acknowledgement sheet.
+    _mustReadShown = false;
     await AppSession.instance.clear();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/');
+  }
+
+  // ── Bảng tin card ────────────────────────────────────
+  Widget _buildBoardCard() {
+    // Chưa có gì để nói và cũng không lỗi → không chiếm chỗ trên trang chủ.
+    // Học viên chưa có tài khoản EMS cũng không thấy thẻ này (emsDenied).
+    if (_latestBoardItem == null && !_boardFailed) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () async {
+            if (_boardFailed && _latestBoardItem == null) {
+              _loadBoard();
+              return;
+            }
+            await Navigator.pushNamed(context, '/student_board');
+            _loadBoard();
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.campaign_outlined,
+                      color: Color(0xFFE65100), size: 21),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Text('Thông tin mới từ trung tâm',
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFE65100))),
+                        if (_boardUnread > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text('$_boardUnread chưa đọc',
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ]),
+                      const SizedBox(height: 4),
+                      Text(
+                        _latestBoardItem?.title ??
+                            'Không tải được bảng tin. Chạm để thử lại.',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 13.5,
+                            height: 1.35,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: Colors.grey[400]),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // ── Today schedule section ───────────────────────────
@@ -436,6 +597,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   // Lịch học hôm nay
                   _buildTodaySchedule(),
+
+                  // Thông tin mới từ trung tâm
+                  _buildBoardCard(),
 
                   // Menu grid
                   GridView.builder(

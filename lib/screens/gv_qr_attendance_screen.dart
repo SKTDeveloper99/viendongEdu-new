@@ -431,6 +431,7 @@ class _QrReviewScreenState extends State<_QrReviewScreen>
           'ten': s['ten'] ?? '',
           'hinhanh': s['hinhanh'],
           'diemdanhid': s['diemdanhid'],
+          'dkid': s['dkid'],
           'hiendienyn': _attendance[id] ?? false,
         };
       }).toList();
