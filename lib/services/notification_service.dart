@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -16,14 +19,33 @@ class NotificationService {
   static final NotificationService instance = NotificationService._();
 
   final _fcm = FirebaseMessaging.instance;
+  Future<void> Function(String token)? _emsStudentRegister;
+  Future<void> Function(String token)? _emsStudentRevoke;
+
+  // Danh tính đã đăng ký gần nhất — dùng để đăng ký lại khi FCM xoay token
+  String? _lastHocVienId;
+  String? _lastMssv;
+  String? _lastHoTen;
+  String? _lastNgaysinh;
+  String? _lastUserid;
+
+  final Completer<void> _initialMessageReady = Completer<void>();
+
+  /// Splash chờ cái này trước khi hỏi consumePendingInitialMessage()
+  Future<void> get initialMessageReady => _initialMessageReady.future;
 
   Future<void> init() async {
+    // Đọc initial message TRƯỚC tiên và báo cho splash biết ngay,
+    // để splash không phải chờ requestPermission (người dùng có thể để yên hộp thoại)
+    try {
+      _pendingInitialMessage = await _fcm.getInitialMessage();
+    } catch (e) {
+      debugPrint('[FCM] getInitialMessage error: $e');
+    }
+    if (!_initialMessageReady.isCompleted) _initialMessageReady.complete();
+
     // Xin permission
-    await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    await _fcm.requestPermission(alert: true, badge: true, sound: true);
 
     // Đăng ký background handler
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
@@ -41,12 +63,54 @@ class NotificationService {
       final title = message.notification?.title ?? '';
       final body = message.notification?.body ?? '';
       if (title.isNotEmpty || body.isNotEmpty) {
-        _showInAppBanner(title, body);
+        _showInAppBanner(title, body, _routeFor(message));
       }
     });
+
+    // FCM xoay token (cài lại app, khôi phục iCloud, xoay định kỳ) →
+    // đăng ký lại ngay, nếu không thì server giữ token cũ và notification chết im lặng
+    _fcm.onTokenRefresh.listen((token) {
+      debugPrint('[FCM] token refreshed');
+      final id = _lastHocVienId;
+      if (id == null) return;
+      _postToken(
+        id,
+        token,
+        mssv: _lastMssv,
+        hoTen: _lastHoTen,
+        ngaysinh: _lastNgaysinh,
+        userid: _lastUserid,
+      );
+    });
+
+    // Người dùng bấm vào notification khi app đang ở background
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
   }
 
-  void _showInAppBanner(String title, String body) {
+  RemoteMessage? _pendingInitialMessage;
+
+  /// Splash gọi sau khi đã vào home — trả đúng màn hình mà push yêu cầu.
+  String? consumePendingInitialMessageRoute() {
+    final route = _pendingInitialMessage == null
+        ? null
+        : _routeFor(_pendingInitialMessage!);
+    _pendingInitialMessage = null;
+    return route;
+  }
+
+  String _routeFor(RemoteMessage message) =>
+      message.data['route'] == '/student/board'
+      ? '/student_board'
+      : '/notifications';
+
+  void _handleNotificationTap(RemoteMessage message) {
+    debugPrint('[FCM] notification tapped: ${message.notification?.title}');
+    final nav = _globalNavigatorKey?.currentState;
+    if (nav == null) return;
+    nav.pushNamed(_routeFor(message));
+  }
+
+  void _showInAppBanner(String title, String body, String route) {
     final overlay = _globalNavigatorKey?.currentState?.overlay;
     if (overlay == null) return;
 
@@ -61,7 +125,7 @@ class NotificationService {
         },
         onTap: () {
           if (entry.mounted) entry.remove();
-          _globalNavigatorKey?.currentState?.pushNamed('/notifications');
+          _globalNavigatorKey?.currentState?.pushNamed(route);
         },
       ),
     );
@@ -74,23 +138,86 @@ class NotificationService {
     });
   }
 
-  /// Lấy FCM token của thiết bị
+  /// Lấy FCM token của thiết bị.
+  /// Trên iOS phải đợi APNs cấp token trước, nếu không getToken() sẽ ném lỗi
+  /// ở lần chạy đầu tiên sau khi cài app.
   Future<String?> getToken() async {
     try {
-      // Thêm timeout 5s để tránh iOS bị treo (hang) khi chưa có APNs/Push Notifications entitlement
-      return await _fcm.getToken().timeout(const Duration(seconds: 5));
-    } catch (_) {
+      if (Platform.isIOS || Platform.isMacOS) {
+        final apns = await _waitForApnsToken();
+        if (apns == null) {
+          debugPrint('[FCM] APNs token chưa sẵn sàng');
+          return null;
+        }
+      }
+      final token = await _fcm.getToken().timeout(const Duration(seconds: 10));
+      if (kDebugMode && token != null) {
+        debugPrint('[FCM] device token ready');
+      }
+      return token;
+    } catch (e) {
+      debugPrint('[FCM] getToken error: $e');
       return null;
     }
   }
 
+  /// Hỏi APNs token nhiều lần — ngay sau khi cài app, iOS cần vài giây
+  /// để đăng ký với APNs xong.
+  Future<String?> _waitForApnsToken() async {
+    for (var i = 0; i < 10; i++) {
+      final apns = await _fcm.getAPNSToken();
+      if (apns != null) return apns;
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    return null;
+  }
+
   /// Lưu token lên server sau khi login
-  Future<void> registerToken(String hocVienId,
-      {String? mssv, String? hoTen, String? ngaysinh, String? userid}) async {
+  Future<void> registerToken(
+    String hocVienId, {
+    String? mssv,
+    String? hoTen,
+    String? ngaysinh,
+    String? userid,
+  }) async {
+    // Nhớ danh tính trước, để onTokenRefresh còn đăng ký lại được
+    _lastHocVienId = hocVienId;
+    _lastMssv = mssv;
+    _lastHoTen = hoTen;
+    _lastNgaysinh = ngaysinh;
+    _lastUserid = userid;
+
     final token = await getToken();
     if (token == null) {
-      debugPrint('[FCM] Token is null, skipping registration');
+      // Không bỏ cuộc: onTokenRefresh sẽ bắn khi FCM cấp được token
+      debugPrint('[FCM] Token chưa có, chờ onTokenRefresh');
       return;
+    }
+    await _postToken(
+      hocVienId,
+      token,
+      mssv: mssv,
+      hoTen: hoTen,
+      ngaysinh: ngaysinh,
+      userid: userid,
+    );
+  }
+
+  Future<void> _postToken(
+    String hocVienId,
+    String token, {
+    String? mssv,
+    String? hoTen,
+    String? ngaysinh,
+    String? userid,
+  }) async {
+    // EMS delivery must not depend on the legacy notification host being up.
+    if (hocVienId.startsWith('hv_')) {
+      try {
+        await _emsStudentRegister?.call(token);
+      } catch (e) {
+        debugPrint('[FCM] EMS register token error: $e');
+      }
     }
     try {
       final res = await http
@@ -107,7 +234,7 @@ class NotificationService {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      debugPrint('[FCM] Register token: ${res.statusCode} ${res.body}');
+      debugPrint('[FCM] Register token status: ${res.statusCode}');
     } catch (e) {
       debugPrint('[FCM] Register token error: $e');
     }
@@ -115,8 +242,18 @@ class NotificationService {
 
   /// Xóa token khỏi server khi logout
   Future<void> unregisterToken(String hocVienId) async {
+    _lastHocVienId = null;
+    _lastMssv = null;
+    _lastHoTen = null;
+    _lastNgaysinh = null;
+    _lastUserid = null;
     final token = await getToken();
     if (token == null) return;
+    if (hocVienId.startsWith('hv_')) {
+      try {
+        await _emsStudentRevoke?.call(token);
+      } catch (_) {}
+    }
     try {
       await http
           .delete(
@@ -126,6 +263,14 @@ class NotificationService {
           )
           .timeout(const Duration(seconds: 10));
     } catch (_) {}
+  }
+
+  void configureEmsStudentDevice({
+    required Future<void> Function(String token) register,
+    required Future<void> Function(String token) revoke,
+  }) {
+    _emsStudentRegister = register;
+    _emsStudentRevoke = revoke;
   }
 }
 
@@ -165,7 +310,9 @@ class _NotiiBannerState extends State<_NotiiBanner>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 380));
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
     _slide = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
@@ -210,13 +357,12 @@ class _NotiiBannerState extends State<_NotiiBanner>
                       offset: const Offset(0, 6),
                     ),
                   ],
-                  border: Border.all(
-                    color: const Color(0xFFFFCC80),
-                    width: 1,
-                  ),
+                  border: Border.all(color: const Color(0xFFFFCC80), width: 1),
                 ),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -230,8 +376,11 @@ class _NotiiBannerState extends State<_NotiiBanner>
                         ),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.notifications_active,
-                          color: Colors.white, size: 22),
+                      child: const Icon(
+                        Icons.notifications_active,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -269,8 +418,11 @@ class _NotiiBannerState extends State<_NotiiBanner>
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _dismiss,
-                      child: const Icon(Icons.close,
-                          color: Colors.grey, size: 18),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.grey,
+                        size: 18,
+                      ),
                     ),
                   ],
                 ),

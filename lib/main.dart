@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
+import 'services/app_session.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/hv_home_screen.dart';
@@ -21,15 +25,53 @@ import 'screens/capbu_screen.dart';
 import 'screens/change_password_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/student_board_screen.dart';
+import 'screens/ems_attendance_teacher_screen.dart';
+import 'screens/ems_attendance_student_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Firebase phải xong trước khi dùng FCM, nhưng không được để lỗi mạng
+  // làm app trắng màn hình — nếu lỗi thì vẫn chạy app, chỉ mất notification
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('[Firebase] init failed: $e');
+  }
+  // Phiên chạy thử: token EMS nạp thẳng lúc build, không phải dán tay.
+  //
+  // Dán tay qua ô nhập là nguồn của mọi rắc rối trong buổi thử đầu: clipboard
+  // của máy giả lập đồng bộ với clipboard của máy Mac nên bị ghi đè, và ô nhập
+  // giữ focus khi rời màn hình gây crash. Nạp bằng --dart-define thì không có
+  // gì để dán, không có ô nhập, không có gì hỏng.
+  //
+  // kDebugMode là hằng số biên dịch: ở bản release nhánh này bị cắt bỏ hoàn
+  // toàn, và giá trị --dart-define cũng không được truyền vào bản phát hành.
+  if (kDebugMode) {
+    const baked = String.fromEnvironment('EMS_DEBUG_TOKEN');
+    if (baked.isNotEmpty) {
+      AppSession.instance.emsToken = baked;
+      AppSession.instance.emsDenied = false;
+      debugPrint('[EMS] phiên chạy thử: đã nạp token từ --dart-define');
+    }
+  }
+
   setNotificationNavigatorKey(navigatorKey);
-  await NotificationService.instance.init();
+  NotificationService.instance.configureEmsStudentDevice(
+    register: AppSession.instance.registerStudentDeviceToken,
+    revoke: AppSession.instance.revokeStudentDeviceToken,
+  );
+
+  // Vẽ giao diện TRƯỚC. Không await notification init ở đây:
+  // requestPermission chờ người dùng bấm nút, sẽ treo màn hình trắng.
   runApp(const MyApp());
+
+  unawaited(NotificationService.instance.init());
 }
 
 class MyApp extends StatelessWidget {
@@ -45,10 +87,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('vi', 'VN'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('vi', 'VN'), Locale('en', 'US')],
       locale: const Locale('vi', 'VN'),
       initialRoute: '/',
       routes: {
@@ -70,6 +109,12 @@ class MyApp extends StatelessWidget {
         '/change_password': (context) => const ChangePasswordScreen(),
         '/registration': (context) => const RegistrationScreen(),
         '/notifications': (context) => const NotificationsScreen(),
+        // Bảng tin — thông tin từ EMS. Tách hẳn khỏi chuông thông báo Vercel
+        // ở trên: đây là một mặt kéo (pull) riêng, không thay thế chuông.
+        '/student_board': (context) => const StudentBoardScreen(),
+        // Điểm danh EMS — EMS là nguồn dữ liệu điểm danh chính thức.
+        '/ems_attendance_gv': (context) => const EmsAttendanceTeacherScreen(),
+        '/ems_attendance_hv': (context) => const EmsAttendanceStudentScreen(),
       },
     );
   }

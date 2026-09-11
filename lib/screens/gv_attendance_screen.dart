@@ -54,11 +54,64 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
     return 'attendance_cache_${tkbid}_$ngay';
   }
 
+  /// Gộp các dòng TRÙNG cùng một sinh viên (cùng MSSV) thành MỘT dòng.
+  ///
+  /// Báo cáo của GV Ngọc Bích 09/09/2026, lớp 261_BEA31020_08CD15DD4C_N3:
+  /// "Tên hiển thị 2 lần" — Huỳnh Ngọc Phương Quỳnh (2647092419), Trần Huỳnh
+  /// Minh Thư (2647092473), Huỳnh Ngọc Trân (2647092491) mỗi người hiện 2 dòng,
+  /// sĩ số phình từ 39 lên 59.
+  ///
+  /// Nguồn lỗi: danh sách trả về từ IMS có 2 dòng cho cùng một người với
+  /// `hocvienid` KHÁC nhau, mà `_attendance` lại khoá theo `hocvienid`. Hệ quả
+  /// không chỉ là xấu màn hình: hai dòng bật/tắt ĐỘC LẬP, nên GV có thể tick
+  /// dòng này bỏ dòng kia và app gửi lên hai trạng thái MÂU THUẪN cho cùng một
+  /// sinh viên trong cùng một buổi. Đó đúng là cái bệnh "vắng mà đang có mặt".
+  ///
+  /// Vì vậy phải gộp ở ĐÂY, trước cả hiển thị lẫn payload (_buildHocviens map
+  /// trên chính _sorted), chứ không phải chỉ giấu đi khi vẽ giao diện.
+  ///
+  /// Quy tắc gộp, có chủ đích:
+  ///   - giữ dòng CÓ `diemdanhid` (đã có bản ghi trên server) để lần lưu sau là
+  ///     CẬP NHẬT chứ không chèn thêm một dòng mới;
+  ///   - `hiendienyn` gộp bằng OR: đã có mặt ở bất kỳ dòng nào thì là có mặt —
+  ///     không bao giờ hạ một người đang có mặt xuống vắng.
+  /// Không có MSSV thì giữ nguyên dòng đó, không đoán.
+  static List<Map<String, dynamic>> _dedupeByMssv(
+      List<Map<String, dynamic>> rows) {
+    final byMssv = <String, Map<String, dynamic>>{};
+    final out = <Map<String, dynamic>>[];
+
+    for (final r in rows) {
+      final mssv = r['mshv']?.toString().trim().toLowerCase() ?? '';
+      if (mssv.isEmpty) {
+        out.add(r); // không biết là ai thì không gộp
+        continue;
+      }
+      final seen = byMssv[mssv];
+      if (seen == null) {
+        byMssv[mssv] = r;
+        out.add(r);
+        continue;
+      }
+      // Đã có dòng cho người này — gộp vào dòng đã giữ.
+      final seenPresent = seen['hiendienyn'] as bool? ?? false;
+      final rPresent = r['hiendienyn'] as bool? ?? false;
+      seen['hiendienyn'] = seenPresent || rPresent;
+      if (seen['diemdanhid'] == null && r['diemdanhid'] != null) {
+        seen['diemdanhid'] = r['diemdanhid'];
+      }
+      debugPrint('[Attendance] gộp dòng trùng MSSV $mssv '
+          '(hocvienid ${seen['hocvienid']} giữ, ${r['hocvienid']} bỏ)');
+    }
+    return out;
+  }
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _sorted = widget.students.map((s) => s as Map<String, dynamic>).toList()
+    _sorted = _dedupeByMssv(
+        widget.students.map((s) => s as Map<String, dynamic>).toList())
       ..sort((a, b) {
         final ta = _vnSort('${a['ten'] ?? ''} ${a['ho'] ?? ''}');
         final tb = _vnSort('${b['ten'] ?? ''} ${b['ho'] ?? ''}');
@@ -164,6 +217,9 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
         tkb: widget.tkbParams,
         hocviens: _buildHocviens(),
       );
+      // Bắt buộc: lần lưu này vừa tạo bản ghi mới trên server. Không nạp lại id
+      // thì cú "Lưu điểm danh" ngay sau đó sẽ CHÈN THÊM chứ không sửa.
+      await _refreshDiemDanhIds();
       await _clearCache();
       if (!mounted) return;
       showSuccessSnack(context, '✅ Đã tự động lưu lên server thành công!');
@@ -179,6 +235,65 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
     }
   }
 
+  /// Nạp lại `diemdanhid` từ server sau khi lưu thành công.
+  ///
+  /// ĐÂY LÀ GỐC của hai lỗi báo ngày 09/09/2026:
+  ///   - GV: "App k lưu được các bạn điểm danh bổ sung sau khi đồng bộ"
+  ///   - SV: "e đi hc k nghỉ ngày nào mà cứ bị báo vắng quài"
+  ///
+  /// `giangvien/diemdanh/luu` của IMS là INSERT, KHÔNG phải UPSERT. Nó quyết
+  /// định chèn-hay-sửa dựa trên `diemdanhid` mà app gửi lên. Luồng cũ:
+  ///   1. GV bấm "Đồng bộ FaceID" -> _autoSaveAfterSync() lưu lần 1. Server tạo
+  ///      bản ghi mới và cấp `diemdanhid` mới — nhưng app KHÔNG biết, `_sorted`
+  ///      vẫn giữ `diemdanhid` cũ (thường là null).
+  ///   2. GV điểm danh bổ sung vài bạn rồi bấm "Lưu điểm danh" -> gửi lại đúng
+  ///      `diemdanhid` null đó -> server CHÈN THÊM một bộ bản ghi thứ hai đè lên
+  ///      bộ vừa tạo, mang trạng thái mặc định VẮNG.
+  /// Kết quả đo được 04/09/2026: 1 buổi có 247 dòng cho lớp ~176 người, và
+  /// trong 129/129 ca mâu thuẫn thì dòng VẮNG cũ lại có id LỚN hơn — nên mọi
+  /// nơi đọc theo "bản mới nhất" đều thấy một sinh viên có mặt thành vắng.
+  ///
+  /// Nạp lại id sau mỗi lần lưu thì lần lưu kế tiếp là CẬP NHẬT đúng dòng cũ,
+  /// nên không sinh ra dòng thứ hai để mâu thuẫn.
+  ///
+  /// Cố tình nuốt lỗi: nạp lại thất bại thì lần lưu vừa rồi VẪN thành công —
+  /// không được biến một cú lưu đã xong thành thông báo lỗi cho GV.
+  Future<void> _refreshDiemDanhIds() async {
+    try {
+      final fresh = await ApiService.postDiemDanhDanhSach(
+        tkbid: widget.tkbParams['tkbid']?.toString() ?? '',
+        lopid: widget.tkbParams['lopid']?.toString() ?? '',
+        phongid: widget.tkbParams['phongid']?.toString() ?? '',
+        ngay: widget.tkbParams['ngay']?.toString() ?? '',
+        thoigianbd: widget.tkbParams['thoigianbd']?.toString() ?? '',
+        thoigiankt: widget.tkbParams['thoigiankt']?.toString() ?? '',
+      );
+
+      // Khoá theo MSSV, không theo hocvienid: chính hocvienid là thứ bị trùng.
+      final idByMssv = <String, dynamic>{};
+      for (final r in fresh) {
+        final m = (r as Map)['mshv']?.toString().trim().toLowerCase() ?? '';
+        if (m.isNotEmpty && r['diemdanhid'] != null) {
+          idByMssv[m] = r['diemdanhid'];
+        }
+      }
+      if (idByMssv.isEmpty) return;
+
+      var patched = 0;
+      for (final s in _sorted) {
+        final m = s['mshv']?.toString().trim().toLowerCase() ?? '';
+        final id = idByMssv[m];
+        if (id != null && s['diemdanhid'] != id) {
+          s['diemdanhid'] = id;
+          patched++;
+        }
+      }
+      debugPrint('[Attendance] nạp lại $patched diemdanhid sau khi lưu');
+    } catch (e) {
+      debugPrint('[Attendance] không nạp lại được diemdanhid: $e');
+    }
+  }
+
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
@@ -190,6 +305,10 @@ class _GvAttendanceScreenState extends State<GvAttendanceScreen>
         tkb: widget.tkbParams,
         hocviens: hocviens,
       );
+
+      // Cùng lý do như trong _autoSaveAfterSync: GV có thể lưu nhiều lần trong
+      // một buổi (điểm danh bổ sung, sửa nhầm), mỗi lần đều phải cầm id mới.
+      await _refreshDiemDanhIds();
 
       // Xóa cache local sau khi server xác nhận lưu thành công
       await _clearCache();

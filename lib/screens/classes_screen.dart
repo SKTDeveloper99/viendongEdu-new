@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
+import '../services/ems_api_service.dart';
 import '../services/app_session.dart';
 import '../components/skeleton.dart';
 
@@ -415,12 +416,30 @@ class _ClassDetailScreenState extends State<_ClassDetailScreen> {
     _fetchBuoiHoc();
   }
 
+  // Điểm danh giờ đọc từ EMS, KHÔNG còn từ IMS. EMS là nguồn chính thức: một
+  // buổi chỉ có mặt trong danh sách khi giáo viên đã ghi nhận trên EMS.
+  //
+  // session_key của EMS bắt đầu bằng lmhid ('<lmhid>:<tiết>:<ngày>'), nên lọc
+  // đúng lớp này bằng tiền tố. Giữ nguyên khung dữ liệu cũ (ngay / hiendienyn /
+  // baonghiyn) để tái dùng y hệt biểu đồ và danh sách buổi học sẵn có.
   Future<void> _fetchBuoiHoc() async {
     try {
-      final data = await ApiService.getBuoiHoc(widget.item.lmhid);
+      final marks = await EmsApiService.myAttendance(limit: 300);
       if (!mounted) return;
-      final sessions = data
-          .map((e) => e as Map<String, dynamic>)
+      final prefix = '${widget.item.lmhid}:';
+      final sessions = marks
+          .where((m) => (m.sessionKey ?? '').startsWith(prefix))
+          .map((m) {
+            final st = m.status;
+            return <String, dynamic>{
+              // date-only để tránh lệch ngày khi parse mốc UTC nửa đêm
+              'ngay': (m.sessionDate ?? '').split('T').first,
+              'hiendienyn': (st == 'present' || st == 'late')
+                  ? true
+                  : (st == 'absent' ? false : null),
+              'baonghiyn': st == 'excused',
+            };
+          })
           .toList()
         ..sort((a, b) {
           final da = DateTime.tryParse(a['ngay'] as String? ?? '') ?? DateTime(0);
