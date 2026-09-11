@@ -220,6 +220,41 @@ class EmsApiService {
     });
   }
 
+  /// Trạng thái EMS của MỘT buổi, theo `session_key` (`<lmhid>:<HH-MM>:<yyyy-MM-dd>`).
+  /// Dùng khi chỉ có dữ liệu lịch IMS trong tay (Quản lý lớp): danh sách lớp
+  /// vẫn là của IMS, nhưng ai có mặt / vắng là EMS nói — không phải IMS.
+  /// Trả về map mssv → status ('present' | 'late' | 'absent' | 'excused').
+  static Future<Map<String, String>> sessionMarks(String sessionKey) {
+    return _withReMirror(() async {
+      final body = await _send(
+        'GET',
+        '/attendance/session-marks?session_key=${Uri.encodeQueryComponent(sessionKey)}',
+      );
+      final list = body['marks'];
+      final out = <String, String>{};
+      if (list is List) {
+        for (final m in list.whereType<Map<String, dynamic>>()) {
+          final mssv = m['mssv']?.toString();
+          final st = m['status']?.toString();
+          if (mssv != null && st != null) out[mssv] = st;
+        }
+      }
+      return out;
+    });
+  }
+
+  /// `session_key` đúng như máy chủ tạo (repositories/attendance-write-repo.js):
+  /// `<ims lopmonhoc id>:<HH-MM>:<yyyy-MM-dd>`.
+  static String sessionKeyFor({
+    required String lmhId,
+    required String date,
+    required String startTime,
+  }) {
+    final t = startTime.trim();
+    final hhmm = t.length >= 5 ? t.substring(0, 5).replaceAll(':', '-') : t.replaceAll(':', '-');
+    return '$lmhId:$hhmm:$date';
+  }
+
   /// Lưu điểm danh. Những trường hợp lạ vẫn được lưu và gắn cờ để xem lại.
   static Future<EmsSaveResult> saveMarks(
     EmsSession s,
@@ -672,6 +707,8 @@ class EmsStudentMark {
   final String? endTime;
   final DateTime? arrivedAt;
   final bool? arrivalOnTime;
+  /// 'ems' (teacher/scanner record, authoritative) or 'ims' (mirrored history).
+  final String? source;
 
   const EmsStudentMark({
     this.sessionKey,
@@ -684,6 +721,7 @@ class EmsStudentMark {
     this.endTime,
     this.arrivedAt,
     this.arrivalOnTime,
+    this.source,
   });
 
   factory EmsStudentMark.fromJson(Map<String, dynamic> j) => EmsStudentMark(
@@ -697,12 +735,14 @@ class EmsStudentMark {
     endTime: j['end_time']?.toString(),
     arrivedAt: DateTime.tryParse(j['arrived_at']?.toString() ?? '')?.toLocal(),
     arrivalOnTime: j['arrival_on_time'] as bool?,
+    source: j['source']?.toString(),
   );
 
   Map<String, dynamic> toJson() => {
     'session_key': ?sessionKey,
     'session_date': ?sessionDate,
     'status': ?status,
+    'source': ?source,
     'subject_name': ?subjectName,
     'section_code': ?sectionCode,
     'note': ?note,

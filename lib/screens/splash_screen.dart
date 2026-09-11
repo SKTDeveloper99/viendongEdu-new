@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../services/app_session.dart';
+import '../services/app_update_gate.dart';
 import '../services/notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,6 +20,9 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkSession() async {
+    // Cổng bắt buộc cập nhật chạy TRƯỚC mọi thứ: bản quá cũ dừng ở đây.
+    if (!await AppUpdateGate.check(context)) return;
+    if (!mounted) return;
     final restored = await AppSession.instance.tryRestore();
     if (!mounted) return;
     if (restored && AppSession.instance.token != null) {

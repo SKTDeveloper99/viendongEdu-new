@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
+import '../services/ems_api_service.dart';
 import '../components/skeleton.dart';
 
 class _Semester {
@@ -809,7 +810,7 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                                           const SizedBox(height: 6),
                                                           Row(
                                                             children: [
-                                                              Text('$hiendien / $siso hiện diện',
+                                                              Text('$hiendien / $siso hiện diện (IMS, lịch sử)',
                                                                   style: const TextStyle(
                                                                       fontSize: 13, color: Color(0xFF444444))),
                                                             ],
@@ -1002,6 +1003,9 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
       final ngayRaw = b['ngay']?.toString() ?? '';
       final ngay = ngayRaw.length >= 10 ? ngayRaw.substring(0, 10) : ngayRaw;
       final tkt = _fmtTime(b['thoigiankt']?.toString());
+      // Danh sách lớp: IMS (nơi duy nhất còn giữ danh sách LMH — quy định
+      // 2026-09-09). Có mặt / vắng: EMS, KHÔNG dùng `hiendienyn` của IMS nữa —
+      // từ khi giáo viên điểm danh trên EMS, IMS giữ dòng cũ và nói ngược.
       final data = await ApiService.postDiemDanhDanhSach(
         tkbid: b['tkbid'].toString(),
         lopid: b['lmhid'].toString(),
@@ -1010,9 +1014,21 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
         thoigianbd: b['thoigianbd']?.toString() ?? '',
         thoigiankt: tkt,
       );
+      final ems = await EmsApiService.sessionMarks(EmsApiService.sessionKeyFor(
+        lmhId: b['lmhid'].toString(),
+        date: ngay,
+        startTime: b['thoigianbd']?.toString() ?? '',
+      ));
       if (mounted) {
         setState(() {
-          _students = data.map((e) => e as Map<String, dynamic>).toList();
+          _students = data.map((e) {
+            final m = Map<String, dynamic>.from(e as Map);
+            final st = ems[m['mshv']?.toString() ?? ''];
+            // null = EMS chưa có dòng nào cho người này (chưa điểm danh).
+            m['ems_status'] = st;
+            m['hiendienyn'] = st == null ? null : (st == 'present' || st == 'late' || st == 'excused');
+            return m;
+          }).toList();
           _loading = false;
         });
       }
@@ -1040,11 +1056,9 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
     final tkt = _fmtTime(b['thoigiankt']?.toString());
     final siso = b['siso'] as int? ?? 0;
 
-    final present = _students.where((s) {
-      final v = s['hiendienyn'];
-      return v == true || v == 1;
-    }).length;
-    final absent = _students.length - present;
+    final present = _students.where((s) => s['hiendienyn'] == true).length;
+    final absent = _students.where((s) => s['hiendienyn'] == false).length;
+    final unmarked = _students.length - present - absent;
 
     return Container(
       decoration: const BoxDecoration(
@@ -1082,6 +1096,7 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
                   _StatPill(label: 'Có mặt', value: present, color: const Color(0xFF4CAF50)),
                   const SizedBox(width: 8),
                   _StatPill(label: 'Vắng', value: absent, color: Colors.red),
+                  _StatPill(label: 'Chưa ĐD', value: unmarked, color: const Color(0xFF2196F3)),
                 ] else ...[
                   Text('Sĩ số: $siso',
                       style: const TextStyle(fontSize: 13, color: Colors.grey)),
@@ -1123,23 +1138,30 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
                           final ten = s['ten']?.toString() ?? '';
                           final fullName = '$ho $ten'.trim();
                           final mshv = s['mshv']?.toString() ?? '';
-                          final present = s['hiendienyn'] == true || s['hiendienyn'] == 1;
+                          final present = s['hiendienyn'] == true;
+                          final unmarked = s['hiendienyn'] == null;
+                          final tone = unmarked
+                              ? const Color(0xFF2196F3)
+                              : present
+                                  ? const Color(0xFF4CAF50)
+                                  : Colors.red;
+                          final label = unmarked
+                              ? 'Chưa điểm danh'
+                              : present
+                                  ? 'Có mặt'
+                                  : 'Vắng';
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             child: Row(
                               children: [
                                 CircleAvatar(
                                   radius: 18,
-                                  backgroundColor: present
-                                      ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-                                      : Colors.red.withValues(alpha: 0.1),
+                                  backgroundColor: tone.withValues(alpha: 0.1),
                                   child: Text('${i + 1}',
                                       style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
-                                          color: present
-                                              ? const Color(0xFF4CAF50)
-                                              : Colors.red)),
+                                          color: tone)),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -1161,19 +1183,15 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: present
-                                        ? const Color(0xFF4CAF50).withValues(alpha: 0.12)
-                                        : Colors.red.withValues(alpha: 0.12),
+                                    color: tone.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    present ? 'Có mặt' : 'Vắng',
+                                    label,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: present
-                                          ? const Color(0xFF4CAF50)
-                                          : Colors.red,
+                                      color: tone,
                                     ),
                                   ),
                                 ),
