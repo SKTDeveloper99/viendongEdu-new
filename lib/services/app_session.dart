@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/hoc_vien_model.dart';
 import '../models/giang_vien_model.dart';
@@ -24,6 +25,8 @@ class AppSession {
   /// EMS đã từ chối có chủ đích (tài khoản bị khoá / chưa được tạo).
   /// Khi bật, app ngừng thử đối chiếu lại — chỉ tắt riêng tính năng EMS.
   bool emsDenied = false;
+
+  Future<bool>? _emsRefreshInFlight;
 
   bool get hasEms => emsToken != null && emsToken!.isNotEmpty;
 
@@ -58,7 +61,15 @@ class AppSession {
 
     token = savedToken;
     userid = prefs.getString('userid');
-    emsToken = prefs.getString('ems_token');
+    // Phiên chạy thử: token nạp lúc build LUÔN thắng token đã lưu.
+    //
+    // tryRestore() chạy SAU main(), nên trước đây nó ghi đè token vừa nạp
+    // bằng token của lần thử trước — app im lặng đăng nhập nhầm giáo viên.
+    // Đó đúng là cái bẫy đã làm hỏng buổi thử đầu tiên.
+    const baked = String.fromEnvironment('EMS_DEBUG_TOKEN');
+    emsToken = (kDebugMode && baked.isNotEmpty)
+        ? baked
+        : prefs.getString('ems_token');
     emsDenied = false;
 
     final userType = prefs.getString('user_type');
@@ -111,7 +122,27 @@ class AppSession {
   ///
   /// 403 `account_deactivated` và 404 `not_provisioned` là câu trả lời DỨT
   /// KHOÁT của EMS — đánh dấu [emsDenied] để không thử lại thành bão request.
-  Future<bool> refreshEmsToken() async {
+  Future<bool> refreshEmsToken({bool force = false}) async {
+    if (force) emsDenied = false;
+
+    // Login, splash restore, and an immediate attendance tap can all arrive at
+    // once. Share one mirror request so an older response cannot overwrite a
+    // newer EMS session.
+    final running = _emsRefreshInFlight;
+    if (running != null) return running;
+
+    final refresh = _refreshEmsTokenOnce();
+    _emsRefreshInFlight = refresh;
+    try {
+      return await refresh;
+    } finally {
+      if (identical(_emsRefreshInFlight, refresh)) {
+        _emsRefreshInFlight = null;
+      }
+    }
+  }
+
+  Future<bool> _refreshEmsTokenOnce() async {
     final imsToken = token;
     if (imsToken == null || imsToken.isEmpty) return false;
     if (emsDenied) return false;
@@ -122,6 +153,14 @@ class AppSession {
           ? await EmsApiService.mirrorTeacher(imsToken)
           : await EmsApiService.mirrorStudent(imsToken);
       await persist();
+      if (gv == null) {
+        // Push registration is optional reachability. A Firebase/network
+        // failure must never discard an otherwise valid EMS session.
+        try {
+          final fcmToken = await NotificationService.instance.getToken();
+          if (fcmToken != null) await registerStudentDeviceToken(fcmToken);
+        } catch (_) {}
+      }
       return true;
     } on EmsException catch (e) {
       if (e.isDeliberateDenial) emsDenied = true;
@@ -131,5 +170,22 @@ class AppSession {
       emsToken = null;
       return false;
     }
+  }
+
+  Future<void> registerStudentDeviceToken(String token) async {
+    if (hocVien == null || !hasEms) return;
+    await EmsApiService.registerStudentDevice(
+      token,
+      platform: defaultTargetPlatform == TargetPlatform.iOS
+          ? 'ios'
+          : defaultTargetPlatform == TargetPlatform.android
+          ? 'android'
+          : 'web',
+    );
+  }
+
+  Future<void> revokeStudentDeviceToken(String token) async {
+    if (hocVien == null || !hasEms) return;
+    await EmsApiService.revokeStudentDevice(token);
   }
 }

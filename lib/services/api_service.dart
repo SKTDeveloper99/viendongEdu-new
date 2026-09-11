@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show SocketException;
 import 'package:http/http.dart' as http;
 import 'app_session.dart';
 
@@ -222,6 +223,20 @@ class ApiService {
     print('📦 [postDiemDanhLuu] Payload: $bodyStr');
     const maxRetries = 3;
 
+    // CẢNH BÁO — endpoint này KHÔNG idempotent.
+    //
+    // `giangvien/diemdanh/luu` của IMS là INSERT, không phải UPSERT. Một cú
+    // POST đã tới server và ghi xong, nhưng phản hồi bị mất trên đường về (rớt
+    // 4G, hết 60s timeout), thì lần thử lại KHÔNG phải là "thử lại" — nó ghi
+    // THÊM một bộ bản ghi thứ hai. Vòng lặp cũ chạy tối đa 3 lần, tức là tối đa
+    // 3 bộ điểm danh cho cùng một buổi. Đó là một trong những nguồn tạo ra
+    // 247 dòng cho lớp ~176 người (đo 04/09/2026), và mỗi bộ thừa mang trạng
+    // thái mặc định VẮNG đè lên bộ mà giáo viên vừa tick.
+    //
+    // Nên: chỉ thử lại khi CHẮC CHẮN yêu cầu chưa hề tới được server — tức là
+    // lỗi kết nối/DNS (SocketException). Timeout thì KHÔNG, vì timeout đúng
+    // nghĩa là "không biết server đã ghi hay chưa", và đoán sai ở đây là làm
+    // hỏng dữ liệu điểm danh của cả lớp chứ không phải chỉ báo lỗi mạng.
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         final res = await http
@@ -235,11 +250,21 @@ class ApiService {
         return; // Thành công → thoát
       } on ApiException {
         rethrow; // Lỗi server / nghiệp vụ → không retry
-      } catch (_) {
+      } on SocketException {
+        // Chưa hề kết nối được → chắc chắn server chưa ghi gì → thử lại an toàn.
         if (attempt < maxRetries) {
-          // Mạng lỗi / timeout → chờ 3s rồi thử lại
           await Future.delayed(const Duration(seconds: 3));
+          continue;
         }
+        throw ApiException(
+            'Mạng yếu, đã thử $maxRetries lần nhưng không lưu được. Vui lòng thử lại.');
+      } catch (_) {
+        // Timeout hoặc lỗi lạ: KHÔNG biết server đã ghi hay chưa. Thà báo cho
+        // giáo viên mở lại màn hình kiểm tra, còn hơn âm thầm ghi trùng.
+        throw ApiException(
+            'Không rõ máy chủ đã lưu hay chưa (mạng chập chờn). '
+            'Hãy mở lại màn hình điểm danh để kiểm tra trước khi lưu lại — '
+            'bấm lưu lại ngay có thể tạo bản ghi trùng.');
       }
     }
 
