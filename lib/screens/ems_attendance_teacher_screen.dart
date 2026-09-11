@@ -253,6 +253,7 @@ class _RosterScreenState extends State<_RosterScreen>
   bool _usingCache = false;
   String? _error;
   List<EmsRosterStudent> _students = const [];
+  DateTime? _scanSyncedAt;
   Timer? _retryTimer;
 
   /// mssv -> 'present' | 'absent'. Vắng mặt trong map = CHƯA ĐIỂM DANH.
@@ -298,6 +299,7 @@ class _RosterScreenState extends State<_RosterScreen>
       if (!mounted) return;
       setState(() {
         _students = r.students;
+        _scanSyncedAt = r.scanSyncedAt;
         _marks.clear();
         for (final s in r.students) {
           if (s.status != null) _marks[s.mssv] = s.status!;
@@ -567,6 +569,17 @@ class _RosterScreenState extends State<_RosterScreen>
                   'bình thường; điện thoại sẽ tự gửi lại.',
             ),
           ),
+        // Giờ đồng bộ quẹt cổng: giáo viên đối chiếu được "đã quẹt" là tính
+        // tới lúc nào, thay vì đoán danh sách trống nghĩa là không ai quẹt.
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            _scanSyncedAt == null
+                ? 'Quẹt cổng: chưa đồng bộ'
+                : 'Quẹt cổng đồng bộ lúc ${_hhmm(_scanSyncedAt!)}',
+            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+          ),
+        ),
         Wrap(
           spacing: 8,
           runSpacing: 6,

@@ -625,15 +625,20 @@ class EmsRoster {
   final String sessionKey;
   final List<EmsRosterStudent> students;
   final int unmatchedScans;
+  /// Lần gần nhất EMS kéo được lượt quẹt cổng từ máy chấm công (null = chưa
+  /// bao giờ). Giáo viên nhìn giờ này để biết danh sách "đã quẹt" cũ tới đâu.
+  final DateTime? scanSyncedAt;
 
   const EmsRoster({
     required this.sessionKey,
     required this.students,
     this.unmatchedScans = 0,
+    this.scanSyncedAt,
   });
 
   factory EmsRoster.fromJson(Map<String, dynamic> j) => EmsRoster(
     sessionKey: j['session_key']?.toString() ?? '',
+    scanSyncedAt: DateTime.tryParse(j['scan_synced_at']?.toString() ?? ''),
     students: (j['students'] is List)
         ? (j['students'] as List)
               .whereType<Map<String, dynamic>>()
