@@ -99,8 +99,8 @@ void main() {
   });
 
   group('EmsException', () {
-    test('401/403/404 là từ chối dứt khoát — không thử lại thành bão request', () {
-      expect(EmsException('x', statusCode: 401).isDeliberateDenial, isTrue);
+    test('401 được thử lại; chỉ 403/404 khoá phiên EMS hiện tại', () {
+      expect(EmsException('x', statusCode: 401).isDeliberateDenial, isFalse);
       expect(EmsException('x', statusCode: 403, code: 'account_deactivated')
           .isDeliberateDenial, isTrue);
       expect(EmsException('x', statusCode: 404, code: 'not_provisioned')

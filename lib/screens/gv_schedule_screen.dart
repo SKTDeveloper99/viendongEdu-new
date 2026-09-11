@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/app_session.dart';
 import '../components/skeleton.dart';
 import '../utils/snack.dart';
-import 'gv_attendance_screen.dart';
-import 'gv_qr_attendance_screen.dart';
+import 'ems_attendance_teacher_screen.dart';
 
 class GvScheduleScreen extends StatefulWidget {
   const GvScheduleScreen({super.key});
@@ -341,38 +341,42 @@ class _ScheduleCardState extends State<_ScheduleCard> {
   Future<void> _openAttendance() async {
     setState(() => _loading = true);
     try {
-      final d = widget.data;
-      final ngayRaw = d['ngay'] as String? ?? '';
-      final ngay = ngayRaw.length >= 10 ? ngayRaw.substring(0, 10) : ngayRaw;
-      final ktRaw = d['thoigiankt'] as String? ?? '';
-      final thoigiankt = ktRaw.length >= 16 ? ktRaw.substring(11, 16) : ktRaw;
-
-      final list = await ApiService.postDiemDanhDanhSach(
-        tkbid: d['tkbid'].toString(),
-        lopid: d['lopid'].toString(),
-        phongid: d['phongid'].toString(),
-        ngay: ngay,
-        thoigianbd: d['thoigianbd']?.toString() ?? '',
-        thoigiankt: thoigiankt,
-      );
+      // ── CUTOVER 2026-09-12: điểm danh ghi vào EMS, không ghi vào IMS ───────
+      //
+      // IMS chỉ còn là nơi LẤY danh sách học viên của lớp môn học (đã scrape sang
+      // `enrollments`, khớp 612/613 lớp HK261 theo ims_lop_mon_hoc_id). Việc GHI
+      // điểm danh chuyển hẳn sang EMS.
+      //
+      // Vì sao phải chuyển chứ không vá tiếp: `giangvien/diemdanh/luu` của IMS là
+      // INSERT chứ không phải UPSERT, nên lưu hai lần là sinh ra hai bản ghi mâu
+      // thuẫn. Đo trên IMS thật ngày 09/09/2026: từ 01/08 có 11.075 nhóm trùng /
+      // 31.462 dòng, 2.633 mâu thuẫn trên 1.490 học viên, và 1.250 trường hợp
+      // dòng VẮNG thắng — 916 em đang bị báo vắng dù có đi học. Bản vá phía app
+      // (a07222a) làm giảm, nhưng KHÔNG thể diệt: endpoint không idempotent thì
+      // mạng chập chờn vẫn ghi trùng.
+      // `attendance_marks` của EMS có UNIQUE (session_key, mssv), nên lưu hai lần
+      // là KHÔNG THỂ tạo ra dòng thứ hai. Đó là lý do chuyển, không phải vì mới.
+      //
+      // Token EMS đã được AppSession đổi từ token IMS lúc đăng nhập
+      // (mirrorTeacher), nên giáo viên KHÔNG phải đăng nhập thêm lần nào.
+      // A missing EMS session must fail closed. The old IMS endpoint inserts
+      // duplicates and cannot truthfully confirm an EMS save.
+      if (!AppSession.instance.hasEms) {
+        await AppSession.instance.refreshEmsToken(force: true);
+      }
       if (!mounted) return;
-      Navigator.push(
+      if (!AppSession.instance.hasEms) {
+        showErrorSnack(
+          context,
+          'Chưa kết nối được EMS. Chưa có dữ liệu điểm danh nào được gửi. '
+          'Vui lòng kiểm tra mạng rồi thử lại.',
+        );
+        return;
+      }
+      await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => GvAttendanceScreen(
-            subject: d['mhten']?.toString() ?? '',
-            classCode: d['lmhma']?.toString() ?? '',
-            ngay: ngay,
-            students: list,
-            tkbParams: {
-              'tkbid': d['tkbid'].toString(),
-              'lopid': d['lopid'].toString(),
-              'phongid': d['phongid'].toString(),
-              'ngay': ngay,
-              'thoigianbd': d['thoigianbd']?.toString() ?? '',
-              'thoigiankt': thoigiankt,
-            },
-          ),
+          builder: (_) => const EmsAttendanceTeacherScreen(),
         ),
       );
     } catch (e) {
@@ -381,33 +385,6 @@ class _ScheduleCardState extends State<_ScheduleCard> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _openQrAttendance() {
-    final d = widget.data;
-    final ngayRaw = d['ngay'] as String? ?? '';
-    final ngay = ngayRaw.length >= 10 ? ngayRaw.substring(0, 10) : ngayRaw;
-    final ktRaw = d['thoigiankt'] as String? ?? '';
-    final thoigiankt = ktRaw.length >= 16 ? ktRaw.substring(11, 16) : ktRaw;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => GvQrAttendanceScreen(
-          subject: d['mhten']?.toString() ?? '',
-          classCode: d['lmhma']?.toString() ?? '',
-          ngay: ngay,
-          tkbParams: {
-            'tkbid': d['tkbid'].toString(),
-            'lopid': d['lopid'].toString(),
-            'phongid': d['phongid'].toString(),
-            'ngay': ngay,
-            'thoigianbd': d['thoigianbd']?.toString() ?? '',
-            'thoigiankt': thoigiankt,
-          },
-        ),
-      ),
-    );
   }
 
   @override
@@ -573,24 +550,6 @@ class _ScheduleCardState extends State<_ScheduleCard> {
                                 fontWeight: FontWeight.w600)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE65100),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _loading ? null : _openQrAttendance,
-                        icon: const Icon(Icons.qr_code_scanner,
-                            color: Colors.white, size: 18),
-                        label: const Text('Điểm danh bằng QR',
-                            style: TextStyle(color: Colors.white,
-                                fontWeight: FontWeight.w600)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF8C00),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(vertical: 12),

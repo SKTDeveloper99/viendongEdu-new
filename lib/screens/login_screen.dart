@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/hoc_vien_model.dart';
 import '../models/giang_vien_model.dart';
@@ -41,6 +41,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final data = await ApiService.login(userid, pass);
 
       AppSession.instance.token = data['token'] as String? ?? '';
+      // A successful IMS login is a fresh identity attempt. Never carry an EMS
+      // denial or token from a previous user/session into this one.
+      AppSession.instance.emsToken = null;
+      AppSession.instance.emsDenied = false;
       final userMap = data['user'] as Map<String, dynamic>?;
       AppSession.instance.userid = userMap?['userid'] as String?;
 
@@ -77,10 +81,10 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
 
-      // Đối chiếu sang EMS. CỐ Ý không await-chặn và không bắt lỗi ra ngoài:
-      // refreshEmsToken() tự nuốt mọi lỗi, nên EMS hỏng/chậm/từ chối cũng
-      // không giữ người dùng lại ở màn hình đăng nhập IMS.
-      unawaited(AppSession.instance.refreshEmsToken());
+      // Finish the EMS mirror before entering the app. Other IMS features may
+      // still be used when EMS is unavailable, but attendance can no longer
+      // race this request and silently open the legacy writer.
+      await AppSession.instance.refreshEmsToken(force: true);
 
       if (!mounted) return;
       final route = AppSession.instance.isGiangVien ? '/gv_home' : '/home';
@@ -237,6 +241,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                 ),
               ),
+
+              // Cửa chạy thử CHỈ Ở BẢN DEBUG: mở thẳng màn hình điểm danh giáo
+              // viên bằng token EMS nạp qua --dart-define=EMS_DEBUG_TOKEN, để
+              // kiểm tra luồng giáo viên mà không cần đăng nhập IMS. Bản release
+              // (kDebugMode = false) cắt bỏ hoàn toàn nút này.
+              if (kDebugMode && AppSession.instance.emsToken != null &&
+                  AppSession.instance.emsToken!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/ems_attendance_gv'),
+                  icon: const Icon(Icons.fact_check_outlined, size: 18),
+                  label: const Text('DEBUG · Điểm danh giáo viên'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE65100),
+                    minimumSize: const Size.fromHeight(46),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
