@@ -430,14 +430,20 @@ class _RosterScreenState extends State<_RosterScreen>
       );
     }).toList();
     final removeList = _toRemove;
-    final res = await EmsApiService.saveMarks(widget.session, marks, remove: removeList);
+    final res = await EmsApiService.saveMarks(
+      widget.session,
+      marks,
+      remove: removeList,
+    );
     // A 200 response is not enough. Read the session back and prove every row
     // survived — and that every removed one is actually gone — before telling
     // the teacher it is safely stored.
     final confirmed = await EmsApiService.roster(widget.session);
     final byMssv = {for (final s in confirmed.students) s.mssv: s.status};
     final missing = marks.where((m) => byMssv[m.mssv] != m.status).toList();
-    final stillThere = removeList.where((mssv) => byMssv[mssv] != null).toList();
+    final stillThere = removeList
+        .where((mssv) => byMssv[mssv] != null)
+        .toList();
     if (stillThere.isNotEmpty) {
       throw EmsException(
         'Máy chủ chưa bỏ điểm danh ${stillThere.length} học viên; ứng dụng sẽ gửi lại.',
@@ -600,90 +606,198 @@ class _RosterScreenState extends State<_RosterScreen>
     );
   }
 
+  static String _hhmmss(DateTime d) {
+    final school = d.toUtc().add(const Duration(hours: 7));
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(school.hour)}:${two(school.minute)}:${two(school.second)} '
+        '${two(school.day)}/${two(school.month)}/${school.year}';
+  }
+
+  static String _markLabel(String? mark) => switch (mark) {
+    'present' => 'Có mặt',
+    'absent' => 'Vắng',
+    'late' => 'Đi trễ',
+    'excused' => 'Vắng có phép',
+    _ => 'Chưa điểm danh',
+  };
+
+  /// Chạm vào học viên: xem giờ quẹt cổng chính xác (tới giây) và trạng thái
+  /// hiện tại, để giáo viên đối chiếu khi học viên khiếu nại "em có quẹt mà".
+  void _showStudentDetail(EmsRosterStudent s) {
+    final mark = _marks[s.mssv];
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              s.fullName,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              s.mssv + (s.classCode == null ? '' : ' • ${s.classCode}'),
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const Divider(height: 24),
+            _detailRow(
+              Icons.sensor_door_outlined,
+              'Quẹt cổng',
+              !s.scanned
+                  ? 'Chưa quẹt hôm nay'
+                  : s.scannedAt == null
+                  ? 'Đã quẹt (không có giờ)'
+                  : _hhmmss(s.scannedAt!),
+              color: s.scanned ? _green : Colors.grey[600]!,
+            ),
+            const SizedBox(height: 10),
+            _detailRow(
+              Icons.how_to_reg_outlined,
+              'Điểm danh',
+              _markLabel(mark),
+              color: mark == 'present'
+                  ? _green
+                  : mark == 'absent'
+                  ? _red
+                  : Colors.grey[700]!,
+            ),
+            if (_scanSyncedAt != null) ...[
+              const SizedBox(height: 10),
+              _detailRow(
+                Icons.sync,
+                'Đồng bộ quẹt cổng',
+                _hhmmss(_scanSyncedAt!),
+                color: Colors.grey[600]!,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(
+    IconData icon,
+    String label,
+    String value, {
+    required Color color,
+  }) => Row(
+    children: [
+      Icon(icon, size: 18, color: color),
+      const SizedBox(width: 10),
+      Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+      const Spacer(),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    ],
+  );
+
   Widget _studentRow(EmsRosterStudent s) {
     final mark = _marks[s.mssv];
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  s.fullName,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
+        onTap: () => _showStudentDetail(s),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      s.mssv,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      s.fullName,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    if (s.scanned) ...[
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.sensor_door_outlined,
-                        size: 13,
-                        color: _green,
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          s.mssv,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        if (s.scanned) ...[
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.sensor_door_outlined,
+                            size: 13,
+                            color: _green,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            s.scannedAt == null
+                                ? 'đã quẹt cổng'
+                                : 'quẹt ${_hhmm(s.scannedAt!)}',
+                            style: const TextStyle(fontSize: 11, color: _green),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (mark == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          'chưa điểm danh',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 2),
-                      Text(
-                        s.scannedAt == null
-                            ? 'đã quẹt cổng'
-                            : 'quẹt ${_hhmm(s.scannedAt!)}',
-                        style: const TextStyle(fontSize: 11, color: _green),
-                      ),
-                    ],
                   ],
                 ),
-                if (mark == null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      'chưa điểm danh',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
+              ),
+              _pill(
+                label: 'Có',
+                selected: mark == 'present',
+                color: _green,
+                onTap: () => _select(s.mssv, 'present'),
+              ),
+              const SizedBox(width: 6),
+              _pill(
+                label: 'Vắng',
+                selected: mark == 'absent',
+                color: _red,
+                onTap: () => _select(s.mssv, 'absent'),
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'Trạng thái khác',
+                onSelected: (value) =>
+                    _select(s.mssv, value == 'unmarked' ? null : value),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'late', child: Text('Đi trễ')),
+                  PopupMenuItem(value: 'excused', child: Text('Vắng có phép')),
+                  PopupMenuItem(
+                    value: 'unmarked',
+                    child: Text('Chưa điểm danh'),
                   ),
-              ],
-            ),
-          ),
-          _pill(
-            label: 'Có',
-            selected: mark == 'present',
-            color: _green,
-            onTap: () => _select(s.mssv, 'present'),
-          ),
-          const SizedBox(width: 6),
-          _pill(
-            label: 'Vắng',
-            selected: mark == 'absent',
-            color: _red,
-            onTap: () => _select(s.mssv, 'absent'),
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'Trạng thái khác',
-            onSelected: (value) =>
-                _select(s.mssv, value == 'unmarked' ? null : value),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'late', child: Text('Đi trễ')),
-              PopupMenuItem(value: 'excused', child: Text('Vắng có phép')),
-              PopupMenuItem(value: 'unmarked', child: Text('Chưa điểm danh')),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
