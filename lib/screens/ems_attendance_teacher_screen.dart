@@ -107,10 +107,8 @@ class _EmsAttendanceTeacherScreenState
     if (_sessions.isEmpty) {
       return const _Message(
         icon: Icons.event_busy,
-        title: 'Hôm nay chưa có buổi dạy nào trong hệ thống',
-        detail:
-            'Đây có thể là ngày trống, cũng có thể là lớp chưa được nối vào '
-            'EMS. Không phải lỗi của bạn.',
+        title: 'Hôm nay bạn không có buổi học',
+        detail: 'Buổi học lấy theo thời khoá biểu. Kéo xuống để tải lại.',
       );
     }
     return RefreshIndicator(

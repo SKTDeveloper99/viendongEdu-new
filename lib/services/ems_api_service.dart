@@ -199,6 +199,12 @@ class EmsApiService {
     return _withReMirror(() async {
       final q = (date == null || date.isEmpty) ? '' : '?date=$date';
       final body = await _send('GET', '/attendance/my-sessions$q');
+      // `from_schedule: false` = máy chủ KHÔNG có buổi nào hôm nay và đang trả
+      // về danh sách mọi lớp của giáo viên (không giờ, không phòng) thay thế.
+      // Đó không phải buổi học hôm nay: lưu điểm danh vào đó bị từ chối (422)
+      // và ngày 14/09 nó đã sinh ra 21 dấu điểm danh cho lớp chưa khai giảng.
+      // Hiện danh sách trống — hôm nay không có buổi học là hôm nay không có.
+      if (body['from_schedule'] == false) return <EmsSession>[];
       final list = body['sessions'];
       if (list is! List) return <EmsSession>[];
       return list
