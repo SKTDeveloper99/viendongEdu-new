@@ -179,7 +179,8 @@ class EmsApiService {
       return token != null && token.isNotEmpty;
     } on EmsException catch (e) {
       final c = e.statusCode;
-      if (c == 401 || c == 403 || c == 404 || c == 400 || c == 429) return false;
+      if (c == 401 || c == 403 || c == 404 || c == 400 || c == 429)
+        return false;
       rethrow;
     }
   }
@@ -281,7 +282,9 @@ class EmsApiService {
     required String startTime,
   }) {
     final t = startTime.trim();
-    final hhmm = t.length >= 5 ? t.substring(0, 5).replaceAll(':', '-') : t.replaceAll(':', '-');
+    final hhmm = t.length >= 5
+        ? t.substring(0, 5).replaceAll(':', '-')
+        : t.replaceAll(':', '-');
     return '$lmhId:$hhmm:$date';
   }
 
@@ -635,7 +638,9 @@ class EmsRosterStudent {
     scannedAt: DateTime.tryParse(j['scanned_at']?.toString() ?? '')?.toLocal(),
     // punch_id là bigint của Postgres — tuỳ driver trả về SỐ hoặc CHUỖI. Ép
     // 'as num' sẽ nổ khi nó là chuỗi. Parse từ toString() cho chắc.
-    punchId: j['punch_id'] == null ? null : int.tryParse(j['punch_id'].toString()),
+    punchId: j['punch_id'] == null
+        ? null
+        : int.tryParse(j['punch_id'].toString()),
   );
 
   Map<String, dynamic> toJson() => {
@@ -655,6 +660,7 @@ class EmsRoster {
   final String sessionKey;
   final List<EmsRosterStudent> students;
   final int unmatchedScans;
+
   /// Lần gần nhất EMS kéo được lượt quẹt cổng từ máy chấm công (null = chưa
   /// bao giờ). Giáo viên nhìn giờ này để biết danh sách "đã quẹt" cũ tới đâu.
   final DateTime? scanSyncedAt;
@@ -742,6 +748,7 @@ class EmsStudentMark {
   final String? endTime;
   final DateTime? arrivedAt;
   final bool? arrivalOnTime;
+
   /// 'ems' (teacher/scanner record, authoritative) or 'ims' (mirrored history).
   final String? source;
 

@@ -133,16 +133,17 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Icon(Icons.error_outline, color: Colors.orange),
             SizedBox(width: 8),
-            Text('Đăng nhập thất bại',
-                style: TextStyle(fontSize: 16)),
+            Text('Đăng nhập thất bại', style: TextStyle(fontSize: 16)),
           ],
         ),
         content: Text(msg),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Thử lại',
-                style: TextStyle(color: Colors.orange)),
+            child: const Text(
+              'Thử lại',
+              style: TextStyle(color: Colors.orange),
+            ),
           ),
         ],
       ),
@@ -185,14 +186,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     fillColor: Colors.orange[50],
                     labelText: 'Tài khoản',
                     labelStyle: const TextStyle(color: Colors.orange),
-                    prefixIcon:
-                        const Icon(Icons.person, color: Colors.orange),
+                    prefixIcon: const Icon(Icons.person, color: Colors.orange),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
                   ),
                 ),
               ),
@@ -212,25 +214,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     fillColor: Colors.orange[50],
                     labelText: 'Mật khẩu',
                     labelStyle: const TextStyle(color: Colors.orange),
-                    prefixIcon:
-                        const Icon(Icons.lock, color: Colors.orange),
+                    prefixIcon: const Icon(Icons.lock, color: Colors.orange),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscure
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        _obscure ? Icons.visibility_off : Icons.visibility,
                         color: Colors.orange,
                         size: 20,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscure = !_obscure),
+                      onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
                   ),
                 ),
               ),
@@ -243,7 +243,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: _loading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
-                    disabledBackgroundColor: Colors.orange.withValues(alpha: 0.6),
+                    disabledBackgroundColor: Colors.orange.withValues(
+                      alpha: 0.6,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -261,9 +263,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       : const Text(
                           'Đăng nhập',
                           style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                 ),
               ),
@@ -272,7 +275,8 @@ class _LoginScreenState extends State<LoginScreen> {
               // viên bằng token EMS nạp qua --dart-define=EMS_DEBUG_TOKEN, để
               // kiểm tra luồng giáo viên mà không cần đăng nhập IMS. Bản release
               // (kDebugMode = false) cắt bỏ hoàn toàn nút này.
-              if (kDebugMode && AppSession.instance.emsToken != null &&
+              if (kDebugMode &&
+                  AppSession.instance.emsToken != null &&
                   AppSession.instance.emsToken!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
