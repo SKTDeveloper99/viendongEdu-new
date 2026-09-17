@@ -160,6 +160,30 @@ class EmsApiService {
     return token;
   }
 
+  /// Thử đăng nhập EMS bằng tài khoản học viên (mssv + mật khẩu EMS).
+  ///
+  /// CHỈ để chẩn đoán khi IMS từ chối: nếu EMS nhận mà IMS không, thì mật
+  /// khẩu IMS của học viên đã khác MSSV — app nói thẳng điều đó thay vì
+  /// "sai mật khẩu" chung chung (17/09: 397/2.334 học viên rơi vào đây).
+  /// Trả về true nếu EMS cấp token; false nếu EMS cũng từ chối (401/403/404);
+  /// ném [EmsException] khi không tới được máy chủ.
+  static Future<bool> studentLoginProbe(String mssv, String password) async {
+    try {
+      final body = await _send(
+        'POST',
+        '/auth/student/login',
+        body: {'mssv': mssv, 'password': password},
+        auth: false,
+      );
+      final token = body['token']?.toString();
+      return token != null && token.isNotEmpty;
+    } on EmsException catch (e) {
+      final c = e.statusCode;
+      if (c == 401 || c == 403 || c == 404 || c == 400 || c == 429) return false;
+      rethrow;
+    }
+  }
+
   /// Bản đối chiếu cho giảng viên.
   static Future<String> mirrorTeacher(
     String imsToken, {

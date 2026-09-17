@@ -393,9 +393,17 @@ class _RosterScreenState extends State<_RosterScreen>
       _toast('Chưa chọn gì để lưu.');
       return;
     }
+    // 17/09 (Huy, lớp 43461): 12 học viên chưa chạm tới, bấm Lưu vẫn xanh.
+    // Máy chủ KHÔNG ghi vắng người chưa điểm danh — nhưng thầy/cô tưởng đã
+    // xong. Hỏi rõ trước khi lưu thiếu; không bao giờ tự ghi vắng thay.
+    if (_unmarkedCount > 0) {
+      final go = await _confirmUnmarked();
+      if (!go) return;
+    }
     setState(() {
       _saving = true;
       _queued = true;
+      _needsReason = null;
     });
     await _persistDraft();
     try {
@@ -406,15 +414,108 @@ class _RosterScreenState extends State<_RosterScreen>
       if (ok) {
         try {
           await _sendMarks();
+        } on EmsPunchConflict catch (c2) {
+          _holdForReason(c2);
         } on EmsException catch (e) {
           _toast(e.message);
         }
+      } else {
+        // Thầy/cô đóng hộp thoại: KHÔNG được để hàng đợi tự gửi lại y hệt
+        // mỗi 20 giây (17/09, Hậu: bốn lần 422 trong 30 giây).
+        _holdForReason(c);
       }
     } on EmsException catch (e) {
-      _toast('Đã giữ trên điện thoại; sẽ tự gửi khi có mạng. ${e.message}');
+      if (_isClientRefusal(e)) {
+        // 4xx là câu trả lời dứt khoát của máy chủ; gửi lại y hệt vô ích.
+        setState(() => _queued = false);
+        await _persistDraft();
+        _toast('Máy chủ từ chối: ${e.message}');
+      } else {
+        _toast('Đã giữ trên điện thoại; sẽ tự gửi khi có mạng. ${e.message}');
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Danh sách học viên đã quẹt cổng mà bị ghi vắng, máy chủ đang chờ lý do.
+  /// Khi khác null: hàng đợi tắt, thanh dưới nhắc; bấm Lưu để nêu lý do.
+  List<EmsPunchedStudent>? _needsReason;
+
+  void _holdForReason(EmsPunchConflict c) {
+    if (!mounted) return;
+    setState(() {
+      _queued = false;
+      _needsReason = c.students;
+    });
+    unawaited(_persistDraft());
+    _toast(
+      'CHƯA LƯU — ${c.students.length} học viên đã quẹt cổng nhưng ghi vắng. '
+      'Bấm Lưu để nêu lý do.',
+    );
+  }
+
+  /// 401 = token hết hạn (thử lại được). 4xx khác = máy chủ đã trả lời "không";
+  /// gửi lại nguyên xi chỉ tạo thêm dòng từ chối trong nhật ký.
+  static bool _isClientRefusal(EmsException e) {
+    final c = e.statusCode;
+    return c != null && c >= 400 && c < 500 && c != 401 && c != 408 && c != 429;
+  }
+
+  Future<bool> _confirmUnmarked() async {
+    final undecided = _students
+        .where((s) => !_marks.containsKey(s.mssv))
+        .toList();
+    final chosen = _marks.length;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Còn ${undecided.length} học viên chưa điểm danh'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Những học viên này sẽ KHÔNG được ghi có mặt hay vắng — '
+                'buổi học của họ để trống. Nếu họ vắng, hãy quay lại và chọn '
+                '"Vắng" cho từng người.',
+                style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+              ),
+              const SizedBox(height: 10),
+              for (final s in undecided.take(12))
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    '• ${s.fullName} (${s.mssv})',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              if (undecided.length > 12)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '… và ${undecided.length - 12} học viên nữa',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: _orange),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Quay lại điểm danh'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Lưu $chosen đã chọn, để trống số còn lại'),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
   }
 
   Future<void> _sendMarks() async {
@@ -457,6 +558,7 @@ class _RosterScreenState extends State<_RosterScreen>
     setState(() {
       _students = confirmed.students;
       _queued = false;
+      _needsReason = null;
     });
     final late = res.late ? ' (ghi muộn)' : '';
     final over = res.overriddenPunches.isEmpty
@@ -470,8 +572,17 @@ class _RosterScreenState extends State<_RosterScreen>
     if (mounted) setState(() => _saving = true);
     try {
       await _sendMarks();
-    } on EmsException {
-      // Expected on weak internet. The durable queue remains for next retry.
+    } on EmsPunchConflict catch (c) {
+      // Máy chủ đang HỎI, không phải mạng yếu. Dừng hàng đợi, để thầy/cô
+      // bấm Lưu và trả lời — không hỏi hộ, không gửi lại y hệt.
+      _holdForReason(c);
+    } on EmsException catch (e) {
+      if (_isClientRefusal(e)) {
+        if (mounted) setState(() => _queued = false);
+        await _persistDraft();
+        _toast('Máy chủ từ chối: ${e.message}');
+      }
+      // Còn lại là mạng yếu như dự kiến. Hàng đợi bền giữ cho lần thử sau.
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -579,8 +690,8 @@ class _RosterScreenState extends State<_RosterScreen>
           padding: const EdgeInsets.only(bottom: 6),
           child: Text(
             _scanSyncedAt == null
-                ? 'Quẹt cổng: chưa đồng bộ'
-                : 'Quẹt cổng đồng bộ lúc ${_hhmm(_scanSyncedAt!)}',
+                ? 'Lấy quẹt cổng: chưa có dữ liệu'
+                : 'Lấy quẹt cổng lúc ${_hhmm(_scanSyncedAt!)} — chưa quẹt KHÔNG phải vắng',
             style: TextStyle(fontSize: 12, color: Colors.grey[700]),
           ),
         ),
@@ -648,7 +759,7 @@ class _RosterScreenState extends State<_RosterScreen>
               Icons.sensor_door_outlined,
               'Quẹt cổng',
               !s.scanned
-                  ? 'Chưa quẹt hôm nay'
+                  ? 'Chưa quẹt hôm nay (không phải vắng)'
                   : s.scannedAt == null
                   ? 'Đã quẹt (không có giờ)'
                   : _hhmmss(s.scannedAt!),
@@ -669,7 +780,7 @@ class _RosterScreenState extends State<_RosterScreen>
               const SizedBox(height: 10),
               _detailRow(
                 Icons.sync,
-                'Đồng bộ quẹt cổng',
+                'Lấy quẹt cổng lúc',
                 _hhmmss(_scanSyncedAt!),
                 color: Colors.grey[600]!,
               ),
@@ -845,9 +956,13 @@ class _RosterScreenState extends State<_RosterScreen>
             Expanded(
               child: Text(
                 '${_queued ? 'Đã giữ trên máy • chờ gửi\n' : ''}'
+                '${_needsReason != null ? 'CHƯA LƯU • ${_needsReason!.length} SV quẹt cổng bị ghi vắng, cần lý do\n' : ''}'
                 'Có $_presentCount • Trễ $_lateCount • Phép $_excusedCount • '
-                'Vắng $_absentCount • Chưa $_unmarkedCount',
-                style: const TextStyle(fontSize: 12),
+                'Vắng $_absentCount • Chưa điểm danh $_unmarkedCount',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _needsReason != null ? _red : null,
+                ),
               ),
             ),
             FilledButton(

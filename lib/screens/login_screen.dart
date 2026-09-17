@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/hoc_vien_model.dart';
 import '../models/giang_vien_model.dart';
 import '../services/api_service.dart';
+import '../services/ems_api_service.dart';
 import '../services/app_session.dart';
 import '../services/notification_service.dart';
 
@@ -90,12 +91,37 @@ class _LoginScreenState extends State<LoginScreen> {
       final route = AppSession.instance.isGiangVien ? '/gv_home' : '/home';
       Navigator.pushReplacementNamed(context, route);
     } on ApiException catch (e) {
-      _showError(e.message);
+      _showError(await _explainStudentRefusal(userid, pass, e.message));
     } catch (e) {
       _showError('Đã có lỗi xảy ra. Thử lại sau.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// IMS nói "sai mật khẩu" cho một MSSV. Hỏi EMS cùng cặp mssv/mật khẩu:
+  /// nếu EMS nhận thì lỗi nằm ở mật khẩu IMS đã bị đổi, và app nói rõ cách
+  /// xử lý thay vì để học viên đoán. Không bao giờ làm nặng thêm lỗi gốc.
+  Future<String> _explainStudentRefusal(
+    String userid,
+    String pass,
+    String imsMessage,
+  ) async {
+    final looksLikeMssv = RegExp(r'^\d{10}$').hasMatch(userid);
+    if (!looksLikeMssv || imsMessage.startsWith('Lỗi kết nối')) {
+      return imsMessage;
+    }
+    try {
+      final emsOk = await EmsApiService.studentLoginProbe(userid, pass);
+      if (emsOk) {
+        return 'Mật khẩu này đúng trên EMS nhưng IMS đã đổi mật khẩu của bạn '
+            '(không còn là MSSV). Hãy dùng mật khẩu IMS đã đổi, hoặc nhờ '
+            'Phòng Đào tạo đặt lại mật khẩu IMS về MSSV.';
+      }
+    } catch (_) {
+      // EMS không tới được — giữ nguyên câu trả lời của IMS.
+    }
+    return imsMessage;
   }
 
   void _showError(String msg) {
