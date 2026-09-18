@@ -17,6 +17,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/ems_attendance_cache.dart';
 import '../services/ems_api_service.dart';
+import '../utils/vietnamese_text.dart';
 
 class EmsAttendanceTeacherScreen extends StatefulWidget {
   const EmsAttendanceTeacherScreen({super.key});
@@ -258,6 +259,29 @@ class _RosterScreenState extends State<_RosterScreen>
   final Map<String, String> _marks = {};
   final Map<String, String> _notes = {};
 
+  /// 18/09 (Dũng): giáo viên điểm danh tay muốn dò tên theo A–Z. Mặc định
+  /// giữ thứ tự danh sách lớp của IMS; bật nút trên thanh tiêu đề để xếp
+  /// theo TÊN (chữ cuối) rồi họ, bỏ dấu khi so sánh.
+  bool _sortAz = false;
+
+  List<EmsRosterStudent> get _visibleStudents {
+    if (!_sortAz) return _students;
+    final sorted = List<EmsRosterStudent>.of(_students);
+    sorted.sort((a, b) {
+      final c = _sortKey(a.fullName).compareTo(_sortKey(b.fullName));
+      return c != 0 ? c : a.mssv.compareTo(b.mssv);
+    });
+    return sorted;
+  }
+
+  /// "Nguyễn Thị Lan Phương" -> "phuong|nguyen thi lan phuong".
+  static String _sortKey(String fullName) {
+    final plain = stripVietnamese(fullName).toLowerCase().trim();
+    final parts = plain.split(RegExp(r'\s+'));
+    final given = parts.isEmpty ? '' : parts.last;
+    return '$given|$plain';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -340,6 +364,11 @@ class _RosterScreenState extends State<_RosterScreen>
   int get _lateCount => _marks.values.where((v) => v == 'late').length;
   int get _excusedCount => _marks.values.where((v) => v == 'excused').length;
   int get _unmarkedCount => _students.length - _marks.length;
+  int get _scannedCount => _students.where((s) => s.scanned).length;
+  int get _unscannedCount => _students.length - _scannedCount;
+  bool get _allPresent =>
+      _students.isNotEmpty &&
+      _students.every((s) => _marks[s.mssv] == 'present');
 
   Future<void> _persistDraft() => EmsAttendanceCache.saveDraft(
     _draftKey,
@@ -375,6 +404,23 @@ class _RosterScreenState extends State<_RosterScreen>
     setState(() {
       for (final s in _students) {
         _marks[s.mssv] = 'present';
+      }
+    });
+    unawaited(_persistDraft());
+  }
+
+  /// Bấm nhầm "Tất cả có mặt" (Dũng, 18/09): quay về đúng chỗ trước khi bấm —
+  /// ai máy chủ đã lưu thì giữ dấu đã lưu, ai đã quẹt cổng thì có mặt, còn
+  /// lại CHƯA ĐIỂM DANH. Không bao giờ xoá dấu đã lưu chỉ vì bỏ chọn.
+  void _resetToScanned() {
+    setState(() {
+      _marks.clear();
+      for (final s in _students) {
+        if (s.status != null) {
+          _marks[s.mssv] = s.status!;
+        } else if (s.scanned) {
+          _marks[s.mssv] = 'present';
+        }
       }
     });
     unawaited(_persistDraft());
@@ -643,6 +689,16 @@ class _RosterScreenState extends State<_RosterScreen>
               : widget.session.sectionCode,
           style: const TextStyle(fontSize: 16),
         ),
+        actions: [
+          IconButton(
+            tooltip: _sortAz ? 'Thứ tự danh sách lớp' : 'Xếp tên A–Z',
+            onPressed: () => setState(() => _sortAz = !_sortAz),
+            icon: Icon(
+              Icons.sort_by_alpha,
+              color: _sortAz ? Colors.white : Colors.white70,
+            ),
+          ),
+        ],
       ),
       body: _buildBody(),
       bottomNavigationBar: _loading || _error != null ? null : _bottomBar(),
@@ -664,12 +720,16 @@ class _RosterScreenState extends State<_RosterScreen>
       itemCount: _students.length + 1,
       separatorBuilder: (_, _) => const SizedBox(height: 6),
       itemBuilder: (_, i) =>
-          i == 0 ? _quickActions() : _studentRow(_students[i - 1]),
+          i == 0 ? _quickActions() : _studentRow(_visibleStudents[i - 1]),
     );
   }
 
   Widget _quickActions() {
-    final scans = _students
+    // "Quẹt cổng: có mặt (0)" từng đếm người đã quẹt NHƯNG chưa đánh dấu —
+    // vừa đánh xong là về 0, giáo viên tưởng máy nói không ai quẹt (Dũng,
+    // 18/09). Nay: tổng đã quẹt / chưa quẹt luôn hiện, nút chỉ nói còn
+    // bao nhiêu người đã quẹt mà chưa được đánh có mặt.
+    final scansPending = _students
         .where((s) => s.scanned && !_marks.containsKey(s.mssv))
         .length;
     return Column(
@@ -687,7 +747,7 @@ class _RosterScreenState extends State<_RosterScreen>
         // Giờ đồng bộ quẹt cổng: giáo viên đối chiếu được "đã quẹt" là tính
         // tới lúc nào, thay vì đoán danh sách trống nghĩa là không ai quẹt.
         Padding(
-          padding: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.only(bottom: 2),
           child: Text(
             _scanSyncedAt == null
                 ? 'Lấy quẹt cổng: chưa có dữ liệu'
@@ -695,20 +755,41 @@ class _RosterScreenState extends State<_RosterScreen>
             style: TextStyle(fontSize: 12, color: Colors.grey[700]),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            'Đã quẹt $_scannedCount • Chưa quẹt $_unscannedCount • Sĩ số ${_students.length}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF444444),
+            ),
+          ),
+        ),
         Wrap(
           spacing: 8,
           runSpacing: 6,
           children: [
             OutlinedButton.icon(
-              onPressed: scans == 0 ? null : _markScannedPresent,
+              onPressed: scansPending == 0 ? null : _markScannedPresent,
               icon: const Icon(Icons.sensor_door_outlined, size: 16),
-              label: Text('Quẹt cổng: có mặt ($scans)'),
+              label: Text(
+                scansPending == 0
+                    ? 'Đã quẹt → có mặt (xong)'
+                    : 'Đã quẹt → có mặt (còn $scansPending)',
+              ),
             ),
-            OutlinedButton.icon(
-              onPressed: _students.isEmpty ? null : _markAllPresent,
-              icon: const Icon(Icons.done_all, size: 16),
-              label: const Text('Tất cả có mặt'),
-            ),
+            _allPresent
+                ? OutlinedButton.icon(
+                    onPressed: _resetToScanned,
+                    icon: const Icon(Icons.undo, size: 16),
+                    label: const Text('Bỏ chọn tất cả'),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _students.isEmpty ? null : _markAllPresent,
+                    icon: const Icon(Icons.done_all, size: 16),
+                    label: const Text('Tất cả có mặt'),
+                  ),
           ],
         ),
       ],

@@ -391,6 +391,12 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
   String? _ddError;
   int _ddSubTab = 0; // 0 = buổi học, 1 = tổng hợp
 
+  /// session_key -> (có mặt, tổng dòng EMS). 18/09 (Dũng, lớp 43443): số ngoài
+  /// danh sách lấy từ IMS (23/40) còn bảng chi tiết lấy từ EMS (0/40 lúc đó) —
+  /// hai nguồn, hai con số. Từ nay danh sách cũng đếm EMS, cùng nguồn với
+  /// bảng chi tiết; IMS chỉ còn là chú thích khi EMS chưa có gì.
+  final Map<String, _EmsSessionCount> _emsCounts = {};
+
   @override
   void initState() {
     super.initState();
@@ -442,9 +448,50 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
           _loadingDD = false;
         });
       }
+      await _loadEmsCounts();
     } catch (e) {
       if (mounted) setState(() { _loadingDD = false; _ddError = e.toString(); });
     }
+  }
+
+  static String _sessionKeyOf(Map<String, dynamic> b) {
+    final ngayRaw = b['ngay']?.toString() ?? '';
+    final ngay = ngayRaw.length >= 10 ? ngayRaw.substring(0, 10) : ngayRaw;
+    return EmsApiService.sessionKeyFor(
+      lmhId: b['lmhid'].toString(),
+      date: ngay,
+      startTime: b['thoigianbd']?.toString() ?? '',
+    );
+  }
+
+  /// Chỉ hỏi EMS cho buổi đã tới ngày (buổi tương lai chưa thể có dấu). Mỗi
+  /// buổi một câu hỏi nhẹ; lỗi một buổi không làm hỏng cả danh sách.
+  Future<void> _loadEmsCounts() async {
+    final today = _todayHcm();
+    final due = _buoiHocs.where((b) {
+      final ngay = (b['ngay']?.toString() ?? '');
+      return ngay.length >= 10 && ngay.substring(0, 10).compareTo(today) <= 0;
+    }).toList();
+    await Future.wait(due.map((b) async {
+      final key = _sessionKeyOf(b);
+      try {
+        final marks = await EmsApiService.sessionMarks(key);
+        final present = marks.values
+            .where((v) => v == 'present' || v == 'late' || v == 'excused')
+            .length;
+        _emsCounts[key] = _EmsSessionCount(present: present, total: marks.length);
+      } catch (_) {
+        // Không có mạng / EMS lỗi: giữ nguyên, hàng sẽ ghi "chưa có trên EMS".
+      }
+    }));
+    if (mounted) setState(() {});
+  }
+
+  static String _todayHcm() {
+    final d = DateTime.now().toUtc().add(const Duration(hours: 7));
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
   }
 
   void _showBuoiDetail(Map<String, dynamic> buoi) {
@@ -772,9 +819,17 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                               final tbd = b['thoigianbd']?.toString() ?? '';
                                               final tkt = _fmtTime(b['thoigiankt']?.toString());
                                               final siso = b['siso'] as int? ?? 0;
-                                              final hiendien = b['hiendien'] as int? ?? 0;
-                                              final daDiemDanh = (b['dadiemdanh'] as int? ?? 0) == 1;
+                                              final imsHienDien = b['hiendien'] as int? ?? 0;
+                                              final ems = _emsCounts[_sessionKeyOf(b)];
+                                              // Nguồn duy nhất cho cả số ngoài lẫn bảng chi tiết: EMS.
+                                              final daDiemDanh = ems != null && ems.total > 0;
+                                              final hiendien = daDiemDanh ? ems.present : 0;
                                               final pct = siso > 0 ? hiendien / siso : 0.0;
+                                              final countText = daDiemDanh
+                                                  ? '$hiendien / $siso có mặt (EMS)'
+                                                  : imsHienDien > 0
+                                                      ? '$imsHienDien / $siso có mặt trên IMS cũ — chưa có trên EMS'
+                                                      : '0 / $siso — chưa điểm danh';
                                               return GestureDetector(
                                               onTap: () => _showBuoiDetail(b),
                                               child: Container(
@@ -810,9 +865,11 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                                           const SizedBox(height: 6),
                                                           Row(
                                                             children: [
-                                                              Text('$hiendien / $siso hiện diện (IMS, lịch sử)',
-                                                                  style: const TextStyle(
-                                                                      fontSize: 13, color: Color(0xFF444444))),
+                                                              Expanded(
+                                                                child: Text(countText,
+                                                                    style: const TextStyle(
+                                                                        fontSize: 13, color: Color(0xFF444444))),
+                                                              ),
                                                             ],
                                                           ),
                                                           const SizedBox(height: 6),
@@ -1348,4 +1405,10 @@ class _LegendItem extends StatelessWidget {
       ],
     );
   }
+}
+
+class _EmsSessionCount {
+  final int present;
+  final int total;
+  const _EmsSessionCount({required this.present, required this.total});
 }

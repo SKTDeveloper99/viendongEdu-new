@@ -176,7 +176,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Môn thử nghiệm'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Quẹt cổng: có mặt (1)'));
+    await tester.tap(find.text('Đã quẹt → có mặt (còn 1)'));
     await tester.pump();
     await tester.tap(find.text('Lưu điểm danh'));
     await tester.pumpAndSettle();
@@ -345,5 +345,119 @@ void main() {
     await tester.pump(const Duration(seconds: 65));
     await tester.pumpAndSettle();
     expect(posts, hasLength(3), reason: 'queue cleared after success');
+  });
+
+  // 18/09 Dũng, lớp 43443: "Quẹt cổng: có mặt (0)" về 0 ngay khi đánh xong;
+  // bấm nhầm "Tất cả có mặt" không có đường lui. Tổng đã quẹt / chưa quẹt phải
+  // đứng yên; "Bỏ chọn tất cả" trả về đúng người đã quẹt (+ dấu máy chủ đã lưu).
+  testWidgets('scan totals stay put; Bỏ chọn tất cả restores scanned + saved', (
+    tester,
+  ) async {
+    final posts = <Map<String, dynamic>>[];
+    EmsApiService.client = _teacherMock(
+      posts: posts,
+      students: () => [
+        {'mssv': '2600000001', 'full_name': 'Trần Văn An', 'scanned': true},
+        {'mssv': '2600000002', 'full_name': 'Lê Thị Bích', 'scanned': false},
+        {
+          'mssv': '2600000003',
+          'full_name': 'Phạm Cường',
+          'scanned': false,
+          'status': 'absent',
+        },
+      ],
+      onPost: (_) => http.Response('{}', 500),
+    );
+    await tester.pumpWidget(
+      const MaterialApp(home: EmsAttendanceTeacherScreen()),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Môn thử nghiệm'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Đã quẹt 1 • Chưa quẹt 2 • Sĩ số 3'), findsOneWidget);
+    expect(find.text('Đã quẹt → có mặt (còn 1)'), findsOneWidget);
+
+    await tester.tap(find.text('Đã quẹt → có mặt (còn 1)'));
+    await tester.pump();
+    // Tổng không đổi; chỉ nút nói "xong".
+    expect(find.text('Đã quẹt 1 • Chưa quẹt 2 • Sĩ số 3'), findsOneWidget);
+    expect(find.text('Đã quẹt → có mặt (xong)'), findsOneWidget);
+    expect(find.textContaining('Có 1 • '), findsOneWidget);
+
+    await tester.tap(find.text('Tất cả có mặt'));
+    await tester.pump();
+    expect(find.textContaining('Có 3 • '), findsOneWidget);
+    expect(find.text('Bỏ chọn tất cả'), findsOneWidget);
+
+    await tester.tap(find.text('Bỏ chọn tất cả'));
+    await tester.pump();
+    // An (quẹt) có mặt, Cường giữ dấu VẮNG máy chủ đã lưu, Bích về chưa điểm danh.
+    expect(
+      find.textContaining('Có 1 • Trễ 0 • Phép 0 • Vắng 1 • Chưa điểm danh 1'),
+      findsOneWidget,
+    );
+    expect(find.text('Tất cả có mặt'), findsOneWidget);
+    expect(posts, isEmpty, reason: 'chỉ đổi trên máy, chưa gửi gì');
+  });
+
+  // 18/09 Dũng: xếp tên A–Z để dò tay. Theo TÊN (chữ cuối), bỏ dấu.
+  testWidgets('A–Z sorts by given name without diacritics', (tester) async {
+    EmsApiService.client = _teacherMock(
+      posts: [],
+      students: () => [
+        {'mssv': '2600000001', 'full_name': 'Nguyễn Thị Lan Phương'},
+        {'mssv': '2600000002', 'full_name': 'Huỳnh Thị Mỹ Lộc'},
+        {'mssv': '2600000003', 'full_name': 'Ngô Anh Thư'},
+        {'mssv': '2600000004', 'full_name': 'Lê Ngọc Ánh'},
+      ],
+      onPost: (_) => http.Response('{}', 500),
+    );
+    await tester.pumpWidget(
+      const MaterialApp(home: EmsAttendanceTeacherScreen()),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Môn thử nghiệm'));
+    await tester.pumpAndSettle();
+
+    List<String> order() => tester
+        .widgetList<Text>(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Text &&
+                const [
+                  'Nguyễn Thị Lan Phương',
+                  'Huỳnh Thị Mỹ Lộc',
+                  'Ngô Anh Thư',
+                  'Lê Ngọc Ánh',
+                ].contains(w.data),
+          ),
+        )
+        .map((t) => t.data!)
+        .toList();
+
+    expect(order(), [
+      'Nguyễn Thị Lan Phương',
+      'Huỳnh Thị Mỹ Lộc',
+      'Ngô Anh Thư',
+      'Lê Ngọc Ánh',
+    ], reason: 'mặc định giữ thứ tự IMS');
+
+    await tester.tap(find.byIcon(Icons.sort_by_alpha));
+    await tester.pump();
+    expect(order(), [
+      'Lê Ngọc Ánh', // anh
+      'Huỳnh Thị Mỹ Lộc', // loc
+      'Nguyễn Thị Lan Phương', // phuong
+      'Ngô Anh Thư', // thu
+    ]);
+
+    await tester.tap(find.byIcon(Icons.sort_by_alpha));
+    await tester.pump();
+    expect(
+      order().first,
+      'Nguyễn Thị Lan Phương',
+      reason: 'tắt = về thứ tự IMS',
+    );
   });
 }
