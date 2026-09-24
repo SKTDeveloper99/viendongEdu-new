@@ -1,34 +1,30 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../services/app_session.dart';
+import '../models/crm_student_exams.dart';
+import '../services/crm_student_api.dart';
 
 // ── Model ────────────────────────────────────────────────
+//
+// Wraps CrmStudentExam (GET /api/student/me/exams — see
+// docs/api/mobile-ims-replacement-S3.md in crm-clean) with the field names
+// the widgets below already used.
 class ExamItem {
-  final int ltid;
-  final DateTime ngayThi;
-  final String gioBatDau;
-  final int thoiGian;
-  final String phongten;
-  final String loaiThi;
-  final String mhten;
-  final String hkma;
-  final String hkten;
+  final CrmStudentExam exam;
+  const ExamItem(this.exam);
 
-  ExamItem.fromJson(Map<String, dynamic> j)
-      : ltid = j['ltid'] as int,
-        ngayThi = DateTime.parse(j['ngayThi'] as String),
-        gioBatDau = j['gioBatDau'] as String? ?? '',
-        thoiGian = j['thoiGian'] as int? ?? 0,
-        phongten = j['phongten'] as String? ?? '',
-        loaiThi = j['loaiThi'] as String? ?? '',
-        mhten = j['mhten'] as String? ?? '',
-        hkma = j['hkma'] as String? ?? '',
-        hkten = j['hkten'] as String? ?? '';
+  DateTime? get ngayThi => exam.examDate;
+  String get gioBatDau => exam.startTime;
+  int get thoiGian => exam.durationMinutes;
+  // `room` is frequently null in the CRM's IMS mirror (documented data
+  // quality gap, not a join bug) — shown as "—" rather than blank.
+  String get phongten => exam.room?.trim().isNotEmpty == true
+      ? exam.room!.trim()
+      : '—';
+  String get loaiThi => exam.examType;
+  String get mhten => exam.subjectName;
+  String get hkma => exam.semesterCode;
+  String get hkten => semesterCodeLabel(exam.semesterCode);
 
-  String get ngayThiFormatted =>
-      '${ngayThi.day.toString().padLeft(2, '0')}/'
-      '${ngayThi.month.toString().padLeft(2, '0')}/'
-      '${ngayThi.year}';
+  String get ngayThiFormatted => exam.examDateFormatted;
 }
 
 // ── Screen ───────────────────────────────────────────────
@@ -40,11 +36,19 @@ class ExamScreen extends StatefulWidget {
 }
 
 class _ExamScreenState extends State<ExamScreen> {
+  // Bản toàn bộ lịch sử (không lọc học kỳ) — dùng để dựng danh sách học kỳ
+  // trong dropdown và làm nội dung của lựa chọn "Tất cả".
   List<ExamItem> _allExams = [];
+  // Những gì đang hiện trên màn — bằng _allExams khi _selectedHkma rỗng
+  // ("Tất cả"), hoặc kết quả một lần gọi lọc riêng theo học kỳ đã chọn.
+  List<ExamItem> _displayExams = [];
   List<({String hkma, String hkten})> _semesters = [];
-  String _selectedHkma = '';
+  String _selectedHkma = ''; // '' = Tất cả các học kỳ
   bool _loading = true;
+  bool _switchingSemester = false;
   String? _error;
+
+  static const String allLabel = 'Tất cả các học kỳ';
 
   @override
   void initState() {
@@ -52,38 +56,39 @@ class _ExamScreenState extends State<ExamScreen> {
     _fetchExams();
   }
 
+  // `GET /api/student/me/exams` KHÔNG kèm `semester` (hoặc `semester=all`)
+  // trả TOÀN BỘ lịch sử thi, mới nhất trước — mặc định của màn hình này.
+  // `?semester=<mã>` lọc đúng một học kỳ, chỉ gọi khi người dùng CHỌN một
+  // học kỳ cụ thể ở dropdown (xem _onSemesterChanged). Đây là hợp đồng MỚI
+  // của server (2026-09-25) — trước đó không truyền `semester` chỉ trả học
+  // kỳ hiện tại, và exam_screen từng phải tự dựng lịch sử bằng cách gọi lặp
+  // theo từng mã học kỳ lấy từ /me/sections; không còn cần nữa. Xem
+  // docs/ims_to_crm_student_academic_map.md.
   Future<void> _fetchExams() async {
     setState(() { _loading = true; _error = null; });
     try {
-      // Lấy ngaybatdau sớm nhất từ danh sách học kỳ
-      final hockyList = await ApiService.getHocKy();
-      String ngayBD = '2010-01-01';
-      if (hockyList.isNotEmpty) {
-        final starts = hockyList
-            .map((e) => e['ngaybatdau'] as String?)
-            .whereType<String>()
-            .map((s) => s.substring(0, 10))
-            .toList()..sort();
-        if (starts.isNotEmpty) ngayBD = starts.first;
-      }
-      final data = await ApiService.getExams(ngayBD);
-
-      final exams = data.map((e) => ExamItem.fromJson(e as Map<String, dynamic>)).toList();
-      // Sắp xếp theo ngày thi
-      exams.sort((a, b) => b.ngayThi.compareTo(a.ngayThi));
+      final view = await CrmStudentApi.exams();
+      final exams = view.exams.map(ExamItem.new).toList()
+        ..sort((a, b) {
+          final da = a.ngayThi ?? DateTime(0);
+          final db = b.ngayThi ?? DateTime(0);
+          return db.compareTo(da);
+        });
 
       // Lấy danh sách học kỳ duy nhất, giữ thứ tự mới → cũ
       final seen = <String>{};
       final semesters = exams
           .map((e) => (hkma: e.hkma, hkten: e.hkten))
-          .where((s) => seen.add(s.hkma))
-          .toList();
+          .where((s) => s.hkma.isNotEmpty && seen.add(s.hkma))
+          .toList()
+        ..sort((a, b) => b.hkma.compareTo(a.hkma));
 
       if (!mounted) return;
       setState(() {
         _allExams = exams;
+        _displayExams = exams;
         _semesters = semesters;
-        _selectedHkma = semesters.isNotEmpty ? semesters.first.hkma : '';
+        _selectedHkma = '';
         _loading = false;
       });
     } catch (e) {
@@ -92,8 +97,37 @@ class _ExamScreenState extends State<ExamScreen> {
     }
   }
 
-  List<ExamItem> get _filtered =>
-      _allExams.where((e) => e.hkma == _selectedHkma).toList();
+  // Người dùng chọn một học kỳ cụ thể (hoặc quay về "Tất cả"). Chỉ "Tất cả"
+  // dùng lại bản đã tải; một học kỳ cụ thể LUÔN gọi lại server với
+  // `semester=` đúng như hợp đồng mới, thay vì lọc từ bản toàn bộ đang có
+  // trong bộ nhớ — để danh sách hiện đúng những gì server coi là thuộc học
+  // kỳ đó.
+  Future<void> _onSemesterChanged(String hkma) async {
+    setState(() => _selectedHkma = hkma);
+    if (hkma.isEmpty) {
+      setState(() => _displayExams = _allExams);
+      return;
+    }
+    setState(() => _switchingSemester = true);
+    try {
+      final view = await CrmStudentApi.exams(semester: hkma);
+      if (!mounted) return;
+      setState(() {
+        _displayExams = view.exams.map(ExamItem.new).toList()
+          ..sort((a, b) {
+            final da = a.ngayThi ?? DateTime(0);
+            final db = b.ngayThi ?? DateTime(0);
+            return db.compareTo(da);
+          });
+        _switchingSemester = false;
+      });
+    } catch (_) {
+      // Giữ danh sách cũ trên màn hình; chỉ tắt vòng xoay tải.
+      if (mounted) setState(() => _switchingSemester = false);
+    }
+  }
+
+  List<ExamItem> get _filtered => _displayExams;
 
 
   @override
@@ -169,19 +203,32 @@ class _ExamScreenState extends State<ExamScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
-                        selectedItemBuilder: (_) => _semesters.map((s) => Center(
-                          child: Text(s.hkten,
-                              style: const TextStyle(
-                                color: Color(0xFFE65100),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                        selectedItemBuilder: (_) => [
+                          const Center(
+                            child: Text(allLabel,
+                                style: TextStyle(
+                                  color: Color(0xFFE65100),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                )),
+                          ),
+                          ..._semesters.map((s) => Center(
+                                child: Text(s.hkten,
+                                    style: const TextStyle(
+                                      color: Color(0xFFE65100),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    )),
                               )),
-                        )).toList(),
-                        items: _semesters.map((s) => DropdownMenuItem(
-                          value: s.hkma,
-                          child: Text(s.hkten),
-                        )).toList(),
-                        onChanged: (v) { if (v != null) setState(() => _selectedHkma = v); },
+                        ],
+                        items: [
+                          const DropdownMenuItem(value: '', child: Text(allLabel)),
+                          ..._semesters.map((s) => DropdownMenuItem(
+                                value: s.hkma,
+                                child: Text(s.hkten),
+                              )),
+                        ],
+                        onChanged: (v) { if (v != null) _onSemesterChanged(v); },
                       ),
                     ),
                   ),
@@ -191,7 +238,7 @@ class _ExamScreenState extends State<ExamScreen> {
 
           // ── Content ──
           Expanded(
-            child: _loading
+            child: _loading || _switchingSemester
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFFE65100)))
                 : _error != null
@@ -230,7 +277,9 @@ class _ExamScreenState extends State<ExamScreen> {
                           )
                         : RefreshIndicator(
                             color: const Color(0xFFE65100),
-                            onRefresh: _fetchExams,
+                            onRefresh: () => _selectedHkma.isEmpty
+                                ? _fetchExams()
+                                : _onSemesterChanged(_selectedHkma),
                             child: ListView.builder(
                               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                               itemCount: exams.length,

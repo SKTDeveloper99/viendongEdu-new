@@ -1,30 +1,29 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../services/api_service.dart';
+import '../models/crm_student_grades.dart';
+import '../services/crm_student_api.dart';
 
 // ── Model ────────────────────────────────────────────────
+//
+// Wraps a CrmStudentGrade (GET /api/student/me/grades) with the field names
+// the widgets below already used, so the display code needs minimal changes.
+// `gradeLetter`/`isPassed` are computed on CrmStudentGrade itself — see the
+// gap notes in lib/models/crm_student_grades.dart (no letter grade or 4.0
+// GPA exists anywhere in the CRM; the letter is a client-side display
+// convention, not sourced data).
 class GradeItem {
-  final String mhma;
-  final String mhten;
-  final int sotinchi;
-  final double tongdiem;
-  final double diem4;
-  final String diemchu;
-  final bool datyn;
+  final CrmStudentGrade grade;
   final int solan;
-  final bool chuaHoc; // tongdiem was null in API → chưa học
+  const GradeItem(this.grade, {this.solan = 1});
 
-  GradeItem.fromJson(Map<String, dynamic> j)
-      : mhma = j['mhma'] as String? ?? '',
-        mhten = j['mhten'] as String? ?? '',
-        sotinchi = j['sotinchi'] as int? ?? 0,
-        chuaHoc = j['tongdiem'] == null,
-        tongdiem = (j['tongdiem'] as num?)?.toDouble() ?? 0,
-        diem4 = (j['diem4'] as num?)?.toDouble() ?? 0,
-        diemchu = j['diemchu'] as String? ?? '',
-        datyn = j['datyn'] as bool? ?? false,
-        solan = j['solan'] as int? ?? 1;
+  String get mhma => grade.subjectCode;
+  String get mhten => grade.subjectName;
+  int get sotinchi => grade.credits;
+  double get tongdiem => grade.finalScore ?? 0;
+  String get diemchu => grade.gradeLetter;
+  bool get datyn => grade.isPassed;
+  bool get chuaHoc => grade.isUngraded; // tongdiem null → chưa có điểm
 
   Color get letterColor => switch (diemchu) {
         'A' => const Color(0xFF4CAF50),
@@ -33,6 +32,37 @@ class GradeItem {
         'D' => Colors.grey,
         _ => const Color(0xFFF44336),
       };
+}
+
+/// Gán "Lần N" theo thứ tự thời gian thật (semester_code rồi recorded_at) khi
+/// một môn xuất hiện nhiều lần trong /me/grades (học lại) — /me/grades không
+/// tự đánh số lần như IMS `bangdiemtongket` từng làm, nên tính lại ở client
+/// từ chính danh sách server trả về (không suy đoán, không thêm dữ liệu).
+List<GradeItem> _withRetakeNumbers(List<CrmStudentGrade> grades) {
+  final bySubject = <String, List<CrmStudentGrade>>{};
+  for (final g in grades) {
+    bySubject.putIfAbsent(g.subjectCode, () => []).add(g);
+  }
+  for (final list in bySubject.values) {
+    list.sort((a, b) {
+      final sa = a.semesterCode ?? '';
+      final sb = b.semesterCode ?? '';
+      final c = sa.compareTo(sb);
+      if (c != 0) return c;
+      final ra = a.recordedAt ?? DateTime(0);
+      final rb = b.recordedAt ?? DateTime(0);
+      return ra.compareTo(rb);
+    });
+  }
+  final solanFor = <CrmStudentGrade, int>{};
+  for (final list in bySubject.values) {
+    for (var i = 0; i < list.length; i++) {
+      solanFor[list[i]] = i + 1;
+    }
+  }
+  return grades
+      .map((g) => GradeItem(g, solan: solanFor[g] ?? 1))
+      .toList();
 }
 
 // ── Screen ───────────────────────────────────────────────
@@ -67,28 +97,73 @@ class _GradesScreenState extends State<GradesScreen>
     super.dispose();
   }
 
+  // CRM không có một endpoint "thongkectdt" gộp sẵn như IMS. Số liệu tổng
+  // quan (_stats) được TÍNH LẠI ở client từ hai nguồn thật:
+  //   /me/grades              → điểm từng môn + average_score của server
+  //   /me/remaining-subjects  → môn chưa đạt/chưa học theo chương trình
+  // "X/Y tín chỉ": Y (mẫu số) chỉ có ý nghĩa khi has_curriculum == true (lớp
+  // có chương trình khung); nếu không, Y rơi về đúng số tín chỉ ĐÃ có điểm,
+  // để không bịa ra một tổng chương trình không tồn tại. Xem
+  // docs/ims_to_crm_student_academic_map.md.
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
       final results = await Future.wait([
-        ApiService.getThongKeCTDT(),
-        ApiService.getBangDiem(),
-        ApiService.getMonHocChuaDat(),
+        CrmStudentApi.grades(),
+        CrmStudentApi.remainingSubjects(),
       ]);
       if (!mounted) return;
-      final allGrades = (results[1] as List<dynamic>)
-          .map((e) => GradeItem.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final gradesView = results[0] as CrmStudentGradesView;
+      final remaining = results[1] as CrmRemainingSubjectsView;
+
+      final allGrades = _withRetakeNumbers(gradesView.grades);
       final withScore = allGrades.where((g) => !g.chuaHoc).toList()
         ..sort((a, b) => b.tongdiem.compareTo(a.tongdiem));
       final noScore = allGrades.where((g) => g.chuaHoc).toList();
+
+      final creditsPassed = withScore
+          .where((g) => g.datyn)
+          .fold<int>(0, (s, g) => s + g.sotinchi);
+      final creditsFailed = withScore
+          .where((g) => !g.datyn)
+          .fold<int>(0, (s, g) => s + g.sotinchi);
+      final creditsNoScore =
+          noScore.fold<int>(0, (s, g) => s + g.sotinchi);
+      final creditsRemainingCurriculum = remaining.subjects
+          .fold<int>(0, (s, r) => s + r.credits);
+      final creditsTotal = remaining.hasCurriculum
+          ? creditsPassed + creditsRemainingCurriculum
+          : creditsPassed + creditsFailed + creditsNoScore;
+      final avg = gradesView.summary.averageScore ?? 0;
+
+      final chuaDat = remaining.subjects
+          .map((r) => {
+                'mhma': r.subjectCode,
+                'mhten': r.subjectName,
+                'sotinchi': r.credits,
+                'trangthai': switch (r.completionStatus) {
+                  'pending' => 1,
+                  'failed' => 2,
+                  _ => 0,
+                },
+              })
+          .toList();
+
       setState(() {
-        _stats = results[0] as Map<String, dynamic>;
+        _stats = {
+          'sotinchidat': creditsPassed,
+          'sotinchi': creditsTotal,
+          // Server không tách "tích lũy" khỏi "học kỳ này" — cùng một số
+          // average_score được dùng cho cả hai, không suy ra một con số thứ
+          // hai không có thật.
+          'trungbinhtichluy': avg,
+          'trungbinhtongket': avg,
+          'sotinchichuacodiem': creditsNoScore,
+          'sotinchikhongdat': creditsFailed,
+        };
         _grades = withScore;
         _chuaHoc = noScore;
-        _chuaDat = (results[2] as List<dynamic>)
-            .map((e) => e as Map<String, dynamic>)
-            .toList();
+        _chuaDat = chuaDat;
         _loading = false;
       });
     } catch (e) {

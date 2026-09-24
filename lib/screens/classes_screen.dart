@@ -1,49 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../services/api_service.dart';
+import '../models/crm_student_exams.dart' show semesterCodeLabel;
+import '../models/crm_student_grades.dart';
+import '../models/crm_student_schedule.dart';
+import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
-import '../services/app_session.dart';
 import '../components/skeleton.dart';
 
 // ── Model ──────────────────────────────────────────────
+//
+// CRM has no dedicated "danh sách học kỳ" endpoint for students (only
+// GET /api/teacher/me/semesters exists, teacher-only — verified by reading
+// routes/portals/teacher-portal.js and routes/portals/student-portal.js).
+// The list here is DERIVED from the distinct semester_code values seen in
+// /api/student/me/sections, exactly as documented in
+// docs/ims_to_crm_student_academic_map.md.
 class _Semester {
-  final int id;
-  final String ma;
+  final String code;
   final String ten;
-  const _Semester({required this.id, required this.ma, required this.ten});
+  const _Semester({required this.code, required this.ten});
 }
 
+// ── Class item ───────────────────────────────────────────
+// CRM /me/sections has no per-class evaluation weights (tylecc/tylegk/tyleck)
+// or syllabus text (decuong) — those were already dead fields in the old
+// screen (see docs/ims_to_crm_student_academic_map.md) and are not modelled
+// here. Score breakdown (diemcc/diemgk/diemck/tongdiem) is filled in
+// separately from /me/grades, matched by section_code — see
+// _ClassesScreenState._selectSemester.
 class _LopItem {
-  final int lmhid;
-  final String lmhma;
-  final String mhma;
-  final String mhten;
-  final int sotinchi;
-  final int tylecc;
-  final int tylegk;
-  final int tyleck;
-  final String gvten;
-  final String? decuong;
-  final double? tongdiem;
-  final double? diemcc;
-  final double? diemgk;
-  final double? diemck;
+  final int? sectionId;
+  final String lmhma; // section_code
+  final String mhma; // subject_code
+  final String mhten; // subject_name
+  final int sotinchi; // credits
+  final String gvten; // teacher_name
+  double? tongdiem;
+  double? diemgk; // midterm_score
+  double? diemck; // final_exam_score
 
-  _LopItem.fromJson(Map<String, dynamic> j)
-      : lmhid = j['lmhid'] as int? ?? 0,
-        lmhma = j['lmhma'] as String? ?? '',
-        mhma = j['mhma'] as String? ?? '',
-        mhten = j['mhten'] as String? ?? '',
-        sotinchi = j['sotinchi'] as int? ?? 0,
-        tylecc = j['tylecc'] as int? ?? 0,
-        tylegk = j['tylegk'] as int? ?? 0,
-        tyleck = j['tyleck'] as int? ?? 0,
-        gvten = j['gvten'] as String? ?? '',
-        decuong = j['decuong'] as String?,
-        tongdiem = (j['tongdiem'] as num?)?.toDouble(),
-        diemcc = (j['diemcc'] as num?)?.toDouble(),
-        diemgk = (j['diemgk'] as num?)?.toDouble(),
-        diemck = (j['diemck'] as num?)?.toDouble();
+  _LopItem({
+    required this.sectionId,
+    required this.lmhma,
+    required this.mhma,
+    required this.mhten,
+    required this.sotinchi,
+    required this.gvten,
+  });
+
+  factory _LopItem.fromSection(CrmStudentSection s) => _LopItem(
+    sectionId: s.sectionId,
+    lmhma: s.sectionCode,
+    mhma: s.subjectCode,
+    mhten: s.subjectName,
+    sotinchi: s.credits,
+    gvten: s.teacherName,
+  );
+
+  // CRM không có điểm "chuyên cần" (diemcc) riêng — chỉ midterm/final.
+  double? get diemcc => null;
 }
 
 // ── Screen ─────────────────────────────────────────────
@@ -71,16 +86,18 @@ class _ClassesScreenState extends State<ClassesScreen> {
   Future<void> _fetchSemesters() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getHocKy();
-      final sems = data
-          .map((e) => _Semester(
-                id: e['id'] as int,
-                ma: e['ma'] as String? ?? '',
-                ten: e['ten'] as String? ?? '',
-              ))
-          .toList();
-      // Sắp xếp mới nhất trước (id lớn hơn = mới hơn)
-      sems.sort((a, b) => b.id.compareTo(a.id));
+      // Không lọc theo semester để lấy đủ lịch sử ghi danh, rồi rút ra danh
+      // sách học kỳ duy nhất từ đó — xem ghi chú ở lớp _Semester.
+      final sections = await CrmStudentApi.sections();
+      final seen = <String>{};
+      final sems = <_Semester>[];
+      for (final s in sections) {
+        final code = s.semesterCode;
+        if (code == null || code.isEmpty || !seen.add(code)) continue;
+        sems.add(_Semester(code: code, ten: semesterCodeLabel(code)));
+      }
+      // Mới nhất trước (mã học kỳ lớn hơn = mới hơn).
+      sems.sort((a, b) => b.code.compareTo(a.code));
       if (!mounted) return;
       setState(() {
         _semesters = sems;
@@ -96,12 +113,36 @@ class _ClassesScreenState extends State<ClassesScreen> {
   Future<void> _selectSemester(_Semester sem) async {
     setState(() { _selected = sem; _loadingClasses = true; _classes = []; });
     try {
-      final data = await ApiService.getLopMonHoc(sem.id);
+      final results = await Future.wait([
+        CrmStudentApi.sections(semester: sem.code),
+        CrmStudentApi.grades(),
+      ]);
       if (!mounted) return;
+      final sections = results[0] as List<CrmStudentSection>;
+      final grades = (results[1] as CrmStudentGradesView).grades;
+      final items = sections.map(_LopItem.fromSection).toList();
+      // Gắn điểm giữa/cuối kỳ từ /me/grades, khớp theo section_code (rồi rơi
+      // về subject_code + học kỳ khi một dòng điểm không có section_code —
+      // xảy ra với ~2.900 dòng điểm nhập tay không có LMH đứng sau, theo ADR
+      // 004 trong crm-clean).
+      for (final item in items) {
+        CrmStudentGrade? g = grades.cast<CrmStudentGrade?>().firstWhere(
+          (g) => g?.sectionCode == item.lmhma,
+          orElse: () => null,
+        );
+        g ??= grades.cast<CrmStudentGrade?>().firstWhere(
+          (g) =>
+              g?.subjectCode == item.mhma && g?.semesterCode == sem.code,
+          orElse: () => null,
+        );
+        if (g != null) {
+          item.tongdiem = g.finalScore;
+          item.diemgk = g.midtermScore;
+          item.diemck = g.finalExamScore;
+        }
+      }
       setState(() {
-        _classes = data
-            .map((e) => _LopItem.fromJson(e as Map<String, dynamic>))
-            .toList();
+        _classes = items;
         _loadingClasses = false;
       });
     } catch (e) {
@@ -387,13 +428,6 @@ class _ClassCard extends StatelessWidget {
     );
   }
 
-  String _tyLeLabel(_LopItem item) {
-    final parts = <String>[];
-    if (item.tylecc > 0) parts.add('CC ${item.tylecc}%');
-    if (item.tylegk > 0) parts.add('GK ${item.tylegk}%');
-    if (item.tyleck > 0) parts.add('CK ${item.tyleck}%');
-    return parts.join(' · ');
-  }
 }
 
 // ── Detail Screen ──────────────────────────────────────
@@ -419,16 +453,17 @@ class _ClassDetailScreenState extends State<_ClassDetailScreen> {
   // Điểm danh giờ đọc từ EMS, KHÔNG còn từ IMS. EMS là nguồn chính thức: một
   // buổi chỉ có mặt trong danh sách khi giáo viên đã ghi nhận trên EMS.
   //
-  // session_key của EMS bắt đầu bằng lmhid ('<lmhid>:<tiết>:<ngày>'), nên lọc
-  // đúng lớp này bằng tiền tố. Giữ nguyên khung dữ liệu cũ (ngay / hiendienyn /
+  // Trước đây lọc theo tiền tố `lmhid:` của IMS (một khoá nội bộ của
+  // ims_snapshot). CRM không cấp lmhid cho học viên nữa, nên lọc trực tiếp
+  // theo `section_code` — chính là `EmsStudentMark.sectionCode`, nguồn thật
+  // của EMS cho lớp này. Giữ nguyên khung dữ liệu cũ (ngay / hiendienyn /
   // baonghiyn) để tái dùng y hệt biểu đồ và danh sách buổi học sẵn có.
   Future<void> _fetchBuoiHoc() async {
     try {
       final marks = await EmsApiService.myAttendance(limit: 300);
       if (!mounted) return;
-      final prefix = '${widget.item.lmhid}:';
       final sessions = marks
-          .where((m) => (m.sessionKey ?? '').startsWith(prefix))
+          .where((m) => m.sectionCode == widget.item.lmhma)
           .map((m) {
             final st = m.status;
             return <String, dynamic>{

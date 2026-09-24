@@ -1,34 +1,29 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/mock_data.dart';
-import '../services/api_service.dart';
+import '../models/crm_student_schedule.dart';
 import '../services/app_session.dart';
+import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
 import '../components/menu_item.dart';
 import 'hv_profile_info_screen.dart';
 import 'student_board_screen.dart';
 
-// "1970-01-01T20:30:00.000Z" → "20:30"
-String _parseEndTime(String? raw) {
-  if (raw == null || raw.isEmpty) return '';
-  try {
-    final dt = DateTime.parse(raw).toUtc();
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  } catch (_) {
-    return '';
+// Buổi (sáng/chiều/tối) suy ra từ giờ bắt đầu — CRM /me/schedule không có
+// trường `buoi` như IMS `tkbtheongay`, nên đây là quy ước hiển thị client-side
+// (xem docs/ims_to_crm_student_academic_map.md), không phải dữ liệu server.
+({String label, Color color}) _buoiInfo(String? startTime) {
+  if (startTime == null || startTime.isEmpty) {
+    return (label: '', color: Colors.grey);
   }
+  final hour = int.tryParse(startTime.split(':').first) ?? -1;
+  if (hour < 0) return (label: '', color: Colors.grey);
+  if (hour < 12) return (label: 'Sáng', color: const Color(0xFF2196F3));
+  if (hour < 18) return (label: 'Chiều', color: const Color(0xFFFF9800));
+  return (label: 'Tối', color: const Color(0xFF9C27B0));
 }
-
-// Helper: buoi code → label + color
-({String label, Color color}) _buoiInfo(String? b) => switch (b) {
-  'S' => (label: 'Sáng', color: const Color(0xFF2196F3)),
-  'C' => (label: 'Chiều', color: const Color(0xFFFF9800)),
-  'T' => (label: 'Tối', color: const Color(0xFF9C27B0)),
-  _ => (label: '', color: Colors.grey),
-};
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,10 +35,15 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
-  List<Map<String, dynamic>> _todayClasses = [];
+  List<CrmScheduleItem> _todayClasses = [];
   bool _scheduleLoading = true;
   bool _scheduleExpanded = true;
   int _unreadCount = 0;
+
+  // ── Hồ sơ CRM (chỉ để lấy mã lớp cho header) ─────────────────────────────
+  // Tên/MSSV đến thẳng từ AppSession (phiên đăng nhập CRM); mã lớp KHÔNG có
+  // trong AppSession nên phải gọi /api/student/me riêng.
+  String? _classCode;
 
   // ── Bảng tin (EMS) ─────────────────────────────────────────────────────────
   // Tách hẳn khỏi _unreadCount của chuông Vercel ở trên: hai nguồn khác nhau,
@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _loadTodaySchedule();
+    _loadProfile();
     _loadUnreadCount();
     _loadBoard();
     WidgetsBinding.instance.addObserver(this);
@@ -143,12 +144,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  // Lịch học hôm nay = mọi buổi trong /me/schedule (mọi học kỳ, server không
+  // lọc theo ngày) mà rơi đúng hôm nay theo thứ + khoảng ngày học phần — xem
+  // CrmScheduleItem.occursOn và ghi chú "weeks_pattern" trong
+  // lib/models/crm_student_schedule.dart.
   Future<void> _loadTodaySchedule() async {
     try {
-      final data = await ApiService.getTodaySchedule();
+      final all = await CrmStudentApi.schedule();
+      final today = DateTime.now();
+      final todays = all.where((s) => s.occursOn(today)).toList();
       if (mounted) {
         setState(() {
-          _todayClasses = data.map((e) => e as Map<String, dynamic>).toList();
+          _todayClasses = todays;
           _scheduleLoading = false;
         });
       }
@@ -157,18 +164,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  // ── Session helpers ──────────────────────────────────
-  String get _name => AppSession.instance.hocVien?.fullName ?? '–';
-  String get _mssv => AppSession.instance.hocVien?.mshv ?? '–';
-  String get _malop => AppSession.instance.hocVien?.malop ?? '–';
-  String get _ngaysinh => AppSession.instance.hocVien?.ngaysinhFormatted ?? '–';
-  String get _sdt => AppSession.instance.hocVien?.sdt ?? '–';
-  String get _email => AppSession.instance.hocVien?.email ?? '–';
-  String get _cmnd => AppSession.instance.hocVien?.cmnd ?? '–';
-  String get _khoahoc {
-    final k = AppSession.instance.hocVien?.khoahoc;
-    return k != null ? 'Khóa $k' : '–';
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await CrmStudentApi.me();
+      if (mounted) setState(() => _classCode = profile.classCode);
+    } catch (_) {
+      // Header vẫn hiện tên/MSSV từ AppSession; chỉ mã lớp trống.
+    }
   }
+
+  // ── Session helpers ──────────────────────────────────
+  // Tên/MSSV luôn từ AppSession (danh tính CRM đăng nhập), KHÔNG bao giờ từ
+  // hocVien (tàn dư IMS, không còn được nạp — xem app_session.dart).
+  String get _name => AppSession.instance.fullName ?? '–';
+  String get _mssv => AppSession.instance.mssv ?? '–';
+  String get _malop => _classCode ?? '–';
 
   IconData _mapStringToIcon(String? name) => switch (name) {
     'calendar_today' => Icons.calendar_today,
@@ -975,18 +985,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
 // ── Class Chip (lịch học hôm nay) ───────────────────────
 class _ClassChip extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final CrmScheduleItem data;
   const _ClassChip({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    final subject = data['mhten']?.toString() ?? '';
-    final classCode = data['lmhma']?.toString() ?? '';
-    final room = data['phongten']?.toString().trim() ?? '';
-    final teacher = data['gvten']?.toString() ?? '';
-    final start = data['thoigianbd']?.toString() ?? '';
-    final end = _parseEndTime(data['thoigiankt']?.toString());
-    final buoi = _buoiInfo(data['buoi']?.toString());
+    final subject = data.subjectName;
+    final classCode = data.sectionCode;
+    final room = data.room.trim();
+    final teacher = data.teacherName;
+    final start = data.startTime ?? '';
+    final end = data.endTime ?? '';
+    final buoi = _buoiInfo(start);
 
     return Container(
       width: double.infinity,
