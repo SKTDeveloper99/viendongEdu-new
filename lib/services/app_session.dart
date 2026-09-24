@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/crm_identity.dart';
 import '../models/hoc_vien_model.dart';
 import '../models/giang_vien_model.dart';
 import 'api_service.dart';
@@ -8,31 +9,74 @@ import 'ems_api_service.dart';
 import 'notification_service.dart';
 
 /// Singleton giữ trạng thái đăng nhập trong toàn app.
+///
+/// CRM (EMS) giờ là danh tính CHÍNH — [identity]/[emsToken] là điều kiện để
+/// coi là đã đăng nhập. [token]/[userid]/[hocVien]/[giangVien] là tàn dư của
+/// IMS: vẫn tồn tại vì một số màn hình (sóng 2) còn gọi [ApiService], nhưng
+/// từ 6.1.0 không có màn hình đăng nhập nào ghi vào chúng nữa.
 class AppSession {
   AppSession._();
   static final AppSession instance = AppSession._();
 
+  // ── IMS (tàn dư — sóng 2 sẽ gỡ) ────────────────────────────────────────────
   String? token;
   String? userid;
   HocVien? hocVien;
   GiangVien? giangVien;
 
-  /// Token của EMS (CRM). CỐ TÌNH tách khỏi [token] của IMS: hai hệ thống,
-  /// hai vòng đời. Không bao giờ ghi đè lên `auth_token`, vì mất token IMS là
-  /// mất toàn bộ app, còn mất token EMS chỉ mất Bảng tin.
+  // ── CRM / EMS — danh tính đăng nhập chính ──────────────────────────────────
+
+  /// Token Bearer của CRM. Tên giữ nguyên 'emsToken' (không đổi thành
+  /// 'crmToken') vì đã được dùng khắp app (EmsApiService.authHeaders, ảnh,
+  /// v.v.) — đổi tên sẽ là một lượt sửa không cần thiết.
   String? emsToken;
 
-  /// EMS đã từ chối có chủ đích (tài khoản bị khoá / chưa được tạo).
-  /// Khi bật, app ngừng thử đối chiếu lại — chỉ tắt riêng tính năng EMS.
-  bool emsDenied = false;
+  CrmRole? role;
+  String? mssv;
+  String? teacherId;
+  String? teacherCode;
+  String? fullName;
+  bool mustChangePassword = false;
 
-  Future<bool>? _emsRefreshInFlight;
+  /// EMS đã từ chối có chủ đích (tài khoản bị khoá / chưa được tạo).
+  bool emsDenied = false;
 
   bool get hasEms => emsToken != null && emsToken!.isNotEmpty;
 
-  bool get isGiangVien => giangVien != null && hocVien == null;
+  bool get isGiangVien => role == CrmRole.teacher;
 
-  bool get isLoggedIn => token != null && token!.isNotEmpty;
+  /// Đã đăng nhập = có một danh tính CRM hợp lệ. (Token IMS không còn cấp
+  /// quyền vào app kể từ 6.1.0 — xem [login_screen.dart].)
+  bool get isLoggedIn => hasEms;
+
+  /// Danh tính CRM hiện tại, dựng từ các trường rời ở trên. Trả `null` khi
+  /// chưa đăng nhập.
+  CrmIdentity? get identity {
+    final t = emsToken;
+    final r = role;
+    if (t == null || t.isEmpty || r == null) return null;
+    return CrmIdentity(
+      role: r,
+      token: t,
+      mssv: mssv,
+      teacherId: teacherId,
+      teacherCode: teacherCode,
+      fullName: fullName ?? '',
+      mustChangePassword: mustChangePassword,
+    );
+  }
+
+  /// Áp danh tính vừa đăng nhập/đổi mật khẩu vào session hiện tại.
+  void applyIdentity(CrmIdentity id) {
+    emsToken = id.token;
+    role = id.role;
+    mssv = id.mssv;
+    teacherId = id.teacherId;
+    teacherCode = id.teacherCode;
+    fullName = id.fullName;
+    mustChangePassword = id.mustChangePassword;
+    emsDenied = false;
+  }
 
   /// Lưu toàn bộ session vào SharedPreferences
   Future<void> persist() async {
@@ -51,25 +95,26 @@ class AppSession {
       await prefs.setString('user_type', 'hv');
       await prefs.setString('user_data', jsonEncode(hocVien!.toJson()));
     }
+    final id = identity;
+    if (id != null) {
+      await prefs.setString('crm_identity', jsonEncode(id.toPrefsJson()));
+    } else {
+      await prefs.remove('crm_identity');
+    }
   }
 
-  /// Khôi phục session khi mở lại app
+  /// Khôi phục session khi mở lại app.
+  ///
+  /// Đăng nhập hợp lệ bây giờ nghĩa là có [emsToken] + [role] — KHÔNG phải có
+  /// token IMS (không còn được cấp từ 6.1.0). Một bản cài đặt cũ khôi phục
+  /// một token IMS trơ trọi (không có 'crm_identity') bị coi là CHƯA đăng
+  /// nhập: nó không cầm được API nào của CRM.
   Future<bool> tryRestore() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedToken = prefs.getString('auth_token');
-    if (savedToken == null || savedToken.isEmpty) return false;
 
-    token = savedToken;
+    token = prefs.getString('auth_token');
     userid = prefs.getString('userid');
-    // Phiên chạy thử: token nạp lúc build LUÔN thắng token đã lưu.
-    //
-    // tryRestore() chạy SAU main(), nên trước đây nó ghi đè token vừa nạp
-    // bằng token của lần thử trước — app im lặng đăng nhập nhầm giáo viên.
-    // Đó đúng là cái bẫy đã làm hỏng buổi thử đầu tiên.
-    const baked = String.fromEnvironment('EMS_DEBUG_TOKEN');
-    emsToken = (kDebugMode && baked.isNotEmpty)
-        ? baked
-        : prefs.getString('ems_token');
+    emsToken = prefs.getString('ems_token');
     emsDenied = false;
 
     final userType = prefs.getString('user_type');
@@ -86,18 +131,40 @@ class AppSession {
         }
       } catch (_) {}
     }
+
+    final identityStr = prefs.getString('crm_identity');
+    Map<String, dynamic>? identityJson;
+    if (identityStr != null) {
+      try {
+        identityJson = jsonDecode(identityStr) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+    final id = CrmIdentity.fromPrefsJson(identityJson, emsToken);
+    if (id == null) {
+      // Không có danh tính CRM đầy đủ — dọn nốt token IMS mồ côi để
+      // isLoggedIn/persist không mâu thuẫn nhau ở lần lưu kế tiếp.
+      role = null;
+      mssv = null;
+      teacherId = null;
+      teacherCode = null;
+      fullName = null;
+      mustChangePassword = false;
+      return false;
+    }
+    role = id.role;
+    mssv = id.mssv;
+    teacherId = id.teacherId;
+    teacherCode = id.teacherCode;
+    fullName = id.fullName;
+    mustChangePassword = id.mustChangePassword;
     return true;
   }
 
-  /// Xóa session khi đăng xuất
+  /// Xóa session khi đăng xuất, hoặc khi EMS trả 401 (phiên hết hạn).
   Future<void> clear() async {
-    // Xóa FCM token trước khi clear session
-    // Phải khớp tiền tố dùng lúc đăng ký ('hv_' / 'gv_'), nếu không server
-    // không tìm thấy bản ghi và thiết bị vẫn nhận notification sau khi logout
-    final id = hocVien != null
-        ? 'hv_${hocVien!.id}'
-        : (giangVien != null ? 'gv_${giangVien!.id}' : null);
-    if (id != null) {
+    // Xóa FCM token trước khi clear session.
+    final id = identity?.notificationId;
+    if (id != null && id.isNotEmpty) {
       await NotificationService.instance.unregisterToken(id);
     }
     token = null;
@@ -106,6 +173,12 @@ class AppSession {
     emsDenied = false;
     hocVien = null;
     giangVien = null;
+    role = null;
+    mssv = null;
+    teacherId = null;
+    teacherCode = null;
+    fullName = null;
+    mustChangePassword = false;
     ApiService.clearCache();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
@@ -113,69 +186,28 @@ class AppSession {
     await prefs.remove('userid');
     await prefs.remove('user_type');
     await prefs.remove('user_data');
+    await prefs.remove('crm_identity');
   }
 
-  /// Đối chiếu phiên IMS hiện tại sang EMS và lưu token EMS.
+  /// Tàn dư tương thích cho các màn hình sóng 2 chưa được sửa
+  /// ([splash_screen.dart] gọi khi khôi phục phiên cũ chưa có token EMS,
+  /// [schedule_screen.dart]/[gv_schedule_screen.dart] gọi khi kéo-để-làm-mới).
   ///
-  /// KHÔNG BAO GIỜ ném lỗi ra ngoài: EMS hỏng thì màn hình IMS vẫn phải vào
-  /// được. Trả về true nếu lấy được token.
-  ///
-  /// 403 `account_deactivated` và 404 `not_provisioned` là câu trả lời DỨT
-  /// KHOÁT của EMS — đánh dấu [emsDenied] để không thử lại thành bão request.
+  /// TRƯỚC: đối chiếu token IMS lấy token EMS mới (identity mirror).
+  /// NAY: không còn token IMS để đối chiếu — trả thẳng [hasEms]. Một 401 thật
+  /// sự (phiên EMS hết hạn) phải được xử lý ở nơi gọi bằng cách bắt
+  /// `EmsException(statusCode: 401)`, gọi [clear] rồi điều hướng về
+  /// '/login' — không có cách nào "làm mới" một token đã hết hạn nữa vì
+  /// không còn phiên IMS đứng sau nó.
   Future<bool> refreshEmsToken({bool force = false}) async {
     if (force) emsDenied = false;
-
-    // Login, splash restore, and an immediate attendance tap can all arrive at
-    // once. Share one mirror request so an older response cannot overwrite a
-    // newer EMS session.
-    final running = _emsRefreshInFlight;
-    if (running != null) return running;
-
-    final refresh = _refreshEmsTokenOnce();
-    _emsRefreshInFlight = refresh;
-    try {
-      return await refresh;
-    } finally {
-      if (identical(_emsRefreshInFlight, refresh)) {
-        _emsRefreshInFlight = null;
-      }
-    }
+    return hasEms;
   }
 
-  Future<bool> _refreshEmsTokenOnce() async {
-    final imsToken = token;
-    if (imsToken == null || imsToken.isEmpty) return false;
-    if (emsDenied) return false;
-
-    try {
-      final gv = giangVien;
-      emsToken = gv != null
-          ? await EmsApiService.mirrorTeacher(imsToken)
-          : await EmsApiService.mirrorStudent(imsToken);
-      await persist();
-      if (gv == null) {
-        // Push registration is optional reachability. A Firebase/network
-        // failure must never discard an otherwise valid EMS session.
-        try {
-          final fcmToken = await NotificationService.instance.getToken();
-          if (fcmToken != null) await registerStudentDeviceToken(fcmToken);
-        } catch (_) {}
-      }
-      return true;
-    } on EmsException catch (e) {
-      if (e.isDeliberateDenial) emsDenied = true;
-      emsToken = null;
-      return false;
-    } catch (_) {
-      emsToken = null;
-      return false;
-    }
-  }
-
-  Future<void> registerStudentDeviceToken(String token) async {
-    if (hocVien == null || !hasEms) return;
+  Future<void> registerStudentDeviceToken(String fcmToken) async {
+    if (role != CrmRole.student || !hasEms) return;
     await EmsApiService.registerStudentDevice(
-      token,
+      fcmToken,
       platform: defaultTargetPlatform == TargetPlatform.iOS
           ? 'ios'
           : defaultTargetPlatform == TargetPlatform.android
@@ -184,8 +216,8 @@ class AppSession {
     );
   }
 
-  Future<void> revokeStudentDeviceToken(String token) async {
-    if (hocVien == null || !hasEms) return;
-    await EmsApiService.revokeStudentDevice(token);
+  Future<void> revokeStudentDeviceToken(String fcmToken) async {
+    if (role != CrmRole.student || !hasEms) return;
+    await EmsApiService.revokeStudentDevice(fcmToken);
   }
 }

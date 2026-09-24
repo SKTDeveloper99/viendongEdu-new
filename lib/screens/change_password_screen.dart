@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../models/crm_identity.dart';
+import '../services/app_session.dart';
+import '../services/ems_api_service.dart';
 import '../utils/snack.dart';
 
+/// Đổi mật khẩu CRM. Dùng cho CẢ HAI trường hợp:
+///  - lối vào "Đổi mật khẩu" bình thường trong app (`forced: false`, mặc định);
+///  - đổi mật khẩu BẮT BUỘC ngay sau khi đăng nhập lần đầu, khi
+///    `must_change_password` là true (`forced: true` — không có nút back,
+///    thành công thì đi thẳng vào app thay vì pop về màn trước).
 class ChangePasswordScreen extends StatefulWidget {
-  const ChangePasswordScreen({super.key});
+  final bool forced;
+  const ChangePasswordScreen({super.key, this.forced = false});
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -32,14 +40,31 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      await ApiService.changePassword(
-        oldpass: _oldCtrl.text.trim(),
-        newpass: _newCtrl.text.trim(),
-      );
+      final isTeacher = AppSession.instance.role == CrmRole.teacher;
+      final current = _oldCtrl.text.trim();
+      final next = _newCtrl.text.trim();
+      if (isTeacher) {
+        await EmsApiService.changeTeacherPassword(
+          currentPassword: current,
+          newPassword: next,
+        );
+      } else {
+        await EmsApiService.changeStudentPassword(
+          currentPassword: current,
+          newPassword: next,
+        );
+      }
+      AppSession.instance.mustChangePassword = false;
+      await AppSession.instance.persist();
       if (!mounted) return;
       showSuccessSnack(context, 'Đổi mật khẩu thành công!');
-      Navigator.pop(context);
-    } on ApiException catch (e) {
+      if (widget.forced) {
+        final route = isTeacher ? '/gv_home' : '/home';
+        Navigator.pushReplacementNamed(context, route);
+      } else {
+        Navigator.pop(context);
+      }
+    } on EmsException catch (e) {
       if (!mounted) return;
       showErrorSnack(context, e.message);
     } finally {
@@ -49,7 +74,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      // Bắt buộc đổi mật khẩu: không cho back ra ngoài trước khi xong.
+      canPop: !widget.forced,
+      child: Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(top: false, child: Column(
         children: [
@@ -67,15 +95,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ),
             child: Row(
               children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back_ios,
-                      color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Đổi mật khẩu',
-                  style: TextStyle(
+                if (!widget.forced)
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.arrow_back_ios,
+                        color: Colors.white, size: 20),
+                  ),
+                if (!widget.forced) const SizedBox(width: 8),
+                Text(
+                  widget.forced
+                      ? 'Vui lòng đổi mật khẩu'
+                      : 'Đổi mật khẩu',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -190,6 +221,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           ),
         ],
       )),
+      ),
     );
   }
 }

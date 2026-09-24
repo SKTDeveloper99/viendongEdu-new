@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/crm_identity.dart';
 import 'app_session.dart';
 
 /// Lỗi từ EMS. `code` là mã máy ổn định (ví dụ 'account_deactivated'),
@@ -116,13 +117,29 @@ class EmsApiService {
     );
   }
 
-  static Future<Map<String, dynamic>> _send(
+  /// Đường ra mạng CHUNG cho toàn app — mọi feature-service khác (điểm danh,
+  /// bảng tin, và các file các bot khác dựng thêm) đi qua đây thay vì tự viết
+  /// http.post/get riêng. Giữ nguyên cách xử lý lỗi cũ: đọc body JSON dựng
+  /// [EmsException] (kể cả 401), timeout thì báo lỗi mạng chứ không crash.
+  ///
+  /// [method] là 'GET' | 'POST' | 'DELETE'. [query] được ghép vào chuỗi query
+  /// của URL; [body] được jsonEncode làm request body (POST/DELETE).
+  ///
+  /// 401 KHÔNG còn được thử lại ở đây (không còn token IMS để đối chiếu lại):
+  /// nó nghĩa là phiên đã hết hạn. Gọi nơi gọi tự bắt
+  /// `EmsException(statusCode: 401)` và điều hướng về `/login` — xem
+  /// `AppSession.clear()`.
+  static Future<dynamic> send(
     String method,
     String path, {
     Map<String, dynamic>? body,
+    Map<String, String>? query,
     bool auth = true,
   }) async {
-    final uri = Uri.parse('$baseUrl$path');
+    var uri = Uri.parse('$baseUrl$path');
+    if (query != null && query.isNotEmpty) {
+      uri = uri.replace(queryParameters: {...uri.queryParameters, ...query});
+    }
     http.Response res;
     try {
       final headers = _headers(auth: auth);
@@ -142,73 +159,86 @@ class EmsApiService {
     return _decode(res);
   }
 
-  // ── Identity mirror ────────────────────────────────────────────────────────
-  // Token IMS CHÍNH LÀ giấy thông hành ở đây; các endpoint này không cần Bearer.
+  static Future<Map<String, dynamic>> _send(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) async {
+    return (await send(method, path, body: body, auth: auth))
+        as Map<String, dynamic>;
+  }
 
-  /// Đổi token IMS của học viên lấy token EMS. Trả về token EMS.
-  static Future<String> mirrorStudent(String imsToken) async {
+  // ── Đăng nhập CRM ───────────────────────────────────────────────────────────
+  // Không còn token IMS trung gian: học viên/giảng viên đăng nhập THẲNG vào
+  // EMS bằng tài khoản EMS. Các endpoint này không cần Bearer (chưa có token).
+
+  /// `POST /auth/student/login {mssv, password}`.
+  /// Mật khẩu mặc định là MSSV (quyết định của chủ trường).
+  static Future<CrmIdentity> studentLogin(String mssv, String password) async {
     final body = await _send(
       'POST',
-      '/v1/identity/mirror',
-      body: {'ims_token': imsToken},
+      '/auth/student/login',
+      body: {'mssv': mssv, 'password': password},
       auth: false,
     );
-    final token = body['crm_token']?.toString();
-    if (token == null || token.isEmpty) {
-      throw EmsException('Máy chủ thông tin không cấp được phiên đăng nhập.');
+    final identity = CrmIdentity.fromStudentLogin(body);
+    if (identity.token.isEmpty) {
+      throw EmsException('Máy chủ không cấp được phiên đăng nhập.');
     }
-    return token;
+    return identity;
   }
 
-  /// Thử đăng nhập EMS bằng tài khoản học viên (mssv + mật khẩu EMS).
-  ///
-  /// CHỈ để chẩn đoán khi IMS từ chối: nếu EMS nhận mà IMS không, thì mật
-  /// khẩu IMS của học viên đã khác MSSV — app nói thẳng điều đó thay vì
-  /// "sai mật khẩu" chung chung (17/09: 397/2.334 học viên rơi vào đây).
-  /// Trả về true nếu EMS cấp token; false nếu EMS cũng từ chối (401/403/404);
-  /// ném [EmsException] khi không tới được máy chủ.
-  static Future<bool> studentLoginProbe(String mssv, String password) async {
-    try {
-      final body = await _send(
-        'POST',
-        '/auth/student/login',
-        body: {'mssv': mssv, 'password': password},
-        auth: false,
-      );
-      final token = body['token']?.toString();
-      return token != null && token.isNotEmpty;
-    } on EmsException catch (e) {
-      final c = e.statusCode;
-      if (c == 401 || c == 403 || c == 404 || c == 400 || c == 429)
-        return false;
-      rethrow;
-    }
-  }
-
-  /// Bản đối chiếu cho giảng viên.
-  static Future<String> mirrorTeacher(
-    String imsToken, {
+  /// `POST /auth/teacher/login {teacher_code, password, fcm_token?, platform?}`.
+  /// Mật khẩu mặc định là mã giáo viên.
+  static Future<CrmIdentity> teacherLogin(
+    String teacherCode,
+    String password, {
     String? fcmToken,
     String? platform,
-    String? appVersion,
   }) async {
     final body = await _send(
       'POST',
-      '/v1/identity/teacher-mirror',
+      '/auth/teacher/login',
       body: {
-        'ims_token': imsToken,
-        // Null-aware entries: bỏ hẳn khoá khi giá trị null, không gửi null.
+        'teacher_code': teacherCode,
+        'password': password,
         'fcm_token': ?fcmToken,
         'platform': ?platform,
-        'app_version': ?appVersion,
       },
       auth: false,
     );
-    final token = body['crm_token']?.toString();
-    if (token == null || token.isEmpty) {
-      throw EmsException('Máy chủ thông tin không cấp được phiên đăng nhập.');
+    final identity = CrmIdentity.fromTeacherLogin(body);
+    if (identity.token.isEmpty) {
+      throw EmsException('Máy chủ không cấp được phiên đăng nhập.');
     }
-    return token;
+    return identity;
+  }
+
+  /// Đổi mật khẩu bắt buộc/tự chọn của học viên.
+  /// `POST /student/me/password {current_password, new_password}`.
+  static Future<void> changeStudentPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _send(
+      'POST',
+      '/student/me/password',
+      body: {'current_password': currentPassword, 'new_password': newPassword},
+    );
+  }
+
+  /// Đổi mật khẩu của giảng viên (và mọi staff khác dùng chung route này).
+  /// `POST /auth/change-password {current_password, new_password}`.
+  static Future<void> changeTeacherPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _send(
+      'POST',
+      '/auth/change-password',
+      body: {'current_password': currentPassword, 'new_password': newPassword},
+    );
   }
 
   // ── Điểm danh EMS ──────────────────────────────────────────────────────────
@@ -220,58 +250,52 @@ class EmsApiService {
   //   - lưu lại nhiều lần cũng chỉ ra một dòng (UNIQUE session_key + mssv);
   //   - trường hợp lạ vẫn được ghi và gắn cờ để xem lại, không bị chặn.
 
-  static Future<List<EmsSession>> mySessions({String? date}) {
-    return _withReMirror(() async {
-      final q = (date == null || date.isEmpty) ? '' : '?date=$date';
-      final body = await _send('GET', '/attendance/my-sessions$q');
-      // `from_schedule: false` = máy chủ KHÔNG có buổi nào hôm nay và đang trả
-      // về danh sách mọi lớp của giáo viên (không giờ, không phòng) thay thế.
-      // Đó không phải buổi học hôm nay: lưu điểm danh vào đó bị từ chối (422)
-      // và ngày 14/09 nó đã sinh ra 21 dấu điểm danh cho lớp chưa khai giảng.
-      // Hiện danh sách trống — hôm nay không có buổi học là hôm nay không có.
-      if (body['from_schedule'] == false) return <EmsSession>[];
-      final list = body['sessions'];
-      if (list is! List) return <EmsSession>[];
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(EmsSession.fromJson)
-          .toList();
-    });
+  static Future<List<EmsSession>> mySessions({String? date}) async {
+    final q = (date == null || date.isEmpty) ? '' : '?date=$date';
+    final body = await _send('GET', '/attendance/my-sessions$q');
+    // `from_schedule: false` = máy chủ KHÔNG có buổi nào hôm nay và đang trả
+    // về danh sách mọi lớp của giáo viên (không giờ, không phòng) thay thế.
+    // Đó không phải buổi học hôm nay: lưu điểm danh vào đó bị từ chối (422)
+    // và ngày 14/09 nó đã sinh ra 21 dấu điểm danh cho lớp chưa khai giảng.
+    // Hiện danh sách trống — hôm nay không có buổi học là hôm nay không có.
+    if (body['from_schedule'] == false) return <EmsSession>[];
+    final list = body['sessions'];
+    if (list is! List) return <EmsSession>[];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(EmsSession.fromJson)
+        .toList();
   }
 
-  static Future<EmsRoster> roster(EmsSession s) {
-    return _withReMirror(() async {
-      final q =
-          '?section_id=${Uri.encodeQueryComponent(s.sectionId)}'
-          '&date=${Uri.encodeQueryComponent(s.sessionDate)}'
-          '&start_time=${Uri.encodeQueryComponent(s.startTime ?? '')}'
-          '&end_time=${Uri.encodeQueryComponent(s.endTime ?? '')}';
-      final body = await _send('GET', '/attendance/roster$q');
-      return EmsRoster.fromJson(body);
-    });
+  static Future<EmsRoster> roster(EmsSession s) async {
+    final q =
+        '?section_id=${Uri.encodeQueryComponent(s.sectionId)}'
+        '&date=${Uri.encodeQueryComponent(s.sessionDate)}'
+        '&start_time=${Uri.encodeQueryComponent(s.startTime ?? '')}'
+        '&end_time=${Uri.encodeQueryComponent(s.endTime ?? '')}';
+    final body = await _send('GET', '/attendance/roster$q');
+    return EmsRoster.fromJson(body);
   }
 
   /// Trạng thái EMS của MỘT buổi, theo `session_key` (`<lmhid>:<HH-MM>:<yyyy-MM-dd>`).
   /// Dùng khi chỉ có dữ liệu lịch IMS trong tay (Quản lý lớp): danh sách lớp
   /// vẫn là của IMS, nhưng ai có mặt / vắng là EMS nói — không phải IMS.
   /// Trả về map mssv → status ('present' | 'late' | 'absent' | 'excused').
-  static Future<Map<String, String>> sessionMarks(String sessionKey) {
-    return _withReMirror(() async {
-      final body = await _send(
-        'GET',
-        '/attendance/session-marks?session_key=${Uri.encodeQueryComponent(sessionKey)}',
-      );
-      final list = body['marks'];
-      final out = <String, String>{};
-      if (list is List) {
-        for (final m in list.whereType<Map<String, dynamic>>()) {
-          final mssv = m['mssv']?.toString();
-          final st = m['status']?.toString();
-          if (mssv != null && st != null) out[mssv] = st;
-        }
+  static Future<Map<String, String>> sessionMarks(String sessionKey) async {
+    final body = await _send(
+      'GET',
+      '/attendance/session-marks?session_key=${Uri.encodeQueryComponent(sessionKey)}',
+    );
+    final list = body['marks'];
+    final out = <String, String>{};
+    if (list is List) {
+      for (final m in list.whereType<Map<String, dynamic>>()) {
+        final mssv = m['mssv']?.toString();
+        final st = m['status']?.toString();
+        if (mssv != null && st != null) out[mssv] = st;
       }
-      return out;
-    });
+    }
+    return out;
   }
 
   /// `session_key` đúng như máy chủ tạo (repositories/attendance-write-repo.js):
@@ -293,82 +317,59 @@ class EmsApiService {
     EmsSession s,
     List<EmsMark> marks, {
     List<String> remove = const [],
-  }) {
-    return _withReMirror(() async {
-      try {
-        final body = await _send(
-          'POST',
-          '/attendance/marks',
-          body: {
-            'section_id': s.sectionId,
-            'date': s.sessionDate,
-            'start_time': ?s.startTime,
-            'end_time': ?s.endTime,
-            'marks': marks.map((m) => m.toJson()).toList(),
-            // Bỏ điểm danh những học viên giáo viên đã bỏ chọn.
-            if (remove.isNotEmpty) 'remove': remove,
-          },
-        );
-        return EmsSaveResult.fromJson(body);
-      } on EmsPunchConflict {
-        rethrow;
-      }
-    });
+  }) async {
+    final body = await _send(
+      'POST',
+      '/attendance/marks',
+      body: {
+        'section_id': s.sectionId,
+        'date': s.sessionDate,
+        'start_time': ?s.startTime,
+        'end_time': ?s.endTime,
+        'marks': marks.map((m) => m.toJson()).toList(),
+        // Bỏ điểm danh những học viên giáo viên đã bỏ chọn.
+        if (remove.isNotEmpty) 'remove': remove,
+      },
+    );
+    return EmsSaveResult.fromJson(body);
   }
 
   /// Học viên xem điểm danh EMS của chính mình.
-  static Future<List<EmsStudentMark>> myAttendance({int limit = 100}) {
-    return _withReMirror(() async {
-      final body = await _send(
-        'GET',
-        '/student/me/attendance-ems?limit=$limit',
-      );
-      final list = body['marks'] ?? body['history'] ?? body['items'];
-      if (list is! List) return <EmsStudentMark>[];
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(EmsStudentMark.fromJson)
-          .toList();
-    });
+  static Future<List<EmsStudentMark>> myAttendance({int limit = 100}) async {
+    final body = await _send(
+      'GET',
+      '/student/me/attendance-ems?limit=$limit',
+    );
+    final list = body['marks'] ?? body['history'] ?? body['items'];
+    if (list is! List) return <EmsStudentMark>[];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(EmsStudentMark.fromJson)
+        .toList();
   }
 
   // ── Bảng tin ───────────────────────────────────────────────────────────────
   //
-  // Mỗi lời gọi đi qua [_withReMirror]: gặp 401 thì thử đối chiếu LẠI MỘT LẦN
-  // bằng token IMS hiện có rồi gọi lại. Một lần, không lặp — 401 lần hai nghĩa
-  // là phiên IMS cũng đã hết, và việc thử mãi chỉ tạo bão request.
+  // 401 ở bất kỳ lời gọi nào dưới đây nghĩa là phiên EMS đã hết hạn — không
+  // còn token IMS để đối chiếu lại nữa. Nơi gọi bắt EmsException(statusCode:
+  // 401), gọi AppSession.clear() rồi điều hướng về '/login'.
 
-  static Future<T> _withReMirror<T>(Future<T> Function() call) async {
-    try {
-      return await call();
-    } on EmsException catch (e) {
-      if (e.statusCode != 401) rethrow;
-      final ok = await AppSession.instance.refreshEmsToken();
-      if (!ok) rethrow;
-      return await call();
-    }
+  static Future<List<AnnouncementItem>> board({int limit = 50}) async {
+    final body = await _send('GET', '/v1/student/board?limit=$limit');
+    final items = body['items'];
+    if (items is! List) return <AnnouncementItem>[];
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(AnnouncementItem.fromJson)
+        .toList();
   }
 
-  static Future<List<AnnouncementItem>> board({int limit = 50}) {
-    return _withReMirror(() async {
-      final body = await _send('GET', '/v1/student/board?limit=$limit');
-      final items = body['items'];
-      if (items is! List) return <AnnouncementItem>[];
-      return items
-          .whereType<Map<String, dynamic>>()
-          .map(AnnouncementItem.fromJson)
-          .toList();
-    });
-  }
-
-  static Future<BoardUnread> unreadCount() {
-    return _withReMirror(() async {
-      final body = await _send('GET', '/v1/student/board/unread-count');
-      return BoardUnread(
-        unread: (body['unread'] as num?)?.toInt() ?? 0,
-        mustReadPending: (body['must_read_pending'] as num?)?.toInt() ?? 0,
-      );
-    });
+  static Future<BoardUnread> unreadCount() async {
+    final body = await _send('GET', '/v1/student/board/unread-count');
+    return BoardUnread(
+      unread: (body['unread'] as num?)?.toInt() ?? 0,
+      mustReadPending: (body['must_read_pending'] as num?)?.toInt() ?? 0,
+    );
   }
 
   /// Gắn installation Firebase hiện tại với chính học viên đã đăng nhập EMS.
@@ -399,14 +400,12 @@ class EmsApiService {
 
   /// Đóng dấu đã đọc. Idempotent ở phía server: gọi lại không đổi mốc thời gian.
   static Future<void> markRead(String id) {
-    return _withReMirror(() => _send('POST', '/v1/student/board/$id/read'));
+    return _send('POST', '/v1/student/board/$id/read');
   }
 
   /// Xác nhận đã đọc và hiểu. Server đóng cả hai mốc trong một câu lệnh.
   static Future<void> acknowledge(String id) {
-    return _withReMirror(
-      () => _send('POST', '/v1/student/board/$id/acknowledge'),
-    );
+    return _send('POST', '/v1/student/board/$id/acknowledge');
   }
 }
 

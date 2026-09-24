@@ -1,9 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import '../services/app_session.dart';
 import '../services/app_update_gate.dart';
 import '../services/notification_service.dart';
+import 'change_password_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,31 +24,28 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     final restored = await AppSession.instance.tryRestore();
     if (!mounted) return;
-    if (restored && AppSession.instance.token != null) {
-      // Đăng ký lại token cho session cũ (app update / token refresh)
-      final gv = AppSession.instance.giangVien;
-      final hv = AppSession.instance.hocVien;
-      if (gv != null) {
+    // Đăng nhập hợp lệ = có danh tính CRM (xem AppSession.isLoggedIn). Một
+    // token IMS mồ côi từ một bản cài đặt cũ không còn đưa được vào app.
+    if (restored && AppSession.instance.isLoggedIn) {
+      final identity = AppSession.instance.identity!;
+      // Đăng ký lại kênh thông báo cũ (vercel) cho session cũ. Một sự cố
+      // Firebase/mạng ở đây không được chặn việc vào app.
+      try {
         NotificationService.instance.registerToken(
-          'gv_${gv.id}',
-          mssv: gv.ma,
-          hoTen: gv.ten,
-          userid: AppSession.instance.userid,
+          identity.notificationId,
+          mssv: identity.loginId,
+          hoTen: identity.fullName,
         );
-      } else if (hv != null) {
-        NotificationService.instance.registerToken(
-          'hv_${hv.id}',
-          mssv: hv.mshv,
-          hoTen: hv.fullName,
-          ngaysinh: hv.ngaysinh,
-          userid: AppSession.instance.userid,
-        );
-      }
+      } catch (_) {}
 
-      // Phiên cũ có thể chưa từng có token EMS (bản app trước tính năng này)
-      // hoặc token đã hết hạn. Đối chiếu lại ở nền — không chặn vào home.
-      if (!AppSession.instance.hasEms) {
-        unawaited(AppSession.instance.refreshEmsToken());
+      if (AppSession.instance.mustChangePassword) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const ChangePasswordScreen(forced: true),
+          ),
+        );
+        return;
       }
 
       final route = AppSession.instance.isGiangVien ? '/gv_home' : '/home';
