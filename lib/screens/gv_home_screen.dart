@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../services/app_session.dart';
-import '../services/api_service.dart';
+import '../services/crm_teacher_api.dart';
+import '../services/crm_session_guard.dart';
+import '../models/crm_teacher_profile.dart';
 import '../components/menu_item.dart';
 import '../components/skeleton.dart';
 import 'gv_profile_info_screen.dart';
@@ -29,15 +31,24 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   bool _scheduleExpanded = true;
   int _unreadCount = 0;
 
+  /// Hồ sơ CRM — chỉ cần cho huy hiệu "Cơ hữu" (`teachers.type == 'gvch'`,
+  /// xem CLAUDE.md "Known state"). Tên/mã GV hiển thị ngay từ [AppSession]
+  /// (không cần mạng) — xem [build].
+  CrmTeacherProfile? _profile;
+
   @override
   void initState() {
     super.initState();
-    _loadTodaySchedule();
+    _loadOverview();
     _loadUnreadCount();
   }
 
   Future<void> _loadUnreadCount() async {
-    final id = AppSession.instance.giangVien?.id.toString();
+    // Tàn dư: dịch vụ thông báo này KHÔNG phải CRM/EMS, là một backend thông
+    // báo riêng (noti-backend-eight.vercel.app) ngoài phạm vi gỡ IMS. Trước
+    // 6.1.0 nó dùng id giảng viên IMS; giờ dùng teacherId của CRM — id thật
+    // duy nhất còn có trong phiên, không suy diễn.
+    final id = AppSession.instance.teacherId;
     if (id == null) return;
     try {
       final res = await http
@@ -56,19 +67,23 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
     } catch (_) {}
   }
 
-  Future<void> _loadTodaySchedule() async {
+  Future<void> _loadOverview() async {
     try {
-      final now = DateTime.now();
-      final date =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      final data = await ApiService.getGvScheduleByDate(date);
+      // Một lời gọi CRM duy nhất: hồ sơ + lịch dạy hôm nay + tóm tắt học kỳ
+      // (`GET /api/teacher/me/overview`, xem `CrmTeacherApi.overview`) — thay
+      // cho `ApiService.getGvScheduleByDate` (IMS `giangvien/tkbtheongay`).
+      final overview = await CrmTeacherApi.overview();
       if (mounted) {
         setState(() {
-          _todayClasses = data.map((e) => e as Map<String, dynamic>).toList();
+          _profile = overview.teacher;
+          _todayClasses =
+              overview.todaySessions.map((s) => s.toJson()).toList();
           _scheduleLoading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (mounted) setState(() => _scheduleLoading = false);
     }
   }
@@ -297,8 +312,9 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final gv = AppSession.instance.giangVien;
-    final userid = AppSession.instance.userid ?? '–';
+    final name = AppSession.instance.fullName;
+    final displayName = (name != null && name.isNotEmpty) ? name : '–';
+    final userid = AppSession.instance.teacherCode ?? '–';
 
     final tabs = [
       // ── Tab Home ──
@@ -336,7 +352,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        gv?.ten ?? '–',
+                        displayName,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -351,7 +367,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                           color: Colors.white70,
                         ),
                       ),
-                      if (gv?.gvcohuuyn == true) ...[
+                      if (_profile?.isCoHuu == true) ...[
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -521,7 +537,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          gv?.ten ?? '–',
+                          displayName,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -555,15 +571,18 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                       icon: Icons.person_outline,
                       label: 'Thông tin cá nhân',
                       onTap: () {
-                        if (gv != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  GvProfileInfoScreen(gv: gv!, userid: userid),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GvProfileInfoScreen(
+                              profile: _profile,
+                              fallbackName: displayName == '–'
+                                  ? ''
+                                  : displayName,
+                              teacherCode: userid == '–' ? '' : userid,
                             ),
-                          );
-                        }
+                          ),
+                        );
                       },
                     ),
                     const SizedBox(height: 10),

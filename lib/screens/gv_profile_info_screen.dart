@@ -1,28 +1,40 @@
 import 'package:flutter/material.dart';
-import '../models/giang_vien_model.dart';
+import '../models/crm_teacher_profile.dart';
 
+/// Chỉ hiển thị — CHỈ ĐỌC. Sửa thông tin cá nhân là việc của một đợt khác
+/// (TODO(A4)); màn hình này không có nút sửa nên không cần liên kết gì thêm.
+///
+/// [profile] đến từ `GET /api/teacher/me/overview` (CRM, xem
+/// `CrmTeacherApi.overview`) — có thể null khi lần gọi đó chưa xong hoặc lỗi;
+/// khi đó dùng [fallbackName]/[teacherCode] đã có sẵn trong phiên đăng nhập
+/// (không cần mạng, xem `AppSession`).
+///
+/// `teachers` của CRM không có cột ngày sinh — IMS `GiangVien.ngaysinh` KHÔNG
+/// có tương đương. Hàng "Ngày sinh" bị bỏ thay vì bịa dữ liệu (xem
+/// `docs/ims_to_crm_teacher_map.md`).
 class GvProfileInfoScreen extends StatelessWidget {
-  final GiangVien gv;
-  final String userid;
+  final CrmTeacherProfile? profile;
+  final String fallbackName;
+  final String teacherCode;
 
   const GvProfileInfoScreen({
     super.key,
-    required this.gv,
-    required this.userid,
+    required this.profile,
+    required this.fallbackName,
+    required this.teacherCode,
   });
-
-  String _fmtDate(String? iso) {
-    if (iso == null || iso.isEmpty) return '–';
-    try {
-      final d = DateTime.parse(iso);
-      return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-    } catch (_) {
-      return '–';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final name = (profile?.name.isNotEmpty ?? false)
+        ? profile!.name
+        : (fallbackName.isNotEmpty ? fallbackName : '–');
+    final code = (profile?.teacherCode?.isNotEmpty ?? false)
+        ? profile!.teacherCode!
+        : (teacherCode.isNotEmpty ? teacherCode : '–');
+    final phone = profile?.phone;
+    final email = profile?.email;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -68,19 +80,25 @@ class GvProfileInfoScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [
                   _Section(title: 'Thông tin cơ bản', children: [
-                    _InfoRow(icon: Icons.person_outline, label: 'Họ tên', value: gv.ten),
-                    _InfoRow(icon: Icons.badge_outlined, label: 'Mã GV', value: userid),
-                    _InfoRow(icon: Icons.cake_outlined, label: 'Ngày sinh', value: _fmtDate(gv.ngaysinh)),
-                    // _InfoRow(
-                    //   icon: Icons.workspace_premium_outlined,
-                    //   label: 'Cơ hữu',
-                    //   value: gv.gvcohuuyn ? 'Có' : 'Không',
-                    // ),
+                    _InfoRow(icon: Icons.person_outline, label: 'Họ tên', value: name),
+                    _InfoRow(icon: Icons.badge_outlined, label: 'Mã GV', value: code),
+                    if (profile?.isCoHuu == true)
+                      const _InfoRow(
+                        icon: Icons.workspace_premium_outlined,
+                        label: 'Cơ hữu',
+                        value: 'Có',
+                      ),
                   ]),
                   const SizedBox(height: 12),
                   _Section(title: 'Liên hệ', children: [
-                    _InfoRow(icon: Icons.phone_outlined, label: 'Số điện thoại', value: gv.sdt ?? '–'),
-                    _InfoRow(icon: Icons.email_outlined, label: 'Email', value: gv.email ?? '–'),
+                    _InfoRow(
+                        icon: Icons.phone_outlined,
+                        label: 'Số điện thoại',
+                        value: (phone?.isNotEmpty ?? false) ? phone! : '–'),
+                    _InfoRow(
+                        icon: Icons.email_outlined,
+                        label: 'Email',
+                        value: (email?.isNotEmpty ?? false) ? email! : '–'),
                   ]),
                 ],
               ),

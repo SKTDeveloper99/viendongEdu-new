@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../services/crm_teacher_api.dart';
+import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
 
 class _Semester {
@@ -39,15 +40,17 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
   Future<void> _fetchHocKy() async {
     setState(() { _loadingHocKy = true; _error = null; });
     try {
-      final data = await ApiService.getHocKy();
+      final data = await CrmTeacherApi.semesters();
       final sems = data
-          .map((e) => _Semester(id: e['id'] as int, ten: e['ten'] as String? ?? ''))
+          .map((e) => _Semester(id: e.id, ten: e.ten))
           .toList()
         ..sort((a, b) => b.id.compareTo(a.id));
       if (!mounted) return;
       setState(() { _semesters = sems; _loadingHocKy = false; });
       if (sems.isNotEmpty) await _fetchClasses(sems.first);
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() { _loadingHocKy = false; _error = e.toString(); });
     }
@@ -56,16 +59,16 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
   Future<void> _fetchClasses(_Semester sem) async {
     setState(() { _selected = sem; _loadingClasses = true; _error = null; });
     try {
-      final data = await ApiService.getGvTkbTheoHocKy(sem.id);
+      final data = await CrmTeacherApi.scheduleForSemester(sem.id.toString());
       if (!mounted) return;
 
       // Dedup theo (lmhid + ngayma + tietbd + phongma) — tránh trùng y chang
       final seen = <String>{};
       final rows = <Map<String, dynamic>>[];
       for (final e in data) {
-        final m = e as Map<String, dynamic>;
+        final m = e.toJson();
         final key =
-            '${m['lmhid']}_${(m['ngayma'] as String? ?? '').trim()}_${m['tietbd']}_${m['phongma']}';
+            '${m['lmhid']}_${(m['ngayma'] as String? ?? '').trim()}_${m['tietbd']}_${m['phongten']}';
         if (seen.add(key)) rows.add(m);
       }
 
@@ -103,6 +106,8 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
         _loadingClasses = false;
       });
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() { _loadingClasses = false; _error = e.toString(); });
     }

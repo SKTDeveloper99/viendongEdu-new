@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../services/crm_teacher_api.dart';
+import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
 
 class _Semester {
   final int id;
+  final String ma;
   final String ten;
   final String ngayBatDau;
   final String ngayKetThuc;
   const _Semester({
     required this.id,
+    required this.ma,
     required this.ten,
     required this.ngayBatDau,
     required this.ngayKetThuc,
@@ -39,13 +42,14 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
   Future<void> _fetchHocKy() async {
     setState(() { _loadingHocKy = true; _error = null; });
     try {
-      final data = await ApiService.getHocKy();
+      final data = await CrmTeacherApi.semesters();
       final sems = data.map((e) {
         return _Semester(
-          id: e['id'] as int,
-          ten: e['ten'] as String? ?? '',
-          ngayBatDau: e['ngaybatdau'] as String? ?? '',
-          ngayKetThuc: e['ngayketthuc'] as String? ?? '',
+          id: e.id,
+          ma: e.ma,
+          ten: e.ten,
+          ngayBatDau: e.ngayBatDau ?? '',
+          ngayKetThuc: e.ngayKetThuc ?? '',
         );
       }).toList();
       sems.sort((a, b) => b.id.compareTo(a.id));
@@ -57,6 +61,8 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
       if (sems.isNotEmpty) await _fetchExams(sems.first);
     } catch (e) {
       if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
+      if (!mounted) return;
       setState(() { _loadingHocKy = false; _error = e.toString(); });
     }
   }
@@ -64,38 +70,25 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
   Future<void> _fetchExams(_Semester sem) async {
     setState(() { _selected = sem; _loadingExams = true; _error = null; });
     try {
-      String extendedEnd = sem.ngayKetThuc;
-      try {
-        final dt = DateTime.parse(sem.ngayKetThuc);
-        // Cộng thêm 60 ngày để bao gồm lịch thi cuối kỳ (thường diễn ra sau khi kết thúc học kỳ)
-        // Các môn thi của học kỳ khác nếu bị lọt vào cũng sẽ bị filter bởi lopMap bên dưới
-        extendedEnd = dt.add(const Duration(days: 60)).toIso8601String();
-      } catch (_) {}
-
-      final results = await Future.wait([
-        ApiService.getGvLichThi(sem.ngayBatDau, extendedEnd),
-        ApiService.getGvDanhSachLop(sem.id),
-      ]);
+      // `GET /api/teacher/me/exams?semester=` đã tự lọc theo lớp của giáo
+      // viên ở phía server (xem `docs/api/mobile-ims-replacement-S3.md`) —
+      // không cần tự nối với danh sách lớp như bản IMS cũ nữa.
+      final exams = await CrmTeacherApi.exams(semester: sem.ma);
       if (!mounted) return;
 
-      final lopMap = {
-        for (final e in results[1].cast<Map<String, dynamic>>())
-          e['id'] as int: e,
-      };
-
-      final list = results[0]
-          .map((e) => e as Map<String, dynamic>)
-          .where((e) => lopMap.containsKey(e['lopId'] as int?))
-          .map((e) {
-            final lop = lopMap[e['lopId'] as int]!;
-            final monHoc = lop['monHoc'] as Map<String, dynamic>? ?? {};
-            return {
-              ...e,
-              '_tenMon': monHoc['ten']?.toString() ?? '',
-              '_maLop': lop['ma']?.toString() ?? '',
-            };
-          })
-          .toList();
+      final list = exams.map((e) => {
+            '_tenMon': e.subjectName ?? '',
+            '_maLop': e.classCode ?? '',
+            'loaiThi': e.examType ?? '',
+            'ngayThi': e.examDate,
+            'gioBatDau': e.startTime ?? '',
+            'thoiGian': e.durationMinutes ?? 0,
+            'siSo': e.classSize ?? 0,
+            'hinhThuc': e.examFormat ?? '',
+            'canBoCoiThi1': e.proctor1 ?? '',
+            'canBoCoiThi2': e.proctor2 ?? '',
+            'ghiChu': e.note ?? '',
+          }).toList();
 
       list.sort((a, b) {
         final da = a['ngayThi'] as String? ?? '';
@@ -107,6 +100,8 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
         _loadingExams = false;
       });
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() { _loadingExams = false; _error = e.toString(); });
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../services/crm_teacher_api.dart';
+import '../services/crm_session_guard.dart';
 import '../services/app_session.dart';
 import '../components/skeleton.dart';
 import '../utils/snack.dart';
@@ -54,13 +55,15 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
     try {
       final dateStr =
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      final data = await ApiService.getGvScheduleByDate(dateStr);
+      final data = await CrmTeacherApi.scheduleForDate(dateStr);
       if (!mounted) return;
       setState(() {
-        _classes = data.map((e) => e as Map<String, dynamic>).toList();
+        _classes = data.map((e) => e.toJson()).toList();
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() { _loading = false; _error = e.toString(); });
     }

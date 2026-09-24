@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import '../services/api_service.dart';
+import '../services/crm_teacher_api.dart';
+import '../services/crm_session_guard.dart';
 import '../services/ems_api_service.dart';
+import '../models/crm_teacher_class.dart';
 import '../components/skeleton.dart';
 
 class _Semester {
   final int id;
+  final String ma;
   final String ten;
-  const _Semester({required this.id, required this.ten});
+  const _Semester({required this.id, required this.ma, required this.ten});
 }
 
 class GvQuanLyLopScreen extends StatefulWidget {
@@ -20,7 +22,15 @@ class GvQuanLyLopScreen extends StatefulWidget {
 class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
   List<_Semester> _semesters = [];
   _Semester? _selected;
-  List<Map<String, dynamic>> _lops = [];
+  List<CrmTeacherClass> _lops = [];
+
+  /// `lmhma` (mã lớp môn học, trùng `sectionCode`) → `lmhid` (id IMS đã đồng
+  /// bộ vào CRM) — cần để dựng `session_key` cho EMS. Lấy từ
+  /// `GET /me/schedule/semester` (endpoint DUY NHẤT của CRM còn trả trường
+  /// này) cùng lúc với danh sách lớp, tránh một lượt gọi mạng thêm khi mở
+  /// từng lớp.
+  Map<String, String> _lmhIdByCode = {};
+
   bool _loadingHocKy = true;
   bool _loadingLops = false;
   String? _error;
@@ -34,15 +44,17 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
   Future<void> _fetchHocKy() async {
     setState(() { _loadingHocKy = true; _error = null; });
     try {
-      final data = await ApiService.getHocKy();
+      final data = await CrmTeacherApi.semesters();
       final sems = data
-          .map((e) => _Semester(id: e['id'] as int, ten: e['ten'] as String? ?? ''))
+          .map((e) => _Semester(id: e.id, ma: e.ma, ten: e.ten))
           .toList()
         ..sort((a, b) => b.id.compareTo(a.id));
       if (!mounted) return;
       setState(() { _semesters = sems; _loadingHocKy = false; });
       if (sems.isNotEmpty) await _fetchLops(sems.first);
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() { _loadingHocKy = false; _error = e.toString(); });
     }
@@ -51,13 +63,21 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
   Future<void> _fetchLops(_Semester sem) async {
     setState(() { _selected = sem; _loadingLops = true; _error = null; });
     try {
-      final data = await ApiService.getGvDanhSachLop(sem.id);
+      final results = await Future.wait([
+        CrmTeacherApi.classes(semester: sem.ma),
+        CrmTeacherApi.scheduleForSemester(sem.ma),
+      ]);
       if (!mounted) return;
+      final classes = results[0] as List<CrmTeacherClass>;
+      final slots = results[1] as List<CrmScheduleSlot>;
       setState(() {
-        _lops = data.map((e) => e as Map<String, dynamic>).toList();
+        _lops = classes;
+        _lmhIdByCode = {for (final s in slots) s.lmhMa: s.lmhId};
         _loadingLops = false;
       });
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() { _loadingLops = false; _error = e.toString(); });
     }
@@ -73,14 +93,14 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
     }
   }
 
-  void _showDetail(Map<String, dynamic> lop) {
+  void _showDetail(CrmTeacherClass lop) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => SizedBox(
         height: MediaQuery.of(ctx).size.height * 0.85,
-        child: _LopDetailSheet(lop: lop),
+        child: _LopDetailSheet(lop: lop, lmhId: _lmhIdByCode[lop.sectionCode]),
       ),
     );
   }
@@ -223,7 +243,6 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
                                 itemCount: _lops.length,
                                 itemBuilder: (ctx, i) => _LopCard(
                                   lop: _lops[i],
-                                  index: i + 1,
                                   onTap: () => _showDetail(_lops[i]),
                                 ),
                               ),
@@ -236,19 +255,15 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
 
 // ── Lop Card ─────────────────────────────────────────
 class _LopCard extends StatelessWidget {
-  final Map<String, dynamic> lop;
-  final int index;
+  final CrmTeacherClass lop;
   final VoidCallback onTap;
-  const _LopCard(
-      {required this.lop, required this.index, required this.onTap});
+  const _LopCard({required this.lop, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final monHoc = lop['monHoc'] as Map<String, dynamic>? ?? {};
-    final ma = lop['ma']?.toString() ?? '';
-    final mhten = monHoc['ten']?.toString() ?? '';
-    final mhma = monHoc['ma']?.toString() ?? '';
-    final sotinchi = monHoc['sotinchi'] as int? ?? 0;
+    final mhten = lop.subjectName ?? '';
+    final mhma = lop.subjectCode ?? '';
+    final sotinchi = lop.credits ?? 0;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -263,24 +278,6 @@ class _LopCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Số thứ tự
-            // Container(
-            //   width: 44,
-            //   alignment: Alignment.center,
-            //   padding: const EdgeInsets.symmetric(vertical: 20),
-            //   decoration: BoxDecoration(
-            //     color: const Color(0xFFE65100).withValues(alpha: 0.08),
-            //     borderRadius:
-            //         const BorderRadius.horizontal(left: Radius.circular(14)),
-            //   ),
-            //   child: Text(
-            //     '$index',
-            //     style: const TextStyle(
-            //         fontSize: 15,
-            //         fontWeight: FontWeight.bold,
-            //         color: Color(0xFFE65100)),
-            //   ),
-            // ),
             const SizedBox(width: 12),
             // Info
             Expanded(
@@ -312,13 +309,13 @@ class _LopCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      ma,
+                      lop.sectionCode,
                       style: const TextStyle(
                           fontSize: 12, color: Color(0xFF444444)),
                       softWrap: true,
                     ),
                     const SizedBox(height: 6),
-                    // Footer: tín chỉ + trạng thái
+                    // Footer: tín chỉ + sĩ số
                     Row(
                       children: [
                         if (sotinchi > 0) ...[
@@ -330,26 +327,12 @@ class _LopCard extends StatelessWidget {
                                   fontSize: 12, color: Color(0xFF555555))),
                           const SizedBox(width: 12),
                         ],
-                        // Container(
-                        //   padding: const EdgeInsets.symmetric(
-                        //       horizontal: 8, vertical: 2),
-                        //   decoration: BoxDecoration(
-                        //     color: moLop
-                        //         ? const Color(0xFF4CAF50).withValues(alpha: 0.12)
-                        //         : Colors.grey.withValues(alpha: 0.12),
-                        //     borderRadius: BorderRadius.circular(20),
-                        //   ),
-                        //   child: Text(
-                        //     moLop ? 'Đang mở' : 'Đã đóng',
-                        //     style: TextStyle(
-                        //       fontSize: 11,
-                        //       fontWeight: FontWeight.w600,
-                        //       color: moLop
-                        //           ? const Color(0xFF4CAF50)
-                        //           : Colors.grey,
-                        //     ),
-                        //   ),
-                        // ),
+                        const Icon(Icons.people_outline,
+                            size: 13, color: Color(0xFF555555)),
+                        const SizedBox(width: 4),
+                        Text('${lop.enrolledStudents} SV',
+                            style: const TextStyle(
+                                fontSize: 12, color: Color(0xFF555555))),
                       ],
                     ),
                   ],
@@ -370,8 +353,9 @@ class _LopCard extends StatelessWidget {
 
 // ── Detail Bottom Sheet ───────────────────────────────
 class _LopDetailSheet extends StatefulWidget {
-  final Map<String, dynamic> lop;
-  const _LopDetailSheet({required this.lop});
+  final CrmTeacherClass lop;
+  final String? lmhId;
+  const _LopDetailSheet({required this.lop, required this.lmhId});
 
   @override
   State<_LopDetailSheet> createState() => _LopDetailSheetState();
@@ -381,20 +365,21 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  List<Map<String, dynamic>> _hocViens = [];
+  List<CrmClassStudent> _hocViens = [];
   bool _loadingHV = false;
   String? _hvError;
 
-  List<Map<String, dynamic>> _buoiHocs = [];
-  List<Map<String, dynamic>> _tongHops = [];
+  List<CrmAttendanceRow> _attendanceRows = [];
+  List<_Buoi> _buoiHocs = [];
+  List<_StudentAgg> _tongHops = [];
   bool _loadingDD = false;
   String? _ddError;
   int _ddSubTab = 0; // 0 = buổi học, 1 = tổng hợp
 
-  /// session_key -> (có mặt, tổng dòng EMS). 18/09 (Dũng, lớp 43443): số ngoài
-  /// danh sách lấy từ IMS (23/40) còn bảng chi tiết lấy từ EMS (0/40 lúc đó) —
-  /// hai nguồn, hai con số. Từ nay danh sách cũng đếm EMS, cùng nguồn với
-  /// bảng chi tiết; IMS chỉ còn là chú thích khi EMS chưa có gì.
+  /// session_key -> (có mặt, tổng dòng EMS). EMS là nguồn duy nhất cho số
+  /// "có mặt" thật (xem CLAUDE.md "EMS write path"/"giao vien"), bảng
+  /// `attendance` của CRM chỉ còn dùng để liệt kê BUỔI (ngày/giờ/phòng) và
+  /// danh sách học viên của buổi đó.
   final Map<String, _EmsSessionCount> _emsCounts = {};
 
   @override
@@ -405,7 +390,7 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
       if (_tabController.index == 1 && _hocViens.isEmpty && !_loadingHV && _hvError == null) {
         _loadHocViens();
       }
-      if (_tabController.index == 2 && _buoiHocs.isEmpty && !_loadingDD && _ddError == null) {
+      if (_tabController.index == 2 && _attendanceRows.isEmpty && !_loadingDD && _ddError == null) {
         _loadDiemDanh();
       }
     });
@@ -418,62 +403,99 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
   }
 
   Future<void> _loadHocViens() async {
-    final lopId = widget.lop['id'] as int? ?? 0;
     setState(() { _loadingHV = true; _hvError = null; });
     try {
-      final data = await ApiService.getGvDanhSachHocVien(lopId);
+      final data = await CrmTeacherApi.classStudents(widget.lop.sectionId);
       if (mounted) {
-        setState(() {
-          _hocViens = data.map((e) => e as Map<String, dynamic>).toList();
-          _loadingHV = false;
-        });
+        setState(() { _hocViens = data; _loadingHV = false; });
       }
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (mounted) setState(() { _loadingHV = false; _hvError = e.toString(); });
     }
   }
 
   Future<void> _loadDiemDanh() async {
-    final lopId = widget.lop['id'] as int? ?? 0;
     setState(() { _loadingDD = true; _ddError = null; });
     try {
-      final results = await Future.wait([
-        ApiService.getGvDanhSachBuoiHoc(lopId),
-        ApiService.getGvDanhSachTongHop(lopId),
-      ]);
+      final rows = await CrmTeacherApi.classAttendance(widget.lop.sectionId);
       if (mounted) {
         setState(() {
-          _buoiHocs = results[0].map((e) => e as Map<String, dynamic>).toList();
-          _tongHops = results[1].map((e) => e as Map<String, dynamic>).toList();
+          _attendanceRows = rows;
+          _buoiHocs = _groupBySession(rows);
+          _tongHops = _aggregateByStudent(rows);
           _loadingDD = false;
         });
       }
       await _loadEmsCounts();
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (mounted) setState(() { _loadingDD = false; _ddError = e.toString(); });
     }
   }
 
-  static String _sessionKeyOf(Map<String, dynamic> b) {
-    final ngayRaw = b['ngay']?.toString() ?? '';
-    final ngay = ngayRaw.length >= 10 ? ngayRaw.substring(0, 10) : ngayRaw;
+  static List<_Buoi> _groupBySession(List<CrmAttendanceRow> rows) {
+    final Map<String, _Buoi> byId = {};
+    for (final r in rows) {
+      final b = byId.putIfAbsent(
+        r.sessionId,
+        () => _Buoi(
+          sessionId: r.sessionId,
+          date: r.date,
+          startTime: r.startTime,
+          endTime: r.endTime,
+          room: r.room,
+        ),
+      );
+      if (r.mssv != null && r.mssv!.isNotEmpty) {
+        b.students.add(r);
+      }
+    }
+    final list = byId.values.toList()
+      ..sort((a, b) => (a.date ?? '').compareTo(b.date ?? ''));
+    return list;
+  }
+
+  static List<_StudentAgg> _aggregateByStudent(List<CrmAttendanceRow> rows) {
+    final Map<String, _StudentAgg> byMssv = {};
+    for (final r in rows) {
+      final mssv = r.mssv;
+      if (mssv == null || mssv.isEmpty) continue;
+      final agg = byMssv.putIfAbsent(
+          mssv, () => _StudentAgg(mssv: mssv, fullName: r.fullName ?? ''));
+      agg.total++;
+      if (r.status == 'present') agg.present++;
+    }
+    final list = byMssv.values.toList()
+      ..sort((a, b) => a.fullName.compareTo(b.fullName));
+    return list;
+  }
+
+  String? _sessionKeyOf(_Buoi b) {
+    final lmhId = widget.lmhId;
+    if (lmhId == null || lmhId.isEmpty || b.date == null) return null;
+    final ngay = b.date!.length >= 10 ? b.date!.substring(0, 10) : b.date!;
     return EmsApiService.sessionKeyFor(
-      lmhId: b['lmhid'].toString(),
+      lmhId: lmhId,
       date: ngay,
-      startTime: b['thoigianbd']?.toString() ?? '',
+      startTime: b.startTime ?? '',
     );
   }
 
-  /// Chỉ hỏi EMS cho buổi đã tới ngày (buổi tương lai chưa thể có dấu). Mỗi
-  /// buổi một câu hỏi nhẹ; lỗi một buổi không làm hỏng cả danh sách.
+  /// Chỉ hỏi EMS cho buổi đã tới ngày (buổi tương lai chưa thể có dấu), và
+  /// chỉ khi biết được `lmhid` (session_key cần nó — xem [widget.lmhId]).
   Future<void> _loadEmsCounts() async {
+    if (widget.lmhId == null) return;
     final today = _todayHcm();
     final due = _buoiHocs.where((b) {
-      final ngay = (b['ngay']?.toString() ?? '');
+      final ngay = b.date ?? '';
       return ngay.length >= 10 && ngay.substring(0, 10).compareTo(today) <= 0;
     }).toList();
     await Future.wait(due.map((b) async {
       final key = _sessionKeyOf(b);
+      if (key == null) return;
       try {
         final marks = await EmsApiService.sessionMarks(key);
         final present = marks.values
@@ -494,14 +516,17 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
         '${d.day.toString().padLeft(2, '0')}';
   }
 
-  void _showBuoiDetail(Map<String, dynamic> buoi) {
+  void _showBuoiDetail(_Buoi buoi) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => SizedBox(
         height: MediaQuery.of(ctx).size.height * 0.75,
-        child: _BuoiDetailSheet(buoi: buoi),
+        child: _BuoiDetailSheet(
+          buoi: buoi,
+          sessionKey: _sessionKeyOf(buoi),
+        ),
       ),
     );
   }
@@ -527,17 +552,10 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
 
   @override
   Widget build(BuildContext context) {
-    final monHoc = widget.lop['monHoc'] as Map<String, dynamic>? ?? {};
-    final ma = widget.lop['ma']?.toString() ?? '';
-    final mhten = monHoc['ten']?.toString() ?? '';
-    final mhma = monHoc['ma']?.toString() ?? '';
-    final sotinchi = monHoc['sotinchi'] as int? ?? 0;
-    final sotinchilt = monHoc['sotinchilt'] as int? ?? 0;
-    final sotinchith = monHoc['sotinchith'] as int? ?? 0;
-    final cc = widget.lop['phantramcc'] as int? ?? 0;
-    final gk = widget.lop['phantramgk'] as int? ?? 0;
-    final ck = widget.lop['phantramck'] as int? ?? 0;
-    //final moLop = widget.lop['molopyn'] as bool? ?? false;
+    final lop = widget.lop;
+    final mhten = lop.subjectName ?? '';
+    final mhma = lop.subjectCode ?? '';
+    final sotinchi = lop.credits ?? 0;
 
     return Container(
       decoration: const BoxDecoration(
@@ -558,7 +576,7 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
               ),
             ),
           ),
-          // Header: tên môn + badge trạng thái
+          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
             child: Row(
@@ -580,23 +598,6 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                     ],
                   ),
                 ),
-                // Container(
-                //   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                //   decoration: BoxDecoration(
-                //     color: moLop
-                //         ? const Color(0xFF4CAF50).withValues(alpha: 0.12)
-                //         : Colors.grey.withValues(alpha: 0.12),
-                //     borderRadius: BorderRadius.circular(20),
-                //   ),
-                //   child: Text(
-                //     moLop ? 'Đang mở' : 'Đã đóng',
-                //     style: TextStyle(
-                //       fontSize: 12,
-                //       fontWeight: FontWeight.w600,
-                //       color: moLop ? const Color(0xFF4CAF50) : Colors.grey,
-                //     ),
-                //   ),
-                // ),
               ],
             ),
           ),
@@ -625,32 +626,37 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                 ListView(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                   children: [
-                    _DetailRow(icon: Icons.class_outlined, label: 'Mã lớp', value: ma),
+                    _DetailRow(icon: Icons.class_outlined, label: 'Mã lớp', value: lop.sectionCode),
                     const SizedBox(height: 12),
                     if (sotinchi > 0) ...[
+                      _DetailRow(icon: Icons.school_outlined, label: 'Tín chỉ', value: '$sotinchi TC'),
+                      const SizedBox(height: 12),
+                    ],
+                    if ((lop.room ?? '').isNotEmpty) ...[
+                      _DetailRow(icon: Icons.room_outlined, label: 'Phòng', value: lop.room!),
+                      const SizedBox(height: 12),
+                    ],
+                    _DetailRow(
+                        icon: Icons.people_outline,
+                        label: 'Sĩ số',
+                        value: '${lop.enrolledStudents} sinh viên'),
+                    const SizedBox(height: 12),
+                    if ((lop.ngayBatDau ?? '').isNotEmpty || (lop.ngayKetThuc ?? '').isNotEmpty) ...[
                       _DetailRow(
-                        icon: Icons.school_outlined,
-                        label: 'Tín chỉ',
-                        value: '$sotinchi TC'
-                            '${sotinchilt > 0 ? '  (LT: $sotinchilt' : ''}'
-                            '${sotinchith > 0 ? ' · TH: $sotinchith' : ''}'
-                            '${sotinchilt > 0 ? ')' : ''}',
+                        icon: Icons.date_range_outlined,
+                        label: 'Thời gian',
+                        value:
+                            '${_fmtDate(lop.ngayBatDau)} – ${_fmtDate(lop.ngayKetThuc)}',
                       ),
                       const SizedBox(height: 12),
                     ],
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.bar_chart, size: 18, color: Color(0xFFE65100)),
-                        const SizedBox(width: 10),
-                        const SizedBox(
-                          width: 90,
-                          child: Text('Tỷ lệ điểm',
-                              style: TextStyle(fontSize: 13, color: Color(0xFF555555))),
-                        ),
-                        Expanded(child: _ScoreDonut(cc: cc, gk: gk, ck: ck)),
-                      ],
-                    ),
+                    if ((lop.ngayThi ?? '').isNotEmpty)
+                      _DetailRow(icon: Icons.event_note_outlined, label: 'Ngày thi', value: _fmtDate(lop.ngayThi)),
+                    // Tỷ lệ điểm chuyên cần/giữa kỳ/cuối kỳ (bản IMS cũ có donut
+                    // theo % trọng số) KHÔNG có tương đương trong CRM
+                    // (`sections`/`subjects` không lưu trọng số điểm theo lớp) —
+                    // bỏ thay vì bịa số. TODO(A4 hoặc bot điểm): thêm nếu/khi CRM
+                    // có bảng trọng số điểm.
                   ],
                 ),
 
@@ -707,11 +713,7 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                 separatorBuilder: (_, _) =>
                                     const Divider(height: 1, color: Color(0xFFF5F5F5)),
                                 itemBuilder: (_, i) {
-                                  final hv = _hocViens[i]['hocVien'] as Map<String, dynamic>? ?? {};
-                                  final ho = hv['ho']?.toString() ?? '';
-                                  final ten = hv['ten']?.toString() ?? '';
-                                  final fullName = '$ho $ten'.trim();
-                                  final mshv = hv['mshv']?.toString() ?? '';
+                                  final hv = _hocViens[i];
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 10),
                                     child: Row(
@@ -733,12 +735,12 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(fullName,
+                                              Text(hv.fullName,
                                                   style: const TextStyle(
                                                       fontSize: 14,
                                                       fontWeight: FontWeight.w600)),
                                               const SizedBox(height: 2),
-                                              Text(mshv,
+                                              Text(hv.mssv,
                                                   style: const TextStyle(
                                                       fontSize: 12, color: Color(0xFF555555))),
                                             ],
@@ -777,6 +779,21 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                           )
                         : Column(
                             children: [
+                              if (widget.lmhId == null)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Text(
+                                      'Không xác định được buổi trên EMS cho lớp này — chỉ hiện dữ liệu ghi nhận trên CRM.',
+                                      style: TextStyle(fontSize: 12, color: Color(0xFF795548)),
+                                    ),
+                                  ),
+                                ),
                               // Sub-tab toggle
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -815,20 +832,22 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                             separatorBuilder: (_, _) => const SizedBox(height: 8),
                                             itemBuilder: (_, i) {
                                               final b = _buoiHocs[i];
-                                              final ngay = _fmtDate(b['ngay']?.toString());
-                                              final tbd = b['thoigianbd']?.toString() ?? '';
-                                              final tkt = _fmtTime(b['thoigiankt']?.toString());
-                                              final siso = b['siso'] as int? ?? 0;
-                                              final imsHienDien = b['hiendien'] as int? ?? 0;
-                                              final ems = _emsCounts[_sessionKeyOf(b)];
-                                              // Nguồn duy nhất cho cả số ngoài lẫn bảng chi tiết: EMS.
+                                              final ngay = _fmtDate(b.date);
+                                              final tbd = b.startTime ?? '';
+                                              final tkt = _fmtTime(b.endTime);
+                                              final siso = widget.lop.enrolledStudents;
+                                              final key = _sessionKeyOf(b);
+                                              final ems = key == null ? null : _emsCounts[key];
                                               final daDiemDanh = ems != null && ems.total > 0;
-                                              final hiendien = daDiemDanh ? ems.present : 0;
+                                              final crmPresent = b.students
+                                                  .where((s) => s.status == 'present')
+                                                  .length;
+                                              final hiendien = daDiemDanh ? ems.present : crmPresent;
                                               final pct = siso > 0 ? hiendien / siso : 0.0;
                                               final countText = daDiemDanh
                                                   ? '$hiendien / $siso có mặt (EMS)'
-                                                  : imsHienDien > 0
-                                                      ? '$imsHienDien / $siso có mặt trên IMS cũ — chưa có trên EMS'
+                                                  : crmPresent > 0
+                                                      ? '$crmPresent / $siso có mặt trên CRM — chưa xác nhận trên EMS'
                                                       : '0 / $siso — chưa điểm danh';
                                               return GestureDetector(
                                               onTap: () => _showBuoiDetail(b),
@@ -927,12 +946,8 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                                 const Divider(height: 1, color: Color(0xFFF5F5F5)),
                                             itemBuilder: (_, i) {
                                               final t = _tongHops[i];
-                                              final ho = t['ho']?.toString() ?? '';
-                                              final ten = t['ten']?.toString() ?? '';
-                                              final fullName = '$ho $ten'.trim();
-                                              final mshv = t['mshv']?.toString() ?? '';
-                                              final tongSo = t['tongsobuoi'] as int? ?? 0;
-                                              final hiendien = t['sobuoihiendien'] as int? ?? 0;
+                                              final tongSo = t.total;
+                                              final hiendien = t.present;
                                               final pct = tongSo > 0 ? hiendien / tongSo : 0.0;
                                               return Padding(
                                                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -953,12 +968,12 @@ class _LopDetailSheetState extends State<_LopDetailSheet>
                                                       child: Column(
                                                         crossAxisAlignment: CrossAxisAlignment.start,
                                                         children: [
-                                                          Text(fullName,
+                                                          Text(t.fullName,
                                                               style: const TextStyle(
                                                                   fontSize: 14,
                                                                   fontWeight: FontWeight.w600)),
                                                           const SizedBox(height: 2),
-                                                          Text(mshv,
+                                                          Text(t.mssv,
                                                               style: const TextStyle(
                                                                   fontSize: 12, color: Colors.grey)),
                                                           const SizedBox(height: 4),
@@ -1035,15 +1050,17 @@ class _DetailRow extends StatelessWidget {
 
 // ── Buổi Detail Sheet ────────────────────────────────
 class _BuoiDetailSheet extends StatefulWidget {
-  final Map<String, dynamic> buoi;
-  const _BuoiDetailSheet({required this.buoi});
+  final _Buoi buoi;
+  final String? sessionKey;
+  const _BuoiDetailSheet({required this.buoi, required this.sessionKey});
 
   @override
   State<_BuoiDetailSheet> createState() => _BuoiDetailSheetState();
 }
 
 class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
-  List<Map<String, dynamic>> _students = [];
+  List<CrmAttendanceRow> _students = [];
+  Map<String, String> _emsStatus = {};
   bool _loading = true;
   String? _error;
 
@@ -1054,38 +1071,20 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
   }
 
   Future<void> _load() async {
-    final b = widget.buoi;
     setState(() { _loading = true; _error = null; });
     try {
-      final ngayRaw = b['ngay']?.toString() ?? '';
-      final ngay = ngayRaw.length >= 10 ? ngayRaw.substring(0, 10) : ngayRaw;
-      final tkt = _fmtTime(b['thoigiankt']?.toString());
-      // Danh sách lớp: IMS (nơi duy nhất còn giữ danh sách LMH — quy định
-      // 2026-09-09). Có mặt / vắng: EMS, KHÔNG dùng `hiendienyn` của IMS nữa —
-      // từ khi giáo viên điểm danh trên EMS, IMS giữ dòng cũ và nói ngược.
-      final data = await ApiService.postDiemDanhDanhSach(
-        tkbid: b['tkbid'].toString(),
-        lopid: b['lmhid'].toString(),
-        phongid: b['phongid'].toString(),
-        ngay: ngay,
-        thoigianbd: b['thoigianbd']?.toString() ?? '',
-        thoigiankt: tkt,
-      );
-      final ems = await EmsApiService.sessionMarks(EmsApiService.sessionKeyFor(
-        lmhId: b['lmhid'].toString(),
-        date: ngay,
-        startTime: b['thoigianbd']?.toString() ?? '',
-      ));
+      // Danh sách học viên của buổi: CRM (`attendance` join `sessions`), đã
+      // tải sẵn ở màn hình cha (widget.buoi.students). Có mặt/vắng THẬT: EMS
+      // (session-marks) — không dùng trạng thái `attendance` của CRM nữa,
+      // giống hệt quy định 2026-09-09 khi còn IMS.
+      final key = widget.sessionKey;
+      final ems = key == null
+          ? <String, String>{}
+          : await EmsApiService.sessionMarks(key);
       if (mounted) {
         setState(() {
-          _students = data.map((e) {
-            final m = Map<String, dynamic>.from(e as Map);
-            final st = ems[m['mshv']?.toString() ?? ''];
-            // null = EMS chưa có dòng nào cho người này (chưa điểm danh).
-            m['ems_status'] = st;
-            m['hiendienyn'] = st == null ? null : (st == 'present' || st == 'late' || st == 'excused');
-            return m;
-          }).toList();
+          _students = widget.buoi.students;
+          _emsStatus = ems;
           _loading = false;
         });
       }
@@ -1105,16 +1104,21 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
     return raw;
   }
 
+  bool? _presentOf(CrmAttendanceRow s) {
+    final st = _emsStatus[s.mssv ?? ''];
+    if (st == null) return null; // chưa điểm danh trên EMS
+    return st == 'present' || st == 'late' || st == 'excused';
+  }
+
   @override
   Widget build(BuildContext context) {
     final b = widget.buoi;
-    final ngay = _LopDetailSheetState._fmtDate(b['ngay']?.toString());
-    final tbd = b['thoigianbd']?.toString() ?? '';
-    final tkt = _fmtTime(b['thoigiankt']?.toString());
-    final siso = b['siso'] as int? ?? 0;
+    final ngay = _LopDetailSheetState._fmtDate(b.date);
+    final tbd = b.startTime ?? '';
+    final tkt = _fmtTime(b.endTime);
 
-    final present = _students.where((s) => s['hiendienyn'] == true).length;
-    final absent = _students.where((s) => s['hiendienyn'] == false).length;
+    final present = _students.where((s) => _presentOf(s) == true).length;
+    final absent = _students.where((s) => _presentOf(s) == false).length;
     final unmarked = _students.length - present - absent;
 
     return Container(
@@ -1155,7 +1159,7 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
                   _StatPill(label: 'Vắng', value: absent, color: Colors.red),
                   _StatPill(label: 'Chưa ĐD', value: unmarked, color: const Color(0xFF2196F3)),
                 ] else ...[
-                  Text('Sĩ số: $siso',
+                  Text('Sĩ số: ${_students.length}',
                       style: const TextStyle(fontSize: 13, color: Colors.grey)),
                 ],
               ],
@@ -1184,27 +1188,30 @@ class _BuoiDetailSheetState extends State<_BuoiDetailSheet> {
                           ],
                         ),
                       )
-                    : ListView.separated(
+                    : _students.isEmpty
+                        ? const Center(
+                            child: Text('Không có học viên',
+                                style: TextStyle(color: Colors.grey)),
+                          )
+                        : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                         itemCount: _students.length,
                         separatorBuilder: (_, _) =>
                             const Divider(height: 1, color: Color(0xFFF5F5F5)),
                         itemBuilder: (_, i) {
                           final s = _students[i];
-                          final ho = s['ho']?.toString() ?? '';
-                          final ten = s['ten']?.toString() ?? '';
-                          final fullName = '$ho $ten'.trim();
-                          final mshv = s['mshv']?.toString() ?? '';
-                          final present = s['hiendienyn'] == true;
-                          final unmarked = s['hiendienyn'] == null;
+                          final fullName = s.fullName ?? '';
+                          final mshv = s.mssv ?? '';
+                          final presentState = _presentOf(s);
+                          final unmarked = presentState == null;
                           final tone = unmarked
                               ? const Color(0xFF2196F3)
-                              : present
+                              : presentState
                                   ? const Color(0xFF4CAF50)
                                   : Colors.red;
                           final label = unmarked
                               ? 'Chưa điểm danh'
-                              : present
+                              : presentState
                                   ? 'Có mặt'
                                   : 'Vắng';
                           return Padding(
@@ -1324,87 +1331,33 @@ class _SubTabBtn extends StatelessWidget {
   }
 }
 
-class _ScoreDonut extends StatelessWidget {
-  final int cc, gk, ck;
-  const _ScoreDonut({required this.cc, required this.gk, required this.ck});
+/// Một buổi học, dựng bằng cách gộp các dòng phẳng của
+/// `GET /me/classes/:id/attendance` theo `session_id`.
+class _Buoi {
+  final String sessionId;
+  final String? date;
+  final String? startTime;
+  final String? endTime;
+  final String? room;
+  final List<CrmAttendanceRow> students = [];
 
-  @override
-  Widget build(BuildContext context) {
-    final sections = <PieChartSectionData>[
-      if (cc > 0)
-        PieChartSectionData(
-            value: cc.toDouble(),
-            color: const Color(0xFF2196F3),
-            title: '',
-            radius: 20),
-      if (gk > 0)
-        PieChartSectionData(
-            value: gk.toDouble(),
-            color: const Color(0xFFFF9800),
-            title: '',
-            radius: 20),
-      if (ck > 0)
-        PieChartSectionData(
-            value: ck.toDouble(),
-            color: const Color(0xFF9C27B0),
-            title: '',
-            radius: 20),
-    ];
-    if (sections.isEmpty) {
-      sections.add(PieChartSectionData(
-          value: 1, color: Colors.grey[300]!, title: '', radius: 20));
-    }
-
-    return Row(
-      children: [
-        SizedBox(
-          width: 72,
-          height: 72,
-          child: PieChart(PieChartData(
-            sections: sections,
-            centerSpaceRadius: 24,
-            sectionsSpace: 2,
-            startDegreeOffset: -90,
-          )),
-        ),
-        const SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _LegendItem(color: const Color(0xFF2196F3), label: 'Chuyên cần', value: '$cc%'),
-            const SizedBox(height: 5),
-            _LegendItem(color: const Color(0xFFFF9800), label: 'Giữa kỳ', value: '$gk%'),
-            const SizedBox(height: 5),
-            _LegendItem(color: const Color(0xFF9C27B0), label: 'Cuối kỳ', value: '$ck%'),
-          ],
-        ),
-      ],
-    );
-  }
+  _Buoi({
+    required this.sessionId,
+    this.date,
+    this.startTime,
+    this.endTime,
+    this.room,
+  });
 }
 
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label, value;
-  const _LegendItem({required this.color, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        const SizedBox(width: 4),
-        Text(value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
+/// Tổng hợp điểm danh của một học viên trong lớp, gộp từ các dòng
+/// `attendance` của CRM (KHÔNG phải EMS — xem ghi chú ở [CrmAttendanceRow]).
+class _StudentAgg {
+  final String mssv;
+  final String fullName;
+  int total = 0;
+  int present = 0;
+  _StudentAgg({required this.mssv, required this.fullName});
 }
 
 class _EmsSessionCount {
