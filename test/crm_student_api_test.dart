@@ -16,6 +16,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:viendongedu2_flutter/models/crm_student_exams.dart';
 import 'package:viendongedu2_flutter/models/crm_student_grades.dart';
+import 'package:viendongedu2_flutter/models/crm_student_graduation_summary.dart';
 import 'package:viendongedu2_flutter/models/crm_student_profile.dart';
 import 'package:viendongedu2_flutter/models/crm_student_schedule.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
@@ -112,12 +113,115 @@ void main() {
       expect(g.isPassed, isFalse);
     });
 
-    test('override_pass thắng điểm số thấp', () {
+    test('override_pass thắng điểm số thấp — nhưng không đổi chữ xếp loại', () {
+      // isPassed đọc override_pass (luật server); gradeLetter thì KHÔNG —
+      // ladder của trường (diem4.js) chỉ nhìn con số, không có ngoại lệ cho
+      // override_pass.
       final g = CrmStudentGrade.fromJson({
         'final_score': 3, 'override_pass': true, 'subject_code': 'CS104',
       });
       expect(g.isPassed, isTrue);
-      expect(g.gradeLetter, 'A');
+      expect(g.gradeLetter, 'F');
+    });
+
+    test('status pending_review + final_score null vẫn là "chưa có điểm", không phải rớt', () {
+      final g = CrmStudentGrade.fromJson({
+        'subject_code': 'CS107', 'final_score': null, 'status': 'pending_review',
+      });
+      expect(g.isUngraded, isTrue);
+      expect(g.isPassed, isFalse); // không phải "đạt"...
+      expect(g.gradeLetter, ''); // ...nhưng cũng không phải 'F' — rỗng, UI hiện "—".
+    });
+  });
+
+  // Ladder ported EXACTLY from crm-clean's lib/grades/diem4.js — mọi mốc
+  // biên, null, và rác ngoài khoảng [0,10] (mẫu thật của diem4.js:
+  // mssv 2408022005 / ELB21830 tongdiem=54.2).
+  group('letterGradeForScore (thang điểm trường, diem4.js)', () {
+    test('mọi mốc biên đúng ladder 8 bậc', () {
+      expect(letterGradeForScore(10), 'A');
+      expect(letterGradeForScore(8.5), 'A');
+      expect(letterGradeForScore(8.49), 'B+');
+      expect(letterGradeForScore(8.0), 'B+');
+      expect(letterGradeForScore(7.99), 'B');
+      expect(letterGradeForScore(7.0), 'B');
+      expect(letterGradeForScore(6.99), 'C+');
+      expect(letterGradeForScore(6.5), 'C+');
+      expect(letterGradeForScore(6.49), 'C');
+      expect(letterGradeForScore(5.5), 'C');
+      expect(letterGradeForScore(5.49), 'D+');
+      expect(letterGradeForScore(5.0), 'D+');
+      expect(letterGradeForScore(4.99), 'D');
+      expect(letterGradeForScore(4.0), 'D');
+      expect(letterGradeForScore(3.99), 'F');
+      expect(letterGradeForScore(0), 'F');
+    });
+
+    test('null hoặc ngoài [0,10] → null (KHÔNG BAO GIỜ F) — kể cả rác 54.2', () {
+      expect(letterGradeForScore(null), isNull);
+      expect(letterGradeForScore(54.2), isNull); // mẫu thật trong diem4.js
+      expect(letterGradeForScore(-0.1), isNull);
+      expect(letterGradeForScore(10.1), isNull);
+      expect(letterGradeForScore(double.nan), isNull);
+    });
+
+    test('letterGradeForDiem4 (khi server gửi sẵn điểm 4.0) khớp cùng ladder', () {
+      expect(letterGradeForDiem4(4.0), 'A');
+      expect(letterGradeForDiem4(3.5), 'B+');
+      expect(letterGradeForDiem4(3.0), 'B');
+      expect(letterGradeForDiem4(2.5), 'C+');
+      expect(letterGradeForDiem4(2.0), 'C');
+      expect(letterGradeForDiem4(1.5), 'D+');
+      expect(letterGradeForDiem4(1.0), 'D');
+      expect(letterGradeForDiem4(0.0), 'F');
+      expect(letterGradeForDiem4(null), isNull);
+    });
+
+    test('CrmStudentGrade ưu tiên diem4 của server khi có, thay vì tự băng lại', () {
+      // final_score một mình sẽ băng ra 'F' (2.5 < 4.0), nhưng server gửi
+      // diem4=3.0 (điểm 4.0 tương ứng 'B') — model phải theo diem4.
+      final g = CrmStudentGrade.fromJson({'final_score': 2.5, 'diem4': 3.0});
+      expect(g.gradeLetter, 'B');
+    });
+  });
+
+  group('CrmGraduationSummary', () {
+    test('đọc academic + remaining_subjects, bỏ qua tuition/finance có chủ đích', () {
+      final summary = CrmGraduationSummary.fromJson({
+        'student': {'mssv': 'TEST2600001'},
+        'academic': {
+          'total': 5, 'scored': 4, 'passed': 3, 'failed': 1,
+          'average_score': 6.8, 'has_curriculum': true,
+          'required_subjects': 6, 'required_passed': 3,
+          'remaining_subjects_count': 3, 'academically_clear': false,
+        },
+        'attendance': {'total': 10, 'present': 9, 'absent': 1},
+        // Dữ liệu tiền bạc thật trong response — KHÔNG được model này đọc.
+        'tuition': {'owedNow': 5000000, 'paid': 2000000},
+        'eligibility': {
+          'academically_clear': false, 'financially_clear': false,
+          'can_graduate': false,
+        },
+        'remaining_subjects': [
+          {'subject_code': 'CS108', 'subject_name': 'Trí tuệ nhân tạo', 'credits': 3, 'completion_status': 'not_taken'},
+        ],
+      });
+
+      expect(summary.academic.total, 5);
+      expect(summary.academic.requiredPassed, 3);
+      expect(summary.academic.requiredSubjects, 6);
+      expect(summary.academic.averageScore, 6.8);
+      expect(summary.academic.hasCurriculum, isTrue);
+      expect(summary.academic.academicallyClear, isFalse);
+      expect(summary.remainingSubjects, hasLength(1));
+      expect(summary.remainingSubjects.first.subjectCode, 'CS108');
+    });
+
+    test('thiếu academic không làm vỡ app', () {
+      final summary = CrmGraduationSummary.fromJson({'student': {}});
+      expect(summary.academic.total, 0);
+      expect(summary.academic.hasCurriculum, isFalse);
+      expect(summary.remainingSubjects, isEmpty);
     });
   });
 
@@ -157,21 +261,48 @@ void main() {
     });
 
     test('occursOn khớp đúng thứ + khoảng ngày, KHÔNG giải mã weeks_pattern', () {
+      // start_date/end_date như server THẬT trả (múi giờ dev box Melbourne,
+      // KHÁC UTC-nửa-đêm) — đúng ví dụ trong brief review.
       final item = CrmScheduleItem.fromJson({
         'subject_code': 'CS101', 'subject_name': 'Nhập môn CNTT',
         'section_code': '253_CS101_01', 'day_code': '3', // Thứ 3
         'start_time': '07:30', 'end_time': '09:30',
         'room_name': 'A101', 'teacher_name': 'Nguyễn Văn Thử',
         'weeks_pattern': '1111111111',
-        'start_date': '2026-01-05', 'end_date': '2026-05-01',
+        'start_date': '2026-01-05T14:00:00.000Z', // 06/01 giờ Melbourne
+        'end_date': '2026-05-01T14:00:00.000Z',
       });
+
+      // start_date lưu là NGÀY LỊCH 05/01 (lấy Y-M-D của .toUtc()), không lùi
+      // qua 06/01 dù chuỗi gốc mang giờ Melbourne khác 0h UTC.
+      expect(item.startDate, DateTime.utc(2026, 1, 5));
 
       // 2026-01-06 là thứ Ba.
       expect(item.occursOn(DateTime(2026, 1, 6)), isTrue);
       // Cùng tuần nhưng khác thứ.
       expect(item.occursOn(DateTime(2026, 1, 7)), isFalse);
-      // Đúng thứ nhưng ngoài khoảng học phần.
+      // Đúng thứ nhưng ngoài khoảng học phần (nằm sau end_date).
       expect(item.occursOn(DateTime(2026, 6, 2)), isFalse);
+      // Đúng thứ nhưng trước start_date.
+      expect(item.occursOn(DateTime(2025, 12, 30)), isFalse);
+    });
+
+    test('start_date UTC-nửa-đêm (hình dạng thật của prod) không lùi ngày', () {
+      // Prod chạy UTC nên start_date tới dạng "...T00:00:00.000Z" — đúng ví
+      // dụ trong brief review. Test này khoá lại hành vi: KHÔNG BAO GIỜ quy
+      // đổi sang giờ máy chạy test (múi giờ máy CI có thể là bất cứ đâu).
+      // 2026-09-23 là thứ Tư → day_code '4'.
+      expect(dayCodeForWeekday(DateTime(2026, 9, 23).weekday), '4');
+      final item = CrmScheduleItem.fromJson({
+        'day_code': '4',
+        'start_date': '2026-09-23T00:00:00.000Z',
+        'end_date': '2026-09-23T00:00:00.000Z',
+      });
+      expect(item.startDate, DateTime.utc(2026, 9, 23));
+      expect(item.endDate, DateTime.utc(2026, 9, 23));
+      expect(item.occursOn(DateTime(2026, 9, 23)), isTrue);
+      expect(item.occursOn(DateTime(2026, 9, 22)), isFalse);
+      expect(item.occursOn(DateTime(2026, 9, 24)), isFalse);
     });
 
     test('dayCodeForWeekday khớp bảng ref_days', () {

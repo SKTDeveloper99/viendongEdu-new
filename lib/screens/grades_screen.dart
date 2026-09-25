@@ -2,16 +2,16 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/crm_student_grades.dart';
+import '../models/crm_student_graduation_summary.dart';
 import '../services/crm_student_api.dart';
 
 // ── Model ────────────────────────────────────────────────
 //
 // Wraps a CrmStudentGrade (GET /api/student/me/grades) with the field names
 // the widgets below already used, so the display code needs minimal changes.
-// `gradeLetter`/`isPassed` are computed on CrmStudentGrade itself — see the
-// gap notes in lib/models/crm_student_grades.dart (no letter grade or 4.0
-// GPA exists anywhere in the CRM; the letter is a client-side display
-// convention, not sourced data).
+// `gradeLetter`/`isPassed` are computed on CrmStudentGrade itself using the
+// school's real 8-band ladder (lib/models/crm_student_grades.dart,
+// letterGradeForScore — ported from crm-clean's lib/grades/diem4.js).
 class GradeItem {
   final CrmStudentGrade grade;
   final int solan;
@@ -21,16 +21,19 @@ class GradeItem {
   String get mhten => grade.subjectName;
   int get sotinchi => grade.credits;
   double get tongdiem => grade.finalScore ?? 0;
-  String get diemchu => grade.gradeLetter;
+  // '' (chưa có điểm, hoặc điểm ngoài [0,10] — không băng được) → "—", KHÔNG
+  // BAO GIỜ hiện như một điểm rớt.
+  String get diemchu => grade.gradeLetter.isEmpty ? '—' : grade.gradeLetter;
   bool get datyn => grade.isPassed;
   bool get chuaHoc => grade.isUngraded; // tongdiem null → chưa có điểm
 
-  Color get letterColor => switch (diemchu) {
+  Color get letterColor => switch (grade.gradeLetter) {
         'A' => const Color(0xFF4CAF50),
-        'B' => const Color(0xFF2196F3),
-        'C' => const Color(0xFFFF9800),
-        'D' => Colors.grey,
-        _ => const Color(0xFFF44336),
+        'B+' || 'B' => const Color(0xFF2196F3),
+        'C+' || 'C' => const Color(0xFFFF9800),
+        'D+' || 'D' => Colors.grey,
+        'F' => const Color(0xFFF44336),
+        _ => Colors.grey, // '' — không băng được, trung tính
       };
 }
 
@@ -77,7 +80,7 @@ class _GradesScreenState extends State<GradesScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  Map<String, dynamic> _stats = {};
+  CrmAcademicSummary? _stats;
   List<GradeItem> _grades = [];       // có điểm (tongdiem != null)
   List<GradeItem> _chuaHoc = [];     // chưa học (tongdiem == null)
   List<Map<String, dynamic>> _chuaDat = [];
@@ -97,46 +100,33 @@ class _GradesScreenState extends State<GradesScreen>
     super.dispose();
   }
 
-  // CRM không có một endpoint "thongkectdt" gộp sẵn như IMS. Số liệu tổng
-  // quan (_stats) được TÍNH LẠI ở client từ hai nguồn thật:
-  //   /me/grades              → điểm từng môn + average_score của server
-  //   /me/remaining-subjects  → môn chưa đạt/chưa học theo chương trình
-  // "X/Y tín chỉ": Y (mẫu số) chỉ có ý nghĩa khi has_curriculum == true (lớp
-  // có chương trình khung); nếu không, Y rơi về đúng số tín chỉ ĐÃ có điểm,
-  // để không bịa ra một tổng chương trình không tồn tại. Xem
-  // docs/ims_to_crm_student_academic_map.md.
+  // Tổng quan (_stats) đến THẲNG từ GET /api/student/me/graduation-summary —
+  // KHÔNG còn tính lại tín chỉ/điểm trung bình ở client. Đây là endpoint
+  // dùng cho xét tốt nghiệp (lib/portals-student-portal-service.js
+  // #getGraduationSummary), có sẵn `academic` (đếm MÔN, không phải tín chỉ —
+  // summarizeGrades() đếm dòng điểm, không cộng dồn `credits`) và
+  // `remaining_subjects`. Chỉ phần học vụ được đọc; `tuition`/finance trong
+  // response thuộc phạm vi của bot khác (tuition_screen.dart), không đụng
+  // tới. /me/grades vẫn cần riêng cho danh sách điểm từng môn (tab "Chi
+  // tiết"/"Chưa có điểm"). Xem docs/ims_to_crm_student_academic_map.md.
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
       final results = await Future.wait([
         CrmStudentApi.grades(),
-        CrmStudentApi.remainingSubjects(),
+        CrmStudentApi.graduationSummary(),
       ]);
       if (!mounted) return;
       final gradesView = results[0] as CrmStudentGradesView;
-      final remaining = results[1] as CrmRemainingSubjectsView;
+      final summary = results[1] as CrmGraduationSummary;
+      final academic = summary.academic;
 
       final allGrades = _withRetakeNumbers(gradesView.grades);
       final withScore = allGrades.where((g) => !g.chuaHoc).toList()
         ..sort((a, b) => b.tongdiem.compareTo(a.tongdiem));
       final noScore = allGrades.where((g) => g.chuaHoc).toList();
 
-      final creditsPassed = withScore
-          .where((g) => g.datyn)
-          .fold<int>(0, (s, g) => s + g.sotinchi);
-      final creditsFailed = withScore
-          .where((g) => !g.datyn)
-          .fold<int>(0, (s, g) => s + g.sotinchi);
-      final creditsNoScore =
-          noScore.fold<int>(0, (s, g) => s + g.sotinchi);
-      final creditsRemainingCurriculum = remaining.subjects
-          .fold<int>(0, (s, r) => s + r.credits);
-      final creditsTotal = remaining.hasCurriculum
-          ? creditsPassed + creditsRemainingCurriculum
-          : creditsPassed + creditsFailed + creditsNoScore;
-      final avg = gradesView.summary.averageScore ?? 0;
-
-      final chuaDat = remaining.subjects
+      final chuaDat = summary.remainingSubjects
           .map((r) => {
                 'mhma': r.subjectCode,
                 'mhten': r.subjectName,
@@ -150,17 +140,7 @@ class _GradesScreenState extends State<GradesScreen>
           .toList();
 
       setState(() {
-        _stats = {
-          'sotinchidat': creditsPassed,
-          'sotinchi': creditsTotal,
-          // Server không tách "tích lũy" khỏi "học kỳ này" — cùng một số
-          // average_score được dùng cho cả hai, không suy ra một con số thứ
-          // hai không có thật.
-          'trungbinhtichluy': avg,
-          'trungbinhtongket': avg,
-          'sotinchichuacodiem': creditsNoScore,
-          'sotinchikhongdat': creditsFailed,
-        };
+        _stats = academic;
         _grades = withScore;
         _chuaHoc = noScore;
         _chuaDat = chuaDat;
@@ -274,20 +254,28 @@ class _GradesScreenState extends State<GradesScreen>
 }
 
 // ── Overview Tab ─────────────────────────────────────────
+//
+// Every number here comes straight from CrmAcademicSummary
+// (GET /api/student/me/graduation-summary → `academic`) — no client-side
+// arithmetic. It counts SUBJECTS (grade rows / curriculum rows), not
+// tín chỉ: the server's summarizeGrades() never sums `credits`, so "X/Y" is
+// môn (subjects), not credit-hours. See
+// docs/ims_to_crm_student_academic_map.md.
 class _OverviewTab extends StatelessWidget {
-  final Map<String, dynamic> stats;
+  final CrmAcademicSummary? stats;
   final List<GradeItem> grades;
 
   const _OverviewTab({required this.stats, required this.grades});
 
   @override
   Widget build(BuildContext context) {
-    final tcDat = (stats['sotinchidat'] as num?)?.toInt() ?? 0;
-    final tcTong = (stats['sotinchi'] as num?)?.toInt() ?? 0;
-    final tbTichLuy = (stats['trungbinhtichluy'] as num?)?.toDouble() ?? 0;
-    final tbTongKet = (stats['trungbinhtongket'] as num?)?.toDouble() ?? 0;
-    final tcChuaDiem = (stats['sotinchichuacodiem'] as num?)?.toInt() ?? 0;
-    final tcKhongDat = (stats['sotinchikhongdat'] as num?)?.toInt() ?? 0;
+    final s = stats;
+    final tcDat = s?.requiredPassed ?? 0;
+    final tcTong = s?.requiredSubjects ?? 0;
+    final tbTichLuy = s?.averageScore ?? 0;
+    final tbTongKet = s?.averageScore ?? 0;
+    final tcChuaDiem = ((s?.total ?? 0) - (s?.scored ?? 0)).clamp(0, 1 << 30);
+    final tcKhongDat = s?.failed ?? 0;
     final progress = tcTong > 0 ? (tcDat / tcTong).clamp(0.0, 1.0) : 0.0;
 
     return SingleChildScrollView(
@@ -357,7 +345,7 @@ class _OverviewTab extends StatelessWidget {
                               color: Colors.white70, size: 14),
                           const SizedBox(width: 5),
                           Text(
-                            '$tcDat / $tcTong tín chỉ đạt',
+                            '$tcDat / $tcTong môn đạt',
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -421,14 +409,14 @@ class _OverviewTab extends StatelessWidget {
               const SizedBox(width: 10),
               _MiniStat(
                 label: 'Không đạt',
-                value: '$tcKhongDat TC',
+                value: '$tcKhongDat môn',
                 icon: Icons.cancel_outlined,
                 color: const Color(0xFFF44336),
               ),
               const SizedBox(width: 10),
               _MiniStat(
                 label: 'Chưa có điểm',
-                value: '$tcChuaDiem TC',
+                value: '$tcChuaDiem môn',
                 icon: Icons.hourglass_empty,
                 color: Color(0xFFE65100),
               ),
@@ -576,8 +564,11 @@ class _GradeDistribution extends StatelessWidget {
 
   static const _colors = {
     'A': Color(0xFF4CAF50),
+    'B+': Color(0xFF2196F3),
     'B': Color(0xFF2196F3),
+    'C+': Color(0xFFFF9800),
     'C': Color(0xFFFF9800),
+    'D+': Colors.grey,
     'D': Colors.grey,
     'F': Color(0xFFF44336),
   };
@@ -586,15 +577,19 @@ class _GradeDistribution extends StatelessWidget {
   Widget build(BuildContext context) {
     if (grades.isEmpty) return const SizedBox.shrink();
 
+    // Dùng grade.gradeLetter (rỗng khi không băng được) chứ không phải
+    // GradeItem.diemchu (đã đổi rỗng thành "—" để hiển thị) — biểu đồ này chỉ
+    // đếm điểm thật, không đếm "chưa có điểm/không băng được" như một loại.
     final Map<String, int> dist = {};
     for (final g in grades) {
-      if (g.diemchu.isNotEmpty) {
-        dist[g.diemchu] = (dist[g.diemchu] ?? 0) + 1;
+      final letter = g.grade.gradeLetter;
+      if (letter.isNotEmpty) {
+        dist[letter] = (dist[letter] ?? 0) + 1;
       }
     }
     if (dist.isEmpty) return const SizedBox.shrink();
 
-    final order = ['A', 'B', 'C', 'D', 'F'];
+    final order = ['A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'];
     final entries = order
         .where((k) => dist.containsKey(k))
         .map((k) => MapEntry(k, dist[k]!))

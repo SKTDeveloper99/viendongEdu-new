@@ -25,11 +25,31 @@
 //   - `/me/schedule` is NOT a per-date feed like `hocvien/tkbtheongay?ngay=`.
 //     It returns each class's WEEKLY recurring slot for a semester (day_code
 //     + start/end time + a `weeks_pattern` string, `tuanhocstr`, whose
-//     encoding is undocumented and is deliberately NOT decoded here — see
-//     `CrmScheduleItem.occursOn`). A selected date is matched by weekday +
-//     falling within [start_date, end_date]; a class that meets on alternating
-//     weeks (if `weeks_pattern` encodes that) may over-show on some dates.
-//     This is flagged, not hidden.
+//     encoding is undocumented and is deliberately NOT decoded — the field is
+//     kept on the model but ignored by `CrmScheduleItem.occursOn`). A
+//     selected date is matched by weekday + falling within
+//     [start_date, end_date]; a class that meets on alternating weeks (if
+//     `weeks_pattern` encodes that) may over-show on some dates. Flagged, not
+//     hidden.
+//
+// `start_date`/`end_date` are CALENDAR dates, not moments — the server sends
+// them as an ISO instant (e.g. `"2026-09-23T14:00:00.000Z"` from a
+// Melbourne-local dev box, `"...T00:00:00.000Z"` from prod, which runs UTC).
+// `_calendarDate` below takes ONLY the Y-M-D of `DateTime.parse(s).toUtc()`
+// and re-anchors it at UTC midnight, stripping the time-of-day and the
+// server's own zone entirely. This is deliberate and must stay exactly this
+// way: converting to the PHONE's local zone instead (e.g. `.toLocal()`)
+// would make a UTC-midnight boundary drift onto the wrong calendar day for
+// any phone west of UTC, even though Vietnam (UTC+7) happens to be safe —
+// the rule has to be explicit, not "works for our timezone".
+DateTime? _calendarDate(dynamic v) {
+  if (v == null) return null;
+  final dt = DateTime.tryParse(v.toString());
+  if (dt == null) return null;
+  final u = dt.toUtc();
+  return DateTime.utc(u.year, u.month, u.day);
+}
+
 class CrmStudentSection {
   final String? semesterCode;
   final int? sectionId;
@@ -64,8 +84,8 @@ class CrmStudentSection {
         subjectName: j['subject_name']?.toString() ?? '',
         credits: (j['credits'] as num?)?.toInt() ?? 0,
         teacherName: j['teacher_name']?.toString() ?? '',
-        ngayBatDau: DateTime.tryParse(j['ngay_bat_dau']?.toString() ?? ''),
-        ngayKetThuc: DateTime.tryParse(j['ngay_ket_thuc']?.toString() ?? ''),
+        ngayBatDau: _calendarDate(j['ngay_bat_dau']),
+        ngayKetThuc: _calendarDate(j['ngay_ket_thuc']),
         siSo: (j['si_so'] as num?)?.toInt(),
       );
 }
@@ -118,14 +138,17 @@ class CrmScheduleItem {
     this.endDate,
   });
 
-  /// Buổi này có rơi vào [date] không — chỉ đối chiếu thứ trong tuần và
-  /// khoảng ngày bắt đầu/kết thúc học phần. KHÔNG giải mã `weeksPattern`
-  /// (xem ghi chú đầu file) — nếu lớp học cách tuần, kết quả có thể hiện dư.
+  /// Buổi này có rơi vào [date] không: đúng thứ VÀ
+  /// start_date ≤ [date] ≤ end_date, so sánh như NGÀY LỊCH (chỉ năm-tháng-ngày
+  /// của [date], bỏ giờ/múi giờ của chính nó — cùng quy ước với
+  /// `_calendarDate`) chứ không phải một thời điểm. KHÔNG giải mã
+  /// `weeksPattern` (xem ghi chú đầu file) — nếu lớp học cách tuần, kết quả
+  /// có thể hiện dư.
   bool occursOn(DateTime date) {
     if (dayCode != null && dayCode != dayCodeForWeekday(date.weekday)) {
       return false;
     }
-    final d = DateTime(date.year, date.month, date.day);
+    final d = DateTime.utc(date.year, date.month, date.day);
     if (startDate != null && d.isBefore(startDate!)) return false;
     if (endDate != null && d.isAfter(endDate!)) return false;
     return true;
@@ -145,7 +168,7 @@ class CrmScheduleItem {
     room: j['room_name']?.toString() ?? '',
     teacherName: j['teacher_name']?.toString() ?? '',
     weeksPattern: j['weeks_pattern']?.toString(),
-    startDate: DateTime.tryParse(j['start_date']?.toString() ?? ''),
-    endDate: DateTime.tryParse(j['end_date']?.toString() ?? ''),
+    startDate: _calendarDate(j['start_date']),
+    endDate: _calendarDate(j['end_date']),
   );
 }

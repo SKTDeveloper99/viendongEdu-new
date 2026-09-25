@@ -22,6 +22,7 @@
 // shared helper.
 import '../models/crm_student_profile.dart';
 import '../models/crm_student_grades.dart';
+import '../models/crm_student_graduation_summary.dart';
 import '../models/crm_student_schedule.dart';
 import '../models/crm_student_exams.dart';
 import 'ems_api_service.dart';
@@ -51,15 +52,30 @@ class CrmStudentApi {
 
   /// `GET /api/student/me/remaining-subjects` → { mssv, has_curriculum,
   /// subjects, all_required_count, passed_count }.
-  /// Thay `hocvien/monhocchuadat` (`ApiService.getMonHocChuaDat`) và cấp dữ
-  /// liệu cho phần "X/Y tín chỉ" từng lấy từ `hocvien/thongkectdt`
-  /// (`ApiService.getThongKeCTDT`) — CRM không có endpoint thongkectdt tương
-  /// đương, xem docs/ims_to_crm_student_academic_map.md.
+  /// Thay `hocvien/monhocchuadat` (`ApiService.getMonHocChuaDat`). Dùng cho
+  /// tab "Chưa học" của bảng điểm — cho tổng quan chương trình (X/Y môn,
+  /// điểm trung bình, đủ điều kiện) dùng [graduationSummary] thay vì cộng
+  /// dồn danh sách này ở client.
   static Future<CrmRemainingSubjectsView> remainingSubjects() async {
     final body =
         await EmsApiService.send('GET', '/student/me/remaining-subjects')
             as Map<String, dynamic>;
     return CrmRemainingSubjectsView.fromJson(body);
+  }
+
+  /// `GET /api/student/me/graduation-summary` → { student, academic,
+  /// attendance, tuition, eligibility, remaining_subjects }. Only `academic`
+  /// and `remaining_subjects` are parsed (see
+  /// lib/models/crm_student_graduation_summary.dart — tuition/finance is out
+  /// of this slice's scope). Thay `hocvien/thongkectdt`
+  /// (`ApiService.getThongKeCTDT`): the overview tab's "X/Y môn", average,
+  /// and eligibility now come straight from this endpoint instead of being
+  /// summed client-side over /me/grades.
+  static Future<CrmGraduationSummary> graduationSummary() async {
+    final body =
+        await EmsApiService.send('GET', '/student/me/graduation-summary')
+            as Map<String, dynamic>;
+    return CrmGraduationSummary.fromJson(body);
   }
 
   /// `GET /api/student/me/sections?semester=` → { mssv, sections }.

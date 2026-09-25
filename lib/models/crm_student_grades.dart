@@ -13,25 +13,70 @@
 //     repositories/portals-student-portal-repo.js#getRemainingSubjects
 //
 // Known gaps vs the old IMS shape (see docs/ims_to_crm_student_academic_map.md):
-//   - No letter grade ('A'/'B'/'C'/'D'/'F') is stored anywhere in the CRM —
-//     `gradeLetter` below is a CLIENT-SIDE display convention computed from
-//     the numeric final_score using the standard 10-point Vietnamese scale
-//     (>=8.5 A, >=7.0 B, >=5.5 C, >=4.0 D, else F). It is not sourced from
-//     any grading authority and must not be treated as an official mark.
-//   - No 4.0-scale GPA ("diem4") exists in the CRM; not shown (was already
-//     dead/commented-out in the old screen).
+//   - `/me/grades` rows do not currently carry a `diem4` field, so the letter
+//     grade is computed client-side FROM `final_score` — but using the
+//     school's REAL ladder, ported byte-for-byte from crm-clean's
+//     `lib/grades/diem4.js` (see `letterGradeForScore` below), not a generic
+//     A/B/C/D/F guess. If a row ever does carry `diem4` (the server's own
+//     4.0-scale conversion), that value is preferred and mapped to a letter
+//     via `letterGradeForDiem4` instead of re-deriving from the raw score.
 //   - No cumulative-vs-term-only GPA distinction exists server-side; the
 //     overview tab shows ONE average (10-point scale) for both instead of
 //     inventing a second number.
-//   - No total-program-credits figure exists as a single field. The overview
-//     "X / Y tín chỉ" is approximated as
-//     (credits of passed subjects) / (credits of passed subjects +
-//     credits of remaining/not-yet-passed subjects from
-//     /me/remaining-subjects) — i.e. only classes with a curriculum row see a
-//     denominator at all; without a curriculum (`has_curriculum == false`)
-//     the denominator falls back to the credits actually graded.
+//   - The overview tab's "X / Y môn" (subject counts, not tín chỉ) comes
+//     straight from `GET /api/student/me/graduation-summary`'s `academic`
+//     block (see lib/models/crm_student_graduation_summary.dart) — no
+//     client-side credit or average arithmetic any more.
 
 double? _numOrNull(dynamic v) => v == null ? null : (v as num).toDouble();
+
+/// 10-scale → letter grade, ported EXACTLY from crm-clean's
+/// `lib/grades/diem4.js` (`toDiem4`) — Viễn Đông's real ladder (Thông tư
+/// 08/2021/TT-BGDĐT, via Quy chế 43/2007), not a generic A/B/C/D/F guess:
+///
+///     10-scale       letter
+///     8.5 – 10.0       A
+///     8.0 – 8.4        B+
+///     7.0 – 7.9        B
+///     6.5 – 6.9        C+
+///     5.5 – 6.4        C
+///     5.0 – 5.4        D+
+///     4.0 – 4.9        D
+///     0.0 – 3.9        F
+///
+/// A null/non-finite score, or one outside [0, 10] (IMS carries out-of-range
+/// garbage — diem4.js's own example is mssv 2408022005 / ELB21830
+/// final_score 54.2), returns `null` — banding it would launder dirty data
+/// into a fake grade. The caller shows "—", NEVER 'F', for `null`.
+String? letterGradeForScore(double? score) {
+  if (score == null || !score.isFinite) return null;
+  if (score < 0 || score > 10) return null;
+  if (score >= 8.5) return 'A';
+  if (score >= 8.0) return 'B+';
+  if (score >= 7.0) return 'B';
+  if (score >= 6.5) return 'C+';
+  if (score >= 5.5) return 'C';
+  if (score >= 5.0) return 'D+';
+  if (score >= 4.0) return 'D';
+  return 'F';
+}
+
+/// Same ladder, entered from the 4.0-scale grade point instead of the raw
+/// 10-scale score — for the day `/me/grades` starts carrying its own `diem4`
+/// (crm-clean's generated column, migrations/060_grades_diem4.sql), which
+/// must be preferred over re-deriving from `final_score`.
+String? letterGradeForDiem4(double? diem4) {
+  if (diem4 == null || !diem4.isFinite) return null;
+  if (diem4 >= 4.0) return 'A';
+  if (diem4 >= 3.5) return 'B+';
+  if (diem4 >= 3.0) return 'B';
+  if (diem4 >= 2.5) return 'C+';
+  if (diem4 >= 2.0) return 'C';
+  if (diem4 >= 1.5) return 'D+';
+  if (diem4 >= 1.0) return 'D';
+  if (diem4 >= 0.0) return 'F';
+  return null;
+}
 
 class CrmStudentGrade {
   final int? gradeId;
@@ -40,6 +85,10 @@ class CrmStudentGrade {
   final double? midtermScore;
   final double? finalExamScore;
   final double? finalScore;
+  /// Server-side 4.0-scale conversion — not present in today's /me/grades
+  /// rows (fallback: `letterGradeForScore(finalScore)`), but preferred over
+  /// it whenever the server does send it.
+  final double? diem4;
   final String? status;
   final bool overridePass;
   final String? overrideNote;
@@ -59,6 +108,7 @@ class CrmStudentGrade {
     this.midtermScore,
     this.finalExamScore,
     this.finalScore,
+    this.diem4,
     this.status,
     this.overridePass = false,
     this.overrideNote,
@@ -81,18 +131,11 @@ class CrmStudentGrade {
   bool get isPassed =>
       overridePass || (finalScore != null && finalScore! >= 5);
 
-  /// Quy ước hiển thị client-side — KHÔNG phải dữ liệu từ IMS/CRM (xem ghi
-  /// chú đầu file).
-  String get gradeLetter {
-    if (finalScore == null) return '';
-    final s = finalScore!;
-    if (overridePass) return 'A';
-    if (s >= 8.5) return 'A';
-    if (s >= 7.0) return 'B';
-    if (s >= 5.5) return 'C';
-    if (s >= 4.0) return 'D';
-    return 'F';
-  }
+  /// Viễn Đông's real 8-band ladder (see `letterGradeForScore` at the top of
+  /// this file) — prefers the server's own `diem4` when a row carries one.
+  /// `null`/out-of-range/ungraded → '' (caller shows "—", never a fail).
+  String get gradeLetter =>
+      (diem4 != null ? letterGradeForDiem4(diem4) : letterGradeForScore(finalScore)) ?? '';
 
   factory CrmStudentGrade.fromJson(Map<String, dynamic> j) => CrmStudentGrade(
     gradeId: (j['grade_id'] as num?)?.toInt(),
@@ -101,6 +144,7 @@ class CrmStudentGrade {
     midtermScore: _numOrNull(j['midterm_score']),
     finalExamScore: _numOrNull(j['final_exam_score']),
     finalScore: _numOrNull(j['final_score']),
+    diem4: _numOrNull(j['diem4']),
     status: j['status']?.toString(),
     overridePass: j['override_pass'] == true,
     overrideNote: j['override_note']?.toString(),
