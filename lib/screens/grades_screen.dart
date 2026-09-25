@@ -1,38 +1,71 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../services/api_service.dart';
+import '../models/crm_student_grades.dart';
+import '../models/crm_student_graduation_summary.dart';
+import '../services/crm_student_api.dart';
 
 // ── Model ────────────────────────────────────────────────
+//
+// Wraps a CrmStudentGrade (GET /api/student/me/grades) with the field names
+// the widgets below already used, so the display code needs minimal changes.
+// `gradeLetter`/`isPassed` are computed on CrmStudentGrade itself using the
+// school's real 8-band ladder (lib/models/crm_student_grades.dart,
+// letterGradeForScore — ported from crm-clean's lib/grades/diem4.js).
 class GradeItem {
-  final String mhma;
-  final String mhten;
-  final int sotinchi;
-  final double tongdiem;
-  final double diem4;
-  final String diemchu;
-  final bool datyn;
+  final CrmStudentGrade grade;
   final int solan;
-  final bool chuaHoc; // tongdiem was null in API → chưa học
+  const GradeItem(this.grade, {this.solan = 1});
 
-  GradeItem.fromJson(Map<String, dynamic> j)
-      : mhma = j['mhma'] as String? ?? '',
-        mhten = j['mhten'] as String? ?? '',
-        sotinchi = j['sotinchi'] as int? ?? 0,
-        chuaHoc = j['tongdiem'] == null,
-        tongdiem = (j['tongdiem'] as num?)?.toDouble() ?? 0,
-        diem4 = (j['diem4'] as num?)?.toDouble() ?? 0,
-        diemchu = j['diemchu'] as String? ?? '',
-        datyn = j['datyn'] as bool? ?? false,
-        solan = j['solan'] as int? ?? 1;
+  String get mhma => grade.subjectCode;
+  String get mhten => grade.subjectName;
+  int get sotinchi => grade.credits;
+  double get tongdiem => grade.finalScore ?? 0;
+  // '' (chưa có điểm, hoặc điểm ngoài [0,10] — không băng được) → "—", KHÔNG
+  // BAO GIỜ hiện như một điểm rớt.
+  String get diemchu => grade.gradeLetter.isEmpty ? '—' : grade.gradeLetter;
+  bool get datyn => grade.isPassed;
+  bool get chuaHoc => grade.isUngraded; // tongdiem null → chưa có điểm
 
-  Color get letterColor => switch (diemchu) {
+  Color get letterColor => switch (grade.gradeLetter) {
         'A' => const Color(0xFF4CAF50),
-        'B' => const Color(0xFF2196F3),
-        'C' => const Color(0xFFFF9800),
-        'D' => Colors.grey,
-        _ => const Color(0xFFF44336),
+        'B+' || 'B' => const Color(0xFF2196F3),
+        'C+' || 'C' => const Color(0xFFFF9800),
+        'D+' || 'D' => Colors.grey,
+        'F' => const Color(0xFFF44336),
+        _ => Colors.grey, // '' — không băng được, trung tính
       };
+}
+
+/// Gán "Lần N" theo thứ tự thời gian thật (semester_code rồi recorded_at) khi
+/// một môn xuất hiện nhiều lần trong /me/grades (học lại) — /me/grades không
+/// tự đánh số lần như IMS `bangdiemtongket` từng làm, nên tính lại ở client
+/// từ chính danh sách server trả về (không suy đoán, không thêm dữ liệu).
+List<GradeItem> _withRetakeNumbers(List<CrmStudentGrade> grades) {
+  final bySubject = <String, List<CrmStudentGrade>>{};
+  for (final g in grades) {
+    bySubject.putIfAbsent(g.subjectCode, () => []).add(g);
+  }
+  for (final list in bySubject.values) {
+    list.sort((a, b) {
+      final sa = a.semesterCode ?? '';
+      final sb = b.semesterCode ?? '';
+      final c = sa.compareTo(sb);
+      if (c != 0) return c;
+      final ra = a.recordedAt ?? DateTime(0);
+      final rb = b.recordedAt ?? DateTime(0);
+      return ra.compareTo(rb);
+    });
+  }
+  final solanFor = <CrmStudentGrade, int>{};
+  for (final list in bySubject.values) {
+    for (var i = 0; i < list.length; i++) {
+      solanFor[list[i]] = i + 1;
+    }
+  }
+  return grades
+      .map((g) => GradeItem(g, solan: solanFor[g] ?? 1))
+      .toList();
 }
 
 // ── Screen ───────────────────────────────────────────────
@@ -47,7 +80,7 @@ class _GradesScreenState extends State<GradesScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  Map<String, dynamic> _stats = {};
+  CrmAcademicSummary? _stats;
   List<GradeItem> _grades = [];       // có điểm (tongdiem != null)
   List<GradeItem> _chuaHoc = [];     // chưa học (tongdiem == null)
   List<Map<String, dynamic>> _chuaDat = [];
@@ -67,28 +100,50 @@ class _GradesScreenState extends State<GradesScreen>
     super.dispose();
   }
 
+  // Tổng quan (_stats) đến THẲNG từ GET /api/student/me/graduation-summary —
+  // KHÔNG còn tính lại tín chỉ/điểm trung bình ở client. Đây là endpoint
+  // dùng cho xét tốt nghiệp (lib/portals-student-portal-service.js
+  // #getGraduationSummary), có sẵn `academic` (đếm MÔN, không phải tín chỉ —
+  // summarizeGrades() đếm dòng điểm, không cộng dồn `credits`) và
+  // `remaining_subjects`. Chỉ phần học vụ được đọc; `tuition`/finance trong
+  // response thuộc phạm vi của bot khác (tuition_screen.dart), không đụng
+  // tới. /me/grades vẫn cần riêng cho danh sách điểm từng môn (tab "Chi
+  // tiết"/"Chưa có điểm"). Xem docs/ims_to_crm_student_academic_map.md.
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
       final results = await Future.wait([
-        ApiService.getThongKeCTDT(),
-        ApiService.getBangDiem(),
-        ApiService.getMonHocChuaDat(),
+        CrmStudentApi.grades(),
+        CrmStudentApi.graduationSummary(),
       ]);
       if (!mounted) return;
-      final allGrades = (results[1] as List<dynamic>)
-          .map((e) => GradeItem.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final gradesView = results[0] as CrmStudentGradesView;
+      final summary = results[1] as CrmGraduationSummary;
+      final academic = summary.academic;
+
+      final allGrades = _withRetakeNumbers(gradesView.grades);
       final withScore = allGrades.where((g) => !g.chuaHoc).toList()
         ..sort((a, b) => b.tongdiem.compareTo(a.tongdiem));
       final noScore = allGrades.where((g) => g.chuaHoc).toList();
+
+      final chuaDat = summary.remainingSubjects
+          .map((r) => {
+                'mhma': r.subjectCode,
+                'mhten': r.subjectName,
+                'sotinchi': r.credits,
+                'trangthai': switch (r.completionStatus) {
+                  'pending' => 1,
+                  'failed' => 2,
+                  _ => 0,
+                },
+              })
+          .toList();
+
       setState(() {
-        _stats = results[0] as Map<String, dynamic>;
+        _stats = academic;
         _grades = withScore;
         _chuaHoc = noScore;
-        _chuaDat = (results[2] as List<dynamic>)
-            .map((e) => e as Map<String, dynamic>)
-            .toList();
+        _chuaDat = chuaDat;
         _loading = false;
       });
     } catch (e) {
@@ -199,20 +254,28 @@ class _GradesScreenState extends State<GradesScreen>
 }
 
 // ── Overview Tab ─────────────────────────────────────────
+//
+// Every number here comes straight from CrmAcademicSummary
+// (GET /api/student/me/graduation-summary → `academic`) — no client-side
+// arithmetic. It counts SUBJECTS (grade rows / curriculum rows), not
+// tín chỉ: the server's summarizeGrades() never sums `credits`, so "X/Y" is
+// môn (subjects), not credit-hours. See
+// docs/ims_to_crm_student_academic_map.md.
 class _OverviewTab extends StatelessWidget {
-  final Map<String, dynamic> stats;
+  final CrmAcademicSummary? stats;
   final List<GradeItem> grades;
 
   const _OverviewTab({required this.stats, required this.grades});
 
   @override
   Widget build(BuildContext context) {
-    final tcDat = (stats['sotinchidat'] as num?)?.toInt() ?? 0;
-    final tcTong = (stats['sotinchi'] as num?)?.toInt() ?? 0;
-    final tbTichLuy = (stats['trungbinhtichluy'] as num?)?.toDouble() ?? 0;
-    final tbTongKet = (stats['trungbinhtongket'] as num?)?.toDouble() ?? 0;
-    final tcChuaDiem = (stats['sotinchichuacodiem'] as num?)?.toInt() ?? 0;
-    final tcKhongDat = (stats['sotinchikhongdat'] as num?)?.toInt() ?? 0;
+    final s = stats;
+    final tcDat = s?.requiredPassed ?? 0;
+    final tcTong = s?.requiredSubjects ?? 0;
+    final tbTichLuy = s?.averageScore ?? 0;
+    final tbTongKet = s?.averageScore ?? 0;
+    final tcChuaDiem = ((s?.total ?? 0) - (s?.scored ?? 0)).clamp(0, 1 << 30);
+    final tcKhongDat = s?.failed ?? 0;
     final progress = tcTong > 0 ? (tcDat / tcTong).clamp(0.0, 1.0) : 0.0;
 
     return SingleChildScrollView(
@@ -282,7 +345,7 @@ class _OverviewTab extends StatelessWidget {
                               color: Colors.white70, size: 14),
                           const SizedBox(width: 5),
                           Text(
-                            '$tcDat / $tcTong tín chỉ đạt',
+                            '$tcDat / $tcTong môn đạt',
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -346,14 +409,14 @@ class _OverviewTab extends StatelessWidget {
               const SizedBox(width: 10),
               _MiniStat(
                 label: 'Không đạt',
-                value: '$tcKhongDat TC',
+                value: '$tcKhongDat môn',
                 icon: Icons.cancel_outlined,
                 color: const Color(0xFFF44336),
               ),
               const SizedBox(width: 10),
               _MiniStat(
                 label: 'Chưa có điểm',
-                value: '$tcChuaDiem TC',
+                value: '$tcChuaDiem môn',
                 icon: Icons.hourglass_empty,
                 color: Color(0xFFE65100),
               ),
@@ -501,8 +564,11 @@ class _GradeDistribution extends StatelessWidget {
 
   static const _colors = {
     'A': Color(0xFF4CAF50),
+    'B+': Color(0xFF2196F3),
     'B': Color(0xFF2196F3),
+    'C+': Color(0xFFFF9800),
     'C': Color(0xFFFF9800),
+    'D+': Colors.grey,
     'D': Colors.grey,
     'F': Color(0xFFF44336),
   };
@@ -511,15 +577,19 @@ class _GradeDistribution extends StatelessWidget {
   Widget build(BuildContext context) {
     if (grades.isEmpty) return const SizedBox.shrink();
 
+    // Dùng grade.gradeLetter (rỗng khi không băng được) chứ không phải
+    // GradeItem.diemchu (đã đổi rỗng thành "—" để hiển thị) — biểu đồ này chỉ
+    // đếm điểm thật, không đếm "chưa có điểm/không băng được" như một loại.
     final Map<String, int> dist = {};
     for (final g in grades) {
-      if (g.diemchu.isNotEmpty) {
-        dist[g.diemchu] = (dist[g.diemchu] ?? 0) + 1;
+      final letter = g.grade.gradeLetter;
+      if (letter.isNotEmpty) {
+        dist[letter] = (dist[letter] ?? 0) + 1;
       }
     }
     if (dist.isEmpty) return const SizedBox.shrink();
 
-    final order = ['A', 'B', 'C', 'D', 'F'];
+    final order = ['A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'];
     final entries = order
         .where((k) => dist.containsKey(k))
         .map((k) => MapEntry(k, dist[k]!))

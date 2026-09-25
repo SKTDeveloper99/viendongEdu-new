@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../models/crm_student_profile.dart';
+import '../services/crm_student_api.dart';
 
+// READ-ONLY display screen (bot A3 slice). Editing profile fields / changing
+// password from this screen belongs to another bot — the edit action below
+// deliberately calls nothing new.
+// TODO(A4): wire the edit action to the real profile-update endpoint.
 class HvProfileInfoScreen extends StatefulWidget {
   const HvProfileInfoScreen({super.key});
 
@@ -9,7 +14,7 @@ class HvProfileInfoScreen extends StatefulWidget {
 }
 
 class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
-  Map<String, dynamic>? _data;
+  CrmStudentProfile? _profile;
   bool _loading = true;
   String? _error;
 
@@ -19,50 +24,48 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
     _fetch();
   }
 
+  // GET /api/student/me — thay `user/info` (`ApiService.getUserInfo`, IMS).
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getUserInfo();
+      final data = await CrmStudentApi.me();
       if (!mounted) return;
-      setState(() { _data = data; _loading = false; });
+      setState(() { _profile = data; _loading = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _loading = false; _error = e.toString(); });
     }
   }
 
-  String _fmtDate(String? iso) {
-    if (iso == null || iso.isEmpty) return '–';
-    try {
-      final d = DateTime.parse(iso);
-      return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-    } catch (_) {
-      return '–';
-    }
+  String _fmtDate(DateTime? d) {
+    if (d == null) return '–';
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final hv = _data?['hocVien'] as Map<String, dynamic>?;
-    final khoiNganh = hv?['khoiNganh'] as Map<String, dynamic>?;
-    final chuyenNganh = khoiNganh?['chuyenNganh'] as Map<String, dynamic>?;
-    final nganh = chuyenNganh?['nganh'] as Map<String, dynamic>?;
-    final heDaoTao = nganh?['hedaotao'] as Map<String, dynamic>?;
+    final p = _profile;
 
-    final ho = hv?['ho']?.toString() ?? '';
-    final ten = hv?['ten']?.toString() ?? '';
-    final fullName = '$ho $ten'.trim();
-    final mssv = hv?['mshv']?.toString() ?? '–';
-    final malop = hv?['malop']?.toString() ?? '–';
-    final khoahoc = hv?['khoahoc']?.toString() ?? '–';
-    final ngaysinh = _fmtDate(hv?['ngaysinh']?.toString());
-    final gioitinh = hv?['gioitinh'] == 1 ? 'Nam' : hv?['gioitinh'] == 0 ? 'Nữ' : '–';
-    final email = hv?['email']?.toString() ?? '–';
-    final sdt = hv?['sdt']?.toString() ?? '–';
-    final cmnd = hv?['cmnd']?.toString() ?? '–';
-    final chuyenNganhTen = chuyenNganh?['ten']?.toString() ?? '–';
-    final nganhTen = nganh?['ten']?.toString() ?? '–';
-    final heDaoTaoTen = heDaoTao?['ten']?.toString() ?? '–';
+    final fullName = p?.fullName.isNotEmpty == true
+        ? p!.fullName
+        : '${p?.lastName ?? ''} ${p?.firstName ?? ''}'.trim();
+    final mssv = p?.mssv.isNotEmpty == true ? p!.mssv : '–';
+    final malop = p?.classCode ?? '–';
+    final khoahoc = p?.khoaDisplay ?? '–';
+    final ngaysinh = _fmtDate(p?.dateOfBirth);
+    final email = p?.email ?? '–';
+    final sdt = p?.phone ?? '–';
+    // CRM's `students` table has a `cccd` column, but the /api/student/me
+    // repo query (repositories/portals-student-portal-repo.js#getStudent)
+    // does not select it — the endpoint simply has no CCCD field to hand
+    // back. Shown as "—" rather than guessed; documented in
+    // docs/ims_to_crm_student_academic_map.md.
+    const cmnd = '—';
+    // CRM models only ONE ngành level (no separate "chuyên ngành" tier the
+    // old IMS hierarchy had) — same gap, documented rather than guessed.
+    const chuyenNganhTen = '—';
+    final nganhTen = p?.nganhName?.isNotEmpty == true ? p!.nganhName! : '–';
+    final heDaoTaoTen = p?.programName?.isNotEmpty == true ? p!.programName! : '–';
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -140,7 +143,6 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                               _InfoRow(icon: Icons.person_outline, label: 'Họ tên', value: fullName),
                               _InfoRow(icon: Icons.badge_outlined, label: 'MSSV', value: mssv),
                               _InfoRow(icon: Icons.cake_outlined, label: 'Ngày sinh', value: ngaysinh),
-                              // _InfoRow(icon: Icons.wc_outlined, label: 'Giới tính', value: gioitinh),
                               _InfoRow(icon: Icons.credit_card_outlined, label: 'CCCD', value: cmnd),
                             ]),
                             const SizedBox(height: 12),
@@ -151,7 +153,7 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                             const SizedBox(height: 12),
                             _Section(title: 'Học vụ', children: [
                               _InfoRow(icon: Icons.group_outlined, label: 'Lớp', value: malop),
-                              _InfoRow(icon: Icons.school_outlined, label: 'Khóa học', value: 'Khóa $khoahoc'),
+                              _InfoRow(icon: Icons.school_outlined, label: 'Khóa học', value: khoahoc),
                               _InfoRow(icon: Icons.menu_book_outlined, label: 'Chuyên ngành', value: chuyenNganhTen),
                               _InfoRow(icon: Icons.account_balance_outlined, label: 'Ngành', value: nganhTen),
                               _InfoRow(icon: Icons.workspace_premium_outlined, label: 'Hệ đào tạo', value: heDaoTaoTen),

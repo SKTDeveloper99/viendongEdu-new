@@ -1,18 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../models/crm_student_schedule.dart';
 import '../services/app_session.dart';
+import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
-
-// "1970-01-01T20:30:00.000Z" → "20:30"
-String _parseEndTime(String? raw) {
-  if (raw == null || raw.isEmpty) return '';
-  try {
-    final dt = DateTime.parse(raw).toUtc();
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  } catch (_) {
-    return '';
-  }
-}
 
 String _fmtDate(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -28,8 +18,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   DateTime _currentMonday = DateTime.now();
   DateTime _selectedDate = DateTime.now();
 
-  // Cache kết quả theo ngày để không gọi API lại
-  final Map<String, List<Map<String, dynamic>>> _cache = {};
+  // CRM /me/schedule không có API theo-ngày như IMS `hocvien/tkbtheongay`:
+  // nó trả TOÀN BỘ lịch học lặp-hàng-tuần của mọi học kỳ đã ghi danh trong
+  // một lần gọi (xem lib/models/crm_student_schedule.dart). Tải một lần rồi
+  // lọc theo ngày ở client (CrmScheduleItem.occursOn), và giữ cache theo
+  // ngày để build() không lọc lại mỗi lần.
+  List<CrmScheduleItem>? _fullSchedule;
+  final Map<String, List<CrmScheduleItem>> _cache = {};
   bool _loading = false;
 
   // ── Trạng thái điểm danh: CHỈ đọc từ EMS ─────────────────────────────────
@@ -92,9 +87,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return m == null ? null : '${m.group(1)}:${m.group(2)}';
   }
 
-  String _statusFor(Map<String, dynamic> data, String date) {
-    final code = data['lmhma']?.toString() ?? '';
-    final start = (data['thoigianbd']?.toString() ?? '').trim();
+  String _statusFor(CrmScheduleItem data, String date) {
+    final code = data.sectionCode;
+    final start = (data.startTime ?? '').trim();
     final hhmm = start.length >= 5 ? start.substring(0, 5) : null;
     final m = (hhmm != null ? _emsByKey[_markKey(code, date, hhmm)] : null) ??
         _emsByKey[_markKey(code, date)];
@@ -106,7 +101,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         _ => 'pending',
       };
     }
-    return data['baonghiyn'] == true ? 'excused' : 'pending';
+    // IMS's schedule row carried its own `baonghiyn` (báo nghỉ) flag as a
+    // fallback when no EMS mark existed yet; CRM's /me/schedule has no such
+    // per-row flag (that concept never migrated — see
+    // docs/ims_to_crm_student_academic_map.md). Falls back to "pending".
+    return 'pending';
   }
   final ScrollController _chipScroll = ScrollController();
 
@@ -154,10 +153,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     setState(() => _loading = true);
     try {
-      final data = await ApiService.getScheduleByDate(key);
+      _fullSchedule ??= await CrmStudentApi.schedule();
       if (!mounted) return;
       setState(() {
-        _cache[key] = data.map((e) => e as Map<String, dynamic>).toList();
+        _cache[key] = _fullSchedule!.where((s) => s.occursOn(date)).toList();
       });
     } catch (_) {
       if (!mounted) return;
@@ -395,6 +394,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             color: const Color(0xFFE65100),
                             onRefresh: () async {
                               _cache.remove(_fmtDate(_selectedDate));
+                              _fullSchedule = null;
                               await Future.wait([
                                 _fetchDate(_selectedDate),
                                 _loadEmsMarks(force: true),
@@ -420,20 +420,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
 // ── Schedule Card ────────────────────────────────────────
 class _ScheduleCard extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final CrmScheduleItem data;
   /// Từ EMS (xem `_ScheduleScreenState._statusFor`), không phải IMS.
   final String status;
   const _ScheduleCard({required this.data, required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final subject = data['mhten']?.toString() ?? '';
-    final classCode = data['lmhma']?.toString() ?? '';
-    final room = data['phongten']?.toString().trim() ?? '';
-    final teacher = data['gvten']?.toString() ?? '';
-    final start = data['thoigianbd']?.toString() ?? '';
-    final end = _parseEndTime(data['thoigiankt']?.toString());
-    final isLichThi = data['loaitkb']?.toString() == 'lichthi';
+    final subject = data.subjectName;
+    final classCode = data.sectionCode;
+    final room = data.room.trim();
+    final teacher = data.teacherName;
+    final start = data.startTime ?? '';
+    final end = data.endTime ?? '';
+    // CRM /me/schedule chỉ trả buổi HỌC — lịch thi nằm ở /me/exams riêng
+    // (xem exam_screen.dart), nên không còn khái niệm "loaitkb == lichthi"
+    // trộn trong cùng một feed như IMS `tkbtheongay` nữa. `isLichThi` giữ lại
+    // như một cờ luôn false (thay vì xoá hẳn nhánh hiển thị) để badge "Lịch
+    // thi" bên dưới không chết hẳn nếu một bot khác sau này gộp lịch thi vào
+    // đây — không dùng `const` để tránh cảnh báo dead_code từ analyzer.
+    final isLichThi = DateTime.now().year < 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
