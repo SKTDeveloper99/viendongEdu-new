@@ -61,7 +61,7 @@ class _TuitionScreenState extends State<TuitionScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
+      if (await handleCrmAuthError(context, e)) return;
       setState(() { _loading = false; _error = e.toString(); });
     }
   }

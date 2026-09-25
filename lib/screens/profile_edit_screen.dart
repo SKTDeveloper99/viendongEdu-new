@@ -72,7 +72,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       setState(() => _loading = false);
     } catch (e) {
       if (!mounted) return;
-      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
+      if (await handleCrmAuthError(context, e)) return;
       setState(() { _loading = false; _error = e.toString(); });
     }
   }
@@ -114,7 +114,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       ));
     } catch (e) {
       if (!mounted) return;
-      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() => _saving = false);
       // Hiện nguyên văn thông điệp lỗi validate/máy chủ.

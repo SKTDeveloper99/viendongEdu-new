@@ -61,7 +61,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
+      if (await handleCrmAuthError(context, e)) return;
       setState(() { _loadingPeriods = false; _error = e.toString(); });
     }
   }
@@ -103,7 +103,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
+      if (await handleCrmAuthError(context, e)) return;
       setState(() { _loadingData = false; _error = e.toString(); });
     }
   }
@@ -167,7 +167,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
+      if (await handleCrmAuthError(context, e)) return;
       // Hiện nguyên văn lỗi máy chủ (đợt đóng / lớp đầy / đã đăng ký).
       _showSnack(e.toString(), isError: true);
     } finally {
