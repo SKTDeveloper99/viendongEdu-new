@@ -28,6 +28,7 @@ import 'screens/notifications_screen.dart';
 import 'screens/student_board_screen.dart';
 import 'screens/ems_attendance_teacher_screen.dart';
 import 'screens/ems_attendance_student_screen.dart';
+import 'screens/profile_edit_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -65,6 +66,10 @@ void main() async {
   NotificationService.instance.configureEmsStudentDevice(
     register: AppSession.instance.registerStudentDeviceToken,
     revoke: AppSession.instance.revokeStudentDeviceToken,
+  );
+  NotificationService.instance.configureEmsTeacherDevice(
+    register: AppSession.instance.registerTeacherDeviceToken,
+    revoke: AppSession.instance.revokeTeacherDeviceToken,
   );
 
   // Vẽ giao diện TRƯỚC. Không await notification init ở đây:
@@ -108,13 +113,16 @@ class MyApp extends StatelessWidget {
         '/capbu': (context) => const CapBuScreen(),
         '/change_password': (context) => const ChangePasswordScreen(),
         '/registration': (context) => const RegistrationScreen(),
+        // Danh sách thông báo CRM — CHỈ giảng viên (xem
+        // `notifications_screen.dart`). Học viên dùng '/student_board'.
         '/notifications': (context) => const NotificationsScreen(),
-        // Bảng tin — thông tin từ EMS. Tách hẳn khỏi chuông thông báo Vercel
-        // ở trên: đây là một mặt kéo (pull) riêng, không thay thế chuông.
+        // Bảng tin — thông tin từ EMS, đọc trực tiếp (kéo/pull), không qua
+        // chuông đẩy (push) nào.
         '/student_board': (context) => const StudentBoardScreen(),
         // Điểm danh EMS — EMS là nguồn dữ liệu điểm danh chính thức.
         '/ems_attendance_gv': (context) => const EmsAttendanceTeacherScreen(),
         '/ems_attendance_hv': (context) => const EmsAttendanceStudentScreen(),
+        '/profile_edit': (context) => const ProfileEditScreen(),
       },
     );
   }

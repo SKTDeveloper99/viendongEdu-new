@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'app_session.dart';
 import 'ems_api_service.dart';
 import '../models/crm_profile_models.dart';
 
@@ -11,63 +8,10 @@ import '../models/crm_profile_models.dart';
 /// false` — ghi vào CRM, CHƯA gửi lên IMS. Màn hình gọi hàm này phải nói rõ
 /// điều đó cho người dùng, không giấu.
 ///
-/// `EmsApiService.send()` chỉ hỗ trợ GET/POST/DELETE (không có PATCH) và
-/// đây là file KHÔNG được sửa `ems_api_service.dart` — hai route hồ sơ ở
-/// đây là `router.patch(...)` thật sự trên máy chủ (không phải POST), nên
-/// [_patch] tự gọi `EmsApiService.client.patch` (client đã có thể thay được
-/// trong test, giống mọi service EMS khác) và tự dựng lỗi giống
-/// [EmsException] cho nơi gọi bắt như bình thường.
+/// Đi qua [EmsApiService.send] (nay hỗ trợ PATCH) như mọi service EMS khác —
+/// không tự mở `http.Client`/tự dựng lỗi nữa (bot A5, 2026-09-25: gỡ workaround
+/// `_patch` cũ, từ khi `send()`/`_decode()` chưa hỗ trợ PATCH).
 class CrmProfileApi {
-  static const Duration _timeout = Duration(seconds: 15);
-
-  static Map<String, String> _headers() {
-    final h = <String, String>{'Content-Type': 'application/json'};
-    final t = AppSession.instance.emsToken;
-    if (t != null && t.isNotEmpty) h['Authorization'] = 'Bearer $t';
-    return h;
-  }
-
-  static Future<Map<String, dynamic>> _patch(
-    String path,
-    Map<String, dynamic> body,
-  ) async {
-    final uri = Uri.parse('${EmsApiService.baseUrl}$path');
-    http.Response res;
-    try {
-      res = await EmsApiService.client
-          .patch(uri, headers: _headers(), body: jsonEncode(body))
-          .timeout(_timeout);
-    } catch (_) {
-      throw EmsException('Không cập nhật được hồ sơ. Vui lòng thử lại.');
-    }
-
-    Map<String, dynamic>? decoded;
-    try {
-      final d = jsonDecode(res.body);
-      if (d is Map<String, dynamic>) decoded = d;
-    } catch (_) {
-      decoded = null;
-    }
-
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      if (decoded == null) {
-        throw EmsException(
-          'Máy chủ trả về dữ liệu không đọc được.',
-          statusCode: res.statusCode,
-        );
-      }
-      return decoded;
-    }
-
-    final rawError = decoded?['error']?.toString();
-    final rawMessage = decoded?['message']?.toString();
-    throw EmsException(
-      rawMessage ?? rawError ?? 'Không kết nối được máy chủ thông tin.',
-      code: rawError,
-      statusCode: res.statusCode,
-    );
-  }
-
   /// `GET /api/student/me` — điền sẵn form. Không có `cccd`/`cmnd` ở endpoint
   /// này (xem [CrmStudentProfile.fromGetMeJson]).
   static Future<CrmStudentProfile> getStudentMe() async {
@@ -95,7 +39,8 @@ class CrmProfileApi {
       if (sdt != null && sdt.isNotEmpty) 'sdt': sdt,
       if (cmnd != null && cmnd.isNotEmpty) 'cmnd': cmnd,
     };
-    final res = await _patch('/student/me/profile', body);
+    final res = await EmsApiService.send('PATCH', '/student/me/profile', body: body)
+        as Map<String, dynamic>;
     return CrmStudentProfile.fromPatchJson(res);
   }
 
@@ -108,7 +53,8 @@ class CrmProfileApi {
       if (email != null && email.isNotEmpty) 'email': email,
       if (sdt != null && sdt.isNotEmpty) 'sdt': sdt,
     };
-    final res = await _patch('/teacher/me/profile', body);
+    final res = await EmsApiService.send('PATCH', '/teacher/me/profile', body: body)
+        as Map<String, dynamic>;
     return CrmTeacherProfile.fromPatchJson(res);
   }
 }

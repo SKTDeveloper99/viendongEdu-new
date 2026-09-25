@@ -1,10 +1,12 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../services/app_session.dart';
+import '../services/crm_session_guard.dart';
+import '../services/ems_api_service.dart';
 
-const _notiBase = 'https://noti-backend-eight.vercel.app';
-
+/// Danh sách thông báo — CHỈ giảng viên (route '/teacher/notifications',
+/// CRM). Học viên đọc thông báo qua Bảng tin ('/student_board',
+/// [EmsApiService.board]) kể từ khi gỡ backend Vercel “noti-backend-eight” (bot
+/// A5, 2026-09-25) — xem `hv_home_screen.dart`, không còn nút nào trỏ vào
+/// màn hình này cho học viên.
 class _Noti {
   final String id;
   final String title;
@@ -43,12 +45,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _loading = true;
   String? _error;
 
-  String get _studentID {
-    final hv = AppSession.instance.hocVien;
-    final gv = AppSession.instance.giangVien;
-    return hv?.id.toString() ?? gv?.id.toString() ?? '';
-  }
-
   @override
   void initState() {
     super.initState();
@@ -58,30 +54,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final res = await http
-          .get(Uri.parse('$_notiBase/api/notifications?studentID=$_studentID'))
-          .timeout(const Duration(seconds: 10));
-      final json = jsonDecode(res.body) as Map<String, dynamic>;
-      if (json['success'] == true) {
-        final list = (json['data'] as List)
-            .map((e) => _Noti.fromJson(e as Map<String, dynamic>))
-            .toList();
-        setState(() { _items = list; _loading = false; });
-      } else {
-        setState(() { _error = json['message'] as String?; _loading = false; });
-      }
+      final raw = await EmsApiService.teacherNotifications();
+      if (!mounted) return;
+      final list = raw
+          .whereType<Map<String, dynamic>>()
+          .map(_Noti.fromJson)
+          .toList();
+      setState(() { _items = list; _loading = false; });
     } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       setState(() { _error = 'Không thể tải thông báo'; _loading = false; });
     }
   }
 
   Future<void> _markRead(String notifyID) async {
     try {
-      await http.put(
-        Uri.parse('$_notiBase/api/notifications/read'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'studentID': _studentID, 'notifyID': notifyID}),
-      ).timeout(const Duration(seconds: 10));
+      await EmsApiService.markTeacherNotificationRead(notifyID);
+      if (!mounted) return;
       setState(() {
         _items = _items
             .map((n) => n.id == notifyID
@@ -89,22 +79,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 : n)
             .toList();
       });
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      await handleCrmAuthError(context, e);
+    }
   }
 
   Future<void> _markAllRead() async {
     try {
-      await http.put(
-        Uri.parse('$_notiBase/api/notifications/read-all'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'studentID': _studentID}),
-      ).timeout(const Duration(seconds: 10));
+      await EmsApiService.markAllTeacherNotificationsRead();
+      if (!mounted) return;
       setState(() {
         _items = _items
             .map((n) => _Noti(id: n.id, title: n.title, body: n.body, status: 'read', sentAt: n.sentAt))
             .toList();
       });
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      await handleCrmAuthError(context, e);
+    }
   }
 
   String _formatDate(DateTime? dt) {

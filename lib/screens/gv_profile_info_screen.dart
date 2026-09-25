@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/crm_teacher_profile.dart';
 
-/// Chỉ hiển thị — CHỈ ĐỌC. Sửa thông tin cá nhân là việc của một đợt khác
-/// (TODO(A4)); màn hình này không có nút sửa nên không cần liên kết gì thêm.
+/// Chỉ hiển thị số liệu — nhưng có nút sửa (góc phải header), điều hướng
+/// sang `ProfileEditScreen` (route '/profile_edit'). Khi màn đó pop về với
+/// kết quả `true` (đã lưu), pop tiếp lên đây với cùng giá trị để nơi gọi
+/// (`gv_home_screen`, giữ [profile]) biết cần tải lại overview.
 ///
 /// [profile] đến từ `GET /api/teacher/me/overview` (CRM, xem
 /// `CrmTeacherApi.overview`) — có thể null khi lần gọi đó chưa xong hoặc lỗi;
@@ -23,6 +25,11 @@ class GvProfileInfoScreen extends StatelessWidget {
     required this.fallbackName,
     required this.teacherCode,
   });
+
+  Future<void> _openEdit(BuildContext context) async {
+    final result = await Navigator.pushNamed(context, '/profile_edit');
+    if (result == true && context.mounted) Navigator.pop(context, true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,13 +69,20 @@ class GvProfileInfoScreen extends StatelessWidget {
                         color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Thông tin cá nhân',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  const Expanded(
+                    child: Text(
+                      'Thông tin cá nhân',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
+                  ),
+                  IconButton(
+                    onPressed: () => _openEdit(context),
+                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                    tooltip: 'Sửa hồ sơ',
                   ),
                 ],
               ),

@@ -2,27 +2,17 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/crm_identity.dart';
-import '../models/hoc_vien_model.dart';
-import '../models/giang_vien_model.dart';
-import 'api_service.dart';
 import 'ems_api_service.dart';
 import 'notification_service.dart';
 
 /// Singleton giữ trạng thái đăng nhập trong toàn app.
 ///
-/// CRM (EMS) giờ là danh tính CHÍNH — [identity]/[emsToken] là điều kiện để
-/// coi là đã đăng nhập. [token]/[userid]/[hocVien]/[giangVien] là tàn dư của
-/// IMS: vẫn tồn tại vì một số màn hình (sóng 2) còn gọi [ApiService], nhưng
-/// từ 6.1.0 không có màn hình đăng nhập nào ghi vào chúng nữa.
+/// CRM (EMS) là danh tính CHÍNH và DUY NHẤT — [identity]/[emsToken] là điều
+/// kiện để coi là đã đăng nhập. IMS (token/userid/hocVien/giangVien, model
+/// `HocVien`/`GiangVien`, `ApiService`) đã bị gỡ hoàn toàn khỏi app.
 class AppSession {
   AppSession._();
   static final AppSession instance = AppSession._();
-
-  // ── IMS (tàn dư — sóng 2 sẽ gỡ) ────────────────────────────────────────────
-  String? token;
-  String? userid;
-  HocVien? hocVien;
-  GiangVien? giangVien;
 
   // ── CRM / EMS — danh tính đăng nhập chính ──────────────────────────────────
 
@@ -81,19 +71,10 @@ class AppSession {
   /// Lưu toàn bộ session vào SharedPreferences
   Future<void> persist() async {
     final prefs = await SharedPreferences.getInstance();
-    if (token != null) await prefs.setString('auth_token', token!);
-    if (userid != null) await prefs.setString('userid', userid!);
     if (emsToken != null && emsToken!.isNotEmpty) {
       await prefs.setString('ems_token', emsToken!);
     } else {
       await prefs.remove('ems_token');
-    }
-    if (giangVien != null) {
-      await prefs.setString('user_type', 'gv');
-      await prefs.setString('user_data', jsonEncode(giangVien!.toJson()));
-    } else if (hocVien != null) {
-      await prefs.setString('user_type', 'hv');
-      await prefs.setString('user_data', jsonEncode(hocVien!.toJson()));
     }
     final id = identity;
     if (id != null) {
@@ -112,25 +93,15 @@ class AppSession {
   Future<bool> tryRestore() async {
     final prefs = await SharedPreferences.getInstance();
 
-    token = prefs.getString('auth_token');
-    userid = prefs.getString('userid');
     emsToken = prefs.getString('ems_token');
     emsDenied = false;
 
-    final userType = prefs.getString('user_type');
-    final userDataStr = prefs.getString('user_data');
-    if (userType != null && userDataStr != null) {
-      try {
-        final json = jsonDecode(userDataStr) as Map<String, dynamic>;
-        if (userType == 'gv') {
-          giangVien = GiangVien.fromJson(json);
-          hocVien = null;
-        } else {
-          hocVien = HocVien.fromJson(json);
-          giangVien = null;
-        }
-      } catch (_) {}
-    }
+    // Dọn tàn dư IMS từ các bản cài đặt cũ (trước 6.1.0/90) — các khóa này
+    // không còn được ghi nữa nhưng có thể vẫn còn trên máy người dùng.
+    await prefs.remove('auth_token');
+    await prefs.remove('userid');
+    await prefs.remove('user_type');
+    await prefs.remove('user_data');
 
     final identityStr = prefs.getString('crm_identity');
     Map<String, dynamic>? identityJson;
@@ -167,25 +138,16 @@ class AppSession {
     if (id != null && id.isNotEmpty) {
       await NotificationService.instance.unregisterToken(id);
     }
-    token = null;
-    userid = null;
     emsToken = null;
     emsDenied = false;
-    hocVien = null;
-    giangVien = null;
     role = null;
     mssv = null;
     teacherId = null;
     teacherCode = null;
     fullName = null;
     mustChangePassword = false;
-    ApiService.clearCache();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
     await prefs.remove('ems_token');
-    await prefs.remove('userid');
-    await prefs.remove('user_type');
-    await prefs.remove('user_data');
     await prefs.remove('crm_identity');
   }
 
@@ -219,5 +181,22 @@ class AppSession {
   Future<void> revokeStudentDeviceToken(String fcmToken) async {
     if (role != CrmRole.student || !hasEms) return;
     await EmsApiService.revokeStudentDevice(fcmToken);
+  }
+
+  Future<void> registerTeacherDeviceToken(String fcmToken) async {
+    if (role != CrmRole.teacher || !hasEms) return;
+    await EmsApiService.registerTeacherDevice(
+      fcmToken,
+      platform: defaultTargetPlatform == TargetPlatform.iOS
+          ? 'ios'
+          : defaultTargetPlatform == TargetPlatform.android
+          ? 'android'
+          : 'web',
+    );
+  }
+
+  Future<void> revokeTeacherDeviceToken(String fcmToken) async {
+    if (role != CrmRole.teacher || !hasEms) return;
+    await EmsApiService.revokeTeacherDevice(fcmToken);
   }
 }

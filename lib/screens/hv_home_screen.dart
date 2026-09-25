@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/mock_data.dart';
 import '../models/crm_student_schedule.dart';
@@ -46,8 +44,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _classCode;
 
   // ── Bảng tin (EMS) ─────────────────────────────────────────────────────────
-  // Tách hẳn khỏi _unreadCount của chuông Vercel ở trên: hai nguồn khác nhau,
-  // và EMS hỏng thì phần còn lại của trang chủ vẫn phải chạy.
+  // _boardUnread (thẻ, 20 mục gần nhất) và _unreadCount (chuông, tổng số
+  // thật từ server) đều đọc CRM rồi — hai lời gọi khác nhau, không phải hai
+  // hệ thống khác nhau nữa. EMS hỏng thì phần còn lại của trang chủ vẫn phải
+  // chạy, nên lỗi ở đây bị nuốt.
   AnnouncementItem? _latestBoardItem;
   int _boardUnread = 0;
   bool _boardFailed = false;
@@ -124,22 +124,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
+  // Số chưa đọc = Bảng tin CRM (thay backend Vercel “noti-backend-eight” (đã gỡ), bot A5,
+  // 2026-09-25). `mustReadPending` gộp vào vì một thông báo bắt buộc đọc mà
+  // chưa xác nhận vẫn phải hiện huy hiệu, không chỉ riêng "chưa đọc".
   Future<void> _loadUnreadCount() async {
-    final id = AppSession.instance.hocVien?.id.toString();
-    if (id == null) return;
+    if (!AppSession.instance.hasEms) return;
     try {
-      final res = await http
-          .get(
-            Uri.parse(
-              'https://noti-backend-eight.vercel.app/api/notifications?studentID=$id',
-            ),
-          )
-          .timeout(const Duration(seconds: 10));
-      final json = jsonDecode(res.body) as Map<String, dynamic>;
-      if (json['success'] == true) {
-        final list = json['data'] as List;
-        final count = list.where((e) => e['status'] != 'read').length;
-        if (mounted) setState(() => _unreadCount = count);
+      final u = await EmsApiService.unreadCount();
+      if (mounted) {
+        setState(() => _unreadCount = u.unread + u.mustReadPending);
       }
     } catch (_) {}
   }
@@ -612,7 +605,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 GestureDetector(
                   onTap: () async {
-                    await Navigator.pushNamed(context, '/notifications');
+                    // Bảng tin CRM là nơi duy nhất học viên đọc thông báo kể
+                    // từ khi gỡ backend Vercel “noti-backend-eight” (bot A5,
+                    // 2026-09-25) — không còn một danh sách "Thông báo"
+                    // riêng cho học viên.
+                    await Navigator.pushNamed(context, '/student_board');
                     _loadUnreadCount();
                   },
                   child: Stack(

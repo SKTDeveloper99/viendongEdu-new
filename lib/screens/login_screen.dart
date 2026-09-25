@@ -72,9 +72,11 @@ class _LoginScreenState extends State<LoginScreen> {
       AppSession.instance.applyIdentity(identity);
       await AppSession.instance.persist();
 
-      // Đăng ký kênh thông báo cũ (vercel) song song — không phải IMS, giữ
-      // nguyên cho tới khi có quyết định thay nó. Một sự cố Firebase/mạng ở
-      // đây không được phép chặn đăng nhập (cùng nguyên tắc với
+      // Đăng ký token FCM lên CRM (học viên: /v1/student/board/devices bên
+      // dưới; giảng viên: đã gửi trong body đăng nhập ở trên, đây chỉ ghi
+      // nhớ danh tính để onTokenRefresh còn đăng ký lại được — xem
+      // NotificationService._postToken). Một sự cố Firebase/mạng ở đây
+      // không được phép chặn đăng nhập (cùng nguyên tắc với
       // AppSession._refreshEmsTokenOnce trước đây).
       try {
         NotificationService.instance.registerToken(

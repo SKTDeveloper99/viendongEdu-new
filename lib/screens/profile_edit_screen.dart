@@ -39,6 +39,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   bool _saving = false;
   String? _error;
 
+  /// Đã lưu thành công ít nhất một lần — trả về khi pop để màn hình gọi
+  /// (hv/gv_profile_info_screen) biết cần tải lại hồ sơ.
+  bool _saved = false;
+
   @override
   void initState() {
     super.initState();
@@ -104,7 +108,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _cccdCtrl.text = res.cmnd ?? cccd;
       }
       if (!mounted) return;
-      setState(() => _saving = false);
+      setState(() { _saving = false; _saved = true; });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text(
           'Đã cập nhật hồ sơ ở EMS. Thay đổi CHƯA được gửi tới hệ thống IMS của trường.',
@@ -128,7 +132,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // canPop: false + tự pop trong onPopInvokedWithResult để back bằng cử chỉ
+    // hệ thống (Android/iOS) cũng mang theo [_saved], giống hệt nút back thủ
+    // công bên dưới — nơi gọi (hv/gv_profile_info_screen) chỉ tải lại hồ sơ
+    // khi kết quả pop là true.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _saved);
+      },
+      child: Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(top: false, child: Column(
         children: [
@@ -146,7 +160,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Navigator.pop(context, _saved),
                   child: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 8),
@@ -280,6 +294,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
         ],
       )),
+      ),
     );
   }
 }

@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'app_session.dart';
 import 'ems_api_service.dart';
 import '../models/crm_teacher_profile.dart';
 import '../models/crm_teacher_class.dart';
@@ -40,16 +37,14 @@ class CrmTeacherApi {
   }
 
   /// `GET /api/teacher/me/semesters`. Mirror của IMS `GET /hocky`: mảng trần
-  /// (`res.json(rows)`, KHÔNG bọc trong `{data: ...}`).
-  ///
-  /// [EmsApiService.send] không dùng được ở đây: `_decode` của nó chỉ chấp
-  /// nhận JSON ở dạng object (`Map`) — một mảng trần khiến nó tưởng nhầm là
-  /// "dữ liệu không đọc được" dù server trả 200 hợp lệ. [_getRawList] đi
-  /// vòng qua đúng một bước đó (parse mảng thay vì object) nhưng vẫn dùng
-  /// chung [EmsApiService.client]/[EmsApiService.baseUrl]/token — không phải
-  /// một http client độc lập.
+  /// (`res.json(rows)`, KHÔNG bọc trong `{data: ...}`). [EmsApiService.send]
+  /// trả `dynamic` (Map hoặc List) nên dùng thẳng được ở đây, không cần
+  /// client HTTP riêng nữa.
   static Future<List<CrmSemester>> semesters() async {
-    final body = await _getRawList('/teacher/me/semesters');
+    final body = await EmsApiService.send('GET', '/teacher/me/semesters');
+    if (body is! List) {
+      throw EmsException('Máy chủ trả về dữ liệu không đọc được.');
+    }
     return body
         .whereType<Map<String, dynamic>>()
         .map(CrmSemester.fromJson)
@@ -174,58 +169,6 @@ class CrmTeacherApi {
         .toList();
   }
 
-  /// GET một endpoint mà server trả một mảng JSON TRẦN (không bọc object) —
-  /// xem [semesters]. Dùng [EmsApiService.client]/[EmsApiService.baseUrl] và
-  /// cùng kiểu Bearer token, để test có thể tiêm [EmsApiService.client] y hệt
-  /// mọi lời gọi khác trong app; lỗi được dựng theo cùng khuôn `{error,
-  /// message}`/`{error}` mà [EmsApiService] dùng, để nơi gọi bắt
-  /// [EmsException] (kể cả 401) như bình thường.
-  static Future<List<dynamic>> _getRawList(String path) async {
-    final uri = Uri.parse('${EmsApiService.baseUrl}$path');
-    final token = AppSession.instance.emsToken;
-    final headers = <String, String>{'Content-Type': 'application/json'};
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
-    http.Response res;
-    try {
-      res = await EmsApiService.client
-          .get(uri, headers: headers)
-          .timeout(const Duration(seconds: 15));
-    } catch (_) {
-      throw EmsException('Không tải được danh sách học kỳ. Vui lòng thử lại.');
-    }
-
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      dynamic decoded;
-      try {
-        decoded = jsonDecode(res.body);
-      } catch (_) {
-        decoded = null;
-      }
-      if (decoded is List) return decoded;
-      throw EmsException(
-        'Máy chủ trả về dữ liệu không đọc được.',
-        statusCode: res.statusCode,
-      );
-    }
-
-    Map<String, dynamic>? errBody;
-    try {
-      final decoded = jsonDecode(res.body);
-      if (decoded is Map<String, dynamic>) errBody = decoded;
-    } catch (_) {
-      errBody = null;
-    }
-    final rawError = errBody?['error']?.toString();
-    final rawMessage = errBody?['message']?.toString();
-    throw EmsException(
-      rawMessage ?? rawError ?? 'Không kết nối được máy chủ thông tin.',
-      code: rawError,
-      statusCode: res.statusCode,
-    );
-  }
 }
 
 /// `GET /api/teacher/me/overview` — toàn bộ payload.

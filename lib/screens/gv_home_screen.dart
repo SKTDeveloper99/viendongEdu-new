@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../services/app_session.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
+import '../services/ems_api_service.dart';
 import '../models/crm_teacher_profile.dart';
 import '../components/menu_item.dart';
 import '../components/skeleton.dart';
@@ -43,27 +42,13 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
     _loadUnreadCount();
   }
 
+  // Số chưa đọc = CRM `/teacher/notifications/unread-count` (thay
+  // backend Vercel “noti-backend-eight” (đã gỡ), bot A5, 2026-09-25).
   Future<void> _loadUnreadCount() async {
-    // Tàn dư: dịch vụ thông báo này KHÔNG phải CRM/EMS, là một backend thông
-    // báo riêng (noti-backend-eight.vercel.app) ngoài phạm vi gỡ IMS. Trước
-    // 6.1.0 nó dùng id giảng viên IMS; giờ dùng teacherId của CRM — id thật
-    // duy nhất còn có trong phiên, không suy diễn.
-    final id = AppSession.instance.teacherId;
-    if (id == null) return;
+    if (!AppSession.instance.hasEms) return;
     try {
-      final res = await http
-          .get(
-            Uri.parse(
-              'https://noti-backend-eight.vercel.app/api/notifications?studentID=$id',
-            ),
-          )
-          .timeout(const Duration(seconds: 10));
-      final json = jsonDecode(res.body) as Map<String, dynamic>;
-      if (json['success'] == true) {
-        final list = json['data'] as List;
-        final count = list.where((e) => e['status'] != 'read').length;
-        if (mounted) setState(() => _unreadCount = count);
-      }
+      final count = await EmsApiService.teacherUnreadCount();
+      if (mounted) setState(() => _unreadCount = count);
     } catch (_) {}
   }
 
@@ -570,8 +555,8 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                     _ProfileMenuCard(
                       icon: Icons.person_outline,
                       label: 'Thông tin cá nhân',
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => GvProfileInfoScreen(
@@ -583,6 +568,10 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                             ),
                           ),
                         );
+                        // Sửa hồ sơ (ProfileEditScreen) trả về true khi có
+                        // thay đổi đã lưu — tải lại overview để phần "Liên
+                        // hệ" khớp dữ liệu mới.
+                        if (result == true) _loadOverview();
                       },
                     ),
                     const SizedBox(height: 10),

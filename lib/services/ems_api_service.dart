@@ -64,11 +64,15 @@ class EmsApiService {
   /// và `{error: <câu tiếng Việt>}` cho các lỗi do middleware dựng. Xử lý cả
   /// hai dạng, và cả trường hợp body KHÔNG phải JSON (nginx/Cloudflare chen vào
   /// một trang HTML) — lúc đó vẫn phải là một lỗi đọc được, không phải crash.
-  static Map<String, dynamic> _decode(http.Response res) {
-    Map<String, dynamic>? body;
+  ///
+  /// Trả về `dynamic` (không chỉ `Map`) vì một số route trả thẳng một mảng
+  /// JSON ở cấp cao nhất (vd. `GET /teacher/me/semesters`) — [send] không
+  /// còn ép người gọi phải bọc route đó trong một client HTTP riêng chỉ để
+  /// đọc mảng.
+  static dynamic _decode(http.Response res) {
+    dynamic body;
     try {
-      final decoded = jsonDecode(res.body);
-      if (decoded is Map<String, dynamic>) body = decoded;
+      body = jsonDecode(res.body);
     } catch (_) {
       body = null;
     }
@@ -83,14 +87,15 @@ class EmsApiService {
       return body;
     }
 
-    final rawError = body?['error']?.toString();
-    final rawMessage = body?['message']?.toString();
+    final map = body is Map<String, dynamic> ? body : null;
+    final rawError = map?['error']?.toString();
+    final rawMessage = map?['message']?.toString();
 
     // 422 riêng của điểm danh: có học viên đã quẹt cổng mà bị ghi VẮNG không
     // kèm lý do. Không phải lỗi — là câu hỏi. Màn hình hỏi lý do rồi gửi lại,
     // nên nó cần biết ĐÍCH DANH ai, không chỉ là "lưu thất bại".
-    if (body?['code'] == 'punch_conflict_needs_reason') {
-      final raw = body?['students'];
+    if (map?['code'] == 'punch_conflict_needs_reason') {
+      final raw = map?['students'];
       throw EmsPunchConflict(
         rawError ?? 'Cần nêu lý do.',
         students: (raw is List)
@@ -122,8 +127,9 @@ class EmsApiService {
   /// http.post/get riêng. Giữ nguyên cách xử lý lỗi cũ: đọc body JSON dựng
   /// [EmsException] (kể cả 401), timeout thì báo lỗi mạng chứ không crash.
   ///
-  /// [method] là 'GET' | 'POST' | 'DELETE'. [query] được ghép vào chuỗi query
-  /// của URL; [body] được jsonEncode làm request body (POST/DELETE).
+  /// [method] là 'GET' | 'POST' | 'PATCH' | 'DELETE'. [query] được ghép vào
+  /// chuỗi query của URL; [body] được jsonEncode làm request body
+  /// (POST/PATCH/DELETE).
   ///
   /// 401 KHÔNG còn được thử lại ở đây (không còn token IMS để đối chiếu lại):
   /// nó nghĩa là phiên đã hết hạn. Gọi nơi gọi tự bắt
@@ -147,6 +153,8 @@ class EmsApiService {
       res =
           await (method == 'POST'
                   ? client.post(uri, headers: headers, body: encoded)
+                  : method == 'PATCH'
+                  ? client.patch(uri, headers: headers, body: encoded)
                   : method == 'DELETE'
                   ? client.delete(uri, headers: headers, body: encoded)
                   : client.get(uri, headers: headers))
@@ -406,6 +414,68 @@ class EmsApiService {
   /// Xác nhận đã đọc và hiểu. Server đóng cả hai mốc trong một câu lệnh.
   static Future<void> acknowledge(String id) {
     return _send('POST', '/v1/student/board/$id/acknowledge');
+  }
+
+  // ── Giảng viên — thông báo CRM (thay backend Vercel “noti-backend-eight” (đã gỡ), gỡ bởi
+  // bot A5, 2026-09-25) ───────────────────────────────────────────────────
+  // `routes/portals/teacher-notifications.js` (crm-clean), mounted ở
+  // `/api/teacher/notifications`. Hình dạng phản hồi khớp NGUYÊN VĂN với
+  // parser cũ (`{success, data: [{id, title, body, status, sentAt}]}`) — xem
+  // ghi chú trong file route đó, viết đúng như vậy để không phải sửa lại
+  // parser ở `notifications_screen.dart`.
+
+  /// `GET /teacher/notifications?limit=`.
+  static Future<List<dynamic>> teacherNotifications({int limit = 50}) async {
+    final body =
+        await send('GET', '/teacher/notifications', query: {'limit': '$limit'})
+            as Map<String, dynamic>;
+    final list = body['data'];
+    return list is List ? list : const [];
+  }
+
+  /// `PATCH /teacher/notifications/:id { read: true }`.
+  static Future<void> markTeacherNotificationRead(String id) {
+    return _send('PATCH', '/teacher/notifications/$id', body: {'read': true});
+  }
+
+  /// `POST /teacher/notifications/mark-all-read`.
+  static Future<void> markAllTeacherNotificationsRead() {
+    return _send('POST', '/teacher/notifications/mark-all-read');
+  }
+
+  /// `GET /teacher/notifications/unread-count` → `{count}`.
+  static Future<int> teacherUnreadCount() async {
+    final body = await _send('GET', '/teacher/notifications/unread-count');
+    return (body['count'] as num?)?.toInt() ?? 0;
+  }
+
+  /// `POST /teacher/notifications/devices {fcm_token, platform?, app_version?}`.
+  /// Kênh đăng ký lại token cho giảng viên NGOÀI lúc đăng nhập (xoay token,
+  /// khôi phục phiên) — trước 2026-09-25 không có, phải đợi lần đăng nhập kế
+  /// tiếp (xem `NotificationService._postToken`).
+  static Future<void> registerTeacherDevice(
+    String fcmToken, {
+    String? platform,
+    String? appVersion,
+  }) async {
+    await _send(
+      'POST',
+      '/teacher/notifications/devices',
+      body: {
+        'fcm_token': fcmToken,
+        'platform': ?platform,
+        'app_version': ?appVersion,
+      },
+    );
+  }
+
+  /// `DELETE /teacher/notifications/devices {fcm_token}`.
+  static Future<void> revokeTeacherDevice(String fcmToken) async {
+    await _send(
+      'DELETE',
+      '/teacher/notifications/devices',
+      body: {'fcm_token': fcmToken},
+    );
   }
 }
 

@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/crm_student_profile.dart';
 import '../services/crm_student_api.dart';
 
-// READ-ONLY display screen (bot A3 slice). Editing profile fields / changing
-// password from this screen belongs to another bot — the edit action below
-// deliberately calls nothing new.
-// TODO(A4): wire the edit action to the real profile-update endpoint.
+// Display screen (bot A3 slice) with an edit action wired to
+// `ProfileEditScreen` (route '/profile_edit', bot A4/A5) — email, phone and
+// CCCD only; the rest of this screen stays read-only.
 class HvProfileInfoScreen extends StatefulWidget {
   const HvProfileInfoScreen({super.key});
 
@@ -40,6 +39,11 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
   String _fmtDate(DateTime? d) {
     if (d == null) return '–';
     return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  Future<void> _openEdit() async {
+    final result = await Navigator.pushNamed(context, '/profile_edit');
+    if (result == true) _fetch();
   }
 
   @override
@@ -93,13 +97,20 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                         color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Thông tin cá nhân',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  const Expanded(
+                    child: Text(
+                      'Thông tin cá nhân',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
+                  ),
+                  IconButton(
+                    onPressed: _openEdit,
+                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                    tooltip: 'Sửa hồ sơ',
                   ),
                 ],
               ),

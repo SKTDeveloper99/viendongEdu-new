@@ -24,7 +24,6 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final s = AppSession.instance;
     s
-      ..token = null
       ..emsToken = null
       ..emsDenied = false
       ..role = null
@@ -32,9 +31,7 @@ void main() {
       ..teacherId = null
       ..teacherCode = null
       ..fullName = null
-      ..mustChangePassword = false
-      ..hocVien = null
-      ..giangVien = null;
+      ..mustChangePassword = false;
   });
 
   tearDown(() => EmsApiService.client = http.Client());

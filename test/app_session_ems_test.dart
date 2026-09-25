@@ -14,7 +14,6 @@ void main() {
     EmsApiService.client = http.Client();
     final session = AppSession.instance;
     session
-      ..token = null
       ..emsToken = null
       ..emsDenied = false
       ..role = null
@@ -22,9 +21,7 @@ void main() {
       ..teacherId = null
       ..teacherCode = null
       ..fullName = null
-      ..mustChangePassword = false
-      ..hocVien = null
-      ..giangVien = null;
+      ..mustChangePassword = false;
   });
 
   tearDown(() => EmsApiService.client = http.Client());

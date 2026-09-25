@@ -28,8 +28,10 @@ class _SplashScreenState extends State<SplashScreen> {
     // token IMS mồ côi từ một bản cài đặt cũ không còn đưa được vào app.
     if (restored && AppSession.instance.isLoggedIn) {
       final identity = AppSession.instance.identity!;
-      // Đăng ký lại kênh thông báo cũ (vercel) cho session cũ. Một sự cố
-      // Firebase/mạng ở đây không được chặn việc vào app.
+      // Đăng ký lại token FCM lên CRM cho phiên khôi phục — thiết bị/token có
+      // thể đã xoay từ lần đăng nhập trước (xem
+      // NotificationService._postToken). Một sự cố Firebase/mạng ở đây
+      // không được chặn việc vào app.
       try {
         NotificationService.instance.registerToken(
           identity.notificationId,

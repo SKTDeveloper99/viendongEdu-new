@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
-const _notiBase = 'https://noti-backend-eight.vercel.app';
+import 'app_session.dart';
 
 // Background message handler — phải là top-level function
 @pragma('vm:entry-point')
@@ -21,6 +18,8 @@ class NotificationService {
   final _fcm = FirebaseMessaging.instance;
   Future<void> Function(String token)? _emsStudentRegister;
   Future<void> Function(String token)? _emsStudentRevoke;
+  Future<void> Function(String token)? _emsTeacherRegister;
+  Future<void> Function(String token)? _emsTeacherRevoke;
 
   // Danh tính đã đăng ký gần nhất — dùng để đăng ký lại khi FCM xoay token
   String? _lastHocVienId;
@@ -106,10 +105,14 @@ class NotificationService {
     return route;
   }
 
-  String _routeFor(RemoteMessage message) =>
-      message.data['route'] == '/student/board'
-      ? '/student_board'
-      : '/notifications';
+  /// Mặc định khi server không gắn `data['route']`: giảng viên có danh sách
+  /// '/notifications' (CRM `/teacher/notifications`); học viên KHÔNG có màn
+  /// tương đương nữa từ khi gỡ backend Vercel “noti-backend-eight” (bot A5,
+  /// 2026-09-25) — điều hướng thẳng vào Bảng tin, nơi CRM thật sự có dữ liệu.
+  String _routeFor(RemoteMessage message) {
+    if (message.data['route'] == '/student/board') return '/student_board';
+    return AppSession.instance.isGiangVien ? '/notifications' : '/student_board';
+  }
 
   void _handleNotificationTap(RemoteMessage message) {
     debugPrint('[FCM] notification tapped: ${message.notification?.title}');
@@ -219,6 +222,14 @@ class NotificationService {
     );
   }
 
+  /// Đăng ký token FCM lên EMS — học viên qua `/v1/student/board/devices`
+  /// ([_emsStudentRegister]/[AppSession.registerStudentDeviceToken]), giảng
+  /// viên qua `/teacher/notifications/devices`
+  /// ([_emsTeacherRegister]/[AppSession.registerTeacherDeviceToken]). Cả hai
+  /// gọi được lúc đăng nhập LẪN lúc khôi phục phiên/xoay token (khác với
+  /// trước 2026-09-25: giảng viên chỉ đăng ký được lúc đăng nhập, qua
+  /// `POST /auth/teacher/login {fcm_token, platform}` — route thiết bị riêng
+  /// ở trên mới bù được khoảng trống đó, xem báo cáo gỡ Vercel, bot A5).
   Future<void> _postToken(
     String hocVienId,
     String token, {
@@ -227,36 +238,23 @@ class NotificationService {
     String? ngaysinh,
     String? userid,
   }) async {
-    // EMS delivery must not depend on the legacy notification host being up.
     if (hocVienId.startsWith('hv_')) {
       try {
         await _emsStudentRegister?.call(token);
       } catch (e) {
         debugPrint('[FCM] EMS register token error: $e');
       }
-    }
-    try {
-      final res = await http
-          .post(
-            Uri.parse('$_notiBase/api/token/register-token'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'hocVienId': hocVienId,
-              'token': token,
-              if (mssv != null) 'mssv': mssv,
-              if (hoTen != null) 'hoTen': hoTen,
-              if (ngaysinh != null) 'ngaysinh': ngaysinh,
-              if (userid != null) 'userid': userid,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
-      debugPrint('[FCM] Register token status: ${res.statusCode}');
-    } catch (e) {
-      debugPrint('[FCM] Register token error: $e');
+    } else if (hocVienId.startsWith('gv_')) {
+      try {
+        await _emsTeacherRegister?.call(token);
+      } catch (e) {
+        debugPrint('[FCM] EMS register token error: $e');
+      }
     }
   }
 
-  /// Xóa token khỏi server khi logout
+  /// Xóa token khỏi EMS khi logout — cả học viên lẫn giảng viên đều có kênh
+  /// CRM riêng (xem [_postToken]).
   Future<void> unregisterToken(String hocVienId) async {
     _lastHocVienId = null;
     _lastMssv = null;
@@ -269,16 +267,11 @@ class NotificationService {
       try {
         await _emsStudentRevoke?.call(token);
       } catch (_) {}
+    } else if (hocVienId.startsWith('gv_')) {
+      try {
+        await _emsTeacherRevoke?.call(token);
+      } catch (_) {}
     }
-    try {
-      await http
-          .delete(
-            Uri.parse('$_notiBase/api/token/register-token'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'hocVienId': hocVienId, 'token': token}),
-          )
-          .timeout(const Duration(seconds: 10));
-    } catch (_) {}
   }
 
   void configureEmsStudentDevice({
@@ -287,6 +280,14 @@ class NotificationService {
   }) {
     _emsStudentRegister = register;
     _emsStudentRevoke = revoke;
+  }
+
+  void configureEmsTeacherDevice({
+    required Future<void> Function(String token) register,
+    required Future<void> Function(String token) revoke,
+  }) {
+    _emsTeacherRegister = register;
+    _emsTeacherRevoke = revoke;
   }
 }
 
