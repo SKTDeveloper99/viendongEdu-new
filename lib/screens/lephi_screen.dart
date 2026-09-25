@@ -1,28 +1,10 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../models/crm_money_fees.dart';
+import '../services/crm_money_api.dart';
+import '../services/crm_session_guard.dart';
 
-// ── Model ────────────────────────────────────────────────
-class LePhiItem {
-  final int ptid;
-  final String ptma;
-  final int soTien;
-  final DateTime ngayTao;
-  final String ghiChu;
-  final String hkten;
-  final String lptten;
-
-  LePhiItem.fromJson(Map<String, dynamic> j)
-      : ptid = j['ptid'] as int? ?? 0,
-        ptma = (j['ptma'] as String? ?? '').trim(),
-        soTien = j['soTien'] as int? ?? 0,
-        ngayTao =
-            DateTime.tryParse(j['ngayTao'] as String? ?? '') ?? DateTime(0),
-        ghiChu = j['ghiChu'] as String? ?? '',
-        hkten = j['hkten'] as String? ?? '',
-        lptten = j['lptten'] as String? ?? '';
-}
-
-String _fmtCurrency(int amount) {
+String _fmtAmount(int? amount) {
+  if (amount == null) return 'chưa có luật';
   final s = amount.abs().toString();
   final buf = StringBuffer();
   for (var i = 0; i < s.length; i++) {
@@ -32,10 +14,12 @@ String _fmtCurrency(int amount) {
   return '${buf.toString()} đ';
 }
 
-String _fmtDate(DateTime d) =>
-    '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+String _fmtDate(DateTime? d) => d == null
+    ? '–'
+    : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-// ── Screen ──────────────────────────────────────────────
+// ── Screen — thay ApiService.getLePhi (IMS hocvien/lephi) bằng
+// CrmMoneyApi.getFees (GET /api/student/me/fees). ──────────────────────────
 class LePhiScreen extends StatefulWidget {
   const LePhiScreen({super.key});
 
@@ -44,7 +28,7 @@ class LePhiScreen extends StatefulWidget {
 }
 
 class _LePhiScreenState extends State<LePhiScreen> {
-  List<LePhiItem> _items = [];
+  CrmFeesResponse? _data;
   bool _loading = true;
   String? _error;
 
@@ -60,19 +44,15 @@ class _LePhiScreenState extends State<LePhiScreen> {
       _error = null;
     });
     try {
-      final data = await ApiService.getLePhi();
-      final items = data
-          .map((e) => LePhiItem.fromJson(e as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => b.ngayTao.compareTo(a.ngayTao));
-
+      final data = await CrmMoneyApi.getFees();
       if (!mounted) return;
       setState(() {
-        _items = items;
+        _data = data;
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
+      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
       setState(() {
         _loading = false;
         _error = e.toString();
@@ -80,10 +60,10 @@ class _LePhiScreenState extends State<LePhiScreen> {
     }
   }
 
-  int get _total => _items.fold(0, (s, t) => s + t.soTien);
-
   @override
   Widget build(BuildContext context) {
+    final items = _data?.items ?? const <CrmFeeItem>[];
+    final totals = _data?.totals;
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(top: false, child: Column(
@@ -141,14 +121,14 @@ class _LePhiScreenState extends State<LePhiScreen> {
                             ElevatedButton(
                               onPressed: _fetch,
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFFE65100)),
+                                  backgroundColor: const Color(0xFFE65100)),
                               child: const Text('Thử lại',
                                   style: TextStyle(color: Colors.white)),
                             ),
                           ],
                         ),
                       )
-                    : _items.isEmpty
+                    : items.isEmpty
                         ? const Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -169,7 +149,9 @@ class _LePhiScreenState extends State<LePhiScreen> {
                             padding:
                                 const EdgeInsets.fromLTRB(16, 16, 16, 24),
                             children: [
-                              // Tổng
+                              // Tổng — LUẬT TIỀN: hiện đúng số máy chủ trả,
+                              // không cộng lệ phí + miễn giảm + hoàn phí lại
+                              // với nhau (ba khoản khác luật nhau).
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 margin: const EdgeInsets.only(bottom: 16),
@@ -198,19 +180,28 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Tổng lệ phí',
+                                        const Text('Lệ phí khác',
                                             style: TextStyle(
                                                 color: Colors.white70,
                                                 fontSize: 13)),
                                         const SizedBox(height: 4),
                                         Text(
-                                          _fmtCurrency(_total),
+                                          _fmtAmount(totals?.lePhiKhac),
                                           style: const TextStyle(
                                             fontSize: 22,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
                                         ),
+                                        if ((totals?.mienGiamKhenThuong ?? 0) != 0) ...[
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Miễn giảm/khen thưởng: ${_fmtAmount(totals?.mienGiamKhenThuong)}',
+                                            style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 12),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                     Container(
@@ -227,7 +218,30 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                 ),
                               ),
 
-                              ..._items.map((t) => _LePhiCard(item: t)),
+                              if (totals?.paidSideContaminated == true)
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF3E0),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded,
+                                          color: Color(0xFFE65100), size: 18),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Dữ liệu có phiếu phát sinh bất thường — số liệu cần rà soát.',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                              ...items.map((t) => _LePhiCard(item: t)),
                             ],
                           ),
                         ),
@@ -240,7 +254,7 @@ class _LePhiScreenState extends State<LePhiScreen> {
 
 // ── Card ────────────────────────────────────────────────
 class _LePhiCard extends StatelessWidget {
-  final LePhiItem item;
+  final CrmFeeItem item;
   const _LePhiCard({required this.item});
 
   @override
@@ -274,22 +288,26 @@ class _LePhiCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.lptten,
+                  item.loaiPhieuThu ?? '–',
                   style: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  item.hkten,
+                  // Không có hkten (tên học kỳ) từ endpoint này — hiện mã
+                  // học kỳ nguyên văn (vd. "261") thay vì bịa một nhãn.
+                  item.semesterCode ?? '–',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  item.ghiChu,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                if ((item.ghiChu ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    item.ghiChu!,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),
@@ -298,7 +316,7 @@ class _LePhiCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _fmtCurrency(item.soTien),
+                _fmtAmount(item.soTien),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -307,7 +325,7 @@ class _LePhiCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                _fmtDate(item.ngayTao),
+                _fmtDate(item.ngayNop),
                 style: const TextStyle(fontSize: 11, color: Colors.grey),
               ),
             ],

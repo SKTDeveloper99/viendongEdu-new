@@ -1,59 +1,21 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../services/app_session.dart';
+import '../models/crm_registration_models.dart';
+import '../services/crm_registration_api.dart';
+import '../services/crm_session_guard.dart';
 
-// ── Models ─────────────────────────────────────────────
-class _Semester {
-  final int id;
-  final String ma;
-  final String ten;
-  const _Semester({required this.id, required this.ma, required this.ten});
-}
-
-class _DotDangKy {
-  final int id;
-  final DateTime ngayBatDau;
-  final DateTime ngayKetThuc;
-
-  _DotDangKy.fromJson(Map<String, dynamic> j)
-      : id = j['id'] as int,
-        ngayBatDau = DateTime.parse(j['ngayBatDau'] as String).toLocal(),
-        ngayKetThuc = DateTime.parse(j['ngayKetThuc'] as String).toLocal();
-
-  bool get isOpen {
-    final now = DateTime.now();
-    return now.isAfter(ngayBatDau) && now.isBefore(ngayKetThuc);
-  }
-
-  String get thoiGian {
-    String fmt(DateTime d) =>
-        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-    return '${fmt(ngayBatDau)} – ${fmt(ngayKetThuc)}';
-  }
-}
-
-class _MonHoc {
-  final int mhid;
-  final String mhma;
-  final String mhten;
-  final int sotc;
-  final int sotclt;
-  final int sotcth;
-  final String gvten;
-  final String csten;
-
-  _MonHoc.fromJson(Map<String, dynamic> j)
-      : mhid = j['mhid'] as int,
-        mhma = j['mhma'] as String? ?? '',
-        mhten = j['mhten'] as String? ?? '',
-        sotc = j['mhsotc'] as int? ?? 0,
-        sotclt = j['mhsotclt'] as int? ?? 0,
-        sotcth = j['mhsotcth'] as int? ?? 0,
-        gvten = j['gvten'] as String? ?? '',
-        csten = j['csten'] as String? ?? '';
-}
+String _fmtDate(DateTime? d) => d == null
+    ? '–'
+    : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
 // ── Screen ─────────────────────────────────────────────
+// Thay ApiService.getDotDangKy/getMonHocDuKien/getKetQuaDangKy/
+// postDangKyMon/deleteDangKyMon (IMS) bằng CrmRegistrationApi (đọc:
+// docs/api/mobile-ims-replacement-S3.md; ghi: .../S5.md).
+//
+// `offering_id` bây giờ là id LMH IMS (`tbl_qldt_tkb_lopmonhoc.id`), KHÔNG
+// còn là `mhid` (monhocid) như app IMS cũ. Đăng ký được GHI Ở EMS, CHƯA gửi
+// lên IMS — màn hình phải nói rõ điều đó, không giấu (owner ruling
+// 2026-09-24).
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
 
@@ -62,122 +24,154 @@ class RegistrationScreen extends StatefulWidget {
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
-  List<_Semester> _semesters = [];
-  _Semester? _selected;
-  _DotDangKy? _dot;
-  List<_MonHoc> _monHocs = [];
-  // mhid của các môn đã đăng ký
-  final Set<int> _registered = {};
-  // mhid đang xử lý (loading)
-  final Set<int> _processing = {};
+  List<CrmRegistrationPeriod> _periods = [];
+  CrmRegistrationPeriod? _selectedPeriod;
+  CrmRegistrationOfferingsPage? _offeringsPage;
+  List<CrmRegistrationResult> _results = [];
 
-  bool _loadingSemesters = true;
+  final Set<String> _processing = {};
+
+  /// Nút "Xem tất cả lớp" (scope=all) — mặc định false: chỉ lớp trong
+  /// chương trình học của chính học viên và chưa đạt.
+  bool _allSections = false;
+
+  bool _loadingPeriods = true;
   bool _loadingData = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _fetchSemesters();
+    _fetchPeriods();
   }
 
-  Future<void> _fetchSemesters() async {
-    setState(() { _loadingSemesters = true; _error = null; });
+  Future<void> _fetchPeriods() async {
+    setState(() { _loadingPeriods = true; _error = null; });
     try {
-      final data = await ApiService.getHocKy();
-      final sems = data
-          .map((e) => _Semester(
-                id: e['id'] as int,
-                ma: e['ma'] as String? ?? '',
-                ten: e['ten'] as String? ?? '',
-              ))
-          .toList();
-      sems.sort((a, b) => b.id.compareTo(a.id));
+      final periods = await CrmRegistrationApi.getPeriods();
       if (!mounted) return;
-      setState(() { _semesters = sems; _loadingSemesters = false; });
-      if (sems.isNotEmpty) _selectSemester(sems.first);
+      setState(() {
+        _periods = periods;
+        _loadingPeriods = false;
+      });
+      if (periods.isNotEmpty) {
+        // Ưu tiên đợt đang mở; không có thì lấy đợt đầu (mới nhất trả về).
+        final open = periods.where((p) => p.isOpen);
+        _selectPeriod(open.isNotEmpty ? open.first : periods.first);
+      }
     } catch (e) {
       if (!mounted) return;
-      setState(() { _loadingSemesters = false; _error = e.toString(); });
+      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
+      setState(() { _loadingPeriods = false; _error = e.toString(); });
     }
   }
 
-  Future<void> _selectSemester(_Semester sem) async {
+  Future<void> _selectPeriod(CrmRegistrationPeriod period) async {
     setState(() {
-      _selected = sem;
+      _selectedPeriod = period;
+      _allSections = false;
       _loadingData = true;
-      _dot = null;
-      _monHocs = [];
-      _registered.clear();
+      _offeringsPage = null;
+      _results = [];
       _error = null;
     });
+    await _loadOfferingsAndResults();
+  }
+
+  /// Nạp lại danh sách lớp + kết quả cho đợt đang chọn — dùng cả khi đổi
+  /// đợt lẫn khi bật/tắt "Xem tất cả lớp".
+  Future<void> _loadOfferingsAndResults() async {
+    final period = _selectedPeriod;
+    if (period == null) return;
+    setState(() { _loadingData = true; _error = null; });
     try {
-      final results = await Future.wait([
-        ApiService.getDotDangKy(sem.id),
-        ApiService.getMonHocDuKien(sem.id),
-        ApiService.getKetQuaDangKy(sem.id),
-      ]);
+      final periodId = period.periodId;
+      final offeringsFuture = periodId == null
+          ? Future.value(const CrmRegistrationOfferingsPage())
+          : CrmRegistrationApi.getOfferings(
+              periodId: periodId,
+              allSections: _allSections,
+            );
+      final resultsFuture = CrmRegistrationApi.getResults(semester: period.semesterCode);
+      final offeringsPage = await offeringsFuture;
+      final results = await resultsFuture;
       if (!mounted) return;
-      final dots = results[0] as List<dynamic>;
-      final monList = results[1] as List<dynamic>;
-      final ketQuaList = results[2] as List<dynamic>;
-      final registeredIds = ketQuaList
-          .map((e) => (e as Map<String, dynamic>)['monhocid'] as int?)
-          .whereType<int>()
-          .toSet();
       setState(() {
-        _dot = dots.isNotEmpty ? _DotDangKy.fromJson(dots.first as Map<String, dynamic>) : null;
-        _monHocs = monList.map((e) => _MonHoc.fromJson(e as Map<String, dynamic>)).toList();
-        _registered
-          ..clear()
-          ..addAll(registeredIds);
+        _offeringsPage = offeringsPage;
+        _results = results;
         _loadingData = false;
       });
     } catch (e) {
       if (!mounted) return;
+      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
       setState(() { _loadingData = false; _error = e.toString(); });
     }
   }
 
-  Future<void> _toggleDangKy(_MonHoc mon) async {
-    final dot = _dot;
-    final hv = AppSession.instance.hocVien;
-    if (dot == null || hv == null) return;
+  Future<void> _toggleAllSections(bool value) async {
+    setState(() => _allSections = value);
+    await _loadOfferingsAndResults();
+  }
 
-    if (!dot.isOpen) {
+  bool _isEmsRegistered(String offeringId) => _results.any(
+        (r) => r.isEmsRequest && r.offeringId == offeringId && r.status != 'withdrawn',
+      );
+
+  CrmRegistrationResult? _emsResultFor(String offeringId) {
+    for (final r in _results) {
+      if (r.isEmsRequest && r.offeringId == offeringId && r.status != 'withdrawn') return r;
+    }
+    return null;
+  }
+
+  Future<void> _toggleDangKy(CrmRegistrationOffering offering) async {
+    final period = _selectedPeriod;
+    if (period == null) return;
+    if (!period.isOpen) {
       _showSnack('Đợt đăng ký chưa mở hoặc đã kết thúc.', isError: true);
       return;
     }
 
-    setState(() => _processing.add(mon.mhid));
-    final isRegistered = _registered.contains(mon.mhid);
+    setState(() => _processing.add(offering.offeringId));
+    final existing = _emsResultFor(offering.offeringId);
     try {
-      if (isRegistered) {
-        await ApiService.deleteDangKyMon(
-          hocvienid: hv.id.toString(),
-          dotdkid: dot.id.toString(),
-          monhocid: mon.mhid.toString(),
-          hockyid: _selected!.id.toString(),
-        );
+      if (existing != null && existing.id != null) {
+        final res = await CrmRegistrationApi.cancel(existing.id!);
         if (!mounted) return;
-        setState(() => _registered.remove(mon.mhid));
-        _showSnack('Đã hủy đăng ký ${mon.mhten}');
+        setState(() {
+          _results.removeWhere((r) => r.id == existing.id);
+        });
+        _showSnack(res.alreadyWithdrawn
+            ? 'Đã hủy đăng ký từ trước.'
+            : 'Đã hủy đăng ký ${offering.subjectName ?? ''}');
       } else {
-        await ApiService.postDangKyMon(
-          hocvienid: hv.id.toString(),
-          dotdkid: dot.id.toString(),
-          monhocid: mon.mhid.toString(),
-          hockyid: _selected!.id.toString(),
-        );
+        final res = await CrmRegistrationApi.register(offering.offeringId);
         if (!mounted) return;
-        setState(() => _registered.add(mon.mhid));
-        _showSnack('Đăng ký thành công ${mon.mhten}');
+        setState(() {
+          _results.add(CrmRegistrationResult(
+            id: res.id,
+            offeringId: offering.offeringId,
+            subjectName: offering.subjectName,
+            subjectCode: offering.subjectCode,
+            classCode: offering.classCode,
+            status: res.status ?? 'pending',
+            submittedAt: res.submittedAt,
+            source: 'ems_request',
+            syncedToIms: false,
+          ));
+        });
+        _showSnack(
+          'Đã gửi đăng ký ${offering.subjectName ?? ''} lên EMS. '
+          'Chưa được gửi tới Phòng Đào tạo (IMS) — đây chỉ là ghi nhận ở EMS.',
+        );
       }
     } catch (e) {
       if (!mounted) return;
+      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
+      // Hiện nguyên văn lỗi máy chủ (đợt đóng / lớp đầy / đã đăng ký).
       _showSnack(e.toString(), isError: true);
     } finally {
-      if (mounted) setState(() => _processing.remove(mon.mhid));
+      if (mounted) setState(() => _processing.remove(offering.offeringId));
     }
   }
 
@@ -231,8 +225,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Dropdown học kỳ
-                  if (!_loadingSemesters && _semesters.isNotEmpty)
+                  if (!_loadingPeriods && _periods.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.only(left: 14, right: 6, top: 6, bottom: 6),
                       decoration: BoxDecoration(
@@ -243,8 +236,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         ],
                       ),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<_Semester>(
-                          value: _selected,
+                        child: DropdownButton<CrmRegistrationPeriod>(
+                          value: _selectedPeriod,
                           dropdownColor: Colors.white,
                           borderRadius: BorderRadius.circular(14),
                           iconEnabledColor: const Color(0xFFE65100),
@@ -254,9 +247,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               color: Color(0xFF333333),
                               fontSize: 13,
                               fontWeight: FontWeight.w500),
-                          selectedItemBuilder: (_) => _semesters
-                              .map((s) => Center(
-                                    child: Text(s.ten,
+                          selectedItemBuilder: (_) => _periods
+                              .map((p) => Center(
+                                    child: Text(p.periodName ?? p.periodCode ?? '–',
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                             color: Color(0xFFE65100),
@@ -264,15 +257,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                             fontWeight: FontWeight.w600)),
                                   ))
                               .toList(),
-                          items: _semesters
-                              .map((s) => DropdownMenuItem(
-                                    value: s,
-                                    child: Text(s.ten,
+                          items: _periods
+                              .map((p) => DropdownMenuItem(
+                                    value: p,
+                                    child: Text(p.periodName ?? p.periodCode ?? '–',
                                         overflow: TextOverflow.ellipsis),
                                   ))
                               .toList(),
-                          onChanged: (s) {
-                            if (s != null) _selectSemester(s);
+                          onChanged: (p) {
+                            if (p != null) _selectPeriod(p);
                           },
                         ),
                       ),
@@ -281,15 +274,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ),
             ),
 
-            // ── Dot info ──
-            if (_dot != null) _buildDotInfo(),
+            if (_selectedPeriod != null) _buildPeriodInfo(_selectedPeriod!),
 
-            // ── Body ──
             Expanded(
-              child: _loadingSemesters
+              child: _loadingPeriods
                   ? const Center(
                       child: CircularProgressIndicator(color: Color(0xFFE65100)))
-                  : _error != null && _semesters.isEmpty
+                  : _error != null && _periods.isEmpty
                       ? _buildError()
                       : _buildBody(),
             ),
@@ -299,9 +290,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildDotInfo() {
-    final dot = _dot!;
-    final open = dot.isOpen;
+  Widget _buildPeriodInfo(CrmRegistrationPeriod period) {
+    final open = period.isOpen;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -331,10 +321,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     color: open ? const Color(0xFF2E7D32) : Colors.grey[800],
                   ),
                 ),
-                Text(
-                  dot.thoiGian,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
+                if (period.startAt != null && period.endAt != null)
+                  Text(
+                    '${_fmtDate(period.startAt)} – ${_fmtDate(period.endAt)}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
               ],
             ),
           ),
@@ -349,32 +340,103 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: CircularProgressIndicator(color: Color(0xFFE65100)));
     }
     if (_error != null) return _buildError();
-    if (_dot == null) {
+    if (_periods.isEmpty) {
+      // Owner rule: no hidden screens — empty data is real, show it plainly.
       return const Center(
-        child: Text(
-          'Không có đợt đăng ký cho học kỳ này.',
-          style: TextStyle(color: Colors.grey),
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Hiện không có đợt đăng ký nào cho học kỳ này.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
     }
-    if (_monHocs.isEmpty) {
-      return const Center(
-        child: Text('Không có môn học dự kiến.',
-            style: TextStyle(color: Colors.grey)),
-      );
-    }
-    return ListView.separated(
+
+    final page = _offeringsPage;
+    final offerings = page?.offerings ?? const <CrmRegistrationOffering>[];
+    final curriculumResolved = page?.curriculumResolved ?? true;
+
+    return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      itemCount: _monHocs.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _buildMonCard(_monHocs[i]),
+      children: [
+        // ── Kết quả đã ghi nhận (EMS + IMS) ──
+        if (_results.isNotEmpty) ...[
+          const Text('Đã đăng ký / đã xếp lớp',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
+          ..._results.map((r) => _ResultCard(result: r)),
+          const SizedBox(height: 16),
+        ],
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Môn học mở đăng ký',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            // "Xem tất cả lớp" — scope=all, bỏ lọc theo chương trình học.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Xem tất cả lớp', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Switch(
+                  value: _allSections,
+                  activeThumbColor: const Color(0xFFE65100),
+                  onChanged: _loadingData ? null : _toggleAllSections,
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        if (!_allSections && !curriculumResolved)
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: Color(0xFFE65100)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Không xác định được chương trình học để lọc — đang hiện TOÀN BỘ lớp mở, không riêng chương trình của bạn.',
+                    style: TextStyle(fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        const SizedBox(height: 4),
+        if (offerings.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: Center(
+              child: Text('Không có môn học mở đăng ký cho đợt này.',
+                  style: TextStyle(color: Colors.grey)),
+            ),
+          )
+        else
+          ...offerings.map((o) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _buildOfferingCard(o),
+              )),
+      ],
     );
   }
 
-  Widget _buildMonCard(_MonHoc mon) {
-    final isRegistered = _registered.contains(mon.mhid);
-    final isProcessing = _processing.contains(mon.mhid);
-    final canRegister = _dot?.isOpen ?? false;
+  Widget _buildOfferingCard(CrmRegistrationOffering mon) {
+    final isRegistered = _isEmsRegistered(mon.offeringId);
+    final isProcessing = _processing.contains(mon.offeringId);
+    final canRegister = _selectedPeriod?.isOpen ?? false;
+    final full = mon.maxSize != null &&
+        mon.registeredCount != null &&
+        mon.registeredCount! >= mon.maxSize!;
 
     return Container(
       decoration: BoxDecoration(
@@ -400,7 +462,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    mon.mhten,
+                    mon.subjectName ?? '–',
                     style: const TextStyle(
                         fontWeight: FontWeight.w700, fontSize: 15),
                   ),
@@ -415,7 +477,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
-                      'Đã đăng ký',
+                      'Đã gửi (EMS)',
                       style: TextStyle(
                           fontSize: 11,
                           color: Color(0xFF2E7D32),
@@ -426,16 +488,29 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            _infoRow(Icons.tag_rounded, mon.mhma),
+            _infoRow(Icons.tag_rounded, mon.subjectCode ?? '–'),
             _infoRow(Icons.person_outline_rounded,
-                mon.gvten.isNotEmpty ? mon.gvten : '–'),
-            _infoRow(Icons.location_on_outlined, mon.csten),
+                (mon.teacherName ?? '').isNotEmpty ? mon.teacherName! : '–'),
+            _infoRow(Icons.location_on_outlined, mon.facilityName ?? '–'),
             _infoRow(
               Icons.star_border_rounded,
-              '${mon.sotc} tín chỉ'
-              '${mon.sotclt > 0 ? '  ·  LT: ${mon.sotclt}' : ''}'
-              '${mon.sotcth > 0 ? '  ·  TH: ${mon.sotcth}' : ''}',
+              '${mon.credits ?? '–'} tín chỉ'
+              '${(mon.creditsLt ?? 0) > 0 ? '  ·  LT: ${mon.creditsLt}' : ''}'
+              '${(mon.creditsTh ?? 0) > 0 ? '  ·  TH: ${mon.creditsTh}' : ''}',
             ),
+            if (mon.maxSize != null)
+              _infoRow(Icons.groups_outlined,
+                  'Sĩ số: ${mon.registeredCount ?? 0}/${mon.maxSize}'),
+            // Chỉ có ý nghĩa khi đang "Xem tất cả lớp" (chế độ mặc định đã
+            // tự lọc theo chương trình rồi, mọi thẻ đều trong chương trình).
+            if (_allSections && mon.inMyCurriculum == false)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Ngoài chương trình học của bạn',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                ),
+              ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -450,7 +525,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       ),
                     )
                   : ElevatedButton(
-                      onPressed: canRegister ? () => _toggleDangKy(mon) : null,
+                      onPressed: (canRegister && !(full && !isRegistered))
+                          ? () => _toggleDangKy(mon)
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isRegistered
                             ? const Color(0xFFFFEBEE)
@@ -464,7 +541,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         disabledBackgroundColor: Colors.grey.shade200,
                       ),
                       child: Text(
-                        isRegistered ? 'Hủy đăng ký' : 'Đăng ký',
+                        isRegistered
+                            ? 'Hủy đăng ký'
+                            : full
+                                ? 'Lớp đã đầy'
+                                : 'Đăng ký',
                         style: const TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 14),
                       ),
@@ -506,7 +587,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   style: const TextStyle(color: Colors.grey)),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _fetchSemesters,
+                onPressed: _fetchPeriods,
                 style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE65100)),
                 child: const Text('Thử lại',
@@ -516,4 +597,57 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           ),
         ),
       );
+}
+
+// ── Card kết quả đăng ký/xếp lớp — luôn ghi rõ nguồn ──
+class _ResultCard extends StatelessWidget {
+  final CrmRegistrationResult result;
+  const _ResultCard({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final isEms = result.isEmsRequest;
+    final color = isEms ? const Color(0xFF2E7D32) : const Color(0xFF1565C0);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(result.subjectName ?? result.classCode ?? '–',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 2),
+                Text(result.classCode ?? '–',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                if (isEms && !result.syncedToIms) ...[
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Ghi nhận ở EMS, chưa gửi tới Phòng Đào tạo (IMS).',
+                    style: TextStyle(fontSize: 10, color: Colors.orange, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(result.sourceLabel,
+                style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
 }

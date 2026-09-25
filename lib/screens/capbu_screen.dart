@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../models/crm_money_capbu.dart';
+import '../services/crm_money_api.dart';
+import '../services/crm_session_guard.dart';
 
+String _fmtDate(DateTime? d) => d == null
+    ? '–'
+    : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+String _fmtAmount(num? v) => v == null ? 'chưa có dữ liệu' : '${v.toString()} đ';
+
+// Thay ApiService.getCapBu (IMS hocvien/capbu) bằng CrmMoneyApi.getCapBu
+// (GET /api/student/me/capbu) — mirror IMS nguyên văn, không có luật CRM.
 class CapBuScreen extends StatefulWidget {
   const CapBuScreen({super.key});
 
@@ -9,7 +19,7 @@ class CapBuScreen extends StatefulWidget {
 }
 
 class _CapBuScreenState extends State<CapBuScreen> {
-  List<Map<String, dynamic>> _items = [];
+  List<CrmCapBuItem> _items = [];
   bool _loading = true;
   String? _error;
 
@@ -22,14 +32,15 @@ class _CapBuScreenState extends State<CapBuScreen> {
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getCapBu();
+      final data = await CrmMoneyApi.getCapBu();
       if (!mounted) return;
       setState(() {
-        _items = data.map((e) => e as Map<String, dynamic>).toList();
+        _items = data.items;
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
+      if (await CrmSessionGuard.handleIfExpired(context, e)) return;
       setState(() { _loading = false; _error = e.toString(); });
     }
   }
@@ -161,18 +172,12 @@ class _CapBuScreenState extends State<CapBuScreen> {
 }
 
 class _CapBuCard extends StatelessWidget {
-  final Map<String, dynamic> item;
+  final CrmCapBuItem item;
   final VoidCallback onTap;
   const _CapBuCard({required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final ma = item['ma']?.toString() ?? '';
-    final ten = item['ten']?.toString() ?? '';
-    final hocKy = item['hocKy']?.toString() ?? '';
-    final ngayCap = item['ngayCap']?.toString() ?? '';
-    final thanhTien = item['thanhTien']?.toString() ?? '';
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -198,14 +203,14 @@ class _CapBuCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    ten,
+                    item.ten ?? '–',
                     style: const TextStyle(
                         fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '$thanhTien đ',
+                  _fmtAmount(item.thanhTien),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -215,14 +220,14 @@ class _CapBuCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            // Học kỳ
+            // Học kỳ — dùng hocky_ten (nhãn đầy đủ) thay vì hocKy IMS cũ.
             Row(
               children: [
                 const Icon(Icons.school_outlined,
                     size: 13, color: Colors.grey),
                 const SizedBox(width: 5),
                 Expanded(
-                  child: Text(hocKy,
+                  child: Text(item.hocKyTen ?? '–',
                       style: const TextStyle(
                           fontSize: 12, color: Colors.grey)),
                 ),
@@ -234,14 +239,14 @@ class _CapBuCard extends StatelessWidget {
               children: [
                 const Icon(Icons.tag, size: 13, color: Colors.grey),
                 const SizedBox(width: 5),
-                Text('Mã: $ma',
+                Text('Mã: ${item.ma ?? '–'}',
                     style: const TextStyle(
                         fontSize: 12, color: Colors.grey)),
                 const Spacer(),
                 const Icon(Icons.calendar_today,
                     size: 12, color: Colors.grey),
                 const SizedBox(width: 4),
-                Text(ngayCap,
+                Text(_fmtDate(item.ngayCap),
                     style: const TextStyle(
                         fontSize: 12, color: Colors.grey)),
               ],
@@ -255,21 +260,11 @@ class _CapBuCard extends StatelessWidget {
 
 // ── Detail Sheet ─────────────────────────────────────
 class _CapBuDetailSheet extends StatelessWidget {
-  final Map<String, dynamic> item;
+  final CrmCapBuItem item;
   const _CapBuDetailSheet({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final ma = item['ma']?.toString() ?? '';
-    final ten = item['ten']?.toString() ?? '';
-    final kyHieu = item['kyHieu']?.toString() ?? '';
-    final hocKy = item['hocKy']?.toString() ?? '';
-    final ngayCap = item['ngayCap']?.toString() ?? '';
-    final donGia = item['donGia']?.toString() ?? '';
-    final thanhTien = item['thanhTien']?.toString() ?? '';
-    final total = item['total']?.toString() ?? '';
-    final ghiChu = item['ghiChu']?.toString() ?? '';
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -290,11 +285,11 @@ class _CapBuDetailSheet extends StatelessWidget {
               ),
             ),
           ),
-          Text(ten,
+          Text(item.ten ?? '–',
               style: const TextStyle(
                   fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text('$thanhTien đ',
+          Text(_fmtAmount(item.thanhTien),
               style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -302,22 +297,22 @@ class _CapBuDetailSheet extends StatelessWidget {
           const SizedBox(height: 16),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
           const SizedBox(height: 16),
-          _Row(icon: Icons.tag, label: 'Mã HĐ', value: ma),
+          _Row(icon: Icons.tag, label: 'Mã HĐ', value: item.ma ?? '–'),
           const SizedBox(height: 10),
-          _Row(icon: Icons.confirmation_number_outlined, label: 'Ký hiệu', value: kyHieu),
+          _Row(icon: Icons.confirmation_number_outlined, label: 'Ký hiệu', value: item.kyHieu ?? '–'),
           const SizedBox(height: 10),
-          _Row(icon: Icons.school_outlined, label: 'Học kỳ', value: hocKy),
+          _Row(icon: Icons.school_outlined, label: 'Học kỳ', value: item.hocKyTen ?? '–'),
           const SizedBox(height: 10),
-          _Row(icon: Icons.calendar_today, label: 'Ngày cấp', value: ngayCap),
+          _Row(icon: Icons.calendar_today, label: 'Ngày cấp', value: _fmtDate(item.ngayCap)),
           const SizedBox(height: 10),
-          _Row(icon: Icons.price_change_outlined, label: 'Đơn giá', value: '$donGia đ'),
+          _Row(icon: Icons.price_change_outlined, label: 'Đơn giá', value: _fmtAmount(item.donGia)),
           const SizedBox(height: 10),
-          _Row(icon: Icons.payments_outlined, label: 'Thành tiền', value: '$thanhTien đ'),
+          _Row(icon: Icons.payments_outlined, label: 'Thành tiền', value: _fmtAmount(item.thanhTien)),
           const SizedBox(height: 10),
-          _Row(icon: Icons.calculate_outlined, label: 'Tổng cộng', value: '$total đ'),
-          if (ghiChu.isNotEmpty) ...[
+          _Row(icon: Icons.calculate_outlined, label: 'Tổng cộng', value: _fmtAmount(item.total)),
+          if ((item.ghiChu ?? '').isNotEmpty) ...[
             const SizedBox(height: 12),
-            _Row(icon: Icons.notes_outlined, label: 'Ghi chú', value: ghiChu),
+            _Row(icon: Icons.notes_outlined, label: 'Ghi chú', value: item.ghiChu!),
           ],
         ],
       ),
