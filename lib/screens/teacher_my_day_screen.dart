@@ -57,14 +57,15 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
     } on EmsException catch (e) {
       if (!mounted) return;
       setState(() {
-        _sessions ??= const [];
-        _sessionsError = e.message;
+        _sessions = const [];
+        _sessionsError =
+            'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _sessions ??= const [];
-        _sessionsError = 'Không tải được lịch dạy hôm nay.';
+        _sessions = const [];
+        _sessionsError = 'Không có kết nối. Thử tải lại lịch dạy.';
       });
     }
   }
@@ -80,14 +81,15 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
     } on EmsException catch (e) {
       if (!mounted) return;
       setState(() {
-        _cases ??= const [];
-        _casesError = e.message;
+        _cases = const [];
+        _casesError =
+            'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _cases ??= const [];
-        _casesError = 'Không tải được sinh viên cần phản hồi.';
+        _cases = const [];
+        _casesError = 'Không có kết nối. Thử tải lại sinh viên cần phản hồi.';
       });
     }
   }

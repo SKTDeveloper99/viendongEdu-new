@@ -17,7 +17,6 @@ class StudentQuestionsScreen extends StatefulWidget {
 
 class _StudentQuestionsScreenState extends State<StudentQuestionsScreen> {
   List<QuestionThread> _threads = const [];
-  DateTime? _cachedAt;
   bool _loading = true;
   String? _error;
 
@@ -28,20 +27,12 @@ class _StudentQuestionsScreenState extends State<StudentQuestionsScreen> {
   }
 
   Future<void> _load() async {
-    final cached = await CrmQuestionsApi.cachedList();
-    if (cached != null && mounted) {
-      setState(() {
-        _threads = cached.threads;
-        _cachedAt = cached.savedAt;
-        _loading = false;
-      });
-    }
+    if (mounted) setState(() => _loading = true);
     try {
       final rows = await CrmQuestionsApi.list();
       if (mounted) {
         setState(() {
           _threads = rows;
-          _cachedAt = null;
           _error = null;
           _loading = false;
         });
@@ -51,7 +42,8 @@ class _StudentQuestionsScreenState extends State<StudentQuestionsScreen> {
       if (await handleCrmAuthError(context, e)) return;
       if (mounted) {
         setState(() {
-          _error = 'Không kết nối được. Danh sách đã lưu vẫn có thể xem.';
+          _threads = const [];
+          _error = 'Không có kết nối. Kiểm tra mạng rồi kéo xuống để thử lại.';
           _loading = false;
         });
       }
@@ -83,11 +75,7 @@ class _StudentQuestionsScreenState extends State<StudentQuestionsScreen> {
             style: TextStyle(color: VdColors.ink60),
           ),
           const SizedBox(height: 12),
-          if (_cachedAt != null)
-            _Notice(
-              'Bản đã lưu lúc ${_shortDate(_cachedAt!)}. Kéo xuống để thử cập nhật.',
-            ),
-          if (_error != null && _cachedAt == null) _Notice(_error!),
+          if (_error != null) _Notice(_error!),
           if (_loading)
             const Center(
               child: Padding(
@@ -95,7 +83,7 @@ class _StudentQuestionsScreenState extends State<StudentQuestionsScreen> {
                 child: CircularProgressIndicator(),
               ),
             ),
-          if (!_loading && _threads.isEmpty)
+          if (!_loading && _error == null && _threads.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 52),
               child: Center(child: Text('Bạn chưa có câu hỏi nào.')),
@@ -145,7 +133,6 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
   final _reply = TextEditingController();
   Future<void> _draftWrites = Future.value();
   QuestionDetail? _detail;
-  DateTime? _cachedAt;
   bool _sending = false;
   String? _error;
 
@@ -166,26 +153,23 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
   }
 
   Future<void> _load() async {
-    final cached = await CrmQuestionsApi.cachedDetail(widget.thread.id);
-    if (cached != null && mounted) {
-      setState(() {
-        _detail = cached.detail;
-        _cachedAt = cached.savedAt;
-      });
-    }
     try {
       final detail = await CrmQuestionsApi.detail(widget.thread.id);
       if (mounted) {
         setState(() {
           _detail = detail;
-          _cachedAt = null;
           _error = null;
         });
       }
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      if (mounted) setState(() => _error = 'Không tải được phản hồi mới.');
+      if (mounted) {
+        setState(() {
+          _detail = null;
+          _error = 'Không có kết nối. Kéo xuống để tải phản hồi từ máy chủ.';
+        });
+      }
     }
   }
 
@@ -224,8 +208,6 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
       appBar: AppBar(title: Text(detail?.subject ?? widget.thread.subject)),
       body: Column(
         children: [
-          if (_cachedAt != null)
-            _Notice('Phản hồi đã lưu lúc ${_shortDate(_cachedAt!)}.'),
           if (_error != null) _Notice(_error!),
           Expanded(
             child: RefreshIndicator(
@@ -234,7 +216,7 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
-                  if (detail == null)
+                  if (detail == null && _error == null)
                     const Center(child: CircularProgressIndicator()),
                   if (detail != null && detail.messages.isEmpty)
                     const Text('Chưa có tin nhắn.'),
@@ -284,7 +266,7 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
               ),
             ),
           ),
-          if (!(detail?.isClosed ?? widget.thread.isClosed))
+          if (detail != null && !detail.isClosed)
             SafeArea(
               top: false,
               child: Padding(

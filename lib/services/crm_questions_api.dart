@@ -10,7 +10,6 @@ class CrmQuestionsApi {
     final body =
         await EmsApiService.send('GET', '/student/conversations')
             as Map<String, dynamic>;
-    await OfflineSnapshot.save('questions_list', body);
     return _threads(body);
   }
 
@@ -53,7 +52,6 @@ class CrmQuestionsApi {
               '/student/conversations/${Uri.encodeComponent(id)}',
             )
             as Map<String, dynamic>;
-    await OfflineSnapshot.save('question_$id', body);
     return QuestionDetail.fromJson(body);
   }
 

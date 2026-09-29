@@ -8,10 +8,7 @@
 //
 // Buổi chưa được thầy/cô ghi vẫn hiện là CHỜ XÁC NHẬN, tuyệt đối không là vắng.
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import '../services/ems_attendance_cache.dart';
 import '../services/ems_api_service.dart';
 
 class EmsAttendanceStudentScreen extends StatefulWidget {
@@ -22,39 +19,20 @@ class EmsAttendanceStudentScreen extends StatefulWidget {
       _EmsAttendanceStudentScreenState();
 }
 
-class _EmsAttendanceStudentScreenState extends State<EmsAttendanceStudentScreen>
-    with WidgetsBindingObserver {
+class _EmsAttendanceStudentScreenState
+    extends State<EmsAttendanceStudentScreen> {
   static const _orange = Color(0xFFE65100);
   static const _green = Color(0xFF2E7D32);
   static const _red = Color(0xFFC62828);
 
   bool _loading = true;
-  bool _offline = false;
   String? _error;
   List<EmsStudentMark> _marks = const [];
-  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _load(background: true),
-    );
     _load();
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _load(background: true);
   }
 
   Future<void> _load({bool background = false}) async {
@@ -66,27 +44,18 @@ class _EmsAttendanceStudentScreenState extends State<EmsAttendanceStudentScreen>
     }
     try {
       final m = await EmsApiService.myAttendance();
-      await EmsAttendanceCache.saveStudentHistory(m);
       if (!mounted) return;
       setState(() {
         _marks = m;
         _loading = false;
-        _offline = false;
         _error = null;
       });
     } on EmsException catch (e) {
-      final cached = await EmsAttendanceCache.loadStudentHistory();
       if (!mounted) return;
-      if (cached.isNotEmpty) {
+      if (!background) {
         setState(() {
-          _marks = cached;
-          _loading = false;
-          _offline = true;
-          _error = null;
-        });
-      } else if (!background) {
-        setState(() {
-          _error = e.message;
+          _marks = const [];
+          _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
           _loading = false;
         });
       }
@@ -140,21 +109,6 @@ class _EmsAttendanceStudentScreenState extends State<EmsAttendanceStudentScreen>
       child: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          if (_offline) ...[
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Text(
-                'Mạng yếu: đang hiển thị kết quả đã lưu gần nhất. '
-                'Ứng dụng sẽ tự cập nhật khi có mạng.',
-                style: TextStyle(fontSize: 12, color: _orange),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
           _summary(),
           const SizedBox(height: 12),
           for (final m in _marks) ...[_row(m), const SizedBox(height: 6)],

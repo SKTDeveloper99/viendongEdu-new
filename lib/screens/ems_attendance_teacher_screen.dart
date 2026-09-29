@@ -32,7 +32,6 @@ class _EmsAttendanceTeacherScreenState
   static const _orange = Color(0xFFE65100);
 
   bool _loading = true;
-  bool _usingCache = false;
   String? _error;
   List<EmsSession> _sessions = const [];
 
@@ -47,33 +46,21 @@ class _EmsAttendanceTeacherScreenState
       _loading = true;
       _error = null;
     });
-    final date = _todayHcm();
-    final cached = await EmsAttendanceCache.loadTeacherSessions(date);
     try {
       final s = await EmsApiService.mySessions();
-      await EmsAttendanceCache.saveTeacherSessions(date, s);
       if (!mounted) return;
       setState(() {
         _sessions = s;
-        _usingCache = false;
         _loading = false;
       });
     } on EmsException catch (e) {
       if (!mounted) return;
       setState(() {
-        _sessions = cached;
-        _usingCache = cached.isNotEmpty;
-        _error = cached.isEmpty ? e.message : null;
+        _sessions = const [];
+        _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
         _loading = false;
       });
     }
-  }
-
-  static String _todayHcm() {
-    final d = DateTime.now().toUtc().add(const Duration(hours: 7));
-    return '${d.year.toString().padLeft(4, '0')}-'
-        '${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -117,17 +104,10 @@ class _EmsAttendanceTeacherScreenState
       onRefresh: _load,
       child: ListView.separated(
         padding: const EdgeInsets.all(12),
-        itemCount: _sessions.length + (_usingCache ? 1 : 0),
+        itemCount: _sessions.length,
         separatorBuilder: (_, _) => const SizedBox(height: 8),
         itemBuilder: (_, i) {
-          if (_usingCache && i == 0) {
-            return const _OfflineBanner(
-              text:
-                  'Đang dùng danh sách đã lưu trên máy. Có thể mở lớp và '
-                  'điểm danh; dữ liệu sẽ tự gửi khi có mạng.',
-            );
-          }
-          return _sessionCard(_sessions[i - (_usingCache ? 1 : 0)]);
+          return _sessionCard(_sessions[i]);
         },
       ),
     );
@@ -240,8 +220,7 @@ class _RosterScreen extends StatefulWidget {
   State<_RosterScreen> createState() => _RosterScreenState();
 }
 
-class _RosterScreenState extends State<_RosterScreen>
-    with WidgetsBindingObserver {
+class _RosterScreenState extends State<_RosterScreen> {
   static const _orange = Color(0xFFE65100);
   static const _green = Color(0xFF2E7D32);
   static const _red = Color(0xFFC62828);
@@ -250,11 +229,9 @@ class _RosterScreenState extends State<_RosterScreen>
   bool _saving = false;
   bool _queued = false;
   bool _needsReview = false;
-  bool _usingCache = false;
   String? _error;
   List<EmsRosterStudent> _students = const [];
   DateTime? _scanSyncedAt;
-  Timer? _retryTimer;
 
   /// mssv -> 'present' | 'absent'. Vắng mặt trong map = CHƯA ĐIỂM DANH.
   final Map<String, String> _marks = {};
@@ -286,24 +263,7 @@ class _RosterScreenState extends State<_RosterScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _retryTimer = Timer.periodic(
-      const Duration(seconds: 20),
-      (_) => _retryQueued(),
-    );
     _load();
-  }
-
-  @override
-  void dispose() {
-    _retryTimer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _retryQueued();
   }
 
   String get _draftKey => widget.session.sessionKey.isNotEmpty
@@ -372,7 +332,6 @@ class _RosterScreenState extends State<_RosterScreen>
           ..addAll(serverNotes);
         _needsReview = conflict;
         _queued = draft?.queued == true && !conflict;
-        _usingCache = false;
         _loading = false;
       });
       if (conflict && draft != null) {
@@ -386,24 +345,11 @@ class _RosterScreenState extends State<_RosterScreen>
       } else {
         await _persistDraft();
       }
-      if (_queued) unawaited(_retryQueued());
     } on EmsException catch (e) {
       if (!mounted) return;
       setState(() {
-        if (draft != null && draft.students.isNotEmpty) {
-          _students = draft.students;
-          _marks
-            ..clear()
-            ..addAll(draft.marks);
-          _notes
-            ..clear()
-            ..addAll(draft.notes);
-          _queued = draft.queued;
-          _usingCache = true;
-          _error = null;
-        } else {
-          _error = e.message;
-        }
+        _students = const [];
+        _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
         _loading = false;
       });
     }
@@ -528,7 +474,9 @@ class _RosterScreenState extends State<_RosterScreen>
         await _persistDraft();
         _toast('Máy chủ từ chối: ${e.message}');
       } else {
-        _toast('Đã giữ trên điện thoại; sẽ tự gửi khi có mạng. ${e.message}');
+        _toast(
+          'CHƯA GỬI. Đã giữ lựa chọn trên máy; kết nối lại rồi bấm Lưu. ${e.message}',
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -664,33 +612,6 @@ class _RosterScreenState extends State<_RosterScreen>
     _toast('Đã lưu ${res.saved} dòng$late$over', good: true);
   }
 
-  Future<void> _retryQueued() async {
-    if (!_queued ||
-        _needsReview ||
-        _saving ||
-        _loading ||
-        (_marks.isEmpty && _toRemove.isEmpty)) {
-      return;
-    }
-    if (mounted) setState(() => _saving = true);
-    try {
-      await _sendMarks();
-    } on EmsPunchConflict catch (c) {
-      // Máy chủ đang HỎI, không phải mạng yếu. Dừng hàng đợi, để thầy/cô
-      // bấm Lưu và trả lời — không hỏi hộ, không gửi lại y hệt.
-      _holdForReason(c);
-    } on EmsException catch (e) {
-      if (_isClientRefusal(e)) {
-        if (mounted) setState(() => _queued = false);
-        await _persistDraft();
-        _toast('Máy chủ từ chối: ${e.message}');
-      }
-      // Còn lại là mạng yếu như dự kiến. Hàng đợi bền giữ cho lần thử sau.
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
   /// Bắt buộc nêu lý do cho từng học viên đã quẹt cổng mà bị ghi vắng.
   /// Trả về true nếu đã điền đủ.
   Future<bool> _askReasons(List<EmsPunchedStudent> people) async {
@@ -799,15 +720,6 @@ class _RosterScreenState extends State<_RosterScreen>
               text:
                   'Điểm danh trên máy chủ đã thay đổi khi bạn mất mạng. '
                   'Tự gửi đã dừng; hãy kiểm tra danh sách hiện tại rồi bấm Lưu.',
-            ),
-          ),
-        if (_usingCache)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: _OfflineBanner(
-              text:
-                  'Không có mạng: đang dùng danh sách đã lưu. Cứ điểm danh '
-                  'bình thường; điện thoại sẽ tự gửi lại.',
             ),
           ),
         // Giờ đồng bộ quẹt cổng: giáo viên đối chiếu được "đã quẹt" là tính
@@ -1102,7 +1014,7 @@ class _RosterScreenState extends State<_RosterScreen>
           children: [
             Expanded(
               child: Text(
-                '${_queued ? 'Đã giữ trên máy • chờ gửi\n' : ''}'
+                '${_queued ? 'CHƯA GỬI • kết nối lại rồi bấm Lưu\n' : ''}'
                 '${_needsReason != null ? 'CHƯA LƯU • ${_needsReason!.length} SV quẹt cổng bị ghi vắng, cần lý do\n' : ''}'
                 'Có $_presentCount • Trễ $_lateCount • Phép $_excusedCount • '
                 'Vắng $_absentCount • Chưa điểm danh $_unmarkedCount',

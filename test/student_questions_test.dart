@@ -43,12 +43,12 @@ void main() {
       ),
     );
     expect((await CrmQuestionsApi.list()).single.subject, 'Lịch học');
-    expect((await CrmQuestionsApi.cachedList())?.threads.single.id, '4');
+    expect(await CrmQuestionsApi.cachedList(), isNull);
     AppSession.instance.mssv = '2600000002';
     expect(await CrmQuestionsApi.cachedList(), isNull);
   });
 
-  testWidgets('offline student can read saved list and sees a dated notice', (
+  testWidgets('offline student sees no connection and no saved list', (
     tester,
   ) async {
     EmsApiService.client = MockClient(
@@ -69,8 +69,8 @@ void main() {
 
     await tester.pumpWidget(const MaterialApp(home: StudentQuestionsScreen()));
     await tester.pumpAndSettle();
-    expect(find.text('Lịch học'), findsOneWidget);
-    expect(find.textContaining('Bản đã lưu lúc'), findsOneWidget);
+    expect(find.text('Lịch học'), findsNothing);
+    expect(find.textContaining('Không có kết nối'), findsOneWidget);
   });
 
   testWidgets('offline draft cannot be sent to an unverified destination', (

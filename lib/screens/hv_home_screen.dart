@@ -5,6 +5,7 @@ import '../models/mock_data.dart';
 import '../models/crm_student_schedule.dart';
 import '../services/app_session.dart';
 import '../services/crm_student_api.dart';
+import '../services/crm_session_guard.dart';
 import '../services/ems_api_service.dart';
 import '../components/menu_item.dart';
 import 'hv_profile_info_screen.dart';
@@ -36,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   List<CrmScheduleItem> _todayClasses = [];
   bool _scheduleLoading = true;
-  DateTime? _scheduleCachedAt;
+  bool _scheduleFailed = false;
   bool _scheduleExpanded = true;
   int _unreadCount = 0;
 
@@ -61,10 +62,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _loadTodaySchedule();
-    _loadProfile();
+    _loadSecondary();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  Future<void> _loadSecondary() async {
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    await _loadProfile();
+    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
     _loadUnreadCount();
     _loadBoard();
-    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -102,7 +112,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // permanent false alarm on the home screen. Only a real fault gets the
       // retry card.
       if (mounted) {
-        setState(() => _boardFailed = !AppSession.instance.emsDenied);
+        setState(() {
+          _latestBoardItem = null;
+          _boardUnread = 0;
+          _boardFailed = !AppSession.instance.emsDenied;
+        });
       }
     } finally {
       _boardLoading = false;
@@ -144,16 +158,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // CrmScheduleItem.occursOn và ghi chú "weeks_pattern" trong
   // lib/models/crm_student_schedule.dart.
   Future<void> _loadTodaySchedule() async {
-    final cached = await CrmStudentApi.cachedSchedule();
-    if (cached != null && mounted) {
-      setState(() {
-        _todayClasses = cached.items
-            .where((s) => s.occursOn(DateTime.now()))
-            .toList();
-        _scheduleCachedAt = cached.savedAt;
-        _scheduleLoading = false;
-      });
-    }
+    if (mounted) setState(() => _scheduleLoading = true);
     try {
       final all = await CrmStudentApi.schedule();
       final today = DateTime.now();
@@ -161,12 +166,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _todayClasses = todays;
-          _scheduleCachedAt = null;
+          _scheduleFailed = false;
           _scheduleLoading = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _scheduleLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
+      if (mounted) {
+        setState(() {
+          _todayClasses = [];
+          _scheduleFailed = true;
+          _scheduleLoading = false;
+        });
+      }
     }
   }
 
@@ -329,19 +342,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         '$dayLabel, ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
 
     final n = _todayClasses.length;
-    final summaryText = n == 0
+    final summaryText = _scheduleFailed
+        ? 'Chưa tải được lịch học từ máy chủ'
+        : n == 0
         ? 'Hôm nay bạn không có lịch học nào 🎉'
         : 'Hôm nay bạn có $n lịch học — nhấn để xem chi tiết';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_scheduleCachedAt != null)
+        if (_scheduleFailed)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              'Đang xem lịch đã lưu lúc ${_scheduleCachedAt!.hour.toString().padLeft(2, '0')}:${_scheduleCachedAt!.minute.toString().padLeft(2, '0')} ${_scheduleCachedAt!.day}/${_scheduleCachedAt!.month}. Sẽ cập nhật khi có mạng.',
-              style: const TextStyle(fontSize: 12, color: VdColors.terracotta),
+            padding: const EdgeInsets.all(16),
+            child: OutlinedButton.icon(
+              onPressed: _loadTodaySchedule,
+              icon: const Icon(Icons.wifi_off),
+              label: const Text('Không có kết nối. Thử tải lịch lại'),
             ),
           ),
         Padding(
@@ -434,6 +450,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
           )
+        else if (_scheduleFailed)
+          const SizedBox.shrink()
         else if (!_scheduleExpanded)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),

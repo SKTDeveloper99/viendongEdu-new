@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/vd_theme.dart';
 import '../services/app_session.dart';
 import '../services/crm_teacher_api.dart';
+import '../services/startup_pace.dart';
 import '../services/crm_session_guard.dart';
 import '../services/ems_api_service.dart';
 import '../models/crm_teacher_profile.dart';
@@ -28,7 +29,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
 
   List<Map<String, dynamic>> _todayClasses = [];
   bool _scheduleLoading = true;
-  DateTime? _scheduleCachedAt;
+  bool _scheduleFailed = false;
   bool _scheduleExpanded = true;
   int _unreadCount = 0;
 
@@ -40,8 +41,21 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadOverview();
-    _loadUnreadCount();
+    _loadFirstOverview();
+    final id = AppSession.instance.teacherId ?? '';
+    Future.delayed(
+      const Duration(milliseconds: 1200) +
+          StartupPace.forAccount(id, windowMs: 1400),
+      () {
+        if (mounted) _loadUnreadCount();
+      },
+    );
+  }
+
+  Future<void> _loadFirstOverview() async {
+    final id = AppSession.instance.teacherId ?? '';
+    await Future.delayed(StartupPace.forAccount(id, windowMs: 900));
+    if (mounted) await _loadOverview();
   }
 
   // Số chưa đọc = CRM `/teacher/notifications/unread-count` (thay
@@ -55,17 +69,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   }
 
   Future<void> _loadOverview() async {
-    final cached = await CrmTeacherApi.cachedOverview();
-    if (cached != null && mounted) {
-      setState(() {
-        _profile = cached.overview.teacher;
-        _todayClasses = cached.overview.todaySessions
-            .map((s) => s.toJson())
-            .toList();
-        _scheduleCachedAt = cached.savedAt;
-        _scheduleLoading = false;
-      });
-    }
+    if (mounted) setState(() => _scheduleLoading = true);
     try {
       // Một lời gọi CRM duy nhất: hồ sơ + lịch dạy hôm nay + tóm tắt học kỳ
       // (`GET /api/teacher/me/overview`, xem `CrmTeacherApi.overview`) — thay
@@ -77,14 +81,20 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
           _todayClasses = overview.todaySessions
               .map((s) => s.toJson())
               .toList();
-          _scheduleCachedAt = null;
+          _scheduleFailed = false;
           _scheduleLoading = false;
         });
       }
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      if (mounted) setState(() => _scheduleLoading = false);
+      if (mounted) {
+        setState(() {
+          _todayClasses = [];
+          _scheduleFailed = true;
+          _scheduleLoading = false;
+        });
+      }
     }
   }
 
@@ -110,19 +120,22 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
         '${weekdays[now.weekday]}, ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
 
     final n = _todayClasses.length;
-    final summaryText = n == 0
+    final summaryText = _scheduleFailed
+        ? 'Chưa tải được lịch dạy từ máy chủ'
+        : n == 0
         ? 'Hôm nay bạn không có lịch dạy nào 🎉'
         : 'Hôm nay bạn có $n lịch dạy — nhấn để xem chi tiết';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_scheduleCachedAt != null)
+        if (_scheduleFailed)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              'Đang xem lịch đã lưu lúc ${_scheduleCachedAt!.hour.toString().padLeft(2, '0')}:${_scheduleCachedAt!.minute.toString().padLeft(2, '0')} ${_scheduleCachedAt!.day}/${_scheduleCachedAt!.month}.',
-              style: const TextStyle(fontSize: 12, color: VdColors.terracotta),
+            padding: const EdgeInsets.all(16),
+            child: OutlinedButton.icon(
+              onPressed: _loadOverview,
+              icon: const Icon(Icons.wifi_off),
+              label: const Text('Không có kết nối. Thử tải lịch lại'),
             ),
           ),
         Padding(
@@ -205,6 +218,8 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Column(children: [SkeletonChip(), SkeletonChip()]),
           )
+        else if (_scheduleFailed)
+          const SizedBox.shrink()
         else if (!_scheduleExpanded)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),

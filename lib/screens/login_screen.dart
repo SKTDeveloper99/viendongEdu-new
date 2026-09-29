@@ -1,9 +1,11 @@
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kDebugMode, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kDebugMode, TargetPlatform;
 import 'package:flutter/material.dart';
 import '../models/crm_identity.dart';
 import '../services/ems_api_service.dart';
 import '../services/app_session.dart';
 import '../services/notification_service.dart';
+import '../services/startup_pace.dart';
 import 'change_password_screen.dart';
 
 /// Đăng nhập CHỈ qua CRM (EMS) kể từ 6.1.0 — không còn đăng nhập IMS, không
@@ -49,18 +51,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (_role == CrmRole.student) {
         identity = await EmsApiService.studentLogin(loginId, pass);
       } else {
-        // Giảng viên: FCM token đi kèm ngay trong body đăng nhập — không có
-        // lượt đăng ký thiết bị riêng như học viên.
-        String? fcmToken;
-        try {
-          fcmToken = await NotificationService.instance.getToken();
-        } catch (_) {
-          // Không lấy được FCM token không được chặn đăng nhập.
-        }
+        await Future.delayed(StartupPace.forAccount(loginId, windowMs: 700));
+        // Đăng nhập trước; thiết bị nhận thông báo đăng ký sau ở nền.
         identity = await EmsApiService.teacherLogin(
           loginId,
           pass,
-          fcmToken: fcmToken,
           platform: defaultTargetPlatform == TargetPlatform.iOS
               ? 'ios'
               : defaultTargetPlatform == TargetPlatform.android
@@ -85,17 +80,6 @@ class _LoginScreenState extends State<LoginScreen> {
           hoTen: identity.fullName,
         );
       } catch (_) {}
-
-      if (identity.isStudent) {
-        // Đăng ký thiết bị EMS cho học viên (giảng viên đã gửi trong lúc
-        // đăng nhập ở trên).
-        try {
-          final fcmToken = await NotificationService.instance.getToken();
-          if (fcmToken != null) {
-            await AppSession.instance.registerStudentDeviceToken(fcmToken);
-          }
-        } catch (_) {}
-      }
 
       if (!mounted) return;
 
