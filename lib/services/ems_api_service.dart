@@ -36,7 +36,8 @@ class EmsApiService {
     defaultValue: 'https://ems.viendong.edu.vn/api',
   );
 
-  static const Duration _timeout = Duration(seconds: 15);
+  static const Duration _readTimeout = Duration(seconds: 7);
+  static const Duration _writeTimeout = Duration(seconds: 15);
 
   /// Đường ra mạng. Thay được trong test để chạy màn hình Bảng tin với dữ liệu
   /// dựng sẵn; trong app thật luôn là client HTTP mặc định (giữ nguyên kiểm tra
@@ -158,11 +159,13 @@ class EmsApiService {
                   : method == 'DELETE'
                   ? client.delete(uri, headers: headers, body: encoded)
                   : client.get(uri, headers: headers))
-              .timeout(_timeout);
+              .timeout(method == 'GET' ? _readTimeout : _writeTimeout);
     } catch (e) {
       // Mạng hỏng / quá hạn / DNS — không có statusCode, nên không bị coi là
       // từ chối có chủ đích và màn hình sẽ hiện nút "Thử lại".
-      throw EmsException('Không tải được bảng tin. Vui lòng thử lại.');
+      throw EmsException(
+        'Không có kết nối Internet hoặc máy chủ không phản hồi. Vui lòng thử lại.',
+      );
     }
     return _decode(res);
   }

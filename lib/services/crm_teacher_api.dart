@@ -34,9 +34,6 @@ class CrmTeacherApi {
                   : {'semester': semester},
             )
             as Map<String, dynamic>;
-    if (semester == null || semester.isEmpty) {
-      await OfflineSnapshot.save('teacher_overview', body);
-    }
     return CrmTeacherOverview.fromJson(body);
   }
 

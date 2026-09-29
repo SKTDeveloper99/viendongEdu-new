@@ -86,6 +86,55 @@ void main() {
     AppSession.instance.mssv = null;
   });
 
+  testWidgets('offline teacher sees no saved roster or session', (
+    tester,
+  ) async {
+    await EmsAttendanceCache.saveTeacherSessions('2026-09-08', const [
+      EmsSession(
+        sectionId: 'section-1',
+        sectionCode: 'OLD-CLASS',
+        sessionDate: '2026-09-08',
+        sessionKey: 'old-session',
+      ),
+    ]);
+    EmsApiService.client = MockClient(
+      (_) async => throw http.ClientException('offline'),
+    );
+    await tester.pumpWidget(
+      const MaterialApp(home: EmsAttendanceTeacherScreen()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Không có kết nối'), findsOneWidget);
+    expect(find.text('OLD-CLASS'), findsNothing);
+  });
+
+  testWidgets(
+    'student attendance does not poll and hides saved history offline',
+    (tester) async {
+      AppSession.instance.role = CrmRole.student;
+      await EmsAttendanceCache.saveStudentHistory(const [
+        EmsStudentMark(
+          sessionDate: '2026-09-08',
+          status: 'present',
+          subjectName: 'OLD-SUBJECT',
+        ),
+      ]);
+      var requests = 0;
+      EmsApiService.client = MockClient((_) async {
+        requests++;
+        throw http.ClientException('offline');
+      });
+      await tester.pumpWidget(
+        const MaterialApp(home: EmsAttendanceStudentScreen()),
+      );
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 31));
+      expect(requests, 1);
+      expect(find.textContaining('Không có kết nối'), findsOneWidget);
+      expect(find.text('OLD-SUBJECT'), findsNothing);
+    },
+  );
+
   testWidgets(
     'new server mark stops a queued offline mark from overwriting it',
     (tester) async {

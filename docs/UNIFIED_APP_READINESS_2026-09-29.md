@@ -7,7 +7,7 @@
 - Shared warm school theme in `lib/theme/vd_theme.dart`, with Be Vietnam Pro font, updated home cards and a lightweight splash. The native Android/iOS launch art is from the splash prototype. Colors, type, card radius, and mark can be adjusted in this one package.
 - Teacher "Ngày làm việc của tôi": sessions, attendance entry, assigned student cases, and case answers. The case route requires the CRM `STUDENT_CASES_V1_ENABLED` feature and the teacher's server permission.
 - Student "Hỏi nhà trường": server supplied destinations, conversation list/detail, replies, and local drafts. Drafts are never labeled sent until the server confirms. A failed/ambiguous send asks the student to check the conversation before retrying.
-- Account scoped local snapshots for today's teacher overview, student schedule, and questions. The UI labels old data with its save time. Attendance roster and draft keys are now account scoped; on a restored session, legacy queued drafts are migrated. A server mark that conflicts with an offline mark stops automatic replay and asks the teacher to review.
+- Online-first reading: home, attendance, and questions request current CRM data and show a connection error when that request fails. Saved server snapshots are no longer displayed automatically. Attendance drafts remain account scoped; on a restored session, legacy drafts are migrated. A server mark that conflicts with an unsent local choice asks the teacher to review.
 
 ## Configure and build
 
@@ -19,8 +19,8 @@
 
 | Gate | Current state and action |
 |---|---|
-| Offline reads | Home and questions have dated snapshots; other academic and finance screens still need deliberate offline behavior. Do not present a cached tuition or grade as live truth. |
-| Offline attendance | Drafts persist and retry while the roster screen is open or resumed; global outbox draining after app restart is not implemented. A lost response still depends on read-back. Add server operation IDs, version checks, and a global queue before claiming no lost/duplicate writes. |
+| Offline reads | Home, attendance, and questions now require a fresh CRM response. Other screens need review for the same policy. Do not present a cached tuition or grade as live truth. |
+| Offline attendance | Drafts persist but require a manual save after reconnection; the app does not replay them automatically. A lost response still depends on read-back. Add server operation IDs, version checks, and a global queue before claiming no lost/duplicate writes. |
 | Questions | Server has student-scoped auth and rate limits, but conversation create and reply endpoints do not accept an idempotency key. A timeout can leave delivery uncertain, so automatic retry is disabled. Assign PĐT, finance, faculty, and teacher owners; prove answer times and escalation before opening to all students. |
 | Launch under no network | The minimum-version check now times out after two seconds before session restore. Measure cold start on low-end Vietnam phones and add a server-side version guard for old clients before relying on a shorter timeout. |
 | Capacity | No 7 a.m. login/attendance/question/broadcast load test or Vietnam mobile-network test was possible locally. Measure p95/p99 API latency, DB pool wait, FCM queue lag, and app frame timing under a representative school peak. |

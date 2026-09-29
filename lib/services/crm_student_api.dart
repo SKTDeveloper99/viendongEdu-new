@@ -117,9 +117,6 @@ class CrmStudentApi {
             as Map<String, dynamic>;
     final list = body['schedule'];
     if (list is! List) return const [];
-    if (semester == null || semester.isEmpty) {
-      await OfflineSnapshot.save('student_schedule', body);
-    }
     return list
         .whereType<Map<String, dynamic>>()
         .map(CrmScheduleItem.fromJson)
