@@ -1,4 +1,5 @@
 import 'ems_api_service.dart';
+import 'offline_snapshot.dart';
 import '../models/crm_teacher_profile.dart';
 import '../models/crm_teacher_class.dart';
 
@@ -15,8 +16,8 @@ import '../models/crm_teacher_class.dart';
 class CrmTeacherApi {
   /// `GET /api/teacher/me`.
   static Future<CrmTeacherProfile> me() async {
-    final body = await EmsApiService.send('GET', '/teacher/me')
-        as Map<String, dynamic>;
+    final body =
+        await EmsApiService.send('GET', '/teacher/me') as Map<String, dynamic>;
     final t = (body['teacher'] as Map?)?.cast<String, dynamic>() ?? const {};
     return CrmTeacherProfile.fromJson(t);
   }
@@ -33,7 +34,27 @@ class CrmTeacherApi {
                   : {'semester': semester},
             )
             as Map<String, dynamic>;
+    if (semester == null || semester.isEmpty) {
+      await OfflineSnapshot.save('teacher_overview', body);
+    }
     return CrmTeacherOverview.fromJson(body);
+  }
+
+  static Future<({CrmTeacherOverview overview, DateTime savedAt})?>
+  cachedOverview() async {
+    final cached = await OfflineSnapshot.load('teacher_overview');
+    final data = cached?.data;
+    if (cached == null || data is! Map<String, dynamic>) return null;
+    final now = DateTime.now();
+    if (cached.savedAt.year != now.year ||
+        cached.savedAt.month != now.month ||
+        cached.savedAt.day != now.day) {
+      return null;
+    }
+    return (
+      overview: CrmTeacherOverview.fromJson(data),
+      savedAt: cached.savedAt,
+    );
   }
 
   /// `GET /api/teacher/me/semesters`. Mirror của IMS `GET /hocky`: mảng trần
@@ -168,7 +189,6 @@ class CrmTeacherApi {
         .map(CrmTeacherExam.fromJson)
         .toList();
   }
-
 }
 
 /// `GET /api/teacher/me/overview` — toàn bộ payload.

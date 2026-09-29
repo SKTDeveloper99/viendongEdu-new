@@ -9,7 +9,10 @@ void main() {
 
   test('legacy IMS attendance screens are gone from the tree', () {
     expect(File('lib/screens/gv_attendance_screen.dart').existsSync(), isFalse);
-    expect(File('lib/screens/gv_qr_attendance_screen.dart').existsSync(), isFalse);
+    expect(
+      File('lib/screens/gv_qr_attendance_screen.dart').existsSync(),
+      isFalse,
+    );
     expect(File('lib/services/zk_api_service.dart').existsSync(), isFalse);
   });
 
@@ -20,26 +23,35 @@ void main() {
       // Bỏ dòng chú thích: lịch sử được phép nhắc tên, mã thì không.
       final src = read(f.path).replaceAll(RegExp(r'//.*'), '');
       expect(src.contains('giangvien/diemdanh/luu'), isFalse, reason: f.path);
-      expect(RegExp(r'ApiService\.postDiemDanhLuu\(').hasMatch(src), isFalse, reason: f.path);
+      expect(
+        RegExp(r'ApiService\.postDiemDanhLuu\(').hasMatch(src),
+        isFalse,
+        reason: f.path,
+      );
     }
   });
 
-  test('student Lịch học badge is computed from EMS, never from IMS hienDienYN', () {
-    final src = read('lib/screens/schedule_screen.dart');
-    expect(src.contains("data['hienDienYN']"), isFalse);
-    expect(src.contains('EmsApiService.myAttendance'), isTrue);
-  });
+  test(
+    'student Lịch học badge is computed from EMS, never from IMS hienDienYN',
+    () {
+      final src = read('lib/screens/schedule_screen.dart');
+      expect(src.contains("data['hienDienYN']"), isFalse);
+      expect(src.contains('EmsApiService.myAttendance'), isTrue);
+    },
+  );
 
   test('teacher Quản lý lớp session detail reads EMS session-marks', () {
     final src = read('lib/screens/gv_quanly_lop_screen.dart');
     expect(src.contains('EmsApiService.sessionMarks('), isTrue);
   });
 
-  test('splash runs the force-update gate first', () {
+  test('splash runs the force-update gate before entering the app', () {
     final src = read('lib/screens/splash_screen.dart');
     final gate = src.indexOf('AppUpdateGate.check(context)');
     final restore = src.indexOf('AppSession.instance.tryRestore()');
+    final route = src.indexOf('Navigator.pushReplacementNamed(context, route)');
     expect(gate, greaterThan(0));
-    expect(gate, lessThan(restore));
+    expect(restore, greaterThan(0));
+    expect(gate, lessThan(route));
   });
 }

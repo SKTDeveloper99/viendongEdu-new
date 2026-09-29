@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/app_session.dart';
+import 'theme/vd_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/hv_home_screen.dart';
@@ -29,6 +30,8 @@ import 'screens/student_board_screen.dart';
 import 'screens/ems_attendance_teacher_screen.dart';
 import 'screens/ems_attendance_student_screen.dart';
 import 'screens/profile_edit_screen.dart';
+import 'screens/teacher_my_day_screen.dart';
+import 'screens/student_questions_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -86,7 +89,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'ViendongEdu',
-      theme: ThemeData(primarySwatch: Colors.orange),
+      theme: VdTheme.light(),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -110,6 +113,7 @@ class MyApp extends StatelessWidget {
         '/gv_lophoc': (context) => const GvLopHocScreen(),
         '/gv_lichthi': (context) => const GvLichThiScreen(),
         '/gv_quanly_lop': (context) => const GvQuanLyLopScreen(),
+        '/teacher_my_day': (context) => const TeacherMyDayScreen(),
         '/capbu': (context) => const CapBuScreen(),
         '/change_password': (context) => const ChangePasswordScreen(),
         '/registration': (context) => const RegistrationScreen(),
@@ -119,6 +123,7 @@ class MyApp extends StatelessWidget {
         // Bảng tin — thông tin từ EMS, đọc trực tiếp (kéo/pull), không qua
         // chuông đẩy (push) nào.
         '/student_board': (context) => const StudentBoardScreen(),
+        '/student_questions': (context) => const StudentQuestionsScreen(),
         // Điểm danh EMS — EMS là nguồn dữ liệu điểm danh chính thức.
         '/ems_attendance_gv': (context) => const EmsAttendanceTeacherScreen(),
         '/ems_attendance_hv': (context) => const EmsAttendanceStudentScreen(),

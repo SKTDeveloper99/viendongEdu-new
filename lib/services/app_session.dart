@@ -3,7 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/crm_identity.dart';
 import 'ems_api_service.dart';
+import 'ems_attendance_cache.dart';
 import 'notification_service.dart';
+import 'offline_snapshot.dart';
 
 /// Singleton giữ trạng thái đăng nhập trong toàn app.
 ///
@@ -79,6 +81,11 @@ class AppSession {
     final id = identity;
     if (id != null) {
       await prefs.setString('crm_identity', jsonEncode(id.toPrefsJson()));
+      try {
+        await EmsAttendanceCache.purgeUnownedLegacy();
+      } catch (_) {
+        // Cache cleanup must not turn a successful login into a failure.
+      }
     } else {
       await prefs.remove('crm_identity');
     }
@@ -128,11 +135,17 @@ class AppSession {
     teacherCode = id.teacherCode;
     fullName = id.fullName;
     mustChangePassword = id.mustChangePassword;
+    try {
+      await EmsAttendanceCache.migrateLegacyForRestoredAccount();
+    } catch (_) {
+      // Keep the authenticated session usable if local migration fails.
+    }
     return true;
   }
 
   /// Xóa session khi đăng xuất, hoặc khi EMS trả 401 (phiên hết hạn).
   Future<void> clear() async {
+    await OfflineSnapshot.clearCurrentAccount();
     // Xóa FCM token trước khi clear session.
     final id = identity?.notificationId;
     if (id != null && id.isNotEmpty) {

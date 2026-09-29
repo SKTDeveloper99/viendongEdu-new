@@ -10,5 +10,6 @@ class MockData {
     {'icon': 'receipt_long', 'label': 'Lệ phí', 'route': '/lephi'},
     {'icon': 'account_balance', 'label': 'Cấp bù', 'route': '/capbu'},
     {'icon': 'campaign', 'label': 'Bảng tin', 'route': '/student_board'},
+    {'icon': 'help', 'label': 'Hỏi nhà trường', 'route': '/student_questions'},
   ];
 }

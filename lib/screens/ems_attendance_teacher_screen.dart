@@ -249,6 +249,7 @@ class _RosterScreenState extends State<_RosterScreen>
   bool _loading = true;
   bool _saving = false;
   bool _queued = false;
+  bool _needsReview = false;
   bool _usingCache = false;
   String? _error;
   List<EmsRosterStudent> _students = const [];
@@ -319,23 +320,72 @@ class _RosterScreenState extends State<_RosterScreen>
     try {
       final r = await EmsApiService.roster(widget.session);
       if (!mounted) return;
+      var conflict = false;
+      final serverMarks = <String, String>{
+        for (final s in r.students)
+          if (s.status != null) s.mssv: s.status!,
+      };
+      final serverNotes = <String, String>{
+        for (final s in r.students)
+          if (s.note != null) s.mssv: s.note!,
+      };
+      if (draft != null) {
+        final baseline = {for (final s in draft.students) s.mssv: s};
+        if (baseline.isEmpty && draft.marks.isNotEmpty) conflict = true;
+        for (final old in draft.students) {
+          final current = r.students
+              .where((s) => s.mssv == old.mssv)
+              .firstOrNull;
+          if (current == null) {
+            conflict = true;
+            continue;
+          }
+          final intended = draft.marks[old.mssv];
+          final intendedNote = draft.notes[old.mssv];
+          if (intended != old.status || intendedNote != old.note) {
+            if ((current.status != old.status && current.status != intended) ||
+                (current.note != old.note && current.note != intendedNote)) {
+              conflict = true;
+            } else {
+              if (intended == null) {
+                serverMarks.remove(old.mssv);
+              } else {
+                serverMarks[old.mssv] = intended;
+              }
+              if (intendedNote == null) {
+                serverNotes.remove(old.mssv);
+              } else {
+                serverNotes[old.mssv] = intendedNote;
+              }
+            }
+          }
+        }
+      }
       setState(() {
         _students = r.students;
         _scanSyncedAt = r.scanSyncedAt;
-        _marks.clear();
-        for (final s in r.students) {
-          if (s.status != null) _marks[s.mssv] = s.status!;
-          if (s.note != null) _notes[s.mssv] = s.note!;
-        }
-        if (draft != null) {
-          _marks.addAll(draft.marks);
-          _notes.addAll(draft.notes);
-          _queued = draft.queued;
-        }
+        _marks
+          ..clear()
+          ..addAll(serverMarks);
+        _notes
+          ..clear()
+          ..addAll(serverNotes);
+        _needsReview = conflict;
+        _queued = draft?.queued == true && !conflict;
         _usingCache = false;
         _loading = false;
       });
-      await _persistDraft();
+      if (conflict && draft != null) {
+        await EmsAttendanceCache.saveDraft(
+          _draftKey,
+          draft.marks,
+          draft.notes,
+          queued: false,
+          students: draft.students,
+        );
+      } else {
+        await _persistDraft();
+      }
       if (_queued) unawaited(_retryQueued());
     } on EmsException catch (e) {
       if (!mounted) return;
@@ -449,6 +499,7 @@ class _RosterScreenState extends State<_RosterScreen>
     setState(() {
       _saving = true;
       _queued = true;
+      _needsReview = false;
       _needsReason = null;
     });
     await _persistDraft();
@@ -614,7 +665,13 @@ class _RosterScreenState extends State<_RosterScreen>
   }
 
   Future<void> _retryQueued() async {
-    if (!_queued || _saving || _loading || _marks.isEmpty) return;
+    if (!_queued ||
+        _needsReview ||
+        _saving ||
+        _loading ||
+        (_marks.isEmpty && _toRemove.isEmpty)) {
+      return;
+    }
     if (mounted) setState(() => _saving = true);
     try {
       await _sendMarks();
@@ -735,6 +792,15 @@ class _RosterScreenState extends State<_RosterScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_needsReview)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: _OfflineBanner(
+              text:
+                  'Điểm danh trên máy chủ đã thay đổi khi bạn mất mạng. '
+                  'Tự gửi đã dừng; hãy kiểm tra danh sách hiện tại rồi bấm Lưu.',
+            ),
+          ),
         if (_usingCache)
           const Padding(
             padding: EdgeInsets.only(bottom: 8),
