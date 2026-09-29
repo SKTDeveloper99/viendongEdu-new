@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/vd_theme.dart';
 import '../services/app_session.dart';
 import '../services/app_update_gate.dart';
 import '../services/notification_service.dart';
@@ -20,9 +21,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkSession() async {
     // Cổng bắt buộc cập nhật chạy TRƯỚC mọi thứ: bản quá cũ dừng ở đây.
+    // Khôi phục dữ liệu cục bộ song song với yêu cầu mạng để khỏi cộng thêm
+    // thời gian chờ vào màn mở đầu trên kết nối yếu.
+    final restoreFuture = AppSession.instance.tryRestore();
     if (!await AppUpdateGate.check(context)) return;
     if (!mounted) return;
-    final restored = await AppSession.instance.tryRestore();
+    final restored = await restoreFuture;
     if (!mounted) return;
     // Đăng nhập hợp lệ = có danh tính CRM (xem AppSession.isLoggedIn). Một
     // token IMS mồ côi từ một bản cài đặt cũ không còn đưa được vào app.
@@ -79,18 +83,30 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: VdColors.cream,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/logo.png', width: 180, fit: BoxFit.contain),
-            const SizedBox(height: 32),
+            Image.asset('assets/logo2.png', width: 150, fit: BoxFit.contain),
+            const SizedBox(height: 8),
+            const VdSwoosh(width: 36, height: 4),
+            const SizedBox(height: 16),
+            const Text(
+              'VIỄN ĐÔNG',
+              style: TextStyle(
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+                color: VdColors.espresso,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 24),
             const SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
-                color: Colors.orange,
+                color: VdColors.terracotta,
                 strokeWidth: 3,
               ),
             ),

@@ -5,9 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:viendongedu2_flutter/models/crm_identity.dart';
+import 'package:viendongedu2_flutter/services/app_session.dart';
 import 'package:viendongedu2_flutter/screens/ems_attendance_student_screen.dart';
 import 'package:viendongedu2_flutter/screens/ems_attendance_teacher_screen.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
+import 'package:viendongedu2_flutter/services/ems_attendance_cache.dart';
 
 /// Mock EMS with a two-student roster. [onPost] decides what POST /marks
 /// returns; the roster reflects [status] per mssv after a successful save.
@@ -68,8 +71,53 @@ Future<void> _openClass(WidgetTester tester) async {
 }
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
-  tearDown(() => EmsApiService.client = http.Client());
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    AppSession.instance.emsToken = 'test-token';
+    AppSession.instance.role = CrmRole.teacher;
+    AppSession.instance.teacherId = 'teacher-1';
+    AppSession.instance.mssv = 'student-1';
+  });
+  tearDown(() {
+    EmsApiService.client = http.Client();
+    AppSession.instance.emsToken = null;
+    AppSession.instance.role = null;
+    AppSession.instance.teacherId = null;
+    AppSession.instance.mssv = null;
+  });
+
+  testWidgets(
+    'new server mark stops a queued offline mark from overwriting it',
+    (tester) async {
+      const key = '123:18-00:2026-09-08';
+      await EmsAttendanceCache.saveDraft(
+        key,
+        {'2600000001': 'present'},
+        const {},
+        queued: true,
+        students: const [
+          EmsRosterStudent(mssv: '2600000001', fullName: 'Nguyễn Văn A'),
+        ],
+      );
+      final posts = <Map<String, dynamic>>[];
+      EmsApiService.client = _teacherMock(
+        onPost: (body) => http.Response('{}', 200),
+        students: () => [
+          {
+            'mssv': '2600000001',
+            'full_name': 'Nguyễn Văn A',
+            'status': 'absent',
+          },
+        ],
+        posts: posts,
+      );
+
+      await _openClass(tester);
+      expect(find.textContaining('Tự gửi đã dừng'), findsOneWidget);
+      expect(posts, isEmpty);
+      expect((await EmsAttendanceCache.loadDraft(key))?.queued, isFalse);
+    },
+  );
 
   testWidgets('student sees pending class and independent gate arrival', (
     tester,

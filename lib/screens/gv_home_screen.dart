@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/vd_theme.dart';
 import '../services/app_session.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
@@ -27,6 +28,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
 
   List<Map<String, dynamic>> _todayClasses = [];
   bool _scheduleLoading = true;
+  DateTime? _scheduleCachedAt;
   bool _scheduleExpanded = true;
   int _unreadCount = 0;
 
@@ -53,6 +55,17 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   }
 
   Future<void> _loadOverview() async {
+    final cached = await CrmTeacherApi.cachedOverview();
+    if (cached != null && mounted) {
+      setState(() {
+        _profile = cached.overview.teacher;
+        _todayClasses = cached.overview.todaySessions
+            .map((s) => s.toJson())
+            .toList();
+        _scheduleCachedAt = cached.savedAt;
+        _scheduleLoading = false;
+      });
+    }
     try {
       // Một lời gọi CRM duy nhất: hồ sơ + lịch dạy hôm nay + tóm tắt học kỳ
       // (`GET /api/teacher/me/overview`, xem `CrmTeacherApi.overview`) — thay
@@ -61,8 +74,10 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
       if (mounted) {
         setState(() {
           _profile = overview.teacher;
-          _todayClasses =
-              overview.todaySessions.map((s) => s.toJson()).toList();
+          _todayClasses = overview.todaySessions
+              .map((s) => s.toJson())
+              .toList();
+          _scheduleCachedAt = null;
           _scheduleLoading = false;
         });
       }
@@ -102,6 +117,14 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_scheduleCachedAt != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              'Đang xem lịch đã lưu lúc ${_scheduleCachedAt!.hour.toString().padLeft(2, '0')}:${_scheduleCachedAt!.minute.toString().padLeft(2, '0')} ${_scheduleCachedAt!.day}/${_scheduleCachedAt!.month}.',
+              style: const TextStyle(fontSize: 12, color: VdColors.terracotta),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
           child: Row(
@@ -114,7 +137,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                       const Icon(
                         Icons.calendar_today,
                         size: 16,
-                        color: Color(0xFFE65100),
+                        color: VdColors.terracotta,
                       ),
                       const SizedBox(width: 6),
                       const Text(
@@ -148,7 +171,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE65100).withValues(alpha: 0.12),
+                    color: VdColors.terracotta.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -158,7 +181,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                         _scheduleExpanded ? 'Thu gọn' : 'Mở rộng',
                         style: const TextStyle(
                           fontSize: 11,
-                          color: Color(0xFFE65100),
+                          color: VdColors.terracotta,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -167,7 +190,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                         _scheduleExpanded
                             ? Icons.keyboard_arrow_up
                             : Icons.keyboard_arrow_down,
-                        color: const Color(0xFFE65100),
+                        color: VdColors.terracotta,
                         size: 16,
                       ),
                     ],
@@ -209,7 +232,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                     Icon(
                       n == 0 ? Icons.event_available : Icons.event_note,
                       size: 18,
-                      color: n == 0 ? Colors.green : const Color(0xFFE65100),
+                      color: n == 0 ? Colors.green : VdColors.terracotta,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -310,7 +333,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
             padding: const EdgeInsets.fromLTRB(20, 44, 20, 10),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [VdColors.headerTop, VdColors.headerBottom],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -434,6 +457,56 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildTodaySchedule(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                    child: Material(
+                      color: VdColors.paper,
+                      borderRadius: BorderRadius.circular(VdTheme.cardRadius),
+                      child: InkWell(
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/teacher_my_day'),
+                        borderRadius: BorderRadius.circular(VdTheme.cardRadius),
+                        child: const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.today_outlined,
+                                color: VdColors.terracotta,
+                                size: 30,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Ngày làm việc của tôi',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    SizedBox(height: 3),
+                                    Text(
+                                      'Lịch dạy, điểm danh và sinh viên cần phản hồi',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: VdColors.ink60,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right,
+                                color: VdColors.terracotta,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -492,7 +565,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
               padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                  colors: [VdColors.headerTop, VdColors.headerBottom],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -618,7 +691,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: VdColors.cream,
       body: tabs[_currentIndex],
       bottomNavigationBar: SafeArea(
         top: false,
@@ -757,7 +830,7 @@ class _GvClassChip extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.room, size: 13, color: Color(0xFFE65100)),
+                  const Icon(Icons.room, size: 13, color: VdColors.terracotta),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -788,7 +861,7 @@ class _ProfileMenuCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color = const Color(0xFFE65100),
+    this.color = VdColors.terracotta,
   });
 
   @override
@@ -851,7 +924,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFFE65100), size: 20),
+          Icon(icon, color: VdColors.terracotta, size: 20),
           const SizedBox(width: 12),
           SizedBox(
             width: 60,
@@ -907,7 +980,7 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: selected ? const Color(0xFFE65100) : Colors.grey,
+              color: selected ? VdColors.terracotta : Colors.grey,
               size: 26,
             ),
             const SizedBox(height: 2),
@@ -915,7 +988,7 @@ class _NavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 11,
-                color: selected ? const Color(0xFFE65100) : Colors.grey,
+                color: selected ? VdColors.terracotta : Colors.grey,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),

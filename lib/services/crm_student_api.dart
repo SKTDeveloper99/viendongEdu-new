@@ -26,6 +26,7 @@ import '../models/crm_student_graduation_summary.dart';
 import '../models/crm_student_schedule.dart';
 import '../models/crm_student_exams.dart';
 import 'ems_api_service.dart';
+import 'offline_snapshot.dart';
 
 class CrmStudentApi {
   CrmStudentApi._();
@@ -33,8 +34,8 @@ class CrmStudentApi {
   /// `GET /api/student/me` → { student }.
   /// Thay `hocvien/user/info` (`ApiService.getUserInfo`).
   static Future<CrmStudentProfile> me() async {
-    final body = await EmsApiService.send('GET', '/student/me')
-        as Map<String, dynamic>;
+    final body =
+        await EmsApiService.send('GET', '/student/me') as Map<String, dynamic>;
     final student = body['student'];
     if (student is! Map<String, dynamic>) {
       throw EmsException('Máy chủ không trả về hồ sơ học viên.');
@@ -45,8 +46,9 @@ class CrmStudentApi {
   /// `GET /api/student/me/grades` → { mssv, summary, grades }.
   /// Thay `hocvien/bangdiemtongket` (`ApiService.getBangDiem`).
   static Future<CrmStudentGradesView> grades() async {
-    final body = await EmsApiService.send('GET', '/student/me/grades')
-        as Map<String, dynamic>;
+    final body =
+        await EmsApiService.send('GET', '/student/me/grades')
+            as Map<String, dynamic>;
     return CrmStudentGradesView.fromJson(body);
   }
 
@@ -81,13 +83,15 @@ class CrmStudentApi {
   /// `GET /api/student/me/sections?semester=` → { mssv, sections }.
   /// Thay `hocvien/lopmonhoc` (`ApiService.getLopMonHoc`).
   static Future<List<CrmStudentSection>> sections({String? semester}) async {
-    final body = await EmsApiService.send(
-      'GET',
-      '/student/me/sections',
-      query: (semester == null || semester.isEmpty)
-          ? null
-          : {'semester': semester},
-    ) as Map<String, dynamic>;
+    final body =
+        await EmsApiService.send(
+              'GET',
+              '/student/me/sections',
+              query: (semester == null || semester.isEmpty)
+                  ? null
+                  : {'semester': semester},
+            )
+            as Map<String, dynamic>;
     final list = body['sections'];
     if (list is! List) return const [];
     return list
@@ -102,19 +106,40 @@ class CrmStudentApi {
   /// lib/models/crm_student_schedule.dart về khác biệt theo-tuần so với
   /// theo-ngày của IMS.
   static Future<List<CrmScheduleItem>> schedule({String? semester}) async {
-    final body = await EmsApiService.send(
-      'GET',
-      '/student/me/schedule',
-      query: (semester == null || semester.isEmpty)
-          ? null
-          : {'semester': semester},
-    ) as Map<String, dynamic>;
+    final body =
+        await EmsApiService.send(
+              'GET',
+              '/student/me/schedule',
+              query: (semester == null || semester.isEmpty)
+                  ? null
+                  : {'semester': semester},
+            )
+            as Map<String, dynamic>;
     final list = body['schedule'];
     if (list is! List) return const [];
+    if (semester == null || semester.isEmpty) {
+      await OfflineSnapshot.save('student_schedule', body);
+    }
     return list
         .whereType<Map<String, dynamic>>()
         .map(CrmScheduleItem.fromJson)
         .toList();
+  }
+
+  static Future<({List<CrmScheduleItem> items, DateTime savedAt})?>
+  cachedSchedule() async {
+    final cached = await OfflineSnapshot.load('student_schedule');
+    final data = cached?.data;
+    if (cached == null || data is! Map<String, dynamic>) return null;
+    final rows = data['schedule'];
+    if (rows is! List) return null;
+    return (
+      items: rows
+          .whereType<Map<String, dynamic>>()
+          .map(CrmScheduleItem.fromJson)
+          .toList(),
+      savedAt: cached.savedAt,
+    );
   }
 
   /// `GET /api/student/me/exams?semester=` → { semester_code, exams }.
@@ -123,13 +148,15 @@ class CrmStudentApi {
   /// server kể từ 2026-09-25; truyền một mã học kỳ cụ thể để lọc đúng kỳ đó.
   /// Xem docs/ims_to_crm_student_academic_map.md.
   static Future<CrmStudentExamsView> exams({String? semester}) async {
-    final body = await EmsApiService.send(
-      'GET',
-      '/student/me/exams',
-      query: (semester == null || semester.isEmpty)
-          ? null
-          : {'semester': semester},
-    ) as Map<String, dynamic>;
+    final body =
+        await EmsApiService.send(
+              'GET',
+              '/student/me/exams',
+              query: (semester == null || semester.isEmpty)
+                  ? null
+                  : {'semester': semester},
+            )
+            as Map<String, dynamic>;
     return CrmStudentExamsView.fromJson(body);
   }
 }

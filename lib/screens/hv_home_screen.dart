@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/vd_theme.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/mock_data.dart';
 import '../models/crm_student_schedule.dart';
@@ -35,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   List<CrmScheduleItem> _todayClasses = [];
   bool _scheduleLoading = true;
+  DateTime? _scheduleCachedAt;
   bool _scheduleExpanded = true;
   int _unreadCount = 0;
 
@@ -142,6 +144,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // CrmScheduleItem.occursOn và ghi chú "weeks_pattern" trong
   // lib/models/crm_student_schedule.dart.
   Future<void> _loadTodaySchedule() async {
+    final cached = await CrmStudentApi.cachedSchedule();
+    if (cached != null && mounted) {
+      setState(() {
+        _todayClasses = cached.items
+            .where((s) => s.occursOn(DateTime.now()))
+            .toList();
+        _scheduleCachedAt = cached.savedAt;
+        _scheduleLoading = false;
+      });
+    }
     try {
       final all = await CrmStudentApi.schedule();
       final today = DateTime.now();
@@ -149,6 +161,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _todayClasses = todays;
+          _scheduleCachedAt = null;
           _scheduleLoading = false;
         });
       }
@@ -184,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     'payments' => Icons.payments,
     'receipt_long' => Icons.receipt_long,
     'campaign' => Icons.campaign,
+    'help' => Icons.question_answer_outlined,
     _ => Icons.help_outline,
   };
 
@@ -226,12 +240,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF3E0),
+                    color: VdColors.orangeTint,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.campaign_outlined,
-                    color: Color(0xFFE65100),
+                    color: VdColors.terracotta,
                     size: 21,
                   ),
                 ),
@@ -247,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFFE65100),
+                              color: VdColors.terracotta,
                             ),
                           ),
                           if (_boardUnread > 0) ...[
@@ -322,6 +336,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_scheduleCachedAt != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              'Đang xem lịch đã lưu lúc ${_scheduleCachedAt!.hour.toString().padLeft(2, '0')}:${_scheduleCachedAt!.minute.toString().padLeft(2, '0')} ${_scheduleCachedAt!.day}/${_scheduleCachedAt!.month}. Sẽ cập nhật khi có mạng.',
+              style: const TextStyle(fontSize: 12, color: VdColors.terracotta),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
           child: Row(
@@ -334,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       const Icon(
                         Icons.calendar_today,
                         size: 16,
-                        color: Color(0xFFE65100),
+                        color: VdColors.terracotta,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -368,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Color(0xFFE65100).withValues(alpha: 0.12),
+                    color: VdColors.terracotta.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -378,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         _scheduleExpanded ? 'Thu gọn' : 'Mở rộng',
                         style: const TextStyle(
                           fontSize: 11,
-                          color: Color(0xFFE65100),
+                          color: VdColors.terracotta,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -387,7 +409,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         _scheduleExpanded
                             ? Icons.keyboard_arrow_up
                             : Icons.keyboard_arrow_down,
-                        color: Color(0xFFE65100),
+                        color: VdColors.terracotta,
                         size: 16,
                       ),
                     ],
@@ -407,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Color(0xFFE65100),
+                  color: VdColors.terracotta,
                 ),
               ),
             ),
@@ -439,7 +461,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     Icon(
                       n == 0 ? Icons.event_available : Icons.event_note,
                       size: 18,
-                      color: n == 0 ? Colors.green : Color(0xFFE65100),
+                      color: n == 0 ? Colors.green : VdColors.terracotta,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -539,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             padding: const EdgeInsets.fromLTRB(20, 44, 20, 10),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [VdColors.headerTop, VdColors.headerBottom],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -663,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           // Scrollable content
           Expanded(
             child: RefreshIndicator(
-              color: const Color(0xFFE65100),
+              color: VdColors.terracotta,
               onRefresh: _loadTodaySchedule,
               child: SingleChildScrollView(
                 child: Column(
@@ -718,7 +740,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: const EdgeInsets.fromLTRB(20, 44, 20, 10),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                  colors: [VdColors.headerTop, VdColors.headerBottom],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -782,7 +804,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                  colors: [VdColors.headerTop, VdColors.headerBottom],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -894,7 +916,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: VdColors.cream,
       body: tabs[_currentIndex],
       bottomNavigationBar: SafeArea(
         top: false,
@@ -948,12 +970,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               colors: [Colors.white, Colors.white],
                             )
                           : const LinearGradient(
-                              colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                              colors: [
+                                VdColors.headerTop,
+                                VdColors.headerBottom,
+                              ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Color(0xFFE65100), width: 3),
+                      border: Border.all(color: VdColors.terracotta, width: 3),
                       boxShadow: const [
                         BoxShadow(
                           color: Colors.black26,
@@ -966,7 +991,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       Icons.qr_code_rounded,
                       size: 34,
                       color: _currentIndex == 1
-                          ? Color(0xFFE65100)
+                          ? VdColors.terracotta
                           : Colors.white,
                     ),
                   ),
@@ -1073,7 +1098,7 @@ class _ClassChip extends StatelessWidget {
                 const Icon(
                   Icons.person_outline,
                   size: 12,
-                  color: Color(0xFFE65100),
+                  color: VdColors.terracotta,
                 ),
                 const SizedBox(width: 3),
                 Expanded(
@@ -1089,7 +1114,7 @@ class _ClassChip extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.room, size: 12, color: Color(0xFFE65100)),
+                const Icon(Icons.room, size: 12, color: VdColors.terracotta),
                 const SizedBox(width: 3),
                 Expanded(
                   child: Text(
@@ -1117,7 +1142,7 @@ class _ProfileMenuCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color = const Color(0xFFE65100),
+    this.color = VdColors.terracotta,
   });
 
   @override
@@ -1183,7 +1208,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, color: Color(0xFFE65100), size: 20),
+          Icon(icon, color: VdColors.terracotta, size: 20),
           const SizedBox(width: 12),
           SizedBox(
             width: 80,
@@ -1241,7 +1266,7 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: selected ? Color(0xFFE65100) : Colors.grey,
+              color: selected ? VdColors.terracotta : Colors.grey,
               size: 26,
             ),
             const SizedBox(height: 2),
@@ -1249,7 +1274,7 @@ class _NavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 11,
-                color: selected ? Color(0xFFE65100) : Colors.grey,
+                color: selected ? VdColors.terracotta : Colors.grey,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),

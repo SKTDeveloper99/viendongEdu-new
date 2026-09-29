@@ -22,7 +22,7 @@ import 'ems_api_service.dart';
 /// An toàn: mạng lỗi / máy chủ lỗi → CHO QUA (không bao giờ khoá người dùng vì
 /// EMS sập). Chỉ khoá khi máy chủ trả lời rõ ràng rằng bản này quá cũ.
 class AppUpdateGate {
-  static const Duration _timeout = Duration(seconds: 6);
+  static const Duration _timeout = Duration(seconds: 2);
 
   /// Trả về true nếu được phép chạy tiếp. Khi bị chặn, hàm này hiện hộp thoại
   /// không đóng được và không bao giờ trả về.
@@ -63,8 +63,10 @@ class AppUpdateGate {
             FilledButton(
               onPressed: url == null || url.isEmpty
                   ? null
-                  : () => launchUrl(Uri.parse(url),
-                      mode: LaunchMode.externalApplication),
+                  : () => launchUrl(
+                      Uri.parse(url),
+                      mode: LaunchMode.externalApplication,
+                    ),
               child: const Text('Cập nhật ngay'),
             ),
           ],
