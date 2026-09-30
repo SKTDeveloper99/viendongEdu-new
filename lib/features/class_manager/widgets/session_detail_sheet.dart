@@ -6,6 +6,7 @@ import '../class_manager_models.dart';
 import '../session_detail_view_model.dart';
 import 'class_manager_state_views.dart';
 import 'session_student_list.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Opens the session detail bottom sheet (75% of the screen height).
 void showSessionDetailSheet(
@@ -87,7 +88,7 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
                     ),
                     Text(
                       '${b.startTime ?? ''} – ${fmtTime(b.endTime)}',
-                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
                     ),
                   ],
                 ),
@@ -96,29 +97,29 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
                   _StatPill(
                     label: 'Có mặt',
                     value: _vm.presentCount,
-                    color: const Color(0xFF4CAF50),
+                    color: context.vd.success,
                   ),
                   const SizedBox(width: 8),
                   _StatPill(
                     label: 'Vắng',
                     value: _vm.absentCount,
-                    color: Colors.red,
+                    color: context.vd.danger,
                   ),
                   _StatPill(
                     label: 'Chưa ĐD',
                     value: _vm.unmarkedCount,
-                    color: const Color(0xFF2196F3),
+                    color: context.vd.info,
                   ),
                 ] else ...[
                   Text(
                     'Sĩ số: ${_vm.students.length}',
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
                   ),
                 ],
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          Divider(height: 1, color: context.vd.hairline),
           Expanded(child: _body()),
         ],
       ),
@@ -131,8 +132,8 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
     if (error != null) return SheetErrorView(message: error, onRetry: _vm.load);
     final students = _vm.students;
     if (students.isEmpty) {
-      return const Center(
-        child: Text('Không có học viên', style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text('Không có học viên', style: TextStyle(color: context.vd.inkMuted)),
       );
     }
     return SessionStudentList(vm: _vm);

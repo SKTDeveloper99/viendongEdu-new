@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../class_models.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Midterm / final / total scores exactly as the server sent them.
 class ClassGradeCard extends StatelessWidget {
@@ -11,10 +12,10 @@ class ClassGradeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       padding: const EdgeInsets.all(20),
@@ -43,8 +44,8 @@ class ClassGradeCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                gradient: LinearGradient(
+                  colors: [context.vd.primary, context.vd.accent],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -52,12 +53,12 @@ class ClassGradeCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Text('Tổng kết',
-                      style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text('Tổng kết',
+                      style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 13)),
                   const Spacer(),
                   Text(item.tongdiem!.toStringAsFixed(1),
-                      style: const TextStyle(
-                          color: Colors.white,
+                      style: TextStyle(
+                          color: context.vd.onPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.bold)),
                 ],
@@ -80,20 +81,20 @@ class _ScoreBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.07),
+        color: context.vd.inkMuted.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
           Text(
             value % 1 == 0 ? value.toInt().toString() : value.toString(),
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87),
+                color: context.vd.ink),
           ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          Text(label, style: TextStyle(fontSize: 11, color: context.vd.inkMuted)),
         ],
       ),
     );

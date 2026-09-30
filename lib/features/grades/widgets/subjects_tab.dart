@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../grade_item.dart';
 import 'remaining_subjects_tab.dart';
 import 'unscored_subjects_tab.dart';
+import '../../../theme/vd_tokens.dart';
 
 // ── Môn học Tab (gộp Chưa có điểm + Chưa học) ────────────
 class SubjectsTab extends StatefulWidget {
@@ -65,16 +66,16 @@ class SubjectFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = const Color(0xFFE65100);
+    final color = context.vd.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? color : Colors.white,
+          color: selected ? color : context.vd.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? color : Colors.grey[300]!),
+          border: Border.all(color: selected ? color : context.vd.hairline),
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -86,14 +87,14 @@ class SubjectFilterChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : Colors.grey[600],
+                  color: selected ? context.vd.onPrimary : context.vd.inkMuted,
                 ),
               ),
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white.withValues(alpha: 0.25) : Colors.grey[100],
+                  color: selected ? context.vd.onPrimary.withValues(alpha: 0.25) : context.vd.surfaceAlt,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -101,7 +102,7 @@ class SubjectFilterChip extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: selected ? Colors.white : Colors.grey[600],
+                    color: selected ? context.vd.onPrimary : context.vd.inkMuted,
                   ),
                 ),
               ),

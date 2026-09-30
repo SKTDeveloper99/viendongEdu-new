@@ -6,6 +6,7 @@ import 'attendance_session_list.dart';
 import 'attendance_summary_list.dart';
 import 'class_manager_state_views.dart';
 import 'session_detail_sheet.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// "Điểm danh" tab: sub-tabs "Buổi học" (sessions) and "Tổng hợp" (per
 /// student). Numbers are shown exactly as the view model hands them over.
@@ -33,12 +34,12 @@ class ClassAttendanceTab extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
+                color: context.vd.accentSoft,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text(
+              child: Text(
                 'Không xác định được buổi trên EMS cho lớp này — chỉ hiện dữ liệu ghi nhận trên CRM.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF795548)),
+                style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
               ),
             ),
           ),
@@ -46,7 +47,7 @@ class ClassAttendanceTab extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: context.vd.surfaceAlt,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -102,7 +103,7 @@ class _SubTabBtn extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFE65100) : Colors.transparent,
+            color: selected ? context.vd.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -111,7 +112,7 @@ class _SubTabBtn extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : Colors.grey,
+              color: selected ? context.vd.onPrimary : context.vd.inkMuted,
             ),
           ),
         ),

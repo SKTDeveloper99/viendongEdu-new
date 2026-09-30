@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../data/teacher_attendance_repository.dart';
 import '../../services/ems_api_service.dart';
-import 'attendance_colors.dart';
 import 'roster_view_model.dart';
 import 'widgets/attendance_message.dart';
 import 'widgets/reasons_dialog.dart';
@@ -11,6 +10,7 @@ import 'widgets/roster_quick_actions.dart';
 import 'widgets/student_detail_sheet.dart';
 import 'widgets/student_row.dart';
 import 'widgets/unmarked_confirm_dialog.dart';
+import '../../theme/vd_tokens.dart';
 
 /// Roster of one session. Layout, dialogs and snackbars only; the marks, the
 /// offline draft and the save flow live in [RosterViewModel].
@@ -65,7 +65,7 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: good ? attendanceGreen : null,
+        backgroundColor: good ? context.vd.success : null,
       ),
     );
   }
@@ -75,10 +75,10 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
     return ListenableBuilder(
       listenable: _vm,
       builder: (context, _) => Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: context.vd.bg,
         appBar: AppBar(
-          backgroundColor: attendanceOrange,
-          foregroundColor: Colors.white,
+          backgroundColor: context.vd.primary,
+          foregroundColor: context.vd.onPrimary,
           title: Text(
             widget.session.subjectName?.isNotEmpty == true
                 ? widget.session.subjectName!
@@ -91,7 +91,7 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
               onPressed: _vm.toggleSort,
               icon: Icon(
                 Icons.sort_by_alpha,
-                color: _vm.sortAz ? Colors.white : Colors.white70,
+                color: _vm.sortAz ? context.vd.onPrimary : context.vd.onPrimary.withValues(alpha: 0.7),
               ),
             ),
           ],

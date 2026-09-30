@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/vd_tokens.dart';
 
 // Mini stat card
 class MiniStat extends StatelessWidget {
@@ -21,11 +22,11 @@ class MiniStat extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.vd.surface,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-                color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                color: context.vd.shadow, blurRadius: 4, offset: Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -40,7 +41,7 @@ class MiniStat extends StatelessWidget {
                     color: color)),
             const SizedBox(height: 2),
             Text(label,
-                style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                style: TextStyle(fontSize: 10, color: context.vd.inkMuted)),
           ],
         ),
       ),

@@ -29,6 +29,37 @@ const Map<String, int> _allowlist = {
   'lib/screens/exam_screen.dart': 412,
 };
 
+/// Rule (d): colours come from `context.vd` (lib/theme/vd_tokens.dart). No
+/// `Color(0x...)` and no `Colors.x` (except `Colors.transparent`) outside
+/// lib/theme/. Files not yet migrated are listed with their current literal
+/// count; the counts may only SHRINK, and an entry must be deleted at 0.
+const Map<String, int> _colorLiteralAllowlist = {
+  'lib/screens/registration_screen.dart': 54,
+  'lib/screens/gv_schedule_screen.dart': 49,
+  'lib/screens/schedule_screen.dart': 48,
+  'lib/screens/teacher_my_day_screen.dart': 40,
+  'lib/screens/tuition_screen.dart': 40,
+  'lib/screens/gv_lophoc_screen.dart': 36,
+  'lib/screens/gv_lichthi_screen.dart': 33,
+  'lib/screens/student_board_screen.dart': 33,
+  'lib/screens/capbu_screen.dart': 31,
+  'lib/screens/lephi_screen.dart': 31,
+  'lib/screens/notifications_screen.dart': 28,
+  'lib/screens/exam_screen.dart': 25,
+  'lib/screens/login_screen.dart': 19,
+  'lib/screens/hv_profile_info_screen.dart': 17,
+  'lib/screens/profile_edit_screen.dart': 17,
+  'lib/screens/gv_diemdanh_list_screen.dart': 15,
+  'lib/screens/change_password_screen.dart': 13,
+  'lib/screens/ems_attendance_student_screen.dart': 13,
+  'lib/screens/gv_profile_info_screen.dart': 11,
+  'lib/screens/student_questions_screen.dart': 8,
+  'lib/screens/splash_screen.dart': 3,
+  'lib/screens/stale_note.dart': 1,
+};
+
+final RegExp _colorLiteral = RegExp(r'Color\(0x|Colors\.(?!transparent\b)');
+
 List<File> _dartFiles(String dir) {
   final root = Directory(dir);
   if (!root.existsSync()) return [];
@@ -126,6 +157,30 @@ void main() {
       if (banned.hasMatch(f.readAsStringSync())) {
         problems.add('$path references a lib/data/api class directly; go '
             'through a repository in lib/data/');
+      }
+    }
+    expect(problems, isEmpty, reason: problems.join('\n'));
+  });
+
+  test('colours come from context.vd tokens, not literals (shrink-only)', () {
+    final problems = <String>[];
+    for (final f in _dartFiles('lib')) {
+      final path = _rel(f);
+      if (path.startsWith('lib/theme/')) continue;
+      final n = _colorLiteral.allMatches(f.readAsStringSync()).length;
+      final allowed = _colorLiteralAllowlist[path] ?? 0;
+      if (n > allowed) {
+        problems.add('$path has $n colour literals (allowed $allowed): use '
+            'context.vd.<token>');
+      } else if (n < allowed) {
+        problems.add('$path shrank to $n colour literals: lower its '
+            'allowlist entry from $allowed (delete it at 0)');
+      }
+    }
+    for (final path in _colorLiteralAllowlist.keys) {
+      if (!File(path).existsSync()) {
+        problems.add('$path no longer exists: remove it from the colour '
+            'allowlist');
       }
     }
     expect(problems, isEmpty, reason: problems.join('\n'));

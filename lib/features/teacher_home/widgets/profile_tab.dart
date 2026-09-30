@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
 import 'profile_menu_card.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Profile tab: identity header, three menu cards and the version footer.
 class ProfileTab extends StatelessWidget {
@@ -20,16 +20,16 @@ class ProfileTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: context.vd.surface,
       child: Column(
         children: [
           // Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [VdColors.headerTop, VdColors.headerBottom],
+                colors: [context.vd.headerTop, context.vd.headerBottom],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -41,13 +41,13 @@ class ProfileTab extends StatelessWidget {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: context.vd.onHeader.withValues(alpha: 0.25),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2.5),
+                    border: Border.all(color: context.vd.onHeader, width: 2.5),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.person,
-                    color: Colors.white,
+                    color: context.vd.onHeader,
                     size: 36,
                   ),
                 ),
@@ -58,10 +58,10 @@ class ProfileTab extends StatelessWidget {
                     children: [
                       Text(
                         name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: context.vd.onHeader,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -69,9 +69,9 @@ class ProfileTab extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         code,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white70,
+                          color: context.vd.onHeader.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -103,7 +103,7 @@ class ProfileTab extends StatelessWidget {
                   ProfileMenuCard(
                     icon: Icons.logout,
                     label: 'Đăng xuất',
-                    color: const Color(0xFFF44336),
+                    color: context.vd.danger,
                     onTap: onLogout,
                   ),
                 ],
@@ -112,19 +112,19 @@ class ProfileTab extends StatelessWidget {
           ),
 
           // Footer
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 32),
             child: Column(
               children: [
                 Text(
                   'Phần mềm Viendongedu phiên bản 1.1.43',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Thuộc bản quyền Cao đẳng Viễn Đông',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
                   textAlign: TextAlign.center,
                 ),
               ],

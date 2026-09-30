@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/crm_student_schedule.dart';
-import '../../../theme/vd_theme.dart';
+import '../../../theme/vd_tokens.dart';
 
 // Buổi (sáng/chiều/tối) suy ra từ giờ bắt đầu — CRM /me/schedule không có
 // trường `buoi` như IMS `tkbtheongay`, nên đây là quy ước hiển thị client-side
 // (xem docs/ims_to_crm_student_academic_map.md), không phải dữ liệu server.
-({String label, Color color}) buoiInfo(String? startTime) {
+({String label, Color color}) buoiInfo(String? startTime, VdTokens t) {
   if (startTime == null || startTime.isEmpty) {
-    return (label: '', color: Colors.grey);
+    return (label: '', color: t.inkMuted);
   }
   final hour = int.tryParse(startTime.split(':').first) ?? -1;
-  if (hour < 0) return (label: '', color: Colors.grey);
-  if (hour < 12) return (label: 'Sáng', color: const Color(0xFF2196F3));
-  if (hour < 18) return (label: 'Chiều', color: const Color(0xFFFF9800));
-  return (label: 'Tối', color: const Color(0xFF9C27B0));
+  if (hour < 0) return (label: '', color: t.inkMuted);
+  if (hour < 12) return (label: 'Sáng', color: t.info);
+  if (hour < 18) return (label: 'Chiều', color: t.warning);
+  return (label: 'Tối', color: t.evening);
 }
 
 /// One of today's classes: subject, Sáng/Chiều/Tối tag, time, teacher, room.
@@ -30,16 +30,16 @@ class ClassChip extends StatelessWidget {
     final teacher = data.teacherName;
     final start = data.startTime ?? '';
     final end = data.endTime ?? '';
-    final buoi = buoiInfo(start);
+    final buoi = buoiInfo(start, context.vd);
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
         border: Border(left: BorderSide(color: buoi.color, width: 4)),
       ),
@@ -87,9 +87,9 @@ class ClassChip extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 1),
                 child: Text(
                   classCode,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: Color(0xFF999999),
+                    color: context.vd.inkFaint,
                   ),
                 ),
               ),
@@ -107,16 +107,16 @@ class ClassChip extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Icon(
+                Icon(
                   Icons.person_outline,
                   size: 12,
-                  color: VdColors.terracotta,
+                  color: context.vd.primary,
                 ),
                 const SizedBox(width: 3),
                 Expanded(
                   child: Text(
                     teacher,
-                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                    style: TextStyle(fontSize: 11, color: context.vd.inkMuted),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -126,12 +126,12 @@ class ClassChip extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.room, size: 12, color: VdColors.terracotta),
+                Icon(Icons.room, size: 12, color: context.vd.primary),
                 const SizedBox(width: 3),
                 Expanded(
                   child: Text(
                     room,
-                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                    style: TextStyle(fontSize: 11, color: context.vd.inkMuted),
                   ),
                 ),
               ],

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
 import '../student_home_view_model.dart';
 import 'board_card.dart';
 import 'home_header.dart';
 import 'menu_grid.dart';
 import 'today_schedule.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// "Trang chủ" tab: header, today's schedule, board card and the menu grid.
 class DashboardTab extends StatelessWidget {
@@ -26,7 +26,7 @@ class DashboardTab extends StatelessWidget {
         HomeHeader(vm: vm),
         Expanded(
           child: RefreshIndicator(
-            color: VdColors.terracotta,
+            color: context.vd.primary,
             onRefresh: vm.loadTodaySchedule,
             child: SingleChildScrollView(
               child: Column(

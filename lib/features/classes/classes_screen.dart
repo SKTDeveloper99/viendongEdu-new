@@ -7,6 +7,7 @@ import 'classes_view_model.dart';
 import 'widgets/class_list.dart';
 import 'widgets/classes_header.dart';
 import 'widgets/classes_state_views.dart';
+import '../../theme/vd_tokens.dart';
 
 /// "Lớp học" — the student's classes per semester (newest first), with
 /// scores. Layout only; state lives in [ClassesViewModel].
@@ -52,7 +53,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
   }
 
   Widget _content() {
-    const accent = Color(0xFFE65100);
+    final accent = context.vd.primary;
     if (_vm.loading) return skeletonList(accentColor: accent);
     final error = _vm.error;
     if (error != null) {
@@ -70,7 +71,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(
         top: false,
         child: ListenableBuilder(

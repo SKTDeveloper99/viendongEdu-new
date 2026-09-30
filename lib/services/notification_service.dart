@@ -4,13 +4,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'app_session.dart';
+import '../theme/vd_tokens.dart';
 
 // Background message handler — phải là top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   // Firebase đã tự hiển thị notification khi app ở background/terminated
 }
-
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -365,16 +365,16 @@ class _NotiiBannerState extends State<_NotiiBanner>
               onTap: widget.onTap,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.vd.surface,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
+                      color: context.vd.shadow,
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
                   ],
-                  border: Border.all(color: const Color(0xFFFFCC80), width: 1),
+                  border: Border.all(color: context.vd.accentSoft, width: 1),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -386,16 +386,16 @@ class _NotiiBannerState extends State<_NotiiBanner>
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                        gradient: LinearGradient(
+                          colors: [context.vd.primary, context.vd.accent],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.notifications_active,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                         size: 22,
                       ),
                     ),
@@ -408,8 +408,8 @@ class _NotiiBannerState extends State<_NotiiBanner>
                           if (widget.title.isNotEmpty)
                             Text(
                               widget.title,
-                              style: const TextStyle(
-                                color: Color(0xFF1A1A1A),
+                              style: TextStyle(
+                                color: context.vd.ink,
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -422,7 +422,7 @@ class _NotiiBannerState extends State<_NotiiBanner>
                             Text(
                               widget.body,
                               style: TextStyle(
-                                color: Colors.grey[700],
+                                color: context.vd.inkMuted,
                                 fontSize: 13,
                               ),
                               maxLines: 2,
@@ -435,9 +435,9 @@ class _NotiiBannerState extends State<_NotiiBanner>
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _dismiss,
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
-                        color: Colors.grey,
+                        color: context.vd.inkFaint,
                         size: 18,
                       ),
                     ),

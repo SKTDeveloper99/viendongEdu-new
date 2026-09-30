@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'vd_tokens.dart';
+
 /// Viễn Đông "sang trọng ấm áp" (warm-luxury) palette.
 ///
 /// Design principles honored here:
@@ -11,31 +13,28 @@ import 'package:flutter/material.dart';
 /// Font: BeVietnamPro is used everywhere (function AND display hierarchy).
 /// Cormorant Garamond is deliberately NOT used because it renders the
 /// Vietnamese circumflex (ô) incorrectly on dynamic text.
+@Deprecated('Use context.vd (VdTokens) instead.')
 class VdColors {
   VdColors._();
 
-  static const cream = Color(0xFFFAF7F2); // Kem — screen background
-  static const paper = Color(0xFFF4EDE1); // Giấy — card fills
-  static const espresso = Color(0xFF231E1A); // Cà phê — body text
-  static const orange = Color(0xFFE8743C); // Cam — accent
-  static const terracotta = Color(0xFFA8471A); // Đất nung — button / secondary
-  static const brick = Color(0xFF8C2B18); // Gạch — headings / header band
+  static const cream = Color(0xFFFAF7F2); // = VdTokens.light.bg
+  static const paper = Color(0xFFF4EDE1); // = VdTokens.light.surfaceAlt
+  static const espresso = Color(0xFF231E1A); // = VdTokens.light.ink
+  static const orange = Color(0xFFE8743C); // = VdTokens.light.accent
+  static const terracotta = Color(0xFFA8471A); // = VdTokens.light.primary
+  static const brick = Color(0xFF8C2B18);
 
-  // Faculty header band gradient (deep brick → warm brick).
   static const headerTop = Color(0xFF94301B);
   static const headerBottom = Color(0xFF7C2415);
 
-  // Ink alphas over cream/paper.
-  static const hair = Color(0x1A231E1A); // rgba(35,30,26,0.10)
-  static const ink60 = Color(0x99231E1A); // rgba(35,30,26,0.60)
-  static const ink45 = Color(0x73231E1A); // rgba(35,30,26,0.45)
+  static const hair = Color(0x1A231E1A);
+  static const ink60 = Color(0x99231E1A);
+  static const ink45 = Color(0x73231E1A);
 
-  // Cream alphas over the header band.
-  static const cream78 = Color(0xC7FAF7F2); // rgba(250,247,242,0.78)
-  static const cream58 = Color(0x94FAF7F2); // rgba(250,247,242,0.58)
+  static const cream78 = Color(0xC7FAF7F2);
+  static const cream58 = Color(0x94FAF7F2);
 
-  // Orange tint used for chips / soft accents on paper.
-  static const orangeTint = Color(0x24E8743C); // rgba(232,116,60,0.14)
+  static const orangeTint = Color(0x24E8743C);
 }
 
 class VdTheme {
@@ -43,35 +42,103 @@ class VdTheme {
 
   static const fontFamily = 'BeVietnamPro';
 
-  /// Soft card shadow — barely-there, warm.
-  static const cardShadow = [
-    BoxShadow(
-      color: Color(0x0F231E1A), // rgba(35,30,26,0.06)
-      blurRadius: 12,
-      offset: Offset(0, 4),
-    ),
-  ];
-
   static const cardRadius = 18.0;
 
-  static ThemeData light() {
+  /// Soft card shadow — barely-there, warm.
+  static List<BoxShadow> cardShadowOf(VdTokens t) => [
+        BoxShadow(
+          color: t.shadow,
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static ThemeData light() => _build(VdTokens.light, Brightness.light);
+
+  static ThemeData dark() => _build(VdTokens.dark, Brightness.dark);
+
+  static ThemeData _build(VdTokens t, Brightness brightness) {
+    final scheme = ColorScheme(
+      brightness: brightness,
+      primary: t.primary,
+      onPrimary: t.onPrimary,
+      secondary: t.accent,
+      onSecondary: t.onPrimary,
+      primaryContainer: t.accentSoft,
+      onPrimaryContainer: t.ink,
+      secondaryContainer: t.accentSoft,
+      onSecondaryContainer: t.ink,
+      surface: t.surface,
+      onSurface: t.ink,
+      onSurfaceVariant: t.inkMuted,
+      surfaceContainerHighest: t.surfaceAlt,
+      surfaceContainerHigh: t.surfaceAlt,
+      surfaceContainer: t.surfaceAlt,
+      surfaceContainerLow: t.bg,
+      surfaceContainerLowest: t.bg,
+      outline: t.inkFaint,
+      outlineVariant: t.hairline,
+      error: t.danger,
+      onError: t.onPrimary,
+      errorContainer: t.dangerSoft,
+      onErrorContainer: t.danger,
+      shadow: t.shadow,
+      scrim: t.scrim,
+    );
     final base = ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       fontFamily: fontFamily,
-      scaffoldBackgroundColor: VdColors.cream,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: VdColors.terracotta,
-        primary: VdColors.terracotta,
-        secondary: VdColors.orange,
-        surface: VdColors.paper,
-        brightness: Brightness.light,
-      ),
+      colorScheme: scheme,
+      scaffoldBackgroundColor: t.bg,
+      extensions: <ThemeExtension<dynamic>>[t],
     );
     return base.copyWith(
       textTheme: base.textTheme.apply(
         fontFamily: fontFamily,
-        bodyColor: VdColors.espresso,
-        displayColor: VdColors.espresso,
+        bodyColor: t.ink,
+        displayColor: t.ink,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: t.headerTop,
+        foregroundColor: t.onHeader,
+        surfaceTintColor: Colors.transparent,
+      ),
+      cardTheme: CardThemeData(
+        color: t.surface,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: t.shadow,
+      ),
+      dividerTheme: DividerThemeData(color: t.hairline),
+      inputDecorationTheme: InputDecorationTheme(
+        fillColor: t.surface,
+        hintStyle: TextStyle(color: t.inkFaint),
+        labelStyle: TextStyle(color: t.inkMuted),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: t.hairline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: t.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: t.danger),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: t.ink,
+        contentTextStyle: TextStyle(color: t.bg),
+        actionTextColor: t.accent,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: t.surfaceAlt,
+        selectedColor: t.accentSoft,
+        labelStyle: TextStyle(color: t.ink),
+        side: BorderSide(color: t.hairline),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: t.surface,
+        indicatorColor: t.accentSoft,
+        surfaceTintColor: Colors.transparent,
       ),
     );
   }
@@ -89,20 +156,21 @@ class VdSwoosh extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomPaint(
       size: Size(width, height),
-      painter: _SwooshPainter(color ?? VdColors.orange),
+      painter: _SwooshPainter(color ?? context.vd.accent, context.vd.primary),
     );
   }
 }
 
 class _SwooshPainter extends CustomPainter {
   final Color color;
-  _SwooshPainter(this.color);
+  final Color from;
+  _SwooshPainter(this.color, this.from);
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..shader = LinearGradient(
-        colors: [VdColors.terracotta, color],
+        colors: [from, color],
       ).createShader(Offset.zero & size)
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.height
@@ -119,5 +187,5 @@ class _SwooshPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SwooshPainter old) => old.color != color;
+  bool shouldRepaint(covariant _SwooshPainter old) => old.color != color || old.from != from;
 }

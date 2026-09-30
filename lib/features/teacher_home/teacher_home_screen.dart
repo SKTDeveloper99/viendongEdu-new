@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import '../../data/teacher_home_repository.dart';
 import '../../screens/gv_profile_info_screen.dart';
 import '../../services/crm_session_guard.dart';
-import '../../theme/vd_theme.dart';
 import 'teacher_home_view_model.dart';
 import 'widgets/gv_bottom_nav.dart';
 import 'widgets/home_tab.dart';
 import 'widgets/profile_tab.dart';
+import '../../theme/vd_tokens.dart';
 
 /// Teacher home ("/gv_home") with two tabs: home and profile. Layout,
 /// navigation and dialogs only; state lives in [TeacherHomeViewModel].
@@ -104,7 +104,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VdColors.cream,
+      backgroundColor: context.vd.bg,
       body: ListenableBuilder(listenable: _vm, builder: (_, _) => _tab()),
       bottomNavigationBar: GvBottomNav(
         currentIndex: _currentIndex,

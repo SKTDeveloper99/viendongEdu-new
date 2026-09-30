@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../session_detail_view_model.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Students of one session with their EMS state (Có mặt / Vắng / Chưa điểm
 /// danh).
@@ -15,16 +16,16 @@ class SessionStudentList extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       itemCount: students.length,
       separatorBuilder: (_, _) =>
-          const Divider(height: 1, color: Color(0xFFF5F5F5)),
+          Divider(height: 1, color: context.vd.hairline),
       itemBuilder: (_, i) {
         final s = students[i];
         final presentState = vm.presentOf(s);
         final unmarked = presentState == null;
         final tone = unmarked
-            ? const Color(0xFF2196F3)
+            ? context.vd.info
             : presentState
-            ? const Color(0xFF4CAF50)
-            : Colors.red;
+            ? context.vd.success
+            : context.vd.danger;
         final label = unmarked
             ? 'Chưa điểm danh'
             : presentState
@@ -61,7 +62,7 @@ class SessionStudentList extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       s.mssv ?? '',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
                     ),
                   ],
                 ),

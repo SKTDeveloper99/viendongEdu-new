@@ -4,6 +4,7 @@ import '../grade_item.dart';
 import 'circular_arc.dart';
 import 'grade_distribution.dart';
 import 'mini_stat.dart';
+import '../../../theme/vd_tokens.dart';
 
 // ── Overview Tab ─────────────────────────────────────────
 //
@@ -39,15 +40,15 @@ class OverviewTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+              gradient: LinearGradient(
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Color(0xFFE65100).withValues(alpha: 0.35),
+                  color: context.vd.primary.withValues(alpha: 0.35),
                   blurRadius: 14,
                   offset: const Offset(0, 6),
                 ),
@@ -59,16 +60,16 @@ class OverviewTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('ĐTB Tích lũy',
+                      Text('ĐTB Tích lũy',
                           style: TextStyle(
-                              color: Colors.white70,
+                              color: context.vd.onPrimary.withValues(alpha: 0.7),
                               fontSize: 13,
                               fontWeight: FontWeight.w500)),
                       const SizedBox(height: 4),
                       Text(
                         tbTichLuy.toStringAsFixed(2),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.vd.onPrimary,
                           fontSize: 52,
                           fontWeight: FontWeight.bold,
                           height: 1,
@@ -79,13 +80,13 @@ class OverviewTab extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.22),
+                          color: context.vd.onPrimary.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           'Tổng kết: ${tbTongKet.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                              color: Colors.white,
+                          style: TextStyle(
+                              color: context.vd.onPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.w600),
                         ),
@@ -93,13 +94,13 @@ class OverviewTab extends StatelessWidget {
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          const Icon(Icons.school_outlined,
-                              color: Colors.white70, size: 14),
+                          Icon(Icons.school_outlined,
+                              color: context.vd.onPrimary.withValues(alpha: 0.7), size: 14),
                           const SizedBox(width: 5),
                           Text(
                             '$tcDat / $tcTong môn đạt',
-                            style: const TextStyle(
-                                color: Colors.white,
+                            style: TextStyle(
+                                color: context.vd.onPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500),
                           ),
@@ -119,8 +120,8 @@ class OverviewTab extends StatelessWidget {
                       CircularArc(
                         value: progress,
                         size: 96,
-                        trackColor: Colors.white.withValues(alpha: 0.2),
-                        progressColor: Colors.white,
+                        trackColor: context.vd.onPrimary.withValues(alpha: 0.2),
+                        progressColor: context.vd.onPrimary,
                         strokeWidth: 9,
                       ),
                       Column(
@@ -128,17 +129,17 @@ class OverviewTab extends StatelessWidget {
                         children: [
                           Text(
                             '${(progress * 100).toInt()}%',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.vd.onPrimary,
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               height: 1,
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text('hoàn thành',
+                          Text('hoàn thành',
                               style: TextStyle(
-                                  color: Colors.white70, fontSize: 9)),
+                                  color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 9)),
                         ],
                       ),
                     ],
@@ -156,21 +157,21 @@ class OverviewTab extends StatelessWidget {
                 label: 'Môn đã học',
                 value: '${grades.length}',
                 icon: Icons.menu_book_outlined,
-                color: const Color(0xFF2196F3),
+                color: context.vd.info,
               ),
               const SizedBox(width: 10),
               MiniStat(
                 label: 'Không đạt',
                 value: '$tcKhongDat môn',
                 icon: Icons.cancel_outlined,
-                color: const Color(0xFFF44336),
+                color: context.vd.danger,
               ),
               const SizedBox(width: 10),
               MiniStat(
                 label: 'Chưa có điểm',
                 value: '$tcChuaDiem môn',
                 icon: Icons.hourglass_empty,
-                color: Color(0xFFE65100),
+                color: context.vd.primary,
               ),
             ],
           ),

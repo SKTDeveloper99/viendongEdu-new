@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Gradient header of the home tab: name, teacher code, "Cơ hữu" badge and the
 /// notification bell with its unread count.
@@ -24,9 +24,9 @@ class HomeHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 44, 20, 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [VdColors.headerTop, VdColors.headerBottom],
+          colors: [context.vd.headerTop, context.vd.headerBottom],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -38,10 +38,10 @@ class HomeHeader extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.25),
+              color: context.vd.onHeader.withValues(alpha: 0.25),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 32),
+            child: Icon(Icons.person, color: context.vd.onHeader, size: 32),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -50,16 +50,16 @@ class HomeHeader extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.vd.onHeader,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Mã GV: $code',
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                  style: TextStyle(fontSize: 13, color: context.vd.onHeader.withValues(alpha: 0.7)),
                 ),
                 if (isCoHuu) ...[
                   const SizedBox(height: 6),
@@ -69,14 +69,14 @@ class HomeHeader extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.25),
+                      color: context.vd.onHeader.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Cơ hữu',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white,
+                        color: context.vd.onHeader,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -94,12 +94,12 @@ class HomeHeader extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: context.vd.onHeader.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.notifications_outlined,
-                    color: Colors.white,
+                    color: context.vd.onHeader,
                     size: 24,
                   ),
                 ),
@@ -109,8 +109,8 @@ class HomeHeader extends StatelessWidget {
                     right: -2,
                     child: Container(
                       padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
+                      decoration: BoxDecoration(
+                        color: context.vd.danger,
                         shape: BoxShape.circle,
                       ),
                       constraints: const BoxConstraints(
@@ -119,8 +119,8 @@ class HomeHeader extends StatelessWidget {
                       ),
                       child: Text(
                         unreadCount > 99 ? '99+' : '$unreadCount',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.vd.onHeader,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),

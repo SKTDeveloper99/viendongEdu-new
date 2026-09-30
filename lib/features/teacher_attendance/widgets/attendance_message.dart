@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Centred icon + title + detail, with an optional "Thử lại" button.
 class AttendanceMessage extends StatelessWidget {
@@ -22,7 +23,7 @@ class AttendanceMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: Colors.grey[400]),
+            Icon(icon, size: 44, color: context.vd.inkFaint),
             const SizedBox(height: 12),
             Text(
               title,
@@ -33,7 +34,7 @@ class AttendanceMessage extends StatelessWidget {
             Text(
               detail,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),

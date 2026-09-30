@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/vd_tokens.dart';
 
 /// Một ô shimmer đơn lẻ, tự động animate.
 class Skeleton extends StatefulWidget {
@@ -51,10 +52,10 @@ class _SkeletonState extends State<Skeleton>
           gradient: LinearGradient(
             begin: Alignment(_anim.value - 1, 0),
             end: Alignment(_anim.value + 1, 0),
-            colors: const [
-              Color(0xFFE8E8E8),
-              Color(0xFFF5F5F5),
-              Color(0xFFE8E8E8),
+            colors: [
+              context.vd.hairline,
+              context.vd.surfaceAlt,
+              context.vd.hairline,
             ],
           ),
         ),
@@ -65,20 +66,20 @@ class _SkeletonState extends State<Skeleton>
 
 /// Card skeleton dùng cho màn hình danh sách (lớp học, lịch thi, lịch dạy…)
 class SkeletonCard extends StatelessWidget {
-  final Color accentColor;
-  const SkeletonCard({super.key, this.accentColor = const Color(0xFFE65100)});
+  final Color? accentColor;
+  const SkeletonCard({super.key, this.accentColor});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
-        border: Border(left: BorderSide(color: accentColor.withValues(alpha: 0.3), width: 5)),
+        border: Border(left: BorderSide(color: (accentColor ?? context.vd.primary).withValues(alpha: 0.3), width: 5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -116,13 +117,13 @@ class SkeletonChip extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
-        border: const Border(
-            left: BorderSide(color: Color(0xFFE0E0E0), width: 5)),
+        border: Border(
+            left: BorderSide(color: context.vd.hairline, width: 5)),
       ),
       child: Row(
         children: [
@@ -135,7 +136,7 @@ class SkeletonChip extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 14),
-          Container(width: 1, height: 44, color: const Color(0xFFEEEEEE)),
+          Container(width: 1, height: 44, color: context.vd.hairline),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -156,7 +157,7 @@ class SkeletonChip extends StatelessWidget {
 }
 
 /// Dùng để build nhanh danh sách skeleton cards
-Widget skeletonList({int count = 4, Color accentColor = const Color(0xFFE65100)}) {
+Widget skeletonList({int count = 4, Color? accentColor}) {
   return ListView.builder(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
     itemCount: count,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../class_detail_screen.dart';
 import '../class_models.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// One class in the list; tapping opens [ClassDetailScreen].
 class ClassCard extends StatelessWidget {
@@ -20,11 +21,11 @@ class ClassCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.vd.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-                color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+                color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
           ],
         ),
         child: Row(
@@ -32,9 +33,9 @@ class ClassCard extends StatelessWidget {
             Container(
               width: 5,
               height: 96,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                  colors: [context.vd.primary, context.vd.accent],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -49,11 +50,11 @@ class ClassCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _titleRow(),
+                    _titleRow(context),
                     const SizedBox(height: 5),
-                    _line(Icons.person_outline, item.gvten, ellipsis: false),
+                    _line(context, Icons.person_outline, item.gvten, ellipsis: false),
                     const SizedBox(height: 4),
-                    _line(Icons.tag, item.lmhma, ellipsis: true),
+                    _line(context, Icons.tag, item.lmhma, ellipsis: true),
                   ],
                 ),
               ),
@@ -64,7 +65,7 @@ class ClassCard extends StatelessWidget {
     );
   }
 
-  Widget _titleRow() {
+  Widget _titleRow(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -78,30 +79,30 @@ class ClassCard extends StatelessWidget {
             margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFFE65100).withValues(alpha: 0.1),
+              color: context.vd.accentSoft,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               '${item.sotinchi} TC',
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFE65100)),
+                  color: context.vd.primary),
             ),
           ),
       ],
     );
   }
 
-  Widget _line(IconData icon, String text, {required bool ellipsis}) {
+  Widget _line(BuildContext context, IconData icon, String text, {required bool ellipsis}) {
     return Row(
       children: [
-        Icon(icon, size: 13, color: const Color(0xFFE65100)),
+        Icon(icon, size: 13, color: context.vd.primary),
         const SizedBox(width: 4),
         Expanded(
           child: Text(text,
               overflow: ellipsis ? TextOverflow.ellipsis : null,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
         ),
       ],
     );

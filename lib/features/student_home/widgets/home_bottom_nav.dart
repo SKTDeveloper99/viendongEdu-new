@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Bottom bar: Trang chủ (0) / centre QR button (1) / Cá nhân (2).
 class HomeBottomNav extends StatelessWidget {
@@ -21,11 +21,11 @@ class HomeBottomNav extends StatelessWidget {
         children: [
           Container(
             height: 64,
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.vd.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: context.vd.shadow,
                   blurRadius: 8,
                   offset: Offset(0, -2),
                 ),
@@ -62,19 +62,19 @@ class HomeBottomNav extends StatelessWidget {
                   height: 64,
                   decoration: BoxDecoration(
                     gradient: currentIndex == 1
-                        ? const LinearGradient(
-                            colors: [Colors.white, Colors.white],
+                        ? LinearGradient(
+                            colors: [context.vd.surface, context.vd.surface],
                           )
-                        : const LinearGradient(
-                            colors: [VdColors.headerTop, VdColors.headerBottom],
+                        : LinearGradient(
+                            colors: [context.vd.headerTop, context.vd.headerBottom],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                     shape: BoxShape.circle,
-                    border: Border.all(color: VdColors.terracotta, width: 3),
-                    boxShadow: const [
+                    border: Border.all(color: context.vd.primary, width: 3),
+                    boxShadow: [
                       BoxShadow(
-                        color: Colors.black26,
+                        color: context.vd.shadow,
                         blurRadius: 8,
                         offset: Offset(0, 4),
                       ),
@@ -84,8 +84,8 @@ class HomeBottomNav extends StatelessWidget {
                     Icons.qr_code_rounded,
                     size: 34,
                     color: currentIndex == 1
-                        ? VdColors.terracotta
-                        : Colors.white,
+                        ? context.vd.primary
+                        : context.vd.onPrimary,
                   ),
                 ),
               ),
@@ -123,7 +123,7 @@ class NavItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: selected ? VdColors.terracotta : Colors.grey,
+              color: selected ? context.vd.primary : context.vd.inkFaint,
               size: 26,
             ),
             const SizedBox(height: 2),
@@ -131,7 +131,7 @@ class NavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 11,
-                color: selected ? VdColors.terracotta : Colors.grey,
+                color: selected ? context.vd.primary : context.vd.inkMuted,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),

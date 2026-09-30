@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/vd_theme.dart';
+import '../theme/vd_tokens.dart';
 
 class MenuItemWidget extends StatelessWidget {
   final IconData icon;
@@ -16,7 +17,7 @@ class MenuItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: VdColors.paper,
+      color: context.vd.surfaceAlt,
       borderRadius: BorderRadius.circular(VdTheme.cardRadius),
       child: InkWell(
         onTap: onTap,
@@ -26,7 +27,7 @@ class MenuItemWidget extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(VdTheme.cardRadius),
-            border: Border.all(color: VdColors.hair),
+            border: Border.all(color: context.vd.hairline),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -36,24 +37,24 @@ class MenuItemWidget extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [VdColors.terracotta, VdColors.orange],
+                  gradient: LinearGradient(
+                    colors: [context.vd.primary, context.vd.accent],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: Icon(icon, color: context.vd.onPrimary, size: 20),
               ),
               const SizedBox(height: 5),
               Flexible(
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: VdColors.espresso,
+                    color: context.vd.ink,
                   ),
                 ),
               ),

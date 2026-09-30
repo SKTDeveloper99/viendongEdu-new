@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Bottom bar: Trang chủ (0) / Cá nhân (1).
 class GvBottomNav extends StatelessWidget {
@@ -18,11 +18,11 @@ class GvBottomNav extends StatelessWidget {
       top: false,
       child: Container(
         height: 64,
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: context.vd.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
+              color: context.vd.shadow,
               blurRadius: 8,
               offset: Offset(0, -2),
             ),
@@ -76,7 +76,7 @@ class NavItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: selected ? VdColors.terracotta : Colors.grey,
+              color: selected ? context.vd.primary : context.vd.inkFaint,
               size: 26,
             ),
             const SizedBox(height: 2),
@@ -84,7 +84,7 @@ class NavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 11,
-                color: selected ? VdColors.terracotta : Colors.grey,
+                color: selected ? context.vd.primary : context.vd.inkMuted,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),

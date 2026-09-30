@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Donut chart and legend of present / absent / not-yet-marked sessions.
 class AttendanceCard extends StatelessWidget {
@@ -22,10 +23,10 @@ class AttendanceCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       padding: const EdgeInsets.all(20),
@@ -37,9 +38,9 @@ class AttendanceCard extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: [
-              _donut(pct),
+              _donut(context, pct),
               const SizedBox(width: 20),
-              Expanded(child: _legend()),
+              Expanded(child: _legend(context)),
             ],
           ),
         ],
@@ -47,7 +48,7 @@ class AttendanceCard extends StatelessWidget {
     );
   }
 
-  Widget _donut(int pct) {
+  Widget _donut(BuildContext context, int pct) {
     return SizedBox(
       width: 130,
       height: 130,
@@ -60,9 +61,9 @@ class AttendanceCard extends StatelessWidget {
               centerSpaceRadius: 36,
               startDegreeOffset: -90,
               sections: [
-                if (present > 0) _slice(present, const Color(0xFF4CAF50)),
-                if (absent > 0) _slice(absent, const Color(0xFFF44336)),
-                if (pending > 0) _slice(pending, const Color(0xFFBDBDBD)),
+                if (present > 0) _slice(present, context.vd.success),
+                if (absent > 0) _slice(absent, context.vd.danger),
+                if (pending > 0) _slice(pending, context.vd.inkFaint),
               ],
             ),
           ),
@@ -70,12 +71,12 @@ class AttendanceCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('$pct%',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87)),
-              const Text('có mặt',
-                  style: TextStyle(fontSize: 10, color: Colors.grey)),
+                      color: context.vd.ink)),
+              Text('có mặt',
+                  style: TextStyle(fontSize: 10, color: context.vd.inkMuted)),
             ],
           ),
         ],
@@ -90,20 +91,20 @@ class AttendanceCard extends StatelessWidget {
         showTitle: false,
       );
 
-  Widget _legend() {
+  Widget _legend(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _LegendRow(const Color(0xFF4CAF50), 'Có mặt', present, total),
+        _LegendRow(context.vd.success, 'Có mặt', present, total),
         const SizedBox(height: 10),
-        _LegendRow(const Color(0xFFF44336), 'Vắng mặt', absent, total),
+        _LegendRow(context.vd.danger, 'Vắng mặt', absent, total),
         const SizedBox(height: 10),
-        _LegendRow(const Color(0xFFBDBDBD), 'Chưa điểm danh', pending, total),
+        _LegendRow(context.vd.inkFaint, 'Chưa điểm danh', pending, total),
         const Divider(height: 20),
         Row(
           children: [
-            const Icon(Icons.layers_outlined,
-                size: 15, color: Color(0xFFE65100)),
+            Icon(Icons.layers_outlined,
+                size: 15, color: context.vd.primary),
             const SizedBox(width: 6),
             Text('Tổng: $total buổi',
                 style:
@@ -135,7 +136,7 @@ class _LegendRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
         ),
         Text('$count  ($pct%)',
             style: TextStyle(

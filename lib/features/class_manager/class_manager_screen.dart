@@ -8,6 +8,7 @@ import 'widgets/class_detail_sheet.dart';
 import 'widgets/class_list.dart';
 import 'widgets/class_manager_header.dart';
 import 'widgets/class_manager_state_views.dart';
+import '../../theme/vd_tokens.dart';
 
 /// Teacher "Quản lý lớp" (read-only): classes per semester with a detail
 /// sheet (info / students / attendance). Layout only; state lives in
@@ -78,7 +79,7 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(
         top: false,
         child: ListenableBuilder(

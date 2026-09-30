@@ -13,11 +13,11 @@
 import 'package:flutter/material.dart';
 
 import '../../data/teacher_attendance_repository.dart';
-import 'attendance_colors.dart';
 import 'roster_screen.dart';
 import 'session_list_view_model.dart';
 import 'widgets/attendance_message.dart';
 import 'widgets/session_card.dart';
+import '../../theme/vd_tokens.dart';
 
 /// Today's sessions of the teacher (route `/ems_attendance_gv`). Tapping one
 /// opens its roster; the list reloads on return.
@@ -51,10 +51,10 @@ class _EmsAttendanceTeacherScreenState
     return ListenableBuilder(
       listenable: _vm,
       builder: (context, _) => Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: context.vd.bg,
         appBar: AppBar(
-          backgroundColor: attendanceOrange,
-          foregroundColor: Colors.white,
+          backgroundColor: context.vd.primary,
+          foregroundColor: context.vd.onPrimary,
           title: const Text('Điểm danh EMS'),
           actions: [
             IconButton(
@@ -88,7 +88,7 @@ class _EmsAttendanceTeacherScreenState
       );
     }
     return RefreshIndicator(
-      color: attendanceOrange,
+      color: context.vd.primary,
       onRefresh: _vm.load,
       child: ListView.separated(
         padding: const EdgeInsets.all(12),

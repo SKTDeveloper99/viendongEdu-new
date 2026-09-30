@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
+import '../../../theme/vd_tokens.dart';
 
-({String label, Color color}) gvBuoiInfo(String? b) => switch (b) {
-  'S' => (label: 'Sáng', color: const Color(0xFF2196F3)),
-  'C' => (label: 'Chiều', color: const Color(0xFFFF9800)),
-  'T' => (label: 'Tối', color: const Color(0xFF9C27B0)),
-  _ => (label: '', color: Colors.grey),
+({String label, Color color}) gvBuoiInfo(String? b, VdTokens t) => switch (b) {
+  'S' => (label: 'Sáng', color: t.info),
+  'C' => (label: 'Chiều', color: t.warning),
+  'T' => (label: 'Tối', color: t.evening),
+  _ => (label: '', color: t.inkMuted),
 };
 
 class GvClassChip extends StatelessWidget {
@@ -21,16 +21,16 @@ class GvClassChip extends StatelessWidget {
     final start = data['thoigianbd']?.toString() ?? '';
     final endRaw = data['thoigiankt'] as String? ?? '';
     final end = endRaw.length >= 16 ? endRaw.substring(11, 16) : endRaw;
-    final buoi = gvBuoiInfo(data['buoi']?.toString());
+    final buoi = gvBuoiInfo(data['buoi']?.toString(), context.vd);
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
         border: Border(left: BorderSide(color: buoi.color, width: 5)),
       ),
@@ -80,9 +80,9 @@ class GvClassChip extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 1),
                 child: Text(
                   classCode,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF444444),
+                    color: context.vd.ink,
                   ),
                 ),
               ),
@@ -108,14 +108,14 @@ class GvClassChip extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.room, size: 13, color: VdColors.terracotta),
+                  Icon(Icons.room, size: 13, color: context.vd.primary),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       room,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black87,
+                        color: context.vd.ink,
                       ),
                     ),
                   ),

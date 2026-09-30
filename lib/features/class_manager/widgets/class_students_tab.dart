@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../class_detail_sheet_view_model.dart';
 import 'class_manager_state_views.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// "Danh sách" tab: enrolled students of the class.
 class ClassStudentsTab extends StatelessWidget {
@@ -17,8 +18,8 @@ class ClassStudentsTab extends StatelessWidget {
     }
     final students = vm.students;
     if (students.isEmpty) {
-      return const Center(
-        child: Text('Không có học viên', style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text('Không có học viên', style: TextStyle(color: context.vd.inkMuted)),
       );
     }
     return Column(
@@ -27,18 +28,18 @@ class ClassStudentsTab extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.people_outline,
                 size: 15,
-                color: Color(0xFFE65100),
+                color: context.vd.primary,
               ),
               const SizedBox(width: 6),
               Text(
                 'Tổng: ${students.length} sinh viên',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFE65100),
+                  color: context.vd.primary,
                 ),
               ),
             ],
@@ -49,7 +50,7 @@ class ClassStudentsTab extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
             itemCount: students.length,
             separatorBuilder: (_, _) =>
-                const Divider(height: 1, color: Color(0xFFF5F5F5)),
+                Divider(height: 1, color: context.vd.hairline),
             itemBuilder: (_, i) {
               final hv = students[i];
               return Padding(
@@ -63,10 +64,10 @@ class ClassStudentsTab extends StatelessWidget {
                       ).withValues(alpha: 0.1),
                       child: Text(
                         '${i + 1}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFE65100),
+                          color: context.vd.primary,
                         ),
                       ),
                     ),
@@ -85,9 +86,9 @@ class ClassStudentsTab extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             hv.mssv,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF555555),
+                              color: context.vd.inkMuted,
                             ),
                           ),
                         ],

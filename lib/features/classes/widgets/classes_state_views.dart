@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Error state of the classes list: message and "Thử lại".
 class ClassesErrorView extends StatelessWidget {
@@ -13,15 +14,15 @@ class ClassesErrorView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+          Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
           const SizedBox(height: 12),
-          Text(message, style: const TextStyle(color: Colors.grey)),
+          Text(message, style: TextStyle(color: context.vd.inkMuted)),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE65100)),
-            child: const Text('Thử lại', style: TextStyle(color: Colors.white)),
+                backgroundColor: context.vd.primary),
+            child: Text('Thử lại', style: TextStyle(color: context.vd.onPrimary)),
           ),
         ],
       ),
@@ -35,13 +36,13 @@ class ClassesEmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.school_outlined, size: 64, color: Colors.grey),
+          Icon(Icons.school_outlined, size: 64, color: context.vd.inkFaint),
           SizedBox(height: 12),
-          Text('Không có lớp học', style: TextStyle(color: Colors.grey)),
+          Text('Không có lớp học', style: TextStyle(color: context.vd.inkMuted)),
         ],
       ),
     );
