@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../components/vd_fade_in.dart';
 import '../../../models/crm_student_graduation_summary.dart';
 import '../grade_item.dart';
 import 'circular_arc.dart';
 import 'grade_distribution.dart';
 import 'mini_stat.dart';
+import '../../../theme/vd_motion.dart';
 import '../../../theme/vd_tokens.dart';
 
 // ── Overview Tab ─────────────────────────────────────────
@@ -37,7 +39,7 @@ class OverviewTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Hero card ──
-          Container(
+          VdFadeIn(index: 0, child: Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -66,13 +68,18 @@ class OverviewTab extends StatelessWidget {
                               fontSize: 13,
                               fontWeight: FontWeight.w500)),
                       const SizedBox(height: 4),
-                      Text(
-                        tbTichLuy.toStringAsFixed(2),
-                        style: TextStyle(
-                          color: context.vd.onPrimary,
-                          fontSize: 52,
-                          fontWeight: FontWeight.bold,
-                          height: 1,
+                      TweenAnimationBuilder<double>(
+                        tween: Tween<double>(begin: 0, end: tbTichLuy.toDouble()),
+                        duration: VdMotion.of(context).countUp,
+                        curve: VdMotion.curve,
+                        builder: (context, v, _) => Text(
+                          v.toStringAsFixed(2),
+                          style: TextStyle(
+                            color: context.vd.onPrimary,
+                            fontSize: 52,
+                            fontWeight: FontWeight.bold,
+                            height: 1,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -111,47 +118,52 @@ class OverviewTab extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 // Circular progress
-                SizedBox(
-                  width: 96,
-                  height: 96,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularArc(
-                        value: progress,
-                        size: 96,
-                        trackColor: context.vd.onPrimary.withValues(alpha: 0.2),
-                        progressColor: context.vd.onPrimary,
-                        strokeWidth: 9,
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${(progress * 100).toInt()}%',
-                            style: TextStyle(
-                              color: context.vd.onPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              height: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text('hoàn thành',
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: progress),
+                  duration: VdMotion.of(context).countUp,
+                  curve: VdMotion.curve,
+                  builder: (context, p, _) => SizedBox(
+                    width: 96,
+                    height: 96,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularArc(
+                          value: p,
+                          size: 96,
+                          trackColor: context.vd.onPrimary.withValues(alpha: 0.2),
+                          progressColor: context.vd.onPrimary,
+                          strokeWidth: 9,
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${(p * 100).toInt()}%',
                               style: TextStyle(
-                                  color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 9)),
-                        ],
-                      ),
-                    ],
+                                color: context.vd.onPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text('hoàn thành',
+                                style: TextStyle(
+                                    color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 9)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+          )),
           const SizedBox(height: 14),
 
           // ── Mini stat row ──
-          Row(
+          VdFadeIn(index: 1, child: Row(
             children: [
               MiniStat(
                 label: 'Môn đã học',
@@ -174,11 +186,11 @@ class OverviewTab extends StatelessWidget {
                 color: context.vd.primary,
               ),
             ],
-          ),
+          )),
           const SizedBox(height: 16),
 
           // ── Grade distribution (donut + legend) ──
-          GradeDistribution(grades: grades),
+          VdFadeIn(index: 2, child: GradeDistribution(grades: grades)),
           const SizedBox(height: 16),
         ],
       ),

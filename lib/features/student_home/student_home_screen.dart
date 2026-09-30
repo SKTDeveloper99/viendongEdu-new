@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/student_home_repository.dart';
@@ -8,6 +9,7 @@ import 'widgets/dashboard_tab.dart';
 import 'widgets/home_bottom_nav.dart';
 import 'widgets/profile_tab.dart';
 import 'widgets/qr_tab.dart';
+import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
 
 /// Student home ("Trang chủ") with three tabs: dashboard, QR and profile.
@@ -97,7 +99,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.vd.bg,
-      body: ListenableBuilder(listenable: _vm, builder: (_, _) => _tab()),
+      body: PageTransitionSwitcher(
+        duration: VdMotion.of(context).standard,
+        transitionBuilder: (child, primary, secondary) => FadeThroughTransition(
+          animation: primary,
+          secondaryAnimation: secondary,
+          fillColor: context.vd.bg,
+          child: child,
+        ),
+        child: KeyedSubtree(
+          key: ValueKey<int>(_currentIndex),
+          child: ListenableBuilder(listenable: _vm, builder: (_, _) => _tab()),
+        ),
+      ),
       bottomNavigationBar: HomeBottomNav(
         currentIndex: _currentIndex,
         onSelect: (i) => setState(() => _currentIndex = i),

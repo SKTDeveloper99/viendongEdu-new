@@ -3,6 +3,8 @@ import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
 import '../data/api/board_api.dart';
+import '../components/vd_fade_in.dart';
+import '../theme/vd_motion.dart';
 import '../theme/vd_tokens.dart';
 /// Bảng tin — thông tin trung tâm gửi cho học viên này.
 ///
@@ -209,13 +211,12 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
         backgroundColor: context.vd.primary,
         foregroundColor: context.vd.onPrimary,
         elevation: 0,
-        title: const Text('Bảng tin',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Bảng tin', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: RefreshIndicator(
         color: context.vd.primary,
         onRefresh: _load,
-        child: _buildBody(),
+        child: AnimatedSwitcher(duration: VdMotion.of(context).standard, child: KeyedSubtree(key: ValueKey<bool>(_loading), child: _buildBody())),
       ),
     );
   }
@@ -274,9 +275,9 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             itemCount: _items.length,
-            itemBuilder: (_, i) => _AnnouncementCard(
-              item: _items[i],
-              onTap: () => _open(_items[i]),
+            itemBuilder: (_, i) => VdFadeIn(
+              index: i,
+              child: _AnnouncementCard(item: _items[i], onTap: () => _open(_items[i])),
             ),
           ),
         ),

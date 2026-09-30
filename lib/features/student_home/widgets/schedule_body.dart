@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../student_home_view_model.dart';
 import 'class_chip.dart';
+import '../../../components/vd_fade_in.dart';
+import '../../../theme/vd_motion.dart';
 import '../../../theme/vd_tokens.dart';
 
 /// The state-dependent part of "Lịch học hôm nay": spinner, collapsed
@@ -24,6 +26,26 @@ class ScheduleBody extends StatelessWidget {
         ? 'Hôm nay bạn không có lịch học nào 🎉'
         : 'Hôm nay bạn có $n lịch học — nhấn để xem chi tiết';
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedSwitcher(
+          duration: VdMotion.of(context).standard,
+          layoutBuilder: (current, previous) => Stack(
+            alignment: Alignment.topCenter,
+            children: [...previous, ?current],
+          ),
+          child: KeyedSubtree(
+            key: ValueKey<bool>(vm.scheduleLoading),
+            child: _content(context, n, summaryText),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _content(BuildContext context, int n, String summaryText) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -147,11 +169,14 @@ class ScheduleBody extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Column(
-              children: vm.todayClasses
+              children: vm.todayClasses.indexed
                   .map(
-                    (d) => GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/schedule'),
-                      child: ClassChip(data: d),
+                    (e) => VdFadeIn(
+                      index: e.$1,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/schedule'),
+                        child: ClassChip(data: e.$2),
+                      ),
                     ),
                   )
                   .toList(),

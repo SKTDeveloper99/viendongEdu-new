@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/teacher_home_repository.dart';
@@ -7,6 +8,7 @@ import 'teacher_home_view_model.dart';
 import 'widgets/gv_bottom_nav.dart';
 import 'widgets/home_tab.dart';
 import 'widgets/profile_tab.dart';
+import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
 
 /// Teacher home ("/gv_home") with two tabs: home and profile. Layout,
@@ -105,7 +107,19 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.vd.bg,
-      body: ListenableBuilder(listenable: _vm, builder: (_, _) => _tab()),
+      body: PageTransitionSwitcher(
+        duration: VdMotion.of(context).standard,
+        transitionBuilder: (child, primary, secondary) => FadeThroughTransition(
+          animation: primary,
+          secondaryAnimation: secondary,
+          fillColor: context.vd.bg,
+          child: child,
+        ),
+        child: KeyedSubtree(
+          key: ValueKey<int>(_currentIndex),
+          child: ListenableBuilder(listenable: _vm, builder: (_, _) => _tab()),
+        ),
+      ),
       bottomNavigationBar: GvBottomNav(
         currentIndex: _currentIndex,
         onSelect: (i) => setState(() => _currentIndex = i),

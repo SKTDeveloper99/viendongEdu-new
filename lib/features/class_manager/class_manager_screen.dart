@@ -8,6 +8,7 @@ import 'widgets/class_detail_sheet.dart';
 import 'widgets/class_list.dart';
 import 'widgets/class_manager_header.dart';
 import 'widgets/class_manager_state_views.dart';
+import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
 
 /// Teacher "Quản lý lớp" (read-only): classes per semester with a detail
@@ -94,7 +95,17 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
                 selected: _vm.selected,
                 onSelected: _vm.selectSemester,
               ),
-              Expanded(child: _content()),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: VdMotion.of(context).standard,
+                  child: KeyedSubtree(
+                    key: ValueKey<bool>(
+                      _vm.loadingSemesters || _vm.loadingClasses,
+                    ),
+                    child: _content(),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

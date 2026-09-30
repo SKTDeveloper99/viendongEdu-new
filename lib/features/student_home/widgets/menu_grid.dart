@@ -39,6 +39,7 @@ class MenuGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         final m = items[index];
         return MenuItemWidget(
+          index: index,
           icon: mapStringToIcon(m['icon']?.toString()),
           label: m['label']?.toString() ?? '',
           onTap: () =>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/vd_pressable.dart';
 import '../student_home_view_model.dart';
 import '../../../theme/vd_tokens.dart';
 
@@ -18,7 +19,7 @@ class BoardCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: Material(
+      child: VdPressable(child: Material(
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
@@ -106,7 +107,7 @@ class BoardCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 }

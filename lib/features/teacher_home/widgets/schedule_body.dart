@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/skeleton.dart';
+import '../../../components/vd_fade_in.dart';
+import '../../../theme/vd_motion.dart';
 import 'gv_class_chip.dart';
 import '../../../theme/vd_tokens.dart';
 
@@ -22,6 +24,20 @@ class ScheduleBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: VdMotion.of(context).standard,
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.topCenter,
+        children: [...previous, ?current],
+      ),
+      child: KeyedSubtree(
+        key: ValueKey<bool>(loading),
+        child: _body(context),
+      ),
+    );
+  }
+
+  Widget _body(BuildContext context) {
     final n = classes.length;
     final summaryText = failed
         ? 'Chưa tải được lịch dạy từ máy chủ'
@@ -132,11 +148,14 @@ class ScheduleBody extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Column(
-        children: classes
+        children: classes.indexed
             .map(
-              (d) => GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/gv_schedule'),
-                child: GvClassChip(data: d),
+              (e) => VdFadeIn(
+                index: e.$1,
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/gv_schedule'),
+                  child: GvClassChip(data: e.$2),
+                ),
               ),
             )
             .toList(),
