@@ -4,6 +4,7 @@ import '../services/app_session.dart';
 import '../services/ems_api_service.dart';
 import '../utils/snack.dart';
 import '../data/api/auth_api.dart';
+import '../theme/vd_tokens.dart';
 
 /// Đổi mật khẩu CRM. Dùng cho CẢ HAI trường hợp:
 ///  - lối vào "Đổi mật khẩu" bình thường trong app (`forced: false`, mặc định);
@@ -79,16 +80,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       // Bắt buộc đổi mật khẩu: không cho back ra ngoài trước khi xong.
       canPop: !widget.forced,
       child: Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
           // Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -99,18 +100,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 if (!widget.forced)
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios,
-                        color: Colors.white, size: 20),
+                    child: Icon(Icons.arrow_back_ios,
+                        color: context.vd.onPrimary, size: 20),
                   ),
                 if (!widget.forced) const SizedBox(width: 8),
                 Text(
                   widget.forced
                       ? 'Vui lòng đổi mật khẩu'
                       : 'Đổi mật khẩu',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.vd.onPrimary,
                   ),
                 ),
               ],
@@ -129,11 +130,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.vd.surface,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                              color: Colors.black12,
+                              color: context.vd.shadow,
                               blurRadius: 8,
                               offset: Offset(0, 4)),
                         ],
@@ -194,24 +195,24 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       child: ElevatedButton(
                         onPressed: _loading ? null : _submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFE65100),
+                          backgroundColor: context.vd.primary,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
                           elevation: 4,
                         ),
                         child: _loading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2.5),
+                                    color: context.vd.onPrimary, strokeWidth: 2.5),
                               )
-                            : const Text(
+                            : Text(
                                 'Xác nhận đổi mật khẩu',
                                 style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white),
+                                    color: context.vd.onPrimary),
                               ),
                       ),
                     ),
@@ -251,11 +252,11 @@ class _PassField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(fontSize: 14),
-        prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFE65100)),
+        prefixIcon: Icon(Icons.lock_outline, color: context.vd.primary),
         suffixIcon: IconButton(
           icon: Icon(
             show ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-            color: Colors.grey,
+            color: context.vd.inkFaint,
             size: 20,
           ),
           onPressed: onToggle,
@@ -263,7 +264,7 @@ class _PassField extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE65100), width: 2),
+          borderSide: BorderSide(color: context.vd.primary, width: 2),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

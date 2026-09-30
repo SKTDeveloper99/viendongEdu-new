@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/crm_session_guard.dart';
 import '../data/api/board_api.dart';
 import '../data/api/teacher_notifications_api.dart';
+import '../theme/vd_tokens.dart';
 
 /// Danh sách thông báo — CHỈ giảng viên (route '/teacher/notifications',
 /// CRM). Học viên đọc thông báo qua Bảng tin ('/student_board',
@@ -118,16 +119,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final unreadCount = _items.where((n) => !n.isRead).length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: context.vd.bg,
       body: Column(
         children: [
           // Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 48, 20, 16),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -137,17 +138,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back_ios_new,
-                      color: Colors.white, size: 22),
+                  child: Icon(Icons.arrow_back_ios_new,
+                      color: context.vd.onPrimary, size: 22),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Thông báo',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.vd.onPrimary,
                     ),
                   ),
                 ),
@@ -155,9 +156,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   TextButton(
                     onPressed: _markAllRead,
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
+                      foregroundColor: context.vd.onPrimary,
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      backgroundColor: context.vd.onPrimary.withValues(alpha: 0.2),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20)),
                     ),
@@ -171,43 +172,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // Body
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFE65100)))
+                ? Center(
+                    child: CircularProgressIndicator(color: context.vd.primary))
                 : _error != null
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline,
-                                color: Colors.grey, size: 48),
+                            Icon(Icons.error_outline,
+                                color: context.vd.inkFaint, size: 48),
                             const SizedBox(height: 12),
                             Text(_error!,
-                                style: const TextStyle(color: Colors.grey)),
+                                style: TextStyle(color: context.vd.inkFaint)),
                             const SizedBox(height: 16),
                             TextButton(
                               onPressed: _fetch,
-                              child: const Text('Thử lại',
-                                  style: TextStyle(color: Color(0xFFE65100))),
+                              child: Text('Thử lại',
+                                  style: TextStyle(color: context.vd.primary)),
                             ),
                           ],
                         ),
                       )
                     : _items.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.notifications_none,
-                                    color: Colors.grey, size: 56),
+                                    color: context.vd.inkFaint, size: 56),
                                 SizedBox(height: 12),
                                 Text('Chưa có thông báo nào',
                                     style: TextStyle(
-                                        color: Colors.grey, fontSize: 15)),
+                                        color: context.vd.inkFaint, fontSize: 15)),
                               ],
                             ),
                           )
                         : RefreshIndicator(
-                            color: const Color(0xFFE65100),
+                            color: context.vd.primary,
                             onRefresh: _fetch,
                             child: ListView.builder(
                               padding: const EdgeInsets.symmetric(
@@ -249,7 +250,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: context.vd.hairline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -261,7 +262,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             const SizedBox(height: 6),
             Text(_formatDate(n.sentAt),
                 style:
-                    const TextStyle(fontSize: 12, color: Colors.grey)),
+                    TextStyle(fontSize: 12, color: context.vd.inkFaint)),
             const Divider(height: 24),
             Text(n.body,
                 style:
@@ -293,14 +294,14 @@ class _NotiCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: noti.isRead ? Colors.white : const Color(0xFFFFF3E0),
+          color: noti.isRead ? context.vd.surface : context.vd.accentSoft,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          boxShadow: [
+            BoxShadow(color: context.vd.shadow, blurRadius: 4, offset: Offset(0, 2)),
           ],
           border: noti.isRead
               ? null
-              : Border.all(color: const Color(0xFFFFCC80), width: 1),
+              : Border.all(color: context.vd.accentSoft, width: 1),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,15 +311,15 @@ class _NotiCard extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: noti.isRead
-                    ? Colors.grey[200]
-                    : const Color(0xFFE65100).withValues(alpha: 0.15),
+                    ? context.vd.hairline
+                    : context.vd.primary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 noti.isRead
                     ? Icons.notifications_none
                     : Icons.notifications_active,
-                color: noti.isRead ? Colors.grey : const Color(0xFFE65100),
+                color: noti.isRead ? context.vd.inkFaint : context.vd.primary,
                 size: 22,
               ),
             ),
@@ -337,7 +338,7 @@ class _NotiCard extends StatelessWidget {
                             fontWeight: noti.isRead
                                 ? FontWeight.normal
                                 : FontWeight.bold,
-                            color: Colors.black87,
+                            color: context.vd.ink,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -347,8 +348,8 @@ class _NotiCard extends StatelessWidget {
                         Container(
                           width: 8,
                           height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE65100),
+                          decoration: BoxDecoration(
+                            color: context.vd.primary,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -359,7 +360,7 @@ class _NotiCard extends StatelessWidget {
                     noti.body,
                     style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[700],
+                        color: context.vd.inkMuted,
                         height: 1.4),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -367,7 +368,7 @@ class _NotiCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     formatDate(noti.sentAt),
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(fontSize: 11, color: context.vd.inkFaint),
                   ),
                 ],
               ),

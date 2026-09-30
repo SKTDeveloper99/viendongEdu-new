@@ -3,6 +3,7 @@ import '../models/crm_identity.dart';
 import '../services/app_session.dart';
 import '../services/crm_profile_api.dart';
 import '../services/crm_session_guard.dart';
+import '../theme/vd_tokens.dart';
 
 // Kiểm định NHẸ phía app — chỉ để chặn lỗi rõ ràng trước khi gửi; thông điệp
 // lỗi thật (server trả về, `lib/contact-validators.js`) LUÔN được hiện
@@ -109,11 +110,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       }
       if (!mounted) return;
       setState(() { _saving = false; _saved = true; });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           'Đã cập nhật hồ sơ ở EMS. Thay đổi CHƯA được gửi tới hệ thống IMS của trường.',
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: context.vd.success,
         behavior: SnackBarBehavior.floating,
       ));
     } catch (e) {
@@ -124,7 +125,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       // Hiện nguyên văn thông điệp lỗi validate/máy chủ.
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString()),
-        backgroundColor: Colors.red[700],
+        backgroundColor: context.vd.danger,
         behavior: SnackBarBehavior.floating,
       ));
     }
@@ -143,15 +144,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         Navigator.pop(context, _saved);
       },
       child: Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -161,32 +162,32 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context, _saved),
-                  child: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                  child: Icon(Icons.arrow_back_ios, color: context.vd.onPrimary, size: 20),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Sửa hồ sơ',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.vd.onPrimary),
                 ),
               ],
             ),
           ),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFFE65100)))
+                ? Center(child: CircularProgressIndicator(color: context.vd.primary))
                 : _error != null
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                            Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
                             const SizedBox(height: 12),
-                            Text(_error!, style: const TextStyle(color: Colors.grey), textAlign: TextAlign.center),
+                            Text(_error!, style: TextStyle(color: context.vd.inkFaint), textAlign: TextAlign.center),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _fetch,
-                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE65100)),
-                              child: const Text('Thử lại', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(backgroundColor: context.vd.primary),
+                              child: Text('Thử lại', style: TextStyle(color: context.vd.onPrimary)),
                             ),
                           ],
                         ),
@@ -202,12 +203,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                 padding: const EdgeInsets.all(12),
                                 margin: const EdgeInsets.only(bottom: 16),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF3E0),
+                                  color: context.vd.accentSoft,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   children: [
-                                    Icon(Icons.info_outline, color: Color(0xFFE65100), size: 18),
+                                    Icon(Icons.info_outline, color: context.vd.primary, size: 18),
                                     SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -275,16 +276,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                 child: ElevatedButton(
                                   onPressed: _saving ? null : _save,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFE65100),
+                                    backgroundColor: context.vd.primary,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   ),
                                   child: _saving
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           height: 22,
                                           width: 22,
-                                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                                          child: CircularProgressIndicator(strokeWidth: 2.5, color: context.vd.onPrimary),
                                         )
-                                      : const Text('Lưu thay đổi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                      : Text('Lưu thay đổi', style: TextStyle(color: context.vd.onPrimary, fontWeight: FontWeight.w600)),
                                 ),
                               ),
                             ],

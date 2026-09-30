@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/crm_student_profile.dart';
 import '../services/crm_student_api.dart';
+import '../theme/vd_tokens.dart';
 
 // Display screen (bot A3 slice) with an edit action wired to
 // `ProfileEditScreen` (route '/profile_edit', bot A4/A5) — email, phone and
@@ -72,7 +73,7 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
     final heDaoTaoTen = p?.programName?.isNotEmpty == true ? p!.programName! : '–';
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(
         top: false,
         child: Column(
@@ -81,9 +82,9 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                  colors: [context.vd.primary, context.vd.accent],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -93,23 +94,23 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios,
-                        color: Colors.white, size: 20),
+                    child: Icon(Icons.arrow_back_ios,
+                        color: context.vd.onPrimary, size: 20),
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Thông tin cá nhân',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: _openEdit,
-                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                    icon: Icon(Icons.edit_outlined, color: context.vd.onPrimary),
                     tooltip: 'Sửa hồ sơ',
                   ),
                 ],
@@ -119,33 +120,33 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
             // Content
             Expanded(
               child: _loading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Color(0xFFE65100)))
+                  ? Center(
+                      child: CircularProgressIndicator(color: context.vd.primary))
                   : _error != null
                       ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.error_outline,
-                                  size: 48, color: Colors.grey),
+                              Icon(Icons.error_outline,
+                                  size: 48, color: context.vd.inkFaint),
                               const SizedBox(height: 12),
                               Text(_error!,
-                                  style: const TextStyle(color: Colors.grey),
+                                  style: TextStyle(color: context.vd.inkFaint),
                                   textAlign: TextAlign.center),
                               const SizedBox(height: 16),
                               ElevatedButton(
                                 onPressed: _fetch,
                                 style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFE65100)),
-                                child: const Text('Thử lại',
-                                    style: TextStyle(color: Colors.white)),
+                                    backgroundColor: context.vd.primary),
+                                child: Text('Thử lại',
+                                    style: TextStyle(color: context.vd.onPrimary)),
                               ),
                             ],
                           ),
                         )
                       : RefreshIndicator(
                           onRefresh: _fetch,
-                          color: const Color(0xFFE65100),
+                          color: context.vd.primary,
                           child: ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -193,18 +194,18 @@ class _Section extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFE65100))),
+                  color: context.vd.primary)),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.vd.surface,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                  color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+                  color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
             ],
           ),
           child: Column(
@@ -234,12 +235,12 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: const Color(0xFFE65100)),
+          Icon(icon, size: 20, color: context.vd.primary),
           const SizedBox(width: 12),
           SizedBox(
             width: 110,
             child: Text(label,
-                style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                style: TextStyle(fontSize: 13, color: context.vd.inkFaint)),
           ),
           Expanded(
             child: Text(value,

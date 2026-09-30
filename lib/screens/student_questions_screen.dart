@@ -4,7 +4,7 @@ import '../services/crm_questions_api.dart';
 import '../services/crm_session_guard.dart';
 import '../services/ems_api_service.dart';
 import '../services/offline_snapshot.dart';
-import '../theme/vd_theme.dart';
+import '../theme/vd_tokens.dart';
 
 /// Student-to-school questions. Reads may use a clearly marked local copy;
 /// messages remain drafts until the server confirms them.
@@ -70,9 +70,9 @@ class _StudentQuestionsScreenState extends State<StudentQuestionsScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
-          const Text(
+          Text(
             'Câu hỏi được gửi đến Phòng Đào tạo, Kế toán, Khoa hoặc giảng viên phù hợp.',
-            style: TextStyle(color: VdColors.ink60),
+            style: TextStyle(color: context.vd.inkMuted),
           ),
           const SizedBox(height: 12),
           if (_error != null) _Notice(_error!),
@@ -232,8 +232,8 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
                         ),
                         child: Card(
                           color: message.fromStudent
-                              ? VdColors.orangeTint
-                              : VdColors.paper,
+                              ? context.vd.accentSoft
+                              : context.vd.surfaceAlt,
                           child: Padding(
                             padding: const EdgeInsets.all(12),
                             child: Column(
@@ -251,9 +251,9 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
                                 if (message.createdAt != null)
                                   Text(
                                     _shortDate(message.createdAt!),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: VdColors.ink60,
+                                      color: context.vd.inkMuted,
                                     ),
                                   ),
                               ],
@@ -462,9 +462,9 @@ class _NewQuestionScreenState extends State<_NewQuestionScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
+          Text(
             'Gửi đúng nơi để được trả lời nhanh hơn.',
-            style: TextStyle(color: VdColors.ink60),
+            style: TextStyle(color: context.vd.inkMuted),
           ),
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
@@ -554,9 +554,9 @@ class _NewQuestionScreenState extends State<_NewQuestionScreen> {
             label: Text(_sending ? 'Đang gửi…' : 'Gửi câu hỏi'),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Bản nháp được giữ trên máy nếu mất mạng. Chỉ khi nhà trường xác nhận, câu hỏi mới được xem là đã gửi.',
-            style: TextStyle(fontSize: 12, color: VdColors.ink60),
+            style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
           ),
         ],
       ),
@@ -572,10 +572,10 @@ class _Notice extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 12),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: VdColors.orangeTint,
+      color: context.vd.accentSoft,
       borderRadius: BorderRadius.circular(12),
     ),
-    child: Text(message, style: const TextStyle(color: VdColors.espresso)),
+    child: Text(message, style: TextStyle(color: context.vd.ink)),
   );
 }
 

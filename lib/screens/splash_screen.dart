@@ -4,6 +4,7 @@ import '../services/app_session.dart';
 import '../services/app_update_gate.dart';
 import '../services/notification_service.dart';
 import 'change_password_screen.dart';
+import '../theme/vd_tokens.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -83,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VdColors.cream,
+      backgroundColor: context.vd.bg,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -92,21 +93,21 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 8),
             const VdSwoosh(width: 36, height: 4),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'VIỄN ĐÔNG',
               style: TextStyle(
                 fontSize: 23,
                 fontWeight: FontWeight.w700,
-                color: VdColors.espresso,
+                color: context.vd.ink,
                 letterSpacing: 1.2,
               ),
             ),
             const SizedBox(height: 24),
-            const SizedBox(
+            SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
-                color: VdColors.terracotta,
+                color: context.vd.primary,
                 strokeWidth: 3,
               ),
             ),

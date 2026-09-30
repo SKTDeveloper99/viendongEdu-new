@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
+import '../theme/vd_tokens.dart';
 
 class _Semester {
   final int id;
@@ -98,7 +99,6 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
               '';
           return _dayIndex(ngaymaA).compareTo(_dayIndex(ngaymaB));
         });
-
       setState(() {
         _grouped = entries
             .map((e) => (ngayten: e.key, items: e.value))
@@ -143,16 +143,16 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
     final isEmpty = _grouped.isEmpty;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
           // ── Header ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -165,16 +165,16 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back_ios,
-                          color: Colors.white, size: 20),
+                      child: Icon(Icons.arrow_back_ios,
+                          color: context.vd.onPrimary, size: 20),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Lớp học',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                       ),
                     ),
                   ],
@@ -184,21 +184,21 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
                   Container(
                     padding: const EdgeInsets.only(left: 14, right: 6, top: 6, bottom: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.vd.surface,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2))],
+                      boxShadow: [BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2))],
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<_Semester>(
                         value: _selected,
-                        dropdownColor: Colors.white,
+                        dropdownColor: context.vd.surface,
                         borderRadius: BorderRadius.circular(14),
-                        iconEnabledColor: const Color(0xFFE65100),
+                        iconEnabledColor: context.vd.primary,
                         icon: const Icon(Icons.expand_more_rounded, size: 20),
                         isDense: true,
-                        style: const TextStyle(color: Color(0xFF333333), fontSize: 13, fontWeight: FontWeight.w500),
+                        style: TextStyle(color: context.vd.ink, fontSize: 13, fontWeight: FontWeight.w500),
                         selectedItemBuilder: (_) => _semesters.map((s) => Center(
-                          child: Text(s.ten, style: const TextStyle(color: Color(0xFFE65100), fontSize: 13, fontWeight: FontWeight.w600)),
+                          child: Text(s.ten, style: TextStyle(color: context.vd.primary, fontSize: 13, fontWeight: FontWeight.w600)),
                         )).toList(),
                         items: _semesters.map((s) => DropdownMenuItem(
                           value: s,
@@ -222,19 +222,19 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline,
-                                size: 48, color: Colors.grey),
+                            Icon(Icons.error_outline,
+                                size: 48, color: context.vd.inkFaint),
                             const SizedBox(height: 12),
                             Text(_error!,
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(color: context.vd.inkFaint),
                                 textAlign: TextAlign.center),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _retry,
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE65100)),
-                              child: const Text('Thử lại',
-                                  style: TextStyle(color: Colors.white)),
+                                  backgroundColor: context.vd.primary),
+                              child: Text('Thử lại',
+                                  style: TextStyle(color: context.vd.onPrimary)),
                             ),
                           ],
                         ),
@@ -242,15 +242,15 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
                     : _loadingClasses
                         ? skeletonList()
                         : isEmpty
-                            ? const Center(
+                            ? Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(Icons.class_outlined,
-                                        size: 64, color: Colors.grey),
+                                        size: 64, color: context.vd.inkFaint),
                                     SizedBox(height: 12),
                                     Text('Không có lớp học',
-                                        style: TextStyle(color: Colors.grey)),
+                                        style: TextStyle(color: context.vd.inkFaint)),
                                   ],
                                 ),
                               )
@@ -258,7 +258,7 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
                                 onRefresh: () async {
                                   if (_selected != null) await _fetchClasses(_selected!);
                                 },
-                                color: const Color(0xFFE65100),
+                                color: context.vd.primary,
                                 child: ListView(
                                 physics: const AlwaysScrollableScrollPhysics(),
                                 padding:
@@ -289,13 +289,13 @@ class _DayHeader extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFFE65100),
+              color: context.vd.primary,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               ngayten,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.vd.onPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
@@ -304,11 +304,11 @@ class _DayHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '$count lớp',
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Container(height: 1, color: const Color(0xFFEEEEEE)),
+            child: Container(height: 1, color: context.vd.hairline),
           ),
         ],
       ),
@@ -334,13 +334,13 @@ class _LopCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 5, offset: Offset(0, 2))
         ],
-        border: const Border(
-            left: BorderSide(color: Color(0xFFE65100), width: 4)),
+        border: Border(
+            left: BorderSide(color: context.vd.primary, width: 4)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -352,31 +352,31 @@ class _LopCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(tgbd,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFE65100))),
+                        color: context.vd.primary)),
                 Text(tgkt,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.grey)),
+                    style: TextStyle(
+                        fontSize: 12, color: context.vd.inkFaint)),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE65100).withValues(alpha: 0.1),
+                    color: context.vd.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(tietbd,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10,
-                          color: Color(0xFFE65100),
+                          color: context.vd.primary,
                           fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
             const SizedBox(width: 12),
-            Container(width: 1, height: 52, color: const Color(0xFFEEEEEE)),
+            Container(width: 1, height: 52, color: context.vd.hairline),
             const SizedBox(width: 12),
             // Info
             Expanded(
@@ -397,14 +397,14 @@ class _LopCard extends StatelessWidget {
                               horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
                             color:
-                                const Color(0xFFE65100).withValues(alpha: 0.1),
+                                context.vd.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text('$sotinchi TC',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFFE65100))),
+                                  color: context.vd.primary)),
                         ),
                     ],
                   ),
@@ -412,12 +412,12 @@ class _LopCard extends StatelessWidget {
                   if (phongten.isNotEmpty)
                     Row(
                       children: [
-                        const Icon(Icons.room,
-                            size: 13, color: Color(0xFFE65100)),
+                        Icon(Icons.room,
+                            size: 13, color: context.vd.primary),
                         const SizedBox(width: 4),
                         Text(phongten,
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey)),
+                            style: TextStyle(
+                                fontSize: 12, color: context.vd.inkFaint)),
                       ],
                     ),
                   if (lmhma.isNotEmpty) ...[
@@ -425,16 +425,16 @@ class _LopCard extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.only(top: 1),
                           child: Icon(Icons.class_outlined,
-                              size: 13, color: Color(0xFFE65100)),
+                              size: 13, color: context.vd.primary),
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(lmhma,
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                  fontSize: 12, color: context.vd.inkFaint),
                               softWrap: true),
                         ),
                       ],

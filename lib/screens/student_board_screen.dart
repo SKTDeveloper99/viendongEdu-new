@@ -3,6 +3,7 @@ import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
 import '../data/api/board_api.dart';
+import '../theme/vd_tokens.dart';
 /// Bảng tin — thông tin trung tâm gửi cho học viên này.
 ///
 /// Chỉ ĐỌC. Nội dung hiển thị là nguyên văn server đã đóng băng lúc phát hành;
@@ -19,8 +20,6 @@ class StudentBoardScreen extends StatefulWidget {
 
 class _StudentBoardScreenState extends State<StudentBoardScreen>
     with WidgetsBindingObserver {
-  static const _orange = Color(0xFFE65100);
-
   List<AnnouncementItem> _items = [];
   DateTime? _staleAt;
   bool _loading = true;
@@ -114,7 +113,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.vd.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -135,7 +134,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: context.vd.hairline,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -144,7 +143,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
                   _CategoryChip(item: item),
                   const Spacer(),
                   Text(_formatDate(item.publishedAt),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
                 ]),
                 const SizedBox(height: 12),
                 Text(item.title,
@@ -161,20 +160,20 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
                 if (item.mustRead)
                   item.acknowledgedAt != null
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          const Icon(Icons.check_circle,
-                              color: Colors.green, size: 20),
+                          Icon(Icons.check_circle,
+                              color: context.vd.success, size: 20),
                           const SizedBox(width: 8),
                           Text('Đã xác nhận',
                               style: TextStyle(
-                                  color: Colors.green[700],
+                                  color: context.vd.success,
                                   fontWeight: FontWeight.w600)),
                         ])
                       : SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _orange,
-                              foregroundColor: Colors.white,
+                              backgroundColor: context.vd.primary,
+                              foregroundColor: context.vd.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
@@ -205,16 +204,16 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       appBar: AppBar(
-        backgroundColor: _orange,
-        foregroundColor: Colors.white,
+        backgroundColor: context.vd.primary,
+        foregroundColor: context.vd.onPrimary,
         elevation: 0,
         title: const Text('Bảng tin',
             style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: RefreshIndicator(
-        color: _orange,
+        color: context.vd.primary,
         onRefresh: _load,
         child: _buildBody(),
       ),
@@ -223,7 +222,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: _orange));
+      return Center(child: CircularProgressIndicator(color: context.vd.primary));
     }
 
     // Trạng thái lỗi phải CUỘN ĐƯỢC, nếu không RefreshIndicator không kéo được
@@ -233,17 +232,17 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
         padding: const EdgeInsets.all(32),
         children: [
           const SizedBox(height: 60),
-          Icon(Icons.cloud_off, size: 56, color: Colors.grey[400]),
+          Icon(Icons.cloud_off, size: 56, color: context.vd.inkFaint),
           const SizedBox(height: 16),
           Text(_error!,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[700], height: 1.5)),
+              style: TextStyle(color: context.vd.inkMuted, height: 1.5)),
           const SizedBox(height: 20),
           Center(
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: _orange,
-                side: const BorderSide(color: _orange),
+                foregroundColor: context.vd.primary,
+                side: BorderSide(color: context.vd.primary),
                 padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
               ),
               onPressed: _load,
@@ -259,11 +258,11 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
         padding: const EdgeInsets.all(32),
         children: [
           const SizedBox(height: 60),
-          Icon(Icons.inbox_outlined, size: 56, color: Colors.grey[400]),
+          Icon(Icons.inbox_outlined, size: 56, color: context.vd.inkFaint),
           const SizedBox(height: 16),
           Text('Chưa có thông báo nào.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600])),
+              style: TextStyle(color: context.vd.inkMuted)),
         ],
       );
     }
@@ -312,21 +311,21 @@ class _BoardImage extends StatelessWidget {
       width: double.infinity,
       placeholder: (_, __) => Container(
         height: inCard ? null : 180,
-        color: Colors.grey[200],
-        child: const Center(
+        color: context.vd.hairline,
+        child: Center(
           child: SizedBox(
             width: 22,
             height: 22,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: Color(0xFFE65100)),
+                strokeWidth: 2, color: context.vd.primary),
           ),
         ),
       ),
       errorWidget: (_, __, ___) => Container(
         height: inCard ? null : 140,
-        color: Colors.grey[200],
+        color: context.vd.hairline,
         child: Icon(Icons.broken_image_outlined,
-            color: Colors.grey[500], size: 28),
+            color: context.vd.inkFaint, size: 28),
       ),
     );
 
@@ -354,7 +353,7 @@ class _CategoryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: urgent ? const Color(0xFFFEE2E2) : const Color(0xFFFFF3E0),
+        color: urgent ? context.vd.dangerSoft : context.vd.accentSoft,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -362,7 +361,7 @@ class _CategoryChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: urgent ? const Color(0xFFB91C1C) : const Color(0xFFE65100),
+          color: urgent ? context.vd.danger : context.vd.primary,
         ),
       ),
     );
@@ -379,14 +378,14 @@ class _AnnouncementCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
         border: item.isUnread
-            ? Border.all(color: const Color(0xFFFFCC80), width: 1.5)
+            ? Border.all(color: context.vd.accentSoft, width: 1.5)
             : null,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: context.vd.shadow,
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -409,22 +408,22 @@ class _AnnouncementCard extends StatelessWidget {
                       padding:
                           const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEE2E2),
+                        color: context.vd.dangerSoft,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text('Bắt buộc đọc',
+                      child: Text('Bắt buộc đọc',
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFFB91C1C))),
+                              color: context.vd.danger)),
                     ),
                   const Spacer(),
                   if (item.isUnread)
                     Container(
                       width: 9,
                       height: 9,
-                      decoration: const BoxDecoration(
-                          color: Color(0xFFE65100), shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                          color: context.vd.primary, shape: BoxShape.circle),
                     ),
                 ]),
                 const SizedBox(height: 8),
@@ -445,7 +444,7 @@ class _AnnouncementCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 13, height: 1.45, color: Colors.grey[700]),
+                      fontSize: 13, height: 1.45, color: context.vd.inkMuted),
                 ),
                 if (item.images.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -459,24 +458,24 @@ class _AnnouncementCard extends StatelessWidget {
                   if (item.images.length > 1) ...[
                     const SizedBox(height: 6),
                     Text('+${item.images.length - 1} ảnh nữa',
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                        style: TextStyle(fontSize: 11, color: context.vd.inkMuted)),
                   ],
                 ],
                 const SizedBox(height: 8),
                 Row(children: [
-                  Icon(Icons.schedule, size: 13, color: Colors.grey[500]),
+                  Icon(Icons.schedule, size: 13, color: context.vd.inkFaint),
                   const SizedBox(width: 4),
                   Text(_StudentBoardScreenState._formatDate(item.publishedAt),
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                      style: TextStyle(fontSize: 11, color: context.vd.inkFaint)),
                   if (item.acknowledgedAt != null) ...[
                     const Spacer(),
-                    const Icon(Icons.check_circle,
-                        size: 13, color: Colors.green),
+                    Icon(Icons.check_circle,
+                        size: 13, color: context.vd.success),
                     const SizedBox(width: 4),
                     Text('Đã xác nhận',
                         style: TextStyle(
                             fontSize: 11,
-                            color: Colors.green[700],
+                            color: context.vd.success,
                             fontWeight: FontWeight.w600)),
                   ],
                 ]),

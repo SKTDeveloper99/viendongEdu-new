@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
 import '../data/api/attendance_api.dart';
+import '../theme/vd_tokens.dart';
 
 class EmsAttendanceStudentScreen extends StatefulWidget {
   const EmsAttendanceStudentScreen({super.key});
@@ -22,10 +23,6 @@ class EmsAttendanceStudentScreen extends StatefulWidget {
 
 class _EmsAttendanceStudentScreenState
     extends State<EmsAttendanceStudentScreen> {
-  static const _orange = Color(0xFFE65100);
-  static const _green = Color(0xFF2E7D32);
-  static const _red = Color(0xFFC62828);
-
   bool _loading = true;
   String? _error;
   List<EmsStudentMark> _marks = const [];
@@ -70,10 +67,10 @@ class _EmsAttendanceStudentScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       appBar: AppBar(
-        backgroundColor: _orange,
-        foregroundColor: Colors.white,
+        backgroundColor: context.vd.primary,
+        foregroundColor: context.vd.onPrimary,
         title: const Text('Điểm danh EMS'),
         actions: [
           IconButton(
@@ -105,7 +102,7 @@ class _EmsAttendanceStudentScreenState
       );
     }
     return RefreshIndicator(
-      color: _orange,
+      color: context.vd.primary,
       onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.all(12),
@@ -122,14 +119,14 @@ class _EmsAttendanceStudentScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          _stat('Có mặt', _present, _green),
-          _stat('Vắng', _absent, _red),
-          _stat('Chờ GV', _pending, _orange),
+          _stat('Có mặt', _present, context.vd.success),
+          _stat('Vắng', _absent, context.vd.danger),
+          _stat('Chờ GV', _pending, context.vd.primary),
         ],
       ),
     );
@@ -146,7 +143,7 @@ class _EmsAttendanceStudentScreenState
         Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 11, color: context.vd.inkMuted),
         ),
       ],
     ),
@@ -154,16 +151,16 @@ class _EmsAttendanceStudentScreenState
 
   Widget _row(EmsStudentMark m) {
     final (label, color) = switch (m.status) {
-      'present' => ('Có mặt', _green),
-      'late' => ('Đi muộn', _orange),
-      'absent' => ('Vắng', _red),
-      'excused' => ('Vắng có phép', Colors.blueGrey),
-      _ => ('Chờ giáo viên xác nhận', Colors.grey),
+      'present' => ('Có mặt', context.vd.success),
+      'late' => ('Đi muộn', context.vd.warning),
+      'absent' => ('Vắng', context.vd.danger),
+      'excused' => ('Vắng có phép', context.vd.info),
+      _ => ('Chờ giáo viên xác nhận', context.vd.inkFaint),
     };
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -198,12 +195,12 @@ class _EmsAttendanceStudentScreenState
                   Text(
                     'Đã vào trường lúc ${_hhmm(m.arrivedAt!)}'
                     '${m.arrivalOnTime == true ? ' • trước giờ học' : ''}',
-                    style: const TextStyle(fontSize: 11, color: _green),
+                    style: TextStyle(fontSize: 11, color: context.vd.success),
                   ),
                 if (m.note?.isNotEmpty == true)
                   Text(
                     'Ghi chú: ${m.note}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 11, color: context.vd.inkMuted),
                   ),
               ],
             ),
@@ -231,7 +228,7 @@ class _EmsAttendanceStudentScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: Colors.grey[400]),
+            Icon(icon, size: 44, color: context.vd.inkFaint),
             const SizedBox(height: 12),
             Text(
               title,
@@ -242,7 +239,7 @@ class _EmsAttendanceStudentScreenState
             Text(
               detail,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),

@@ -5,10 +5,10 @@ import '../services/app_session.dart';
 import '../components/skeleton.dart';
 import '../utils/snack.dart';
 import '../features/teacher_attendance/teacher_attendance_screen.dart';
+import '../theme/vd_tokens.dart';
 
 class GvScheduleScreen extends StatefulWidget {
   const GvScheduleScreen({super.key});
-
   @override
   State<GvScheduleScreen> createState() => _GvScheduleScreenState();
 }
@@ -99,7 +99,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
       locale: const Locale('vi', 'VN'),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: Color(0xFFE65100)),
+          colorScheme: ColorScheme.light(primary: context.vd.primary),
         ),
         child: child!,
       ),
@@ -114,14 +114,14 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _pickDate,
-        backgroundColor: const Color(0xFFE65100),
-        icon: const Icon(Icons.calendar_month, color: Colors.white, size: 20),
+        backgroundColor: context.vd.primary,
+        icon: Icon(Icons.calendar_month, color: context.vd.onPrimary, size: 20),
         label: Text(
           '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-          style: const TextStyle(color: Colors.white, fontSize: 13),
+          style: TextStyle(color: context.vd.onPrimary, fontSize: 13),
         ),
       ),
       body: SafeArea(top: false, child: Column(
@@ -130,9 +130,9 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -146,16 +146,16 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back_ios,
-                          color: Colors.white, size: 20),
+                      child: Icon(Icons.arrow_back_ios,
+                          color: context.vd.onPrimary, size: 20),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Lịch dạy',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                       ),
                     ),
                   ],
@@ -167,8 +167,8 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                   children: [
                     GestureDetector(
                       onTap: _prevWeek,
-                      child: const Icon(Icons.chevron_left,
-                          color: Colors.white, size: 28),
+                      child: Icon(Icons.chevron_left,
+                          color: context.vd.onPrimary, size: 28),
                     ),
                     Text(
                       () {
@@ -176,16 +176,16 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                         final e = _currentMonday.add(const Duration(days: 6));
                         return '${s.day}/${s.month} – ${e.day}/${e.month}/${e.year}';
                       }(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.vd.onPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     GestureDetector(
                       onTap: _nextWeek,
-                      child: const Icon(Icons.chevron_right,
-                          color: Colors.white, size: 28),
+                      child: Icon(Icons.chevron_right,
+                          color: context.vd.onPrimary, size: 28),
                     ),
                   ],
                 ),
@@ -209,8 +209,8 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.2),
+                                ? context.vd.surface
+                                : context.vd.surface.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
@@ -222,8 +222,8 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
-                                      ? const Color(0xFFE65100)
-                                      : Colors.white,
+                                      ? context.vd.primary
+                                      : context.vd.onPrimary,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -233,8 +233,8 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
-                                      ? const Color(0xFFE65100)
-                                      : Colors.white,
+                                      ? context.vd.primary
+                                      : context.vd.onPrimary,
                                 ),
                               ),
                               if (isToday)
@@ -244,8 +244,8 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                                   margin: const EdgeInsets.only(top: 3),
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? const Color(0xFFE65100)
-                                        : Colors.white,
+                                        ? context.vd.primary
+                                        : context.vd.surface,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -269,42 +269,42 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline,
-                                size: 48, color: Colors.grey),
+                            Icon(Icons.error_outline,
+                                size: 48, color: context.vd.inkFaint),
                             const SizedBox(height: 12),
                             Text(_error!,
                                 style:
-                                    const TextStyle(color: Colors.grey)),
+                                    TextStyle(color: context.vd.inkFaint)),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () => _fetch(_selectedDate),
                               style: ElevatedButton.styleFrom(
                                   backgroundColor:
-                                      const Color(0xFFE65100)),
-                              child: const Text('Thử lại',
+                                      context.vd.primary),
+                              child: Text('Thử lại',
                                   style:
-                                      TextStyle(color: Colors.white)),
+                                      TextStyle(color: context.vd.onPrimary)),
                             ),
                           ],
                         ),
                       )
                     : _classes.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.event_busy,
-                                    size: 64, color: Colors.grey),
+                                    size: 64, color: context.vd.inkFaint),
                                 SizedBox(height: 12),
                                 Text('Không có lịch dạy',
                                     style:
-                                        TextStyle(color: Colors.grey)),
+                                        TextStyle(color: context.vd.inkFaint)),
                               ],
                             ),
                           )
                         : RefreshIndicator(
                             onRefresh: () => _fetch(_selectedDate),
-                            color: const Color(0xFFE65100),
+                            color: context.vd.primary,
                             child: ListView.builder(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.fromLTRB(
@@ -322,11 +322,11 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
 }
 
 // ── Schedule Card ────────────────────────────────────────
-({String label, Color color}) _buoiInfo(String? b) => switch (b) {
-      'S' => (label: 'Sáng', color: const Color(0xFF2196F3)),
-      'C' => (label: 'Chiều', color: const Color(0xFFFF9800)),
-      'T' => (label: 'Tối', color: const Color(0xFF9C27B0)),
-      _ => (label: '', color: Colors.grey),
+({String label, Color color}) _buoiInfo(BuildContext context, String? b) => switch (b) {
+      'S' => (label: 'Sáng', color: context.vd.info),
+      'C' => (label: 'Chiều', color: context.vd.warning),
+      'T' => (label: 'Tối', color: context.vd.evening),
+      _ => (label: '', color: context.vd.inkFaint),
     };
 
 class _ScheduleCard extends StatefulWidget {
@@ -399,7 +399,7 @@ class _ScheduleCardState extends State<_ScheduleCard> {
     final start = d['thoigianbd']?.toString() ?? '';
     final endRaw = d['thoigiankt'] as String? ?? '';
     final end = endRaw.length >= 16 ? endRaw.substring(11, 16) : '';
-    final buoi = _buoiInfo(d['buoi']?.toString());
+    final buoi = _buoiInfo(context, d['buoi']?.toString());
     final baonghiyn = d['baonghiyn'];
     final daBaoNghi = baonghiyn != null && baonghiyn != false && baonghiyn != 0;
 
@@ -408,13 +408,13 @@ class _ScheduleCardState extends State<_ScheduleCard> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.vd.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+          boxShadow: [
+            BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
           ],
           border: Border(left: BorderSide(
-            color: daBaoNghi ? const Color(0xFF9E9E9E) : buoi.color,
+            color: daBaoNghi ? context.vd.inkFaint : buoi.color,
             width: 5,
           )),
         ),
@@ -435,12 +435,12 @@ class _ScheduleCardState extends State<_ScheduleCard> {
                               color: buoi.color)),
                       const SizedBox(height: 2),
                       Text(end,
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                          style: TextStyle(
+                              fontSize: 12, color: context.vd.inkFaint)),
                     ],
                   ),
             const SizedBox(width: 14),
-            Container(width: 1, height: 40, color: const Color(0xFFEEEEEE)),
+            Container(width: 1, height: 40, color: context.vd.hairline),
             const SizedBox(width: 14),
             // Info
             Expanded(
@@ -460,20 +460,20 @@ class _ScheduleCardState extends State<_ScheduleCard> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF5F5F5),
+                            color: context.vd.surfaceAlt,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.event_busy_outlined,
-                                  size: 12, color: Color(0xFF757575)),
+                                  size: 12, color: context.vd.inkMuted),
                               SizedBox(width: 4),
                               Text('Báo nghỉ',
                                   style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF757575))),
+                                      color: context.vd.inkMuted)),
                             ],
                           ),
                         ),
@@ -497,24 +497,24 @@ class _ScheduleCardState extends State<_ScheduleCard> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.room,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.room,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Text(room,
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                          style: TextStyle(
+                              fontSize: 12, color: context.vd.inkFaint)),
                     ],
                   ),
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      const Icon(Icons.class_outlined,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.class_outlined,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(classCode,
-                            style: const TextStyle(
-                                fontSize: 12, color: Color(0xFF444444))),
+                            style: TextStyle(
+                                fontSize: 12, color: context.vd.inkMuted)),
                       ),
                     ],
                   ),
@@ -524,7 +524,7 @@ class _ScheduleCardState extends State<_ScheduleCard> {
             // Chevron
             Icon(
               _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-              color: Colors.grey, size: 20,
+              color: context.vd.inkFaint, size: 20,
             ),
           ],
         ),
@@ -532,7 +532,7 @@ class _ScheduleCardState extends State<_ScheduleCard> {
 
             // ── Expanded: nút điểm danh ──
             if (_expanded) ...[
-              const Divider(height: 1, color: Color(0xFFF0F0F0)),
+              Divider(height: 1, color: context.vd.surfaceAlt),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                 child: Column(
@@ -542,17 +542,17 @@ class _ScheduleCardState extends State<_ScheduleCard> {
                       child: ElevatedButton.icon(
                         onPressed: _loading ? null : _openAttendance,
                         icon: _loading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16, height: 16,
                                 child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2))
-                            : const Icon(Icons.checklist_rounded,
-                                color: Colors.white, size: 18),
-                        label: const Text('Điểm danh bằng danh sách',
-                            style: TextStyle(color: Colors.white,
+                                    color: context.vd.onPrimary, strokeWidth: 2))
+                            : Icon(Icons.checklist_rounded,
+                                color: context.vd.onPrimary, size: 18),
+                        label: Text('Điểm danh bằng danh sách',
+                            style: TextStyle(color: context.vd.onPrimary,
                                 fontWeight: FontWeight.w600)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE65100),
+                          backgroundColor: context.vd.primary,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
