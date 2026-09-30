@@ -21,7 +21,7 @@ import 'features/teacher_home/teacher_home_screen.dart';
 import 'screens/gv_schedule_screen.dart';
 import 'screens/gv_lophoc_screen.dart';
 import 'screens/gv_lichthi_screen.dart';
-import 'screens/gv_quanly_lop_screen.dart';
+import 'features/class_manager/class_manager_screen.dart';
 import 'screens/capbu_screen.dart';
 import 'screens/change_password_screen.dart';
 import 'screens/registration_screen.dart';
