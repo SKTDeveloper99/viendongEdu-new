@@ -21,7 +21,6 @@ const Map<String, int> _allowlist = {
   'lib/screens/ems_attendance_teacher_screen.dart': 1215,
   'lib/services/ems_api_service.dart': 1186,
   'lib/screens/gv_home_screen.dart': 983,
-  'lib/screens/classes_screen.dart': 952,
   'lib/screens/teacher_my_day_screen.dart': 668,
   'lib/screens/registration_screen.dart': 653,
   'lib/screens/schedule_screen.dart': 642,
