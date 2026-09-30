@@ -1,3 +1,4 @@
+import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../theme/vd_theme.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -36,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   List<CrmScheduleItem> _todayClasses = [];
+  DateTime? _scheduleStaleAt;
   bool _scheduleLoading = true;
   bool _scheduleFailed = false;
   bool _scheduleExpanded = true;
@@ -96,7 +98,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_boardLoading) return;
     _boardLoading = true;
     try {
-      final items = await EmsApiService.board(limit: 20);
+      final r = await EmsApiService.boardCached(
+        limit: 20,
+        onStored: (stored, _) {
+          if (!mounted) return;
+          setState(() => _latestBoardItem = stored.isEmpty ? null : stored.first);
+        },
+      );
+      final items = r.data;
       final unread = items.where((i) => i.isUnread).length;
       if (!mounted) return;
       setState(() {
@@ -160,11 +169,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _loadTodaySchedule() async {
     if (mounted) setState(() => _scheduleLoading = true);
     try {
-      final all = await CrmStudentApi.schedule();
       final today = DateTime.now();
-      final todays = all.where((s) => s.occursOn(today)).toList();
+      final r = await CrmStudentApi.scheduleCached(
+        onStored: (items, _) {
+          if (!mounted) return;
+          setState(() {
+            _todayClasses = items.where((s) => s.occursOn(today)).toList();
+            _scheduleLoading = false;
+          });
+        },
+      );
+      final todays = r.data.where((s) => s.occursOn(today)).toList();
       if (mounted) {
         setState(() {
+          _scheduleStaleAt = r.fresh ? null : r.savedAt;
           _todayClasses = todays;
           _scheduleFailed = false;
           _scheduleLoading = false;
@@ -351,6 +369,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_scheduleStaleAt != null) StaleNote(_scheduleStaleAt!),
         if (_scheduleFailed)
           Padding(
             padding: const EdgeInsets.all(16),
@@ -1209,55 +1228,6 @@ class _ProfileMenuCard extends StatelessWidget {
 }
 
 // ── Reusable widgets ─────────────────────────────────────
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: VdColors.terracotta, size: 20),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Divider(
-      height: 1,
-      indent: 48,
-      endIndent: 16,
-      color: Color(0xFFF0F0F0),
-    );
-  }
-}
 
 class _NavItem extends StatelessWidget {
   final IconData icon;

@@ -1,3 +1,4 @@
+import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../theme/vd_theme.dart';
 import '../services/app_session.dart';
@@ -30,6 +31,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   List<Map<String, dynamic>> _todayClasses = [];
   bool _scheduleLoading = true;
   bool _scheduleFailed = false;
+  DateTime? _scheduleStaleAt;
   bool _scheduleExpanded = true;
   int _unreadCount = 0;
 
@@ -74,9 +76,20 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
       // Một lời gọi CRM duy nhất: hồ sơ + lịch dạy hôm nay + tóm tắt học kỳ
       // (`GET /api/teacher/me/overview`, xem `CrmTeacherApi.overview`) — thay
       // cho `ApiService.getGvScheduleByDate` (IMS `giangvien/tkbtheongay`).
-      final overview = await CrmTeacherApi.overview();
+      final r = await CrmTeacherApi.overviewCached(
+        onStored: (o, _) {
+          if (!mounted) return;
+          setState(() {
+            _profile = o.teacher;
+            _todayClasses = o.todaySessions.map((s) => s.toJson()).toList();
+            _scheduleLoading = false;
+          });
+        },
+      );
+      final overview = r.data;
       if (mounted) {
         setState(() {
+          _scheduleStaleAt = r.fresh ? null : r.savedAt;
           _profile = overview.teacher;
           _todayClasses = overview.todaySessions
               .map((s) => s.toJson())
@@ -129,6 +142,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_scheduleStaleAt != null) StaleNote(_scheduleStaleAt!),
         if (_scheduleFailed)
           Padding(
             padding: const EdgeInsets.all(16),
@@ -923,52 +937,6 @@ class _ProfileMenuCard extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: VdColors.terracotta, size: 20),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 60,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => const Divider(
-    height: 1,
-    indent: 48,
-    endIndent: 16,
-    color: Color(0xFFF0F0F0),
-  );
-}
 
 class _NavItem extends StatelessWidget {
   final IconData icon;

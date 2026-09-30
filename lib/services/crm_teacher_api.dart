@@ -37,6 +37,30 @@ class CrmTeacherApi {
     return CrmTeacherOverview.fromJson(body);
   }
 
+  static Future<({CrmTeacherOverview data, DateTime savedAt, bool fresh})>
+  overviewCached({
+    String? semester,
+    void Function(CrmTeacherOverview o, DateTime savedAt)? onStored,
+  }) async {
+    final r = await EmsApiService.sendCached(
+      '/teacher/me/overview',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+      onStored: onStored == null
+          ? null
+          : (d, at) => onStored(
+              CrmTeacherOverview.fromJson(d as Map<String, dynamic>),
+              at,
+            ),
+    );
+    return (
+      data: CrmTeacherOverview.fromJson(r.data as Map<String, dynamic>),
+      savedAt: r.savedAt,
+      fresh: r.fresh,
+    );
+  }
+
   static Future<({CrmTeacherOverview overview, DateTime savedAt})?>
   cachedOverview() async {
     final cached = await OfflineSnapshot.load('teacher_overview');
@@ -123,6 +147,30 @@ class CrmTeacherApi {
         .whereType<Map<String, dynamic>>()
         .map(CrmTeacherClass.fromJson)
         .toList();
+  }
+
+  static Future<({List<CrmTeacherClass> data, DateTime savedAt, bool fresh})>
+  classesCached({
+    String? semester,
+    void Function(List<CrmTeacherClass> c, DateTime savedAt)? onStored,
+  }) async {
+    List<CrmTeacherClass> parse(dynamic body) {
+      final list = body is Map ? body['classes'] : null;
+      if (list is! List) return const [];
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(CrmTeacherClass.fromJson)
+          .toList();
+    }
+
+    final r = await EmsApiService.sendCached(
+      '/teacher/me/classes',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+      onStored: onStored == null ? null : (d, at) => onStored(parse(d), at),
+    );
+    return (data: parse(r.data), savedAt: r.savedAt, fresh: r.fresh);
   }
 
   /// `GET /api/teacher/me/classes/:sectionId/students`.
