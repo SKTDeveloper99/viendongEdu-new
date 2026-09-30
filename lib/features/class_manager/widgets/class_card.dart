@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/vd_pressable.dart';
 import '../../../models/crm_teacher_class.dart';
 import '../../../theme/vd_tokens.dart';
 
@@ -14,7 +15,7 @@ class ClassCard extends StatelessWidget {
     final mhten = lop.subjectName ?? '';
     final mhma = lop.subjectCode ?? '';
     final sotinchi = lop.credits ?? 0;
-    return GestureDetector(
+    return VdPressable(child: GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -114,6 +115,6 @@ class ClassCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }

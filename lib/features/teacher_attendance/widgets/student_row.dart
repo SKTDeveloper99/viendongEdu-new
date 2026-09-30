@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../services/ems_api_service.dart';
 import '../attendance_format.dart';
+import '../../../theme/vd_motion.dart';
 import '../../../theme/vd_tokens.dart';
 
 /// One roster student: name, MSSV, gate scan, and the Có / Vắng / more marks.
@@ -18,6 +20,11 @@ class StudentRow extends StatelessWidget {
   final String? mark;
   final void Function(String? status) onSelect;
   final VoidCallback onOpenDetail;
+
+  void _select(String? status) {
+    HapticFeedback.selectionClick();
+    onSelect(status);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,19 +44,19 @@ class StudentRow extends StatelessWidget {
                 label: 'Có',
                 selected: mark == 'present',
                 color: context.vd.success,
-                onTap: () => onSelect('present'),
+                onTap: () => _select('present'),
               ),
               const SizedBox(width: 6),
               _Pill(
                 label: 'Vắng',
                 selected: mark == 'absent',
                 color: context.vd.danger,
-                onTap: () => onSelect('absent'),
+                onTap: () => _select('absent'),
               ),
               PopupMenuButton<String>(
                 tooltip: 'Trạng thái khác',
                 onSelected: (value) =>
-                    onSelect(value == 'unmarked' ? null : value),
+                    _select(value == 'unmarked' ? null : value),
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'late', child: Text('Đi trễ')),
                   PopupMenuItem(value: 'excused', child: Text('Vắng có phép')),
@@ -128,19 +135,25 @@ class _Pill extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
-      child: Container(
+      child: AnimatedContainer(
+        duration: VdMotion.of(context).quick,
+        curve: VdMotion.curve,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? color : context.vd.surfaceAlt,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: selected ? context.vd.onPrimary : context.vd.inkMuted,
+        child: AnimatedDefaultTextStyle(
+          duration: VdMotion.of(context).quick,
+          curve: VdMotion.curve,
+          style: DefaultTextStyle.of(context).style.merge(
+            TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected ? context.vd.onPrimary : context.vd.inkMuted,
+            ),
           ),
+          child: Text(label),
         ),
       ),
     );

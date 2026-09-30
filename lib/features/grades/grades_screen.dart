@@ -8,6 +8,7 @@ import 'widgets/grades_error_view.dart';
 import 'widgets/grades_header.dart';
 import 'widgets/overview_tab.dart';
 import 'widgets/subjects_tab.dart';
+import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
 
 /// "Bảng điểm" — read-only grades: overview, per-subject detail, subjects
@@ -88,7 +89,13 @@ class _GradesScreenState extends State<GradesScreen>
             Expanded(
               child: ListenableBuilder(
                 listenable: _vm,
-                builder: (context, _) => _content(),
+                builder: (context, _) => AnimatedSwitcher(
+                  duration: VdMotion.of(context).standard,
+                  child: KeyedSubtree(
+                    key: ValueKey<bool>(_vm.loading),
+                    child: _content(),
+                  ),
+                ),
               ),
             ),
           ],

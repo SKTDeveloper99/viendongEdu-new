@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/vd_theme.dart';
+import 'vd_fade_in.dart';
+import 'vd_pressable.dart';
 import '../theme/vd_tokens.dart';
 
 class MenuItemWidget extends StatelessWidget {
@@ -7,15 +9,26 @@ class MenuItemWidget extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
+  /// Position in the grid; drives the entrance stagger.
+  final int index;
+
   const MenuItemWidget({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
+    this.index = 0,
   });
 
   @override
   Widget build(BuildContext context) {
+    return VdFadeIn(
+      index: index,
+      child: VdPressable(child: _tile(context)),
+    );
+  }
+
+  Widget _tile(BuildContext context) {
     return Material(
       color: context.vd.surfaceAlt,
       borderRadius: BorderRadius.circular(VdTheme.cardRadius),

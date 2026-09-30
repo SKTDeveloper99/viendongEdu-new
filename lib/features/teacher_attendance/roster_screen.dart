@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/teacher_attendance_repository.dart';
 import '../../services/ems_api_service.dart';
@@ -62,6 +63,7 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
 
   void _toast(String msg, {bool good = false}) {
     if (!mounted) return;
+    if (good) HapticFeedback.mediumImpact(); // only the successful-save toast
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
