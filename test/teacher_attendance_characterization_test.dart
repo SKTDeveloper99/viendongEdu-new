@@ -196,7 +196,7 @@ void main() {
       expect(posts, hasLength(1));
       expect(
         find.textContaining(
-          'CHƯA GỬI. Đã giữ lựa chọn trên máy; kết nối lại rồi bấm Lưu. '
+          'CHƯA GỬI. Đã giữ trên máy, sẽ tự gửi khi có mạng. '
           'Máy chủ chưa xác nhận đủ 1 học viên',
         ),
         findsOneWidget,
@@ -311,7 +311,7 @@ void main() {
       final d = await saveWith(
         tester,
         () => _json({'error': 'Lỗi máy chủ'}, 500),
-        'CHƯA GỬI. Đã giữ lựa chọn trên máy; kết nối lại rồi bấm Lưu. '
+        'CHƯA GỬI. Đã giữ trên máy, sẽ tự gửi khi có mạng. '
         'Lỗi máy chủ',
       );
       expect(d?.queued, isTrue);
@@ -329,7 +329,7 @@ void main() {
       await tester.pump();
       await tester.tap(find.text('Lưu điểm danh'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('CHƯA GỬI. Đã giữ lựa chọn'), findsOneWidget);
+      expect(find.textContaining('CHƯA GỬI. Đã giữ trên máy'), findsOneWidget);
       expect(find.textContaining('CHƯA GỬI • kết nối lại'), findsOneWidget);
       expect((await EmsAttendanceCache.loadDraft(_key))?.queued, isTrue);
     });

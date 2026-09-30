@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../data/teacher_home_repository.dart';
 import '../../screens/gv_profile_info_screen.dart';
 import '../../services/crm_session_guard.dart';
+import '../teacher_attendance/attendance_outbox.dart';
 import 'teacher_home_view_model.dart';
 import 'widgets/gv_bottom_nav.dart';
 import 'widgets/home_tab.dart';
@@ -37,13 +38,18 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
         widget.viewModel ?? TeacherHomeViewModel(const TeacherHomeRepository());
     _vm.addListener(_onChanged);
     _vm.start();
+    // Queued attendance sends itself (resume / network back / every 30 s).
+    if (_ownsViewModel) AttendanceOutbox.instance.start();
   }
 
   @override
   void dispose() {
     _vm.removeListener(_onChanged);
     _vm.stopClock();
-    if (_ownsViewModel) _vm.dispose();
+    if (_ownsViewModel) {
+      AttendanceOutbox.instance.stop();
+      _vm.dispose();
+    }
     super.dispose();
   }
 

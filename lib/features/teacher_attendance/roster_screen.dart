@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../data/teacher_attendance_repository.dart';
 import '../../services/ems_api_service.dart';
+import 'attendance_outbox.dart';
 import 'roster_view_model.dart';
 import 'widgets/attendance_message.dart';
 import 'widgets/reasons_dialog.dart';
@@ -32,6 +33,7 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
   late final RosterViewModel _vm = RosterViewModel(
     widget.repository,
     widget.session,
+    outbox: AttendanceOutbox.instance,
   );
 
   late final RosterPrompts _prompts = RosterPrompts(
@@ -93,7 +95,9 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
               onPressed: _vm.toggleSort,
               icon: Icon(
                 Icons.sort_by_alpha,
-                color: _vm.sortAz ? context.vd.onPrimary : context.vd.onPrimary.withValues(alpha: 0.7),
+                color: _vm.sortAz
+                    ? context.vd.onPrimary
+                    : context.vd.onPrimary.withValues(alpha: 0.7),
               ),
             ),
           ],

@@ -17,6 +17,9 @@ class AppSession {
   AppSession._();
   static final AppSession instance = AppSession._();
 
+  /// Run at the start of [clear] (e.g. stop background senders).
+  static final List<void Function()> clearHooks = [];
+
   // ── CRM / EMS — danh tính đăng nhập chính ──────────────────────────────────
 
   /// Token Bearer của CRM. Tên giữ nguyên 'emsToken' (không đổi thành
@@ -146,6 +149,9 @@ class AppSession {
 
   /// Xóa session khi đăng xuất, hoặc khi EMS trả 401 (phiên hết hạn).
   Future<void> clear() async {
+    for (final hook in List.of(clearHooks)) {
+      hook();
+    }
     await OfflineSnapshot.clearCurrentAccount();
     // Xóa FCM token trước khi clear session.
     final id = identity?.notificationId;

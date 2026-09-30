@@ -27,13 +27,17 @@ class TeacherAttendanceRepository {
     Map<String, String> notes, {
     required bool queued,
     List<EmsRosterStudent> students = const [],
+    EmsSession? session,
   }) => EmsAttendanceCache.saveDraft(
     draftKey,
     marks,
     notes,
     queued: queued,
     students: students,
+    session: session,
   );
+
+  Future<List<EmsStoredDraft>> listDrafts() => EmsAttendanceCache.listDrafts();
 
   Future<void> clearDraft(String draftKey) =>
       EmsAttendanceCache.clearDraft(draftKey);

@@ -10,12 +10,16 @@
 //
 // Giáo viên vẫn là người quyết định cuối cùng. Máy chỉ từ chối im lặng.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../data/teacher_attendance_repository.dart';
+import 'attendance_outbox.dart';
 import 'roster_screen.dart';
 import 'session_list_view_model.dart';
 import 'widgets/attendance_message.dart';
+import 'widgets/pending_send_badge.dart';
 import 'widgets/session_card.dart';
 import '../../theme/vd_tokens.dart';
 
@@ -38,6 +42,7 @@ class _EmsAttendanceTeacherScreenState
   void initState() {
     super.initState();
     _vm.load();
+    unawaited(AttendanceOutbox.instance.refreshCount());
   }
 
   @override
@@ -55,7 +60,13 @@ class _EmsAttendanceTeacherScreenState
         appBar: AppBar(
           backgroundColor: context.vd.primary,
           foregroundColor: context.vd.onPrimary,
-          title: const Text('Điểm danh EMS'),
+          title: const Row(
+            children: [
+              Flexible(child: Text('Điểm danh EMS')),
+              SizedBox(width: 8),
+              PendingSendBadge(),
+            ],
+          ),
           actions: [
             IconButton(
               onPressed: _vm.loading ? null : _vm.load,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/menu_item.dart';
+import '../../teacher_attendance/widgets/pending_send_badge.dart';
 
 /// Five navigation tiles of the teacher home.
 class MenuGrid extends StatelessWidget {
@@ -38,11 +39,19 @@ class MenuGrid extends StatelessWidget {
           label: 'Quản lý lớp',
           onTap: () => Navigator.pushNamed(context, '/gv_quanly_lop'),
         ),
-        MenuItemWidget(
-          index: 4,
-          icon: Icons.fact_check_outlined,
-          label: 'Điểm danh EMS',
-          onTap: () => Navigator.pushNamed(context, '/ems_attendance_gv'),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: MenuItemWidget(
+                index: 4,
+                icon: Icons.fact_check_outlined,
+                label: 'Điểm danh EMS',
+                onTap: () => Navigator.pushNamed(context, '/ems_attendance_gv'),
+              ),
+            ),
+            const Positioned(top: 2, right: 2, child: PendingSendBadge()),
+          ],
         ),
       ],
     );
