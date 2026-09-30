@@ -41,7 +41,7 @@ void main() {
   );
 
   test('teacher Quản lý lớp session detail reads EMS session-marks', () {
-    final src = read('lib/screens/gv_quanly_lop_screen.dart');
+    final src = read('lib/data/class_manager_repository.dart');
     expect(src.contains('EmsApiService.sessionMarks('), isTrue);
   });
 

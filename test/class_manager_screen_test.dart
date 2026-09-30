@@ -18,7 +18,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
-import 'package:viendongedu2_flutter/screens/gv_quanly_lop_screen.dart';
+import 'package:viendongedu2_flutter/features/class_manager/class_manager_screen.dart';
 
 const _json = {'content-type': 'application/json; charset=utf-8'};
 
