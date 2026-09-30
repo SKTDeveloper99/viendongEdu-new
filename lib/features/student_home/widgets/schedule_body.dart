@@ -83,8 +83,8 @@ class ScheduleBody extends StatelessWidget {
                                 color: context.vd.inkMuted,
                               ),
                             )
-                          : RichText(
-                              text: TextSpan(
+                          : Text.rich(
+                              TextSpan(
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: context.vd.inkMuted,
@@ -129,7 +129,11 @@ class ScheduleBody extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.event_available, size: 18, color: context.vd.success),
+                  Icon(
+                    Icons.event_available,
+                    size: 18,
+                    color: context.vd.success,
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'Không có lịch học hôm nay',

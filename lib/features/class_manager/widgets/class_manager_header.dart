@@ -123,7 +123,9 @@ class _SemesterDropdown extends StatelessWidget {
           iconEnabledColor: context.vd.primary,
           icon: const Icon(Icons.expand_more_rounded, size: 20),
           isDense: true,
-          style: TextStyle(
+          // DropdownButton replaces the inherited DefaultTextStyle, so start
+          // from the theme text style to keep the app font.
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: context.vd.ink,
             fontSize: 13,
             fontWeight: FontWeight.w500,

@@ -143,13 +143,22 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // ── Logo ──
-              Container(
-                width: 200,
-                height: 150,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/logo2.png'),
-                    fit: BoxFit.contain,
+              // The logo PNG is transparent with dark lettering: on the dark
+              // theme it sits on a surface-coloured rounded plate to stay legible.
+              Center(
+                child: Container(
+                  width: 200,
+                  height: 150,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? context.vd.onHeader
+                        : null,
+                    borderRadius: BorderRadius.circular(20),
+                    image: const DecorationImage(
+                      image: AssetImage('assets/logo2.png'),
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),

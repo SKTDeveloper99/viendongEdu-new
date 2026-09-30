@@ -90,6 +90,8 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       title: 'ViendongEdu',
       theme: VdTheme.light(),
+      darkTheme: VdTheme.dark(),
+      themeMode: ThemeMode.system,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

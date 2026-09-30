@@ -89,7 +89,21 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/logo2.png', width: 150, fit: BoxFit.contain),
+            // Transparent PNG with dark lettering: plate it on dark theme.
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? context.vd.onHeader
+                    : null,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Image.asset(
+                'assets/logo2.png',
+                width: 150,
+                fit: BoxFit.contain,
+              ),
+            ),
             const SizedBox(height: 8),
             const VdSwoosh(width: 36, height: 4),
             const SizedBox(height: 16),

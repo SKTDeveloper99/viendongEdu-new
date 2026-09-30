@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'vd_tokens.dart';
 
@@ -79,6 +80,17 @@ class VdTheme {
         backgroundColor: t.headerTop,
         foregroundColor: t.onHeader,
         surfaceTintColor: Colors.transparent,
+        // Header is always a dark terracotta band, so the status-bar icons
+        // are light in both themes; the navigation bar follows the surface.
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+          systemNavigationBarColor: t.surface,
+          systemNavigationBarIconBrightness:
+              brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+          systemNavigationBarDividerColor: Colors.transparent,
+        ),
       ),
       cardTheme: CardThemeData(
         color: t.surface,
@@ -115,6 +127,72 @@ class VdTheme {
         backgroundColor: t.surface,
         indicatorColor: t.accentSoft,
         surfaceTintColor: Colors.transparent,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (s) => IconThemeData(
+            color: s.contains(WidgetState.selected) ? t.primary : t.inkMuted,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (s) => TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 12,
+            color: s.contains(WidgetState.selected) ? t.primary : t.inkMuted,
+          ),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: t.surface,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: t.ink,
+        ),
+        contentTextStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 14,
+          color: t.inkMuted,
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: t.surface,
+        modalBackgroundColor: t.surface,
+        surfaceTintColor: Colors.transparent,
+        modalBarrierColor: t.scrim,
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: t.primary,
+        linearTrackColor: t.hairline,
+        circularTrackColor: t.hairline,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? t.onPrimary : t.inkMuted,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? t.primary : t.surfaceAlt,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? t.primary : t.inkFaint,
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? t.primary : null,
+        ),
+        checkColor: WidgetStatePropertyAll(t.onPrimary),
+        side: BorderSide(color: t.inkMuted, width: 1.5),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? t.primary : t.inkMuted,
+        ),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: t.primary,
+        selectionColor: t.primary.withValues(alpha: 0.35),
+        selectionHandleColor: t.primary,
       ),
     );
   }

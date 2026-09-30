@@ -45,7 +45,7 @@ class GradesHeader extends StatelessWidget {
             indicatorColor: context.vd.onPrimary,
             indicatorWeight: 3,
             labelColor: context.vd.onPrimary,
-            unselectedLabelColor: context.vd.onPrimary.withValues(alpha: 0.6),
+            unselectedLabelColor: context.vd.onPrimary.withValues(alpha: 0.75),
             labelPadding: const EdgeInsets.symmetric(horizontal: 8),
             labelStyle:
                 const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
