@@ -6,6 +6,8 @@ The app follows Flutter's recommended MVVM layering:
 - **ViewModels** (`*_view_model.dart`) extend `ChangeNotifier` and hold screen state.
 - **Repositories** (`lib/data/`) are the only place a view model gets data from.
 - **Services** (`lib/services/`: `EmsApiService`, `CrmStudentApi`, `CrmTeacherApi`) do the HTTP work.
+  `EmsApiService` is only the network core; the EMS endpoints live in per-domain
+  classes under `lib/data/api/`.
 
 ```
 lib/
@@ -33,6 +35,9 @@ are migrated into `lib/features` one at a time.
    or static calls inside a view model.
 4. Views (`*_screen.dart` and everything in `widgets/`) never reference
    `EmsApiService`, `CrmStudentApi` or `CrmTeacherApi`. They talk to the view model.
+   Nothing under `lib/features` references `AuthApi`, `AttendanceApi`,
+   `StudentCasesApi`, `BoardApi` or `TeacherNotificationsApi` (`lib/data/api/`)
+   either; only repositories in `lib/data/` do.
 5. Navigator, dialogs, snackbars and `BuildContext` stay in views. A view model
    exposes a flag (for example a 401 flag) and the view reacts to it, e.g. via
    `handleCrmAuthError`.

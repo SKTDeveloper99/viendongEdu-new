@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
 import '../services/ems_api_service.dart';
 import '../theme/vd_theme.dart';
-
+import '../data/api/attendance_api.dart';
+import '../data/api/student_cases_api.dart';
 /// Một mặt làm việc duy nhất cho giảng viên: buổi dạy hôm nay từ EMS và các
 /// ca sinh viên đang chờ chính người này phản hồi từ Student Cases.
 ///
@@ -48,7 +48,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
 
   Future<void> _loadSessions() async {
     try {
-      final rows = await EmsApiService.mySessions(date: _today());
+      final rows = await AttendanceApi.mySessions(date: _today());
       if (!mounted) return;
       setState(() {
         _sessions = rows;
@@ -72,7 +72,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
 
   Future<void> _loadCases() async {
     try {
-      final rows = await EmsApiService.myOpenStudentCases();
+      final rows = await StudentCasesApi.myOpenStudentCases();
       if (!mounted) return;
       setState(() {
         _cases = rows;
@@ -103,7 +103,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
 
     setState(() => _answering.add(item.id));
     try {
-      final result = await EmsApiService.answerStudentCase(item.id, answer);
+      final result = await StudentCasesApi.answerStudentCase(item.id, answer);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

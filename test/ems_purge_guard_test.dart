@@ -36,13 +36,13 @@ void main() {
     () {
       final src = read('lib/screens/schedule_screen.dart');
       expect(src.contains("data['hienDienYN']"), isFalse);
-      expect(src.contains('EmsApiService.myAttendance'), isTrue);
+      expect(src.contains('AttendanceApi.myAttendance'), isTrue);
     },
   );
 
   test('teacher Quản lý lớp session detail reads EMS session-marks', () {
     final src = read('lib/data/class_manager_repository.dart');
-    expect(src.contains('EmsApiService.sessionMarks('), isTrue);
+    expect(src.contains('AttendanceApi.sessionMarks('), isTrue);
   });
 
   test('splash runs the force-update gate before entering the app', () {

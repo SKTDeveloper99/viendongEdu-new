@@ -10,6 +10,7 @@
 
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
+import '../data/api/attendance_api.dart';
 
 class EmsAttendanceStudentScreen extends StatefulWidget {
   const EmsAttendanceStudentScreen({super.key});
@@ -43,7 +44,7 @@ class _EmsAttendanceStudentScreenState
       });
     }
     try {
-      final m = await EmsApiService.myAttendance();
+      final m = await AttendanceApi.myAttendance();
       if (!mounted) return;
       setState(() {
         _marks = m;

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/crm_session_guard.dart';
-import '../services/ems_api_service.dart';
+import '../data/api/board_api.dart';
+import '../data/api/teacher_notifications_api.dart';
 
 /// Danh sách thông báo — CHỈ giảng viên (route '/teacher/notifications',
 /// CRM). Học viên đọc thông báo qua Bảng tin ('/student_board',
-/// [EmsApiService.board]) kể từ khi gỡ backend Vercel “noti-backend-eight” (bot
+/// [BoardApi.board]) kể từ khi gỡ backend Vercel “noti-backend-eight” (bot
 /// A5, 2026-09-25) — xem `features/student_home/student_home_screen.dart`, không còn nút nào trỏ vào
 /// màn hình này cho học viên.
 class _Noti {
@@ -54,7 +55,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final raw = await EmsApiService.teacherNotifications();
+      final raw = await TeacherNotificationsApi.teacherNotifications();
       if (!mounted) return;
       final list = raw
           .whereType<Map<String, dynamic>>()
@@ -70,7 +71,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _markRead(String notifyID) async {
     try {
-      await EmsApiService.markTeacherNotificationRead(notifyID);
+      await TeacherNotificationsApi.markTeacherNotificationRead(notifyID);
       if (!mounted) return;
       setState(() {
         _items = _items
@@ -87,7 +88,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _markAllRead() async {
     try {
-      await EmsApiService.markAllTeacherNotificationsRead();
+      await TeacherNotificationsApi.markAllTeacherNotificationsRead();
       if (!mounted) return;
       setState(() {
         _items = _items

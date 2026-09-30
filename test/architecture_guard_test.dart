@@ -17,7 +17,6 @@ const _maxWidgetLines = 200;
 /// with their line count at that time.
 const Map<String, int> _allowlist = {
   'lib/screens/ems_attendance_teacher_screen.dart': 1215,
-  'lib/services/ems_api_service.dart': 1186,
   'lib/screens/teacher_my_day_screen.dart': 668,
   'lib/screens/registration_screen.dart': 653,
   'lib/screens/schedule_screen.dart': 642,
@@ -113,6 +112,21 @@ void main() {
       if (banned.hasMatch(f.readAsStringSync())) {
         problems.add('$path references EmsApiService/CrmStudentApi/'
             'CrmTeacherApi');
+      }
+    }
+    expect(problems, isEmpty, reason: problems.join('\n'));
+  });
+
+  test('feature code never touches the per-domain EMS API classes', () {
+    final banned = RegExp(
+        r'\b(AuthApi|AttendanceApi|StudentCasesApi|BoardApi|'
+        r'TeacherNotificationsApi)\b');
+    final problems = <String>[];
+    for (final f in _dartFiles('lib/features')) {
+      final path = _rel(f);
+      if (banned.hasMatch(f.readAsStringSync())) {
+        problems.add('$path references a lib/data/api class directly; go '
+            'through a repository in lib/data/');
       }
     }
     expect(problems, isEmpty, reason: problems.join('\n'));

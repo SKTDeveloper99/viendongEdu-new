@@ -2,6 +2,7 @@ import '../models/crm_student_schedule.dart';
 import '../services/app_session.dart';
 import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
+import 'api/board_api.dart';
 
 typedef CachedSchedule = ({
   List<CrmScheduleItem> data,
@@ -31,9 +32,9 @@ class StudentHomeRepository {
   /// The 20 latest board items; [onStored] paints the stored copy first.
   Future<CachedBoard> board({
     void Function(List<AnnouncementItem> items, DateTime savedAt)? onStored,
-  }) => EmsApiService.boardCached(limit: 20, onStored: onStored);
+  }) => BoardApi.boardCached(limit: 20, onStored: onStored);
 
-  Future<BoardUnread> unreadCount() => EmsApiService.unreadCount();
+  Future<BoardUnread> unreadCount() => BoardApi.unreadCount();
 
   /// Class code for the header (not part of the login session).
   Future<String?> classCode() async => (await CrmStudentApi.me()).classCode;

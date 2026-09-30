@@ -1,7 +1,7 @@
 import '../models/crm_teacher_class.dart';
 import '../models/crm_teacher_profile.dart';
 import '../services/crm_teacher_api.dart';
-import '../services/ems_api_service.dart';
+import 'api/attendance_api.dart';
 
 typedef CachedTeacherClasses = ({
   List<CrmTeacherClass> data,
@@ -37,14 +37,14 @@ class ClassManagerRepository {
 
   /// mssv -> EMS status ('present' | 'late' | 'absent' | 'excused').
   Future<Map<String, String>> sessionMarks(String sessionKey) =>
-      EmsApiService.sessionMarks(sessionKey);
+      AttendanceApi.sessionMarks(sessionKey);
 
   /// `<lmhid>:<HH-MM>:<yyyy-MM-dd>`, exactly as the server builds it.
   String sessionKey({
     required String lmhId,
     required String date,
     required String startTime,
-  }) => EmsApiService.sessionKeyFor(
+  }) => AttendanceApi.sessionKeyFor(
     lmhId: lmhId,
     date: date,
     startTime: startTime,

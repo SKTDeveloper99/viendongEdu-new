@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
-
+import '../data/api/board_api.dart';
 /// Bảng tin — thông tin trung tâm gửi cho học viên này.
 ///
 /// Chỉ ĐỌC. Nội dung hiển thị là nguyên văn server đã đóng băng lúc phát hành;
@@ -52,7 +52,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     _inFlight = true;
     if (mounted && _items.isEmpty) setState(() => _loading = true);
     try {
-      final r = await EmsApiService.boardCached(
+      final r = await BoardApi.boardCached(
         onStored: (stored, _) {
           if (!mounted || _items.isNotEmpty) return;
           setState(() {
@@ -88,7 +88,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     if (wasUnread) {
       setState(() => item.readAt = DateTime.now());
       try {
-        await EmsApiService.markRead(item.id);
+        await BoardApi.markRead(item.id);
       } on EmsException {
         if (mounted) setState(() => item.readAt = null);
       }
@@ -101,7 +101,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     final before = item.acknowledgedAt;
     setState(() => item.acknowledgedAt = DateTime.now());
     try {
-      await EmsApiService.acknowledge(item.id);
+      await BoardApi.acknowledge(item.id);
     } on EmsException catch (e) {
       if (!mounted) return;
       setState(() => item.acknowledgedAt = before);

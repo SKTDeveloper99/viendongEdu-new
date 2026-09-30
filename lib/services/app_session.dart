@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/crm_identity.dart';
-import 'ems_api_service.dart';
 import 'ems_attendance_cache.dart';
 import 'notification_service.dart';
 import 'offline_snapshot.dart';
+import '../data/api/board_api.dart';
+import '../data/api/teacher_notifications_api.dart';
 
 /// Singleton giữ trạng thái đăng nhập trong toàn app.
 ///
@@ -181,7 +182,7 @@ class AppSession {
 
   Future<void> registerStudentDeviceToken(String fcmToken) async {
     if (role != CrmRole.student || !hasEms) return;
-    await EmsApiService.registerStudentDevice(
+    await BoardApi.registerStudentDevice(
       fcmToken,
       platform: defaultTargetPlatform == TargetPlatform.iOS
           ? 'ios'
@@ -193,12 +194,12 @@ class AppSession {
 
   Future<void> revokeStudentDeviceToken(String fcmToken) async {
     if (role != CrmRole.student || !hasEms) return;
-    await EmsApiService.revokeStudentDevice(fcmToken);
+    await BoardApi.revokeStudentDevice(fcmToken);
   }
 
   Future<void> registerTeacherDeviceToken(String fcmToken) async {
     if (role != CrmRole.teacher || !hasEms) return;
-    await EmsApiService.registerTeacherDevice(
+    await TeacherNotificationsApi.registerTeacherDevice(
       fcmToken,
       platform: defaultTargetPlatform == TargetPlatform.iOS
           ? 'ios'
@@ -210,6 +211,6 @@ class AppSession {
 
   Future<void> revokeTeacherDeviceToken(String fcmToken) async {
     if (role != CrmRole.teacher || !hasEms) return;
-    await EmsApiService.revokeTeacherDevice(fcmToken);
+    await TeacherNotificationsApi.revokeTeacherDevice(fcmToken);
   }
 }
