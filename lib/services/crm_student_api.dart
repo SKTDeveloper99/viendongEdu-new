@@ -123,6 +123,30 @@ class CrmStudentApi {
         .toList();
   }
 
+  static Future<({List<CrmScheduleItem> data, DateTime savedAt, bool fresh})>
+  scheduleCached({
+    String? semester,
+    void Function(List<CrmScheduleItem> items, DateTime savedAt)? onStored,
+  }) async {
+    List<CrmScheduleItem> parse(dynamic body) {
+      final list = body is Map ? body['schedule'] : null;
+      if (list is! List) return const [];
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(CrmScheduleItem.fromJson)
+          .toList();
+    }
+
+    final r = await EmsApiService.sendCached(
+      '/student/me/schedule',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+      onStored: onStored == null ? null : (d, at) => onStored(parse(d), at),
+    );
+    return (data: parse(r.data), savedAt: r.savedAt, fresh: r.fresh);
+  }
+
   static Future<({List<CrmScheduleItem> items, DateTime savedAt})?>
   cachedSchedule() async {
     final cached = await OfflineSnapshot.load('student_schedule');

@@ -1,3 +1,4 @@
+import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_student_schedule.dart';
 import '../services/app_session.dart';
@@ -26,6 +27,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<CrmScheduleItem>? _fullSchedule;
   final Map<String, List<CrmScheduleItem>> _cache = {};
   bool _loading = false;
+  DateTime? _staleAt;
 
   // ── Trạng thái điểm danh: CHỈ đọc từ EMS ─────────────────────────────────
   // Trước 2026-09-11 huy hiệu trên thẻ lấy `hienDienYN` của IMS. Từ khi giáo
@@ -153,7 +155,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     setState(() => _loading = true);
     try {
-      _fullSchedule ??= await CrmStudentApi.schedule();
+      if (_fullSchedule == null) {
+        final r = await CrmStudentApi.scheduleCached();
+        _fullSchedule = r.data;
+        _staleAt = r.fresh ? null : r.savedAt;
+      }
       if (!mounted) return;
       setState(() {
         _cache[key] = _fullSchedule!.where((s) => s.occursOn(date)).toList();
@@ -367,6 +373,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
 
+          if (_staleAt != null) StaleNote(_staleAt!),
           // ── Content ──
           Expanded(
             child: _loading

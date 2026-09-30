@@ -1,3 +1,4 @@
+import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
@@ -23,6 +24,7 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
   List<_Semester> _semesters = [];
   _Semester? _selected;
   List<CrmTeacherClass> _lops = [];
+  DateTime? _staleAt;
 
   /// `lmhma` (mã lớp môn học, trùng `sectionCode`) → `lmhid` (id IMS đã đồng
   /// bộ vào CRM) — cần để dựng `session_key` cho EMS. Lấy từ
@@ -64,11 +66,23 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
     setState(() { _selected = sem; _loadingLops = true; _error = null; });
     try {
       final results = await Future.wait([
-        CrmTeacherApi.classes(semester: sem.ma),
+        CrmTeacherApi.classesCached(
+          semester: sem.ma,
+          onStored: (c, _) {
+            if (!mounted || _selected != sem) return;
+            setState(() {
+              _lops = c;
+              _loadingLops = false;
+            });
+          },
+        ),
         CrmTeacherApi.scheduleForSemester(sem.ma),
       ]);
       if (!mounted) return;
-      final classes = results[0] as List<CrmTeacherClass>;
+      final cached = results[0]
+          as ({List<CrmTeacherClass> data, DateTime savedAt, bool fresh});
+      final classes = cached.data;
+      _staleAt = cached.fresh ? null : cached.savedAt;
       final slots = results[1] as List<CrmScheduleSlot>;
       setState(() {
         _lops = classes;
@@ -237,14 +251,21 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
                                   ],
                                 ),
                               )
-                            : ListView.builder(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                                itemCount: _lops.length,
-                                itemBuilder: (ctx, i) => _LopCard(
-                                  lop: _lops[i],
-                                  onTap: () => _showDetail(_lops[i]),
-                                ),
+                            : Column(
+                                children: [
+                                  if (_staleAt != null) StaleNote(_staleAt!),
+                                  Expanded(
+                                    child: ListView.builder(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 16, 16, 24),
+                                      itemCount: _lops.length,
+                                      itemBuilder: (ctx, i) => _LopCard(
+                                        lop: _lops[i],
+                                        onTap: () => _showDetail(_lops[i]),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
           ),
         ],

@@ -1,3 +1,5 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
 
@@ -20,6 +22,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
   static const _orange = Color(0xFFE65100);
 
   List<AnnouncementItem> _items = [];
+  DateTime? _staleAt;
   bool _loading = true;
   String? _error;
 
@@ -49,10 +52,19 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     _inFlight = true;
     if (mounted && _items.isEmpty) setState(() => _loading = true);
     try {
-      final items = await EmsApiService.board();
+      final r = await EmsApiService.boardCached(
+        onStored: (stored, _) {
+          if (!mounted || _items.isNotEmpty) return;
+          setState(() {
+            _items = stored;
+            _loading = false;
+          });
+        },
+      );
       if (!mounted) return;
       setState(() {
-        _items = items;
+        _staleAt = r.fresh ? null : r.savedAt;
+        _items = r.data;
         _error = null;
         _loading = false;
       });
@@ -143,7 +155,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
                     style: const TextStyle(fontSize: 15, height: 1.65)),
                 if (item.images.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  for (final img in item.images) _BoardImage(image: img),
+                  for (final img in item.images) _BoardImage(image: img, width: 1080),
                 ],
                 const SizedBox(height: 24),
                 if (item.mustRead)
@@ -256,13 +268,20 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-      itemCount: _items.length,
-      itemBuilder: (_, i) => _AnnouncementCard(
-        item: _items[i],
-        onTap: () => _open(_items[i]),
-      ),
+    return Column(
+      children: [
+        if (_staleAt != null) StaleNote(_staleAt!),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+            itemCount: _items.length,
+            itemBuilder: (_, i) => _AnnouncementCard(
+              item: _items[i],
+              onTap: () => _open(_items[i]),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -271,32 +290,39 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
 /// lệ thật để danh sách không nhảy khi ảnh tải xong, và hỏng ảnh thì hiện ô
 /// xám có biểu tượng chứ không phải một vệt đỏ giữa thông báo.
 class _BoardImage extends StatelessWidget {
-  const _BoardImage({required this.image, this.inCard = false});
+  const _BoardImage({
+    required this.image,
+    this.inCard = false,
+    this.width = 720,
+  });
+  final int width;
   final AnnouncementImage image;
   final bool inCard;
 
   @override
   Widget build(BuildContext context) {
-    final img = Image.network(
-      image.absoluteUrl,
-      headers: EmsApiService.authHeaders,
+    final parsed = Uri.parse(image.absoluteUrl);
+    final url = parsed.replace(
+      queryParameters: {...parsed.queryParameters, 'w': '$width'},
+    ).toString();
+    final img = CachedNetworkImage(
+      imageUrl: url,
+      httpHeaders: EmsApiService.authHeaders,
       fit: BoxFit.cover,
       width: double.infinity,
-      loadingBuilder: (_, child, progress) => progress == null
-          ? child
-          : Container(
-              height: inCard ? null : 180,
-              color: Colors.grey[200],
-              child: const Center(
-                child: SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Color(0xFFE65100)),
-                ),
-              ),
-            ),
-      errorBuilder: (_, __, ___) => Container(
+      placeholder: (_, __) => Container(
+        height: inCard ? null : 180,
+        color: Colors.grey[200],
+        child: const Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: Color(0xFFE65100)),
+          ),
+        ),
+      ),
+      errorWidget: (_, __, ___) => Container(
         height: inCard ? null : 140,
         color: Colors.grey[200],
         child: Icon(Icons.broken_image_outlined,
