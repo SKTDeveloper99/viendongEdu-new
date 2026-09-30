@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'profile_menu_card.dart';
+import '../../../components/theme_mode_sheet.dart';
+import '../../../services/theme_controller.dart';
 import '../../../theme/vd_tokens.dart';
 
 /// Profile tab: identity header, three menu cards and the version footer.
@@ -98,6 +100,17 @@ class ProfileTab extends StatelessWidget {
                     label: 'Đổi mật khẩu',
                     onTap: () =>
                         Navigator.pushNamed(context, '/change_password'),
+                  ),
+                  const SizedBox(height: 10),
+                  // Giao diện Sáng/Tối/Theo máy — mặc định Sáng.
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: ThemeController.instance,
+                    builder: (_, mode, _) => ProfileMenuCard(
+                      icon: Icons.brightness_6_outlined,
+                      label: 'Giao diện',
+                      subtitle: ThemeController.label(mode),
+                      onTap: () => showThemeModeSheet(context),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   ProfileMenuCard(

@@ -8,12 +8,16 @@ class ProfileMenuCard extends StatelessWidget {
   final VoidCallback onTap;
   final Color? color;
 
+  /// Dòng phụ dưới nhãn (vd. lựa chọn hiện tại). Bỏ trống thì chỉ có nhãn.
+  final String? subtitle;
+
   const ProfileMenuCard({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
     this.color,
+    this.subtitle,
   });
 
   @override
@@ -43,12 +47,25 @@ class ProfileMenuCard extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.vd.inkMuted,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               Icon(Icons.chevron_right, color: context.vd.inkFaint, size: 22),

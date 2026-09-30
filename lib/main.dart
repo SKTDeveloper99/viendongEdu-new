@@ -8,6 +8,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/app_session.dart';
+import 'services/theme_controller.dart';
 import 'theme/vd_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -51,8 +52,9 @@ void main() async {
   // Crashlytics: crash reports only. PRIVACY (users include minors): never call
   // setUserIdentifier or log MSSV, names, phone, tokens or request bodies.
   try {
-    await FirebaseCrashlytics.instance
-        .setCrashlyticsCollectionEnabled(!kDebugMode);
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+      !kDebugMode,
+    );
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -89,6 +91,9 @@ void main() async {
     revoke: AppSession.instance.revokeTeacherDeviceToken,
   );
 
+  // Nạp lựa chọn Sáng/Tối đã lưu (mặc định Sáng; lỗi đọc → Sáng).
+  await ThemeController.instance.load();
+
   // Vẽ giao diện TRƯỚC. Không await notification init ở đây:
   // requestPermission chờ người dùng bấm nút, sẽ treo màn hình trắng.
   runApp(const MyApp());
@@ -100,12 +105,19 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.instance,
+      builder: (context, themeMode, _) => _buildApp(themeMode),
+    );
+  }
+
+  Widget _buildApp(ThemeMode themeMode) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'ViendongEdu',
       theme: VdTheme.light(),
       darkTheme: VdTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
