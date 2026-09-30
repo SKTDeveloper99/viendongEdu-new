@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/crm_money_tuition.dart';
 import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
+import '../theme/vd_tokens.dart';
 
 // ── Helpers ─────────────────────────────────────────────
 // LUẬT TIỀN (CLAUDE.md): hiện NGUYÊN VĂN số máy chủ trả. null nghĩa là
@@ -29,7 +30,6 @@ String _fmtDate(DateTime? d) => d == null
 // hình chỉ ĐỌC summary đã áp luật thu sẵn từ máy chủ.
 class TuitionScreen extends StatefulWidget {
   const TuitionScreen({super.key});
-
   @override
   State<TuitionScreen> createState() => _TuitionScreenState();
 }
@@ -72,23 +72,23 @@ class _TuitionScreenState extends State<TuitionScreen> {
     final summary = _tuition?.summary;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
           // ── Header ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius:
                   BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 _BackButton(),
                 SizedBox(width: 8),
@@ -97,7 +97,7 @@ class _TuitionScreenState extends State<TuitionScreen> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.vd.onPrimary,
                   ),
                 ),
               ],
@@ -106,32 +106,32 @@ class _TuitionScreenState extends State<TuitionScreen> {
 
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFE65100)))
+                ? Center(
+                    child: CircularProgressIndicator(color: context.vd.primary))
                 : _error != null
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline,
-                                size: 48, color: Colors.grey),
+                            Icon(Icons.error_outline,
+                                size: 48, color: context.vd.inkFaint),
                             const SizedBox(height: 12),
                             Text(_error!,
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(color: context.vd.inkFaint),
                                 textAlign: TextAlign.center),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _fetch,
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE65100)),
-                              child: const Text('Thử lại',
-                                  style: TextStyle(color: Colors.white)),
+                                  backgroundColor: context.vd.primary),
+                              child: Text('Thử lại',
+                                  style: TextStyle(color: context.vd.onPrimary)),
                             ),
                           ],
                         ),
                       )
                     : RefreshIndicator(
-                        color: const Color(0xFFE65100),
+                        color: context.vd.primary,
                         onRefresh: _fetch,
                         child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -155,16 +155,16 @@ class _TuitionScreenState extends State<TuitionScreen> {
 
                   // ── Transaction list ──
                   if (payments.isEmpty)
-                    const Center(
+                    Center(
                       child: Padding(
                         padding: EdgeInsets.only(top: 40),
                         child: Column(
                           children: [
                             Icon(Icons.receipt_long_outlined,
-                                size: 64, color: Colors.grey),
+                                size: 64, color: context.vd.inkFaint),
                             SizedBox(height: 12),
                             Text('Không có giao dịch',
-                                style: TextStyle(color: Colors.grey)),
+                                style: TextStyle(color: context.vd.inkFaint)),
                           ],
                         ),
                       ),
@@ -187,7 +187,7 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: () => Navigator.pop(context),
-        child: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+        child: Icon(Icons.arrow_back_ios, color: context.vd.onPrimary, size: 20),
       );
 }
 
@@ -208,15 +208,15 @@ class _SummarySection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+            gradient: LinearGradient(
+              colors: [context.vd.primary, context.vd.accent],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                  color: Colors.black26,
+                  color: context.vd.shadow,
                   blurRadius: 8,
                   offset: Offset(0, 4)),
             ],
@@ -224,31 +224,31 @@ class _SummarySection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Tổng học phí phải đóng',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 13),
               ),
               const SizedBox(height: 8),
               Text(
                 _fmtAmount(s?.owedTotal),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: context.vd.onPrimary,
                 ),
               ),
               if (unknown) ...[
                 const SizedBox(height: 6),
                 Text(
                   s?.moneyUnknownReason ?? 'Chưa có luật tính học phí cho lớp này.',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 12),
                 ),
               ],
               const SizedBox(height: 4),
               if (s?.paymentStatus != null)
                 Text(
                   s!.paymentStatus!,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 12),
                 ),
             ],
           ),
@@ -264,7 +264,7 @@ class _SummarySection extends StatelessWidget {
                 icon: Icons.check_circle_outline,
                 label: 'Đã đóng',
                 text: _fmtAmount(s?.paid),
-                color: const Color(0xFF4CAF50),
+                color: context.vd.success,
               ),
             ),
             const SizedBox(width: 12),
@@ -273,7 +273,7 @@ class _SummarySection extends StatelessWidget {
                 icon: Icons.account_balance_wallet_outlined,
                 label: 'Còn lại',
                 text: _fmtAmount(s?.balance),
-                color: const Color(0xFFF44336),
+                color: context.vd.danger,
               ),
             ),
           ],
@@ -285,17 +285,17 @@ class _SummarySection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.vd.surface,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+              boxShadow: [
+                BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Khoản thu khác (KHÔNG phải học phí)',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text('Khoản thu khác (KHÔNG phải học phí)',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.vd.inkFaint)),
                 const SizedBox(height: 6),
                 if ((s.otherReceipts.mienGiamKhenThuong ?? 0) != 0)
                   Text('Miễn giảm/khen thưởng: ${_fmtAmount(s.otherReceipts.mienGiamKhenThuong)}',
@@ -333,11 +333,11 @@ class _MiniCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       child: Row(
@@ -356,8 +356,8 @@ class _MiniCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.grey)),
+                    style: TextStyle(
+                        fontSize: 12, color: context.vd.inkFaint)),
                 const SizedBox(height: 2),
                 Text(
                   text,
@@ -388,21 +388,21 @@ class _CongNoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Sổ công nợ (IMS)',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+          Text('Sổ công nợ (IMS)',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.vd.inkFaint)),
           const SizedBox(height: 6),
           if (!congNo.computable || congNo.note != null)
             Text(congNo.note ?? 'Chưa có nghĩa vụ học phí được ghi nhận.',
-                style: const TextStyle(fontSize: 12, color: Colors.grey))
+                style: TextStyle(fontSize: 12, color: context.vd.inkFaint))
           else ...[
             Text('Phải nộp: ${_fmtAmount(congNo.phaiNop)}', style: const TextStyle(fontSize: 12)),
             Text('Đã nộp: ${_fmtAmount(congNo.daNop)}', style: const TextStyle(fontSize: 12)),
@@ -423,17 +423,17 @@ class _TransactionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = item;
     final isPaid = (t.soTien ?? 0) > 0;
-    final color = isPaid ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
-    final bgColor = isPaid ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE);
+    final color = isPaid ? context.vd.success : context.vd.danger;
+    final bgColor = isPaid ? context.vd.successSoft : context.vd.dangerSoft;
     final icon = isPaid ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       child: Padding(
@@ -459,11 +459,11 @@ class _TransactionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(_fmtDate(t.ngayNop),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      style: TextStyle(fontSize: 12, color: context.vd.inkFaint)),
                   if ((t.ghiChu ?? '').isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(t.ghiChu!,
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        style: TextStyle(fontSize: 11, color: context.vd.inkFaint),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis),
                   ],

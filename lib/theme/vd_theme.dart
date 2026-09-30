@@ -13,30 +13,6 @@ import 'vd_tokens.dart';
 /// Font: BeVietnamPro is used everywhere (function AND display hierarchy).
 /// Cormorant Garamond is deliberately NOT used because it renders the
 /// Vietnamese circumflex (ô) incorrectly on dynamic text.
-@Deprecated('Use context.vd (VdTokens) instead.')
-class VdColors {
-  VdColors._();
-
-  static const cream = Color(0xFFFAF7F2); // = VdTokens.light.bg
-  static const paper = Color(0xFFF4EDE1); // = VdTokens.light.surfaceAlt
-  static const espresso = Color(0xFF231E1A); // = VdTokens.light.ink
-  static const orange = Color(0xFFE8743C); // = VdTokens.light.accent
-  static const terracotta = Color(0xFFA8471A); // = VdTokens.light.primary
-  static const brick = Color(0xFF8C2B18);
-
-  static const headerTop = Color(0xFF94301B);
-  static const headerBottom = Color(0xFF7C2415);
-
-  static const hair = Color(0x1A231E1A);
-  static const ink60 = Color(0x99231E1A);
-  static const ink45 = Color(0x73231E1A);
-
-  static const cream78 = Color(0xC7FAF7F2);
-  static const cream58 = Color(0x94FAF7F2);
-
-  static const orangeTint = Color(0x24E8743C);
-}
-
 class VdTheme {
   VdTheme._();
 

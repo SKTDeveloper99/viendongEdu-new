@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/crm_money_capbu.dart';
 import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
+import '../theme/vd_tokens.dart';
 
 String _fmtDate(DateTime? d) => d == null
     ? '–'
@@ -48,16 +49,16 @@ class _CapBuScreenState extends State<CapBuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
           // ── Header ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -67,17 +68,17 @@ class _CapBuScreenState extends State<CapBuScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back_ios,
-                      color: Colors.white, size: 20),
+                  child: Icon(Icons.arrow_back_ios,
+                      color: context.vd.onPrimary, size: 20),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Cấp bù',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.vd.onPrimary,
                     ),
                   ),
                 ),
@@ -86,13 +87,13 @@ class _CapBuScreenState extends State<CapBuScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.25),
+                      color: context.vd.surface.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '${_items.length} hóa đơn',
-                      style: const TextStyle(
-                          color: Colors.white,
+                      style: TextStyle(
+                          color: context.vd.onPrimary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600),
                     ),
@@ -104,47 +105,47 @@ class _CapBuScreenState extends State<CapBuScreen> {
           // ── Content ──
           Expanded(
             child: _loading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
-                        color: Color(0xFFFF8C00)))
+                        color: context.vd.accent))
                 : _error != null
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline,
-                                size: 48, color: Colors.grey),
+                            Icon(Icons.error_outline,
+                                size: 48, color: context.vd.inkFaint),
                             const SizedBox(height: 12),
                             Text(_error!,
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(color: context.vd.inkFaint),
                                 textAlign: TextAlign.center),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _fetch,
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFF8C00)),
-                              child: const Text('Thử lại',
-                                  style: TextStyle(color: Colors.white)),
+                                  backgroundColor: context.vd.accent),
+                              child: Text('Thử lại',
+                                  style: TextStyle(color: context.vd.onPrimary)),
                             ),
                           ],
                         ),
                       )
                     : _items.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.account_balance,
-                                    size: 64, color: Colors.grey),
+                                    size: 64, color: context.vd.inkFaint),
                                 SizedBox(height: 12),
                                 Text('Không có hóa đơn cấp bù',
-                                    style: TextStyle(color: Colors.grey)),
+                                    style: TextStyle(color: context.vd.inkFaint)),
                               ],
                             ),
                           )
                         : RefreshIndicator(
                             onRefresh: _fetch,
-                            color: const Color(0xFFFF8C00),
+                            color: context.vd.accent,
                             child: ListView.builder(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding:
@@ -183,14 +184,14 @@ class _CapBuCard extends StatelessWidget {
       child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
-        border: const Border(
-            left: BorderSide(color: Color(0xFFFF8C00), width: 4)),
+        border: Border(
+            left: BorderSide(color: context.vd.accent, width: 4)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -211,10 +212,10 @@ class _CapBuCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   _fmtAmount(item.thanhTien),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFFF8C00),
+                    color: context.vd.accent,
                   ),
                 ),
               ],
@@ -223,13 +224,13 @@ class _CapBuCard extends StatelessWidget {
             // Học kỳ — dùng hocky_ten (nhãn đầy đủ) thay vì hocKy IMS cũ.
             Row(
               children: [
-                const Icon(Icons.school_outlined,
-                    size: 13, color: Colors.grey),
+                Icon(Icons.school_outlined,
+                    size: 13, color: context.vd.inkFaint),
                 const SizedBox(width: 5),
                 Expanded(
                   child: Text(item.hocKyTen ?? '–',
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.grey)),
+                      style: TextStyle(
+                          fontSize: 12, color: context.vd.inkFaint)),
                 ),
               ],
             ),
@@ -237,18 +238,18 @@ class _CapBuCard extends StatelessWidget {
             // Mã + ngày cấp
             Row(
               children: [
-                const Icon(Icons.tag, size: 13, color: Colors.grey),
+                Icon(Icons.tag, size: 13, color: context.vd.inkFaint),
                 const SizedBox(width: 5),
                 Text('Mã: ${item.ma ?? '–'}',
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.grey)),
+                    style: TextStyle(
+                        fontSize: 12, color: context.vd.inkFaint)),
                 const Spacer(),
-                const Icon(Icons.calendar_today,
-                    size: 12, color: Colors.grey),
+                Icon(Icons.calendar_today,
+                    size: 12, color: context.vd.inkFaint),
                 const SizedBox(width: 4),
                 Text(_fmtDate(item.ngayCap),
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.grey)),
+                    style: TextStyle(
+                        fontSize: 12, color: context.vd.inkFaint)),
               ],
             ),
           ],
@@ -266,8 +267,8 @@ class _CapBuDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.vd.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
@@ -280,7 +281,7 @@ class _CapBuDetailSheet extends StatelessWidget {
               margin: const EdgeInsets.only(top: 12, bottom: 20),
               width: 40, height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: context.vd.hairline,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -290,12 +291,12 @@ class _CapBuDetailSheet extends StatelessWidget {
                   fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(_fmtAmount(item.thanhTien),
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFFF8C00))),
+                  color: context.vd.accent)),
           const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          Divider(height: 1, color: context.vd.surfaceAlt),
           const SizedBox(height: 16),
           _Row(icon: Icons.tag, label: 'Mã HĐ', value: item.ma ?? '–'),
           const SizedBox(height: 10),
@@ -330,12 +331,12 @@ class _Row extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: const Color(0xFFFF8C00)),
+        Icon(icon, size: 16, color: context.vd.accent),
         const SizedBox(width: 10),
         SizedBox(
           width: 88,
           child: Text(label,
-              style: const TextStyle(fontSize: 13, color: Colors.grey)),
+              style: TextStyle(fontSize: 13, color: context.vd.inkFaint)),
         ),
         Expanded(
           child: Text(value,

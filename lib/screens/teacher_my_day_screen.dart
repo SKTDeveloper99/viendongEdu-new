@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
-import '../theme/vd_theme.dart';
 import '../data/api/attendance_api.dart';
 import '../data/api/student_cases_api.dart';
+import '../theme/vd_tokens.dart';
 /// Một mặt làm việc duy nhất cho giảng viên: buổi dạy hôm nay từ EMS và các
 /// ca sinh viên đang chờ chính người này phản hồi từ Student Cases.
 ///
@@ -113,15 +113,15 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
                 : 'Đã ghi nhận phản hồi chính thức.',
           ),
           backgroundColor: result.requiresApproval
-              ? const Color(0xFFF57C00)
-              : const Color(0xFF2E7D32),
+              ? context.vd.accent
+              : context.vd.success,
         ),
       );
       await _loadCases();
     } on EmsException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: Colors.red[700]),
+        SnackBar(content: Text(e.message), backgroundColor: context.vd.danger),
       );
     } finally {
       if (mounted) setState(() => _answering.remove(item.id));
@@ -136,11 +136,11 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
     final overdue = cases.where((c) => c.isOverdue).length;
 
     return Scaffold(
-      backgroundColor: VdColors.cream,
+      backgroundColor: context.vd.bg,
       appBar: AppBar(
         title: const Text('Ngày làm việc của tôi'),
-        backgroundColor: VdColors.headerTop,
-        foregroundColor: Colors.white,
+        backgroundColor: context.vd.headerTop,
+        foregroundColor: context.vd.onPrimary,
         actions: [
           IconButton(
             tooltip: 'Tải lại',
@@ -189,12 +189,12 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
               badge: _cases == null ? null : '${cases.length}',
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Ca được giao hoặc định tuyến tới bạn. Câu trả lời được lưu vào '
               'nhật ký xử lý của nhà trường.',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black54,
+                color: context.vd.inkMuted,
                 height: 1.35,
               ),
             ),
@@ -225,7 +225,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.grey.shade300),
+        side: BorderSide(color: context.vd.hairline),
         borderRadius: BorderRadius.circular(14),
       ),
       child: InkWell(
@@ -239,13 +239,13 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: (complete ? Colors.green : const Color(0xFFE65100))
+                  color: (complete ? context.vd.success : context.vd.primary)
                       .withValues(alpha: 0.11),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   complete ? Icons.check_circle_outline : Icons.how_to_reg,
-                  color: complete ? Colors.green[700] : const Color(0xFFE65100),
+                  color: complete ? context.vd.success : context.vd.primary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -263,9 +263,9 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
                     Text(
                       '${session.timeLabel}'
                       '${session.room?.trim().isNotEmpty == true ? ' · ${session.room}' : ''}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: context.vd.inkMuted,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -277,14 +277,14 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: complete
-                            ? Colors.green[700]
-                            : Colors.orange[800],
+                            ? context.vd.success
+                            : context.vd.primary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.black38),
+              Icon(Icons.chevron_right, color: context.vd.inkFaint),
             ],
           ),
         ),
@@ -300,7 +300,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         side: BorderSide(
-          color: item.isOverdue ? Colors.red.shade200 : Colors.grey.shade300,
+          color: item.isOverdue ? context.vd.dangerSoft : context.vd.hairline,
         ),
         borderRadius: BorderRadius.circular(14),
       ),
@@ -323,16 +323,16 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
                 if (urgent || item.isOverdue)
                   _StatusChip(
                     label: item.isOverdue ? 'QUÁ HẠN' : 'ƯU TIÊN',
-                    color: Colors.red[700]!,
+                    color: context.vd.danger,
                   ),
               ],
             ),
             const SizedBox(height: 6),
             Text(
               '${item.studentName.isEmpty ? 'Sinh viên' : item.studentName} · ${item.studentMssv}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF37474F),
+                color: context.vd.inkMuted,
               ),
             ),
             if (item.description?.trim().isNotEmpty == true) ...[
@@ -341,10 +341,10 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
                 item.description!,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   height: 1.35,
-                  color: Colors.black87,
+                  color: context.vd.ink,
                 ),
               ),
             ],
@@ -355,16 +355,16 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
               children: [
                 _StatusChip(
                   label: _relationLabel(item.relation),
-                  color: Colors.blueGrey,
+                  color: context.vd.inkMuted,
                 ),
                 _StatusChip(
                   label: _statusLabel(item.status),
-                  color: const Color(0xFFE65100),
+                  color: context.vd.primary,
                 ),
                 if (item.dueAt != null)
                   _StatusChip(
                     label: 'Hạn ${_formatDate(item.dueAt!)}',
-                    color: Colors.grey[700]!,
+                    color: context.vd.inkMuted,
                   ),
               ],
             ),
@@ -374,16 +374,16 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
               child: FilledButton.icon(
                 onPressed: busy ? null : () => _answer(item),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFE65100),
+                  backgroundColor: context.vd.primary,
                   padding: const EdgeInsets.symmetric(vertical: 11),
                 ),
                 icon: busy
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: context.vd.onPrimary,
                         ),
                       )
                     : const Icon(Icons.reply, size: 18),
@@ -437,8 +437,8 @@ class _DaySummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+        gradient: LinearGradient(
+          colors: [context.vd.primary, context.vd.accent],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -447,10 +447,10 @@ class _DaySummary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Ưu tiên hôm nay',
             style: TextStyle(
-              color: Colors.white,
+              color: context.vd.onPrimary,
               fontWeight: FontWeight.w800,
               fontSize: 18,
             ),
@@ -481,8 +481,8 @@ class _SummaryNumber extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.vd.onPrimary,
             fontSize: 23,
             fontWeight: FontWeight.w800,
           ),
@@ -491,7 +491,7 @@ class _SummaryNumber extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white70, fontSize: 10),
+          style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 10),
         ),
       ],
     ),
@@ -507,7 +507,7 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Icon(icon, size: 20, color: const Color(0xFFE65100)),
+      Icon(icon, size: 20, color: context.vd.primary),
       const SizedBox(width: 7),
       Expanded(
         child: Text(
@@ -519,13 +519,13 @@ class _SectionTitle extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFE0B2),
+            color: context.vd.accentSoft,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             badge!,
-            style: const TextStyle(
-              color: Color(0xFFE65100),
+            style: TextStyle(
+              color: context.vd.primary,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -544,12 +544,12 @@ class _InlineError extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 10),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: Colors.red[50],
+      color: context.vd.dangerSoft,
       borderRadius: BorderRadius.circular(12),
     ),
     child: Row(
       children: [
-        Icon(Icons.cloud_off, color: Colors.red[700]),
+        Icon(Icons.cloud_off, color: context.vd.danger),
         const SizedBox(width: 10),
         Expanded(child: Text(message, style: const TextStyle(fontSize: 12))),
         TextButton(onPressed: onRetry, child: const Text('Thử lại')),
@@ -567,15 +567,15 @@ class _EmptyBlock extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.vd.surface,
       borderRadius: BorderRadius.circular(14),
     ),
     child: Row(
       children: [
-        Icon(icon, color: Colors.green[700]),
+        Icon(icon, color: context.vd.success),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(text, style: const TextStyle(color: Colors.black54)),
+          child: Text(text, style: TextStyle(color: context.vd.inkMuted)),
         ),
       ],
     ),
@@ -589,13 +589,13 @@ class _LoadingBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     height: height,
-    child: const Center(
+    child: Center(
       child: SizedBox(
         width: 28,
         height: 28,
         child: CircularProgressIndicator(
           strokeWidth: 3,
-          color: Color(0xFFE65100),
+          color: context.vd.primary,
         ),
       ),
     ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/crm_registration_models.dart';
 import '../services/crm_registration_api.dart';
 import '../services/crm_session_guard.dart';
+import '../theme/vd_tokens.dart';
 
 String _fmtDate(DateTime? d) => d == null
     ? '–'
@@ -18,7 +19,6 @@ String _fmtDate(DateTime? d) => d == null
 // 2026-09-24).
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
-
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
@@ -178,7 +178,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void _showSnack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: isError ? Colors.red[700] : Colors.green[700],
+      backgroundColor: isError ? context.vd.danger : context.vd.success,
       behavior: SnackBarBehavior.floating,
     ));
   }
@@ -186,7 +186,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(
         top: false,
         child: Column(
@@ -195,9 +195,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                  colors: [context.vd.primary, context.vd.accent],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -210,16 +210,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     children: [
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.arrow_back_ios,
-                            color: Colors.white, size: 20),
+                        child: Icon(Icons.arrow_back_ios,
+                            color: context.vd.onPrimary, size: 20),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Đăng ký môn học',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: context.vd.onPrimary,
                         ),
                       ),
                     ],
@@ -229,30 +229,30 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Container(
                       padding: const EdgeInsets.only(left: 14, right: 6, top: 6, bottom: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.vd.surface,
                         borderRadius: BorderRadius.circular(24),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+                        boxShadow: [
+                          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2)),
                         ],
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<CrmRegistrationPeriod>(
                           value: _selectedPeriod,
-                          dropdownColor: Colors.white,
+                          dropdownColor: context.vd.surface,
                           borderRadius: BorderRadius.circular(14),
-                          iconEnabledColor: const Color(0xFFE65100),
+                          iconEnabledColor: context.vd.primary,
                           icon: const Icon(Icons.expand_more_rounded, size: 20),
                           isDense: true,
-                          style: const TextStyle(
-                              color: Color(0xFF333333),
+                          style: TextStyle(
+                              color: context.vd.ink,
                               fontSize: 13,
                               fontWeight: FontWeight.w500),
                           selectedItemBuilder: (_) => _periods
                               .map((p) => Center(
                                     child: Text(p.periodName ?? p.periodCode ?? '–',
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                            color: Color(0xFFE65100),
+                                        style: TextStyle(
+                                            color: context.vd.primary,
                                             fontSize: 13,
                                             fontWeight: FontWeight.w600)),
                                   ))
@@ -278,8 +278,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
             Expanded(
               child: _loadingPeriods
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Color(0xFFE65100)))
+                  ? Center(
+                      child: CircularProgressIndicator(color: context.vd.primary))
                   : _error != null && _periods.isEmpty
                       ? _buildError()
                       : _buildBody(),
@@ -296,16 +296,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: open ? const Color(0xFFE8F5E9) : Colors.grey.shade100,
+        color: open ? context.vd.successSoft : context.vd.surfaceAlt,
         border: Border.all(
-            color: open ? const Color(0xFF4CAF50) : Colors.grey.shade300),
+            color: open ? context.vd.success : context.vd.hairline),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Icon(
             open ? Icons.lock_open_rounded : Icons.lock_rounded,
-            color: open ? const Color(0xFF2E7D32) : Colors.grey[600],
+            color: open ? context.vd.success : context.vd.inkMuted,
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -318,13 +318,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
-                    color: open ? const Color(0xFF2E7D32) : Colors.grey[800],
+                    color: open ? context.vd.success : context.vd.inkMuted,
                   ),
                 ),
                 if (period.startAt != null && period.endAt != null)
                   Text(
                     '${_fmtDate(period.startAt)} – ${_fmtDate(period.endAt)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
                   ),
               ],
             ),
@@ -336,19 +336,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   Widget _buildBody() {
     if (_loadingData) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFE65100)));
+      return Center(
+          child: CircularProgressIndicator(color: context.vd.primary));
     }
     if (_error != null) return _buildError();
     if (_periods.isEmpty) {
       // Owner rule: no hidden screens — empty data is real, show it plainly.
-      return const Center(
+      return Center(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(
             'Hiện không có đợt đăng ký nào cho học kỳ này.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: context.vd.inkFaint),
           ),
         ),
       );
@@ -379,10 +379,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Xem tất cả lớp', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text('Xem tất cả lớp', style: TextStyle(fontSize: 12, color: context.vd.inkFaint)),
                 Switch(
                   value: _allSections,
-                  activeThumbColor: const Color(0xFFE65100),
+                  activeThumbColor: context.vd.primary,
                   onChanged: _loadingData ? null : _toggleAllSections,
                 ),
               ],
@@ -395,12 +395,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF3E0),
+              color: context.vd.accentSoft,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.info_outline, size: 16, color: Color(0xFFE65100)),
+                Icon(Icons.info_outline, size: 16, color: context.vd.primary),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -414,11 +414,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
         const SizedBox(height: 4),
         if (offerings.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 16),
             child: Center(
               child: Text('Không có môn học mở đăng ký cho đợt này.',
-                  style: TextStyle(color: Colors.grey)),
+                  style: TextStyle(color: context.vd.inkFaint)),
             ),
           )
         else
@@ -440,16 +440,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isRegistered
-              ? const Color(0xFF4CAF50)
-              : const Color(0xFFEEEEEE),
+              ? context.vd.success
+              : context.vd.hairline,
           width: isRegistered ? 1.5 : 1,
         ),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2)),
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 5, offset: Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -473,14 +473,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
+                      color: context.vd.successSoft,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Đã gửi (EMS)',
                       style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF2E7D32),
+                          color: context.vd.success,
                           fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -508,7 +508,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   'Ngoài chương trình học của bạn',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                  style: TextStyle(fontSize: 11, color: context.vd.inkMuted, fontStyle: FontStyle.italic),
                 ),
               ),
             const SizedBox(height: 12),
@@ -516,12 +516,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               width: double.infinity,
               height: 40,
               child: isProcessing
-                  ? const Center(
+                  ? Center(
                       child: SizedBox(
                         height: 24,
                         width: 24,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2.5, color: Color(0xFFE65100)),
+                            strokeWidth: 2.5, color: context.vd.primary),
                       ),
                     )
                   : ElevatedButton(
@@ -530,15 +530,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isRegistered
-                            ? const Color(0xFFFFEBEE)
-                            : const Color(0xFFE65100),
+                            ? context.vd.dangerSoft
+                            : context.vd.primary,
                         foregroundColor: isRegistered
-                            ? const Color(0xFFC62828)
-                            : Colors.white,
+                            ? context.vd.danger
+                            : context.vd.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
-                        disabledBackgroundColor: Colors.grey.shade200,
+                        disabledBackgroundColor: context.vd.hairline,
                       ),
                       child: Text(
                         isRegistered
@@ -561,12 +561,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         padding: const EdgeInsets.only(top: 4),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: const Color(0xFFE65100)),
+            Icon(icon, size: 14, color: context.vd.primary),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 text,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                style: TextStyle(fontSize: 13, color: context.vd.ink),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -580,18 +580,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+              Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
               const SizedBox(height: 12),
               Text(_error ?? 'Có lỗi xảy ra',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.grey)),
+                  style: TextStyle(color: context.vd.inkFaint)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _fetchPeriods,
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE65100)),
-                child: const Text('Thử lại',
-                    style: TextStyle(color: Colors.white)),
+                    backgroundColor: context.vd.primary),
+                child: Text('Thử lại',
+                    style: TextStyle(color: context.vd.onPrimary)),
               ),
             ],
           ),
@@ -607,12 +607,12 @@ class _ResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEms = result.isEmsRequest;
-    final color = isEms ? const Color(0xFF2E7D32) : const Color(0xFF1565C0);
+    final color = isEms ? context.vd.success : context.vd.info;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
@@ -626,12 +626,12 @@ class _ResultCard extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 2),
                 Text(result.classCode ?? '–',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    style: TextStyle(fontSize: 11, color: context.vd.inkFaint)),
                 if (isEms && !result.syncedToIms) ...[
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Ghi nhận ở EMS, chưa gửi tới Phòng Đào tạo (IMS).',
-                    style: TextStyle(fontSize: 10, color: Colors.orange, fontStyle: FontStyle.italic),
+                    style: TextStyle(fontSize: 10, color: context.vd.accent, fontStyle: FontStyle.italic),
                   ),
                 ],
               ],

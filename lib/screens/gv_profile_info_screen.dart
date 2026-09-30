@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/crm_teacher_profile.dart';
+import '../theme/vd_tokens.dart';
 
 /// Chỉ hiển thị số liệu — nhưng có nút sửa (góc phải header), điều hướng
 /// sang `ProfileEditScreen` (route '/profile_edit'). Khi màn đó pop về với
@@ -43,7 +44,7 @@ class GvProfileInfoScreen extends StatelessWidget {
     final email = profile?.email;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.vd.surface,
       body: SafeArea(
         top: false,
         child: Column(
@@ -52,9 +53,9 @@ class GvProfileInfoScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                  colors: [context.vd.primary, context.vd.accent],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -65,23 +66,23 @@ class GvProfileInfoScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios,
-                        color: Colors.white, size: 20),
+                    child: Icon(Icons.arrow_back_ios,
+                        color: context.vd.onPrimary, size: 20),
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Thông tin cá nhân',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => _openEdit(context),
-                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                    icon: Icon(Icons.edit_outlined, color: context.vd.onPrimary),
                     tooltip: 'Sửa hồ sơ',
                   ),
                 ],
@@ -137,16 +138,16 @@ class _Section extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFE65100))),
+                  color: context.vd.primary)),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.vd.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[200]!, width: 1),
+            border: Border.all(color: context.vd.hairline, width: 1),
           ),
           child: Column(
             children: [
@@ -175,12 +176,12 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: const Color(0xFFE65100)),
+          Icon(icon, size: 20, color: context.vd.primary),
           const SizedBox(width: 12),
           SizedBox(
             width: 110,
             child: Text(label,
-                style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                style: TextStyle(fontSize: 13, color: context.vd.inkFaint)),
           ),
           Expanded(
             child: Text(value,

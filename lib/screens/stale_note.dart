@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/vd_tokens.dart';
 
 /// Small grey line shown when a screen displays stored data because the
 /// refresh failed.
@@ -15,7 +16,7 @@ class StaleNote extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Text(
         'Chưa cập nhật được — dữ liệu lúc ${_two(t.hour)}:${_two(t.minute)} ${_two(t.day)}/${_two(t.month)}',
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
+        style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
       ),
     );
   }

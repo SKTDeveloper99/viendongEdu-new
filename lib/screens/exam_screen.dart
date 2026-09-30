@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/crm_student_exams.dart';
 import '../services/crm_student_api.dart';
+import '../theme/vd_tokens.dart';
 
 // ── Model ────────────────────────────────────────────────
 //
@@ -129,22 +130,21 @@ class _ExamScreenState extends State<ExamScreen> {
 
   List<ExamItem> get _filtered => _displayExams;
 
-
   @override
   Widget build(BuildContext context) {
     final exams = _filtered;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
           // ── Header ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -158,16 +158,16 @@ class _ExamScreenState extends State<ExamScreen> {
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back_ios,
-                          color: Colors.white, size: 20),
+                      child: Icon(Icons.arrow_back_ios,
+                          color: context.vd.onPrimary, size: 20),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Lịch thi',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                       ),
                     ),
                   ],
@@ -175,7 +175,7 @@ class _ExamScreenState extends State<ExamScreen> {
                 const SizedBox(height: 4),
                 // Text(
                 //   'MSSV: ${AppSession.instance.hocVien?.mshv ?? ''}',
-                //   style: const TextStyle(color: Colors.white70, fontSize: 13),
+                //   style: const TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 13),
                 // ),
                 const SizedBox(height: 16),
 
@@ -184,38 +184,38 @@ class _ExamScreenState extends State<ExamScreen> {
                   Container(
                     padding: const EdgeInsets.only(left: 14, right: 6, top: 6, bottom: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.vd.surface,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+                      boxShadow: [
+                        BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2)),
                       ],
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedHkma,
-                        dropdownColor: Colors.white,
+                        dropdownColor: context.vd.surface,
                         borderRadius: BorderRadius.circular(14),
-                        iconEnabledColor: const Color(0xFFE65100),
+                        iconEnabledColor: context.vd.primary,
                         icon: const Icon(Icons.expand_more_rounded, size: 20),
                         isDense: true,
-                        style: const TextStyle(
-                          color: Color(0xFF333333),
+                        style: TextStyle(
+                          color: context.vd.ink,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
                         selectedItemBuilder: (_) => [
-                          const Center(
+                          Center(
                             child: Text(allLabel,
                                 style: TextStyle(
-                                  color: Color(0xFFE65100),
+                                  color: context.vd.primary,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 )),
                           ),
                           ..._semesters.map((s) => Center(
                                 child: Text(s.hkten,
-                                    style: const TextStyle(
-                                      color: Color(0xFFE65100),
+                                    style: TextStyle(
+                                      color: context.vd.primary,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     )),
@@ -239,8 +239,8 @@ class _ExamScreenState extends State<ExamScreen> {
           // ── Content ──
           Expanded(
             child: _loading || _switchingSemester
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFE65100)))
+                ? Center(
+                    child: CircularProgressIndicator(color: context.vd.primary))
                 : _error != null
                     ? Center(
                         child: Column(
@@ -255,9 +255,9 @@ class _ExamScreenState extends State<ExamScreen> {
                             ElevatedButton(
                               onPressed: _fetchExams,
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFFE65100)),
-                              child: const Text('Thử lại',
-                                  style: TextStyle(color: Colors.white)),
+                                  backgroundColor: context.vd.primary),
+                              child: Text('Thử lại',
+                                  style: TextStyle(color: context.vd.onPrimary)),
                             ),
                           ],
                         ),
@@ -276,7 +276,7 @@ class _ExamScreenState extends State<ExamScreen> {
                             ),
                           )
                         : RefreshIndicator(
-                            color: const Color(0xFFE65100),
+                            color: context.vd.primary,
                             onRefresh: () => _selectedHkma.isEmpty
                                 ? _fetchExams()
                                 : _onSemesterChanged(_selectedHkma),
@@ -299,20 +299,20 @@ class _ExamCard extends StatelessWidget {
   final ExamItem exam;
   const _ExamCard({required this.exam});
 
-  Color get _loaiColor => exam.loaiThi.contains('Giữa')
-      ? const Color(0xFF2196F3)
-      : const Color(0xFFFF8C00);
+  Color _loaiColor(BuildContext context) => exam.loaiThi.contains('Giữa')
+      ? context.vd.info
+      : context.vd.accent;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       child: Row(
@@ -322,7 +322,7 @@ class _ExamCard extends StatelessWidget {
             width: 5,
             height: 100,
             decoration: BoxDecoration(
-              color: _loaiColor,
+              color: _loaiColor(context),
               borderRadius:
                   const BorderRadius.horizontal(left: Radius.circular(16)),
             ),
@@ -349,7 +349,7 @@ class _ExamCard extends StatelessWidget {
                             horizontal: 8, vertical: 3),
                         margin: const EdgeInsets.only(right: 12),
                         decoration: BoxDecoration(
-                          color: _loaiColor.withValues(alpha: 0.12),
+                          color: _loaiColor(context).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -357,7 +357,7 @@ class _ExamCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: _loaiColor,
+                            color: _loaiColor(context),
                           ),
                         ),
                       ),
@@ -367,22 +367,22 @@ class _ExamCard extends StatelessWidget {
                   // Ngày + giờ
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.calendar_today,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Text(exam.ngayThiFormatted,
                           style: const TextStyle(
                               fontSize: 12, color: Color.fromARGB(255, 0, 0, 0))),
                       const SizedBox(width: 14),
-                      const Icon(Icons.access_time,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.access_time,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Text(exam.gioBatDau,
                           style: const TextStyle(
                               fontSize: 12, color: Color.fromARGB(255, 0, 0, 0))),
                       const SizedBox(width: 14),
-                      const Icon(Icons.timer_outlined,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.timer_outlined,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Text('${exam.thoiGian} phút',
                           style: const TextStyle(
@@ -393,8 +393,8 @@ class _ExamCard extends StatelessWidget {
                   // Phòng thi
                   Row(
                     children: [
-                      const Icon(Icons.room,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.room,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Text(exam.phongten,
                           style: const TextStyle(

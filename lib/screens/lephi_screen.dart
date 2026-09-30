@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/crm_money_fees.dart';
 import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
+import '../theme/vd_tokens.dart';
 
 String _fmtAmount(int? amount) {
   if (amount == null) return 'chưa có luật';
@@ -65,16 +66,16 @@ class _LePhiScreenState extends State<LePhiScreen> {
     final items = _data?.items ?? const <CrmFeeItem>[];
     final totals = _data?.totals;
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
           // ── Header ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -85,16 +86,16 @@ class _LePhiScreenState extends State<LePhiScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back_ios,
-                      color: Colors.white, size: 20),
+                  child: Icon(Icons.arrow_back_ios,
+                      color: context.vd.onPrimary, size: 20),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Lệ phí',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.vd.onPrimary,
                   ),
                 ),
               ],
@@ -104,46 +105,46 @@ class _LePhiScreenState extends State<LePhiScreen> {
           // ── Content ──
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFE65100)))
+                ? Center(
+                    child: CircularProgressIndicator(color: context.vd.primary))
                 : _error != null
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline,
-                                size: 48, color: Colors.grey),
+                            Icon(Icons.error_outline,
+                                size: 48, color: context.vd.inkFaint),
                             const SizedBox(height: 12),
                             Text(_error!,
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(color: context.vd.inkFaint),
                                 textAlign: TextAlign.center),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _fetch,
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE65100)),
-                              child: const Text('Thử lại',
-                                  style: TextStyle(color: Colors.white)),
+                                  backgroundColor: context.vd.primary),
+                              child: Text('Thử lại',
+                                  style: TextStyle(color: context.vd.onPrimary)),
                             ),
                           ],
                         ),
                       )
                     : items.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.receipt_long_outlined,
-                                    size: 64, color: Colors.grey),
+                                    size: 64, color: context.vd.inkFaint),
                                 SizedBox(height: 12),
                                 Text('Không có lệ phí',
-                                    style: TextStyle(color: Colors.grey)),
+                                    style: TextStyle(color: context.vd.inkFaint)),
                               ],
                             ),
                           )
                         : RefreshIndicator(
                             onRefresh: _fetch,
-                            color: const Color(0xFFE65100),
+                            color: context.vd.primary,
                             child: ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding:
@@ -156,18 +157,18 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                 padding: const EdgeInsets.all(16),
                                 margin: const EdgeInsets.only(bottom: 16),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFFE65100),
-                                      Color(0xFFFF8C00)
+                                      context.vd.primary,
+                                      context.vd.accent
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(16),
-                                  boxShadow: const [
+                                  boxShadow: [
                                     BoxShadow(
-                                        color: Colors.black26,
+                                        color: context.vd.shadow,
                                         blurRadius: 8,
                                         offset: Offset(0, 4)),
                                   ],
@@ -180,25 +181,25 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Lệ phí khác',
+                                        Text('Lệ phí khác',
                                             style: TextStyle(
-                                                color: Colors.white70,
+                                                color: context.vd.onPrimary.withValues(alpha: 0.7),
                                                 fontSize: 13)),
                                         const SizedBox(height: 4),
                                         Text(
                                           _fmtAmount(totals?.lePhiKhac),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 22,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                            color: context.vd.onPrimary,
                                           ),
                                         ),
                                         if ((totals?.mienGiamKhenThuong ?? 0) != 0) ...[
                                           const SizedBox(height: 6),
                                           Text(
                                             'Miễn giảm/khen thưởng: ${_fmtAmount(totals?.mienGiamKhenThuong)}',
-                                            style: const TextStyle(
-                                                color: Colors.white70,
+                                            style: TextStyle(
+                                                color: context.vd.onPrimary.withValues(alpha: 0.7),
                                                 fontSize: 12),
                                           ),
                                         ],
@@ -207,12 +208,12 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: Colors.white
+                                        color: context.vd.surface
                                             .withValues(alpha: 0.2),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.receipt_long,
-                                          color: Colors.white, size: 24),
+                                      child: Icon(Icons.receipt_long,
+                                          color: context.vd.onPrimary, size: 24),
                                     ),
                                   ],
                                 ),
@@ -223,13 +224,13 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                   margin: const EdgeInsets.only(bottom: 12),
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFFF3E0),
+                                    color: context.vd.accentSoft,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     children: [
                                       Icon(Icons.warning_amber_rounded,
-                                          color: Color(0xFFE65100), size: 18),
+                                          color: context.vd.primary, size: 18),
                                       SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -263,11 +264,11 @@ class _LePhiCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       child: Row(
@@ -275,12 +276,12 @@ class _LePhiCard extends StatelessWidget {
           Container(
             width: 44,
             height: 44,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFF3E0),
+            decoration: BoxDecoration(
+              color: context.vd.accentSoft,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.receipt_long,
-                color: Color(0xFFE65100), size: 20),
+            child: Icon(Icons.receipt_long,
+                color: context.vd.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -297,13 +298,13 @@ class _LePhiCard extends StatelessWidget {
                   // Không có hkten (tên học kỳ) từ endpoint này — hiện mã
                   // học kỳ nguyên văn (vd. "261") thay vì bịa một nhãn.
                   item.semesterCode ?? '–',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
                 ),
                 if ((item.ghiChu ?? '').isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     item.ghiChu!,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(fontSize: 11, color: context.vd.inkFaint),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -317,16 +318,16 @@ class _LePhiCard extends StatelessWidget {
             children: [
               Text(
                 _fmtAmount(item.soTien),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFE65100),
+                  color: context.vd.primary,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 _fmtDate(item.ngayNop),
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                style: TextStyle(fontSize: 11, color: context.vd.inkFaint),
               ),
             ],
           ),

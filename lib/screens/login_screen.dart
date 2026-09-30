@@ -8,6 +8,7 @@ import '../services/notification_service.dart';
 import '../services/startup_pace.dart';
 import 'change_password_screen.dart';
 import '../data/api/auth_api.dart';
+import '../theme/vd_tokens.dart';
 
 /// Đăng nhập CHỈ qua CRM (EMS) kể từ 6.1.0 — không còn đăng nhập IMS, không
 /// còn đối chiếu token. Học viên: MSSV + mật khẩu (mặc định = MSSV). Giảng
@@ -110,9 +111,9 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.orange),
+            Icon(Icons.error_outline, color: context.vd.accent),
             SizedBox(width: 8),
             Text('Đăng nhập thất bại', style: TextStyle(fontSize: 16)),
           ],
@@ -121,9 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Thử lại',
-              style: TextStyle(color: Colors.orange),
+              style: TextStyle(color: context.vd.accent),
             ),
           ),
         ],
@@ -134,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.vd.surface,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
@@ -157,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
               // ── Vai trò: Sinh viên / Giảng viên ──
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: context.vd.accentSoft,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 padding: const EdgeInsets.all(4),
@@ -195,10 +196,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   enabled: !_loading,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.orange[50],
+                    fillColor: context.vd.accentSoft,
                     labelText: _idLabel,
-                    labelStyle: const TextStyle(color: Colors.orange),
-                    prefixIcon: const Icon(Icons.person, color: Colors.orange),
+                    labelStyle: TextStyle(color: context.vd.accent),
+                    prefixIcon: Icon(Icons.person, color: context.vd.accent),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -223,14 +224,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   onSubmitted: (_) => _login(),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.orange[50],
+                    fillColor: context.vd.accentSoft,
                     labelText: 'Mật khẩu',
-                    labelStyle: const TextStyle(color: Colors.orange),
-                    prefixIcon: const Icon(Icons.lock, color: Colors.orange),
+                    labelStyle: TextStyle(color: context.vd.accent),
+                    prefixIcon: Icon(Icons.lock, color: context.vd.accent),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscure ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.orange,
+                        color: context.vd.accent,
                         size: 20,
                       ),
                       onPressed: () => setState(() => _obscure = !_obscure),
@@ -254,8 +255,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    disabledBackgroundColor: Colors.orange.withValues(
+                    backgroundColor: context.vd.primary,
+                    disabledBackgroundColor: context.vd.accent.withValues(
                       alpha: 0.6,
                     ),
                     shape: RoundedRectangleBorder(
@@ -264,20 +265,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     elevation: 6,
                   ),
                   child: _loading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: context.vd.onPrimary,
                             strokeWidth: 2.5,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Đăng nhập',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: context.vd.onPrimary,
                           ),
                         ),
                 ),
@@ -297,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: const Icon(Icons.fact_check_outlined, size: 18),
                   label: const Text('DEBUG · Điểm danh giáo viên'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFE65100),
+                    foregroundColor: context.vd.primary,
                     minimumSize: const Size.fromHeight(46),
                   ),
                 ),
@@ -331,7 +332,7 @@ class _RoleTab extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? Colors.orange : Colors.transparent,
+          color: selected ? context.vd.accent : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),
         alignment: Alignment.center,
@@ -339,7 +340,7 @@ class _RoleTab extends StatelessWidget {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : Colors.orange,
+            color: selected ? context.vd.onPrimary : context.vd.accent,
           ),
         ),
       ),

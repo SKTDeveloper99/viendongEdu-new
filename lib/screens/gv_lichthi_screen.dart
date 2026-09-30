@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
+import '../theme/vd_tokens.dart';
 
 class _Semester {
   final int id;
@@ -120,16 +121,16 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
           // ── Header ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -142,16 +143,16 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back_ios,
-                          color: Colors.white, size: 20),
+                      child: Icon(Icons.arrow_back_ios,
+                          color: context.vd.onPrimary, size: 20),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Lịch thi',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                       ),
                     ),
                   ],
@@ -161,21 +162,21 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                   Container(
                     padding: const EdgeInsets.only(left: 14, right: 6, top: 6, bottom: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.vd.surface,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2))],
+                      boxShadow: [BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2))],
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<_Semester>(
                         value: _selected,
-                        dropdownColor: Colors.white,
+                        dropdownColor: context.vd.surface,
                         borderRadius: BorderRadius.circular(14),
-                        iconEnabledColor: const Color(0xFFE65100),
+                        iconEnabledColor: context.vd.primary,
                         icon: const Icon(Icons.expand_more_rounded, size: 20),
                         isDense: true,
-                        style: const TextStyle(color: Color(0xFF333333), fontSize: 13, fontWeight: FontWeight.w500),
+                        style: TextStyle(color: context.vd.ink, fontSize: 13, fontWeight: FontWeight.w500),
                         selectedItemBuilder: (_) => _semesters.map((s) => Center(
-                          child: Text(s.ten, style: const TextStyle(color: Color(0xFFE65100), fontSize: 13, fontWeight: FontWeight.w600)),
+                          child: Text(s.ten, style: TextStyle(color: context.vd.primary, fontSize: 13, fontWeight: FontWeight.w600)),
                         )).toList(),
                         items: _semesters.map((s) => DropdownMenuItem(
                           value: s,
@@ -199,17 +200,17 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                            Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
                             const SizedBox(height: 12),
-                            Text(_error!, style: const TextStyle(color: Color(0xFF616161)),
+                            Text(_error!, style: TextStyle(color: context.vd.inkMuted),
                                 textAlign: TextAlign.center),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _retry,
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE65100)),
-                              child: const Text('Thử lại',
-                                  style: TextStyle(color: Colors.white)),
+                                  backgroundColor: context.vd.primary),
+                              child: Text('Thử lại',
+                                  style: TextStyle(color: context.vd.onPrimary)),
                             ),
                           ],
                         ),
@@ -217,14 +218,14 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                     : _loadingExams
                         ? skeletonList()
                         : _exams.isEmpty
-                            ? const Center(
+                            ? Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.event_busy, size: 64, color: Colors.grey),
+                                    Icon(Icons.event_busy, size: 64, color: context.vd.inkFaint),
                                     SizedBox(height: 12),
                                     Text('Không có lịch thi',
-                                        style: TextStyle(color: Color(0xFF616161))),
+                                        style: TextStyle(color: context.vd.inkMuted)),
                                   ],
                                 ),
                               )
@@ -232,7 +233,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                                 onRefresh: () async {
                                   if (_selected != null) await _fetchExams(_selected!);
                                 },
-                                color: const Color(0xFFE65100),
+                                color: context.vd.primary,
                                 child: ListView.builder(
                                 physics: const AlwaysScrollableScrollPhysics(),
                                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -288,18 +289,18 @@ class _ExamCardState extends State<_ExamCard> {
     final ghiChu = d['ghiChu']?.toString().trim() ?? '';
 
     final loaiColor = loaiThi.contains('Giữa')
-        ? const Color(0xFF2196F3)
-        : const Color(0xFFE65100);
+        ? context.vd.info
+        : context.vd.primary;
 
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.vd.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+          boxShadow: [
+            BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
           ],
         ),
         child: Column(
@@ -335,8 +336,8 @@ class _ExamCardState extends State<_ExamCard> {
                                             fontSize: 14, fontWeight: FontWeight.bold)),
                                     if (maLop.isNotEmpty)
                                       Text(maLop,
-                                          style: const TextStyle(
-                                              fontSize: 11, color: Color(0xFF616161)),
+                                          style: TextStyle(
+                                              fontSize: 11, color: context.vd.inkMuted),
                                           overflow: TextOverflow.ellipsis),
                                   ],
                                 ),
@@ -360,7 +361,7 @@ class _ExamCardState extends State<_ExamCard> {
                                 _expanded
                                     ? Icons.keyboard_arrow_up
                                     : Icons.keyboard_arrow_down,
-                                color: Colors.grey,
+                                color: context.vd.inkFaint,
                                 size: 20,
                               ),
                             ],
@@ -368,29 +369,29 @@ class _ExamCardState extends State<_ExamCard> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.calendar_today,
-                                  size: 13, color: Color(0xFFE65100)),
+                              Icon(Icons.calendar_today,
+                                  size: 13, color: context.vd.primary),
                               const SizedBox(width: 4),
                               Text(ngayThi,
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Color(0xFF616161))),
+                                  style: TextStyle(
+                                      fontSize: 12, color: context.vd.inkMuted)),
                               if (gioBatDau.isNotEmpty) ...[
                                 const SizedBox(width: 12),
-                                const Icon(Icons.access_time,
-                                    size: 13, color: Color(0xFFE65100)),
+                                Icon(Icons.access_time,
+                                    size: 13, color: context.vd.primary),
                                 const SizedBox(width: 4),
                                 Text(gioBatDau,
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Color(0xFF616161))),
+                                    style: TextStyle(
+                                        fontSize: 12, color: context.vd.inkMuted)),
                               ],
                               if (thoiGian > 0) ...[
                                 const SizedBox(width: 12),
-                                const Icon(Icons.timer_outlined,
-                                    size: 13, color: Color(0xFFE65100)),
+                                Icon(Icons.timer_outlined,
+                                    size: 13, color: context.vd.primary),
                                 const SizedBox(width: 4),
                                 Text('$thoiGian phút',
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Color(0xFF616161))),
+                                    style: TextStyle(
+                                        fontSize: 12, color: context.vd.inkMuted)),
                               ],
                             ],
                           ),
@@ -404,7 +405,7 @@ class _ExamCardState extends State<_ExamCard> {
 
             // ── Expanded detail ──
             if (_expanded) ...[
-              const Divider(height: 1, color: Color(0xFFF0F0F0)),
+              Divider(height: 1, color: context.vd.surfaceAlt),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                 child: Column(
@@ -448,12 +449,12 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFFE65100)),
+          Icon(icon, size: 14, color: context.vd.primary),
           const SizedBox(width: 8),
           SizedBox(
             width: 100,
             child: Text(label,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF616161))),
+                style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
           ),
           Expanded(
             child: Text(value,
@@ -465,4 +466,3 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
-

@@ -5,6 +5,7 @@ import '../services/app_session.dart';
 import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
 import '../data/api/attendance_api.dart';
+import '../theme/vd_tokens.dart';
 String _fmtDate(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
@@ -201,7 +202,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       locale: const Locale('vi', 'VN'),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: Color(0xFFE65100)),
+          colorScheme: ColorScheme.light(primary: context.vd.primary),
         ),
         child: child!,
       ),
@@ -223,19 +224,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final end = _currentMonday.add(const Duration(days: 6));
     final weekLabel =
         '${start.day}/${start.month} – ${end.day}/${end.month}/${end.year}';
-
     final key = _fmtDate(_selectedDate);
     final classes = _cache[key];
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _pickDate,
-        backgroundColor: const Color(0xFFE65100),
-        icon: const Icon(Icons.calendar_month, color: Colors.white, size: 20),
+        backgroundColor: context.vd.primary,
+        icon: Icon(Icons.calendar_month, color: context.vd.onPrimary, size: 20),
         label: Text(
           '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-          style: const TextStyle(color: Colors.white, fontSize: 13),
+          style: TextStyle(color: context.vd.onPrimary, fontSize: 13),
         ),
       ),
       body: SafeArea(top: false, child: Column(
@@ -244,9 +244,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+                colors: [context.vd.primary, context.vd.accent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -261,16 +261,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back_ios,
-                          color: Colors.white, size: 20),
+                      child: Icon(Icons.arrow_back_ios,
+                          color: context.vd.onPrimary, size: 20),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Lịch học',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                       ),
                     ),
                   ],
@@ -283,21 +283,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   children: [
                     GestureDetector(
                       onTap: _prevWeek,
-                      child: const Icon(Icons.chevron_left,
-                          color: Colors.white, size: 28),
+                      child: Icon(Icons.chevron_left,
+                          color: context.vd.onPrimary, size: 28),
                     ),
                     Text(
                       weekLabel,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.vd.onPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     GestureDetector(
                       onTap: _nextWeek,
-                      child: const Icon(Icons.chevron_right,
-                          color: Colors.white, size: 28),
+                      child: Icon(Icons.chevron_right,
+                          color: context.vd.onPrimary, size: 28),
                     ),
                   ],
                 ),
@@ -322,8 +322,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.2),
+                                ? context.vd.surface
+                                : context.vd.surface.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
@@ -335,8 +335,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
-                                      ? const Color(0xFFE65100)
-                                      : Colors.white,
+                                      ? context.vd.primary
+                                      : context.vd.onPrimary,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -346,8 +346,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
-                                      ? const Color(0xFFE65100)
-                                      : Colors.white,
+                                      ? context.vd.primary
+                                      : context.vd.onPrimary,
                                 ),
                               ),
                               if (isToday)
@@ -357,8 +357,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                   margin: const EdgeInsets.only(top: 3),
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? const Color(0xFFE65100)
-                                        : Colors.white,
+                                        ? context.vd.primary
+                                        : context.vd.surface,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -377,28 +377,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           // ── Content ──
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFE65100)),
+                ? Center(
+                    child: CircularProgressIndicator(color: context.vd.primary),
                   )
                 : classes == null
-                    ? const Center(
-                        child: CircularProgressIndicator(color: Color(0xFFE65100)),
+                    ? Center(
+                        child: CircularProgressIndicator(color: context.vd.primary),
                       )
                     : classes.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.event_available,
-                                    size: 64, color: Colors.grey),
+                                    size: 64, color: context.vd.inkFaint),
                                 SizedBox(height: 12),
                                 Text('Không có lịch học',
-                                    style: TextStyle(color: Colors.grey)),
+                                    style: TextStyle(color: context.vd.inkFaint)),
                               ],
                             ),
                           )
                         : RefreshIndicator(
-                            color: const Color(0xFFE65100),
+                            color: context.vd.primary,
                             onRefresh: () async {
                               _cache.remove(_fmtDate(_selectedDate));
                               _fullSchedule = null;
@@ -451,11 +451,11 @@ class _ScheduleCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isLichThi ? const Color(0xFFF3E5F5) : Colors.white,
+        color: isLichThi ? context.vd.evening.withValues(alpha: 0.12) : context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       child: IntrinsicHeight(
@@ -467,12 +467,12 @@ class _ScheduleCard extends StatelessWidget {
             height: double.infinity,
             decoration: BoxDecoration(
               color: isLichThi
-                  ? const Color(0xFF7B1FA2)
+                  ? context.vd.evening
                   : switch (status) {
-                      'present' => const Color(0xFF4CAF50),
-                      'absent'  => const Color(0xFFF44336),
-                      'excused' => const Color(0xFF9E9E9E),
-                      _         => const Color(0xFF2196F3),
+                      'present' => context.vd.success,
+                      'absent'  => context.vd.danger,
+                      'excused' => context.vd.info,
+                      _         => context.vd.inkMuted,
                     },
               borderRadius:
                   const BorderRadius.horizontal(left: Radius.circular(16)),
@@ -500,20 +500,20 @@ class _ScheduleCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7B1FA2).withValues(alpha: 0.12),
+                            color: context.vd.evening.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.assignment_outlined,
-                                  size: 12, color: Color(0xFF7B1FA2)),
+                                  size: 12, color: context.vd.evening),
                               SizedBox(width: 4),
                               Text('Lịch thi',
                                   style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF7B1FA2))),
+                                      color: context.vd.evening)),
                             ],
                           ),
                         ),
@@ -526,17 +526,17 @@ class _ScheduleCard extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 2, right: 12),
                       child: Text(
                         classCode,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 11,
-                            color: Color(0xFF444444),
+                            color: context.vd.inkMuted,
                             fontWeight: FontWeight.w400),
                       ),
                     ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.access_time,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.access_time,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Text(
                         end.isNotEmpty ? '$start – $end' : start,
@@ -544,8 +544,8 @@ class _ScheduleCard extends StatelessWidget {
                             fontSize: 12, color: Color.fromARGB(255, 0, 0, 0)),
                       ),
                       const SizedBox(width: 10),
-                      const Icon(Icons.person_outline,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.person_outline,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -560,8 +560,8 @@ class _ScheduleCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.room,
-                          size: 13, color: Color(0xFFE65100)),
+                      Icon(Icons.room,
+                          size: 13, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -593,26 +593,26 @@ class _StatusBadge extends StatelessWidget {
     final cfg = switch (status) {
       'present' => (
           label: 'Có mặt',
-          color: const Color(0xFF4CAF50),
-          bg: const Color(0xFFE8F5E9),
+          color: context.vd.success,
+          bg: context.vd.successSoft,
           icon: Icons.check_circle_outline,
         ),
       'absent' => (
           label: 'Vắng mặt',
-          color: const Color(0xFFF44336),
-          bg: const Color(0xFFFFEBEE),
+          color: context.vd.danger,
+          bg: context.vd.dangerSoft,
           icon: Icons.cancel_outlined,
         ),
       'excused' => (
           label: 'Báo nghỉ',
-          color: const Color(0xFF757575),
-          bg: const Color(0xFFF5F5F5),
+          color: context.vd.info,
+          bg: context.vd.infoSoft,
           icon: Icons.event_busy_outlined,
         ),
       _ => (
           label: 'Chưa điểm danh',
-          color: const Color(0xFF2196F3),
-          bg: const Color(0xFFE3F2FD),
+          color: context.vd.inkMuted,
+          bg: context.vd.surfaceAlt,
           icon: Icons.radio_button_unchecked,
         ),
     };
