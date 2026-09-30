@@ -11,12 +11,24 @@ class EmsAttendanceDraft {
     required this.notes,
     required this.queued,
     this.students = const [],
+    this.session,
   });
 
   final Map<String, String> marks;
   final Map<String, String> notes;
   final bool queued;
   final List<EmsRosterStudent> students;
+
+  /// Session identity needed to resend without the roster screen. Null on
+  /// drafts written by older releases; those are left for the screen.
+  final EmsSession? session;
+}
+
+/// A stored draft together with the key it was saved under.
+class EmsStoredDraft {
+  const EmsStoredDraft(this.draftKey, this.draft);
+  final String draftKey;
+  final EmsAttendanceDraft draft;
 }
 
 /// Small durable store for unreliable classroom networks.
@@ -122,11 +134,38 @@ class EmsAttendanceCache {
     final key = _key('draft', sessionKey);
     if (key == null) return null;
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(key);
+    return _decodeDraft(prefs.getString(key));
+  }
+
+  /// Every draft of the CURRENT account (never another account's).
+  static Future<List<EmsStoredDraft>> listDrafts() async {
+    final account = _account;
+    if (account == null) return const [];
+    final prefix = 'ems_attendance_v2_${account}_draft_';
+    final prefs = await SharedPreferences.getInstance();
+    final out = <EmsStoredDraft>[];
+    for (final k in prefs.getKeys().where((k) => k.startsWith(prefix))) {
+      try {
+        final draftKey = utf8.decode(
+          base64Url.decode(k.substring(prefix.length)),
+        );
+        final d = _decodeDraft(prefs.getString(k));
+        if (d != null) out.add(EmsStoredDraft(draftKey, d));
+      } catch (_) {
+        // Unreadable key: not ours to resend.
+      }
+    }
+    return out;
+  }
+
+  static EmsAttendanceDraft? _decodeDraft(String? raw) {
     if (raw == null) return null;
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
       return EmsAttendanceDraft(
+        session: data['session'] is Map<String, dynamic>
+            ? EmsSession.fromJson(data['session'] as Map<String, dynamic>)
+            : null,
         marks: (data['marks'] as Map<String, dynamic>? ?? const {}).map(
           (k, v) => MapEntry(k, v.toString()),
         ),
@@ -152,6 +191,7 @@ class EmsAttendanceCache {
     Map<String, String> notes, {
     required bool queued,
     List<EmsRosterStudent> students = const [],
+    EmsSession? session,
   }) async {
     final key = _key('draft', sessionKey);
     if (key == null) return;
@@ -163,6 +203,7 @@ class EmsAttendanceCache {
         'notes': notes,
         'queued': queued,
         'students': students.map((s) => s.toJson()).toList(),
+        if (session != null) 'session': session.toJson(),
         'updated_at': DateTime.now().toIso8601String(),
       }),
     );

@@ -65,6 +65,7 @@ class _FakeRepo implements TeacherAttendanceRepository {
     Map<String, String> notes, {
     required bool queued,
     List<EmsRosterStudent> students = const [],
+    EmsSession? session,
   }) async {
     log.add('saveDraft:queued=$queued');
     draft = EmsAttendanceDraft(
@@ -72,8 +73,12 @@ class _FakeRepo implements TeacherAttendanceRepository {
       notes: Map.of(notes),
       queued: queued,
       students: students,
+      session: session,
     );
   }
+
+  @override
+  Future<List<EmsStoredDraft>> listDrafts() async => const [];
 
   @override
   Future<void> clearDraft(String key) async {
@@ -210,7 +215,7 @@ void main() {
         ui.toasts.single,
         contains('Máy chủ chưa bỏ điểm danh 1 học viên'),
       );
-      expect(ui.toasts.single, startsWith('CHƯA GỬI. Đã giữ lựa chọn'));
+      expect(ui.toasts.single, startsWith('CHƯA GỬI. Đã giữ trên máy'));
     });
   });
 

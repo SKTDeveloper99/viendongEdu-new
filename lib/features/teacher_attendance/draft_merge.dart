@@ -82,6 +82,7 @@ DraftMergeResult mergeDraftWithRoster(
             notes: draft.notes,
             queued: false,
             students: draft.students,
+            session: draft.session,
           )
         : null,
   );

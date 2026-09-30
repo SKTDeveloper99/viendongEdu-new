@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import '../../data/teacher_attendance_repository.dart';
 import '../../services/ems_api_service.dart';
 import 'attendance_format.dart';
+import 'attendance_outbox.dart';
+import 'attendance_sender.dart' hide isClientRefusal;
+import 'attendance_sender.dart' as snd show isClientRefusal;
 import 'draft_merge.dart';
 
 /// What the save flow asks of the view. The view model never shows a dialog
@@ -34,10 +37,20 @@ class RosterPrompts {
 /// Roster of one session: the teacher's marks and notes, the offline draft
 /// (written before every send) and the save state machine.
 class RosterViewModel extends ChangeNotifier {
-  RosterViewModel(this.repository, this.session);
+  RosterViewModel(this.repository, this.session, {AttendanceOutbox? outbox})
+    : _outbox = outbox {
+    _finishedSub = outbox?.finished.listen((key) {
+      // The background drainer settled this session: show the new state.
+      if (key == draftKey && !_saving && !_loading && !_disposed) {
+        unawaited(load());
+      }
+    });
+  }
 
   final TeacherAttendanceRepository repository;
   final EmsSession session;
+  final AttendanceOutbox? _outbox;
+  StreamSubscription<String>? _finishedSub;
 
   bool _loading = true;
   bool _saving = false;
@@ -142,6 +155,7 @@ class RosterViewModel extends ChangeNotifier {
           keep.notes,
           queued: keep.queued,
           students: keep.students,
+          session: session,
         );
       } else {
         await _persistDraft();
@@ -155,13 +169,16 @@ class RosterViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _persistDraft() => repository.saveDraft(
-    draftKey,
-    _marks,
-    _notes,
-    queued: _queued,
-    students: _students,
-  );
+  Future<void> _persistDraft() => repository
+      .saveDraft(
+        draftKey,
+        _marks,
+        _notes,
+        queued: _queued,
+        students: _students,
+        session: session,
+      )
+      .whenComplete(() => _outbox?.refreshCount());
 
   void select(String mssv, String? status) {
     if (status == null) {
@@ -210,10 +227,7 @@ class RosterViewModel extends ChangeNotifier {
   // Học viên đã có điểm danh trên máy chủ nhưng nay bị BỎ CHỌN. Gửi kèm để máy
   // chủ xoá — nếu chỉ bỏ khỏi danh sách gửi, dấu điểm danh cũ vẫn còn (đúng là
   // lỗi "chọn tất cả -> bỏ vài người -> lưu lại mà vẫn có mặt").
-  List<String> get _toRemove => _students
-      .where((s) => s.status != null && !_marks.containsKey(s.mssv))
-      .map((s) => s.mssv)
-      .toList();
+  List<String> get _toRemove => marksToRemove(_students, _marks);
 
   Future<void> save(RosterPrompts ui) async {
     if (_marks.isEmpty && _toRemove.isEmpty) {
@@ -230,13 +244,17 @@ class RosterViewModel extends ChangeNotifier {
       final go = await ui.confirmUnmarked(undecided, _marks.length);
       if (!go) return;
     }
+    if (!AttendanceSendLock.tryAcquire(draftKey)) {
+      ui.toast('Đang tự động gửi buổi này, vui lòng đợi giây lát.');
+      return;
+    }
     _saving = true;
     _queued = true;
     _needsReview = false;
     _needsReason = null;
     _notify();
-    await _persistDraft();
     try {
+      await _persistDraft();
       await _sendMarks(ui);
     } on EmsPunchConflict catch (c) {
       // Không phải lỗi — máy đang hỏi. Hỏi lý do rồi gửi lại đúng một lần.
@@ -255,7 +273,7 @@ class RosterViewModel extends ChangeNotifier {
         _holdForReason(ui, c);
       }
     } on EmsException catch (e) {
-      if (isClientRefusal(e)) {
+      if (snd.isClientRefusal(e)) {
         // 4xx là câu trả lời dứt khoát của máy chủ; gửi lại y hệt vô ích.
         _queued = false;
         _notify();
@@ -263,10 +281,11 @@ class RosterViewModel extends ChangeNotifier {
         ui.toast('Máy chủ từ chối: ${e.message}');
       } else {
         ui.toast(
-          'CHƯA GỬI. Đã giữ lựa chọn trên máy; kết nối lại rồi bấm Lưu. ${e.message}',
+          'CHƯA GỬI. Đã giữ trên máy, sẽ tự gửi khi có mạng. ${e.message}',
         );
       }
     } finally {
+      AttendanceSendLock.release(draftKey);
       _saving = false;
       _notify();
     }
@@ -284,45 +303,22 @@ class RosterViewModel extends ChangeNotifier {
     );
   }
 
-  /// 401 = token hết hạn (thử lại được). 4xx khác = máy chủ đã trả lời "không";
-  /// gửi lại nguyên xi chỉ tạo thêm dòng từ chối trong nhật ký.
-  static bool isClientRefusal(EmsException e) {
-    final c = e.statusCode;
-    return c != null && c >= 400 && c < 500 && c != 401 && c != 408 && c != 429;
-  }
+  static bool isClientRefusal(EmsException e) => snd.isClientRefusal(e);
 
   Future<void> _sendMarks(RosterPrompts ui) async {
-    final marks = _marks.entries.map((e) {
-      final student = _students.where((s) => s.mssv == e.key).firstOrNull;
-      return EmsMark(
-        mssv: e.key,
-        status: e.value,
-        note: _notes[e.key],
-        punchId: student?.punchId,
-      );
-    }).toList();
-    final removeList = _toRemove;
-    final res = await repository.saveMarks(session, marks, remove: removeList);
-    // A 200 response is not enough. Read the session back and prove every row
-    // survived — and that every removed one is actually gone — before telling
-    // the teacher it is safely stored.
-    final confirmed = await repository.roster(session);
-    final byMssv = {for (final s in confirmed.students) s.mssv: s.status};
-    final missing = marks.where((m) => byMssv[m.mssv] != m.status).toList();
-    final stillThere = removeList
-        .where((mssv) => byMssv[mssv] != null)
-        .toList();
-    if (stillThere.isNotEmpty) {
-      throw EmsException(
-        'Máy chủ chưa bỏ điểm danh ${stillThere.length} học viên; ứng dụng sẽ gửi lại.',
-      );
-    }
-    if (missing.isNotEmpty) {
-      throw EmsException(
-        'Máy chủ chưa xác nhận đủ ${missing.length} học viên; ứng dụng sẽ gửi lại.',
-      );
-    }
+    // A 200 response is not enough: sendAndVerify reads the session back and
+    // proves every row survived before we tell the teacher it is stored.
+    final sent = await sendAndVerify(
+      repository,
+      session,
+      _marks,
+      _notes,
+      _students,
+    );
+    final res = sent.result;
+    final confirmed = sent.confirmed;
     await repository.clearDraft(draftKey);
+    unawaited(_outbox?.refreshCount());
     if (_disposed) return;
     _students = confirmed.students;
     _queued = false;
@@ -358,6 +354,7 @@ class RosterViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _finishedSub?.cancel();
     super.dispose();
   }
 }
