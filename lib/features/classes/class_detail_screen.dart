@@ -9,6 +9,7 @@ import 'widgets/class_detail_header.dart';
 import 'widgets/class_grade_card.dart';
 import 'widgets/class_info_card.dart';
 import 'widgets/session_list_card.dart';
+import '../../theme/vd_tokens.dart';
 
 /// Detail page of one class: info, scores and EMS attendance. Layout only;
 /// attendance state lives in [ClassDetailViewModel].
@@ -61,8 +62,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
 
   Widget _content() {
     if (_vm.loading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFE65100)));
+      return Center(
+          child: CircularProgressIndicator(color: context.vd.primary));
     }
     final item = widget.item;
     return SingleChildScrollView(
@@ -93,7 +94,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(
         top: false,
         child: Column(

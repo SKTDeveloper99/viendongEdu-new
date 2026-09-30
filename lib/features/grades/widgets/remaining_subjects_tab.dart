@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../grade_item.dart';
+import '../../../theme/vd_tokens.dart';
 
 // ── Chưa đạt Tab ─────────────────────────────────────────
 class RemainingSubjectsTab extends StatelessWidget {
@@ -9,14 +10,14 @@ class RemainingSubjectsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.hourglass_empty_rounded, size: 64, color: Colors.grey),
+            Icon(Icons.hourglass_empty_rounded, size: 64, color: context.vd.inkFaint),
             SizedBox(height: 12),
             Text('Không còn môn chưa học',
-                style: TextStyle(color: Colors.grey)),
+                style: TextStyle(color: context.vd.inkMuted)),
           ],
         ),
       );
@@ -32,15 +33,15 @@ class RemainingSubjectsTab extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Color(0xFFE65100).withValues(alpha: 0.12),
+                  color: context.vd.accentSoft,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '${items.length} môn chưa học',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFE65100)),
+                      color: context.vd.primary),
                 ),
               ),
             ],
@@ -58,19 +59,19 @@ class RemainingSubjectsTab extends StatelessWidget {
               final trangthai = item.status;
 
               final (statusLabel, statusColor) = switch (trangthai) {
-                1 => ('Đang học', const Color(0xFF2196F3)),
-                2 => ('Không đạt', const Color(0xFFF44336)),
-                _ => ('Chưa học', Color(0xFFE65100)),
+                1 => ('Đang học', context.vd.info),
+                2 => ('Không đạt', context.vd.danger),
+                _ => ('Chưa học', context.vd.primary),
               };
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.vd.surface,
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                        color: Colors.black12,
+                        color: context.vd.shadow,
                         blurRadius: 5,
                         offset: Offset(0, 2)),
                   ],
@@ -100,19 +101,19 @@ class RemainingSubjectsTab extends StatelessWidget {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Icon(Icons.school_outlined,
-                                    size: 12, color: Color(0xFFE65100)),
+                                Icon(Icons.school_outlined,
+                                    size: 12, color: context.vd.primary),
                                 const SizedBox(width: 4),
                                 Text('$sotinchi TC',
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.grey)),
+                                    style: TextStyle(
+                                        fontSize: 12, color: context.vd.inkMuted)),
                                 const SizedBox(width: 12),
-                                const Icon(Icons.tag,
-                                    size: 12, color: Color(0xFFE65100)),
+                                Icon(Icons.tag,
+                                    size: 12, color: context.vd.primary),
                                 const SizedBox(width: 4),
                                 Text(mhma,
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.grey)),
+                                    style: TextStyle(
+                                        fontSize: 12, color: context.vd.inkMuted)),
                               ],
                             ),
                           ],

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../grade_item.dart';
+import '../../../theme/vd_tokens.dart';
 
 // Grade distribution with donut chart
 class GradeDistribution extends StatelessWidget {
   final List<GradeItem> grades;
   const GradeDistribution({super.key, required this.grades});
 
-  static const _colors = {
-    'A': Color(0xFF4CAF50),
-    'B+': Color(0xFF2196F3),
-    'B': Color(0xFF2196F3),
-    'C+': Color(0xFFFF9800),
-    'C': Color(0xFFFF9800),
-    'D+': Colors.grey,
-    'D': Colors.grey,
-    'F': Color(0xFFF44336),
+  static Map<String, Color> _colorsOf(VdTokens t) => {
+    'A': t.success,
+    'B+': t.info,
+    'B': t.info,
+    'C+': t.accent,
+    'C': t.accent,
+    'D+': t.inkMuted,
+    'D': t.inkMuted,
+    'F': t.danger,
   };
 
   @override
@@ -44,7 +45,7 @@ class GradeDistribution extends StatelessWidget {
     final sections = entries.map((e) {
       return PieChartSectionData(
         value: e.value.toDouble(),
-        color: _colors[e.key] ?? Colors.grey,
+        color: _colorsOf(context.vd)[e.key] ?? context.vd.inkMuted,
         radius: 30,
         showTitle: false,
       );
@@ -52,11 +53,11 @@ class GradeDistribution extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       padding: const EdgeInsets.all(20),
@@ -89,14 +90,14 @@ class GradeDistribution extends StatelessWidget {
                       children: [
                         Text(
                           '$total',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87),
+                              color: context.vd.ink),
                         ),
-                        const Text('môn',
+                        Text('môn',
                             style: TextStyle(
-                                fontSize: 11, color: Colors.grey)),
+                                fontSize: 11, color: context.vd.inkMuted)),
                       ],
                     ),
                   ],
@@ -107,7 +108,7 @@ class GradeDistribution extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: entries.map((e) {
-                    final color = _colors[e.key] ?? Colors.grey;
+                    final color = _colorsOf(context.vd)[e.key] ?? context.vd.inkMuted;
                     final pct = (e.value / total * 100).round();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 9),
@@ -131,8 +132,8 @@ class GradeDistribution extends StatelessWidget {
                           const Spacer(),
                           Text(
                             '${e.value} môn · $pct%',
-                            style: const TextStyle(
-                                fontSize: 11, color: Colors.grey),
+                            style: TextStyle(
+                                fontSize: 11, color: context.vd.inkMuted),
                           ),
                         ],
                       ),

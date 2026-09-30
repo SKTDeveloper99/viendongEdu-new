@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Orange header band: back arrow, title and the three tabs.
 class GradesHeader extends StatelessWidget {
@@ -10,9 +11,9 @@ class GradesHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+          colors: [context.vd.primary, context.vd.accent],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -25,26 +26,26 @@ class GradesHeader extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.arrow_back_ios,
-                    color: Colors.white, size: 20),
+                child: Icon(Icons.arrow_back_ios,
+                    color: context.vd.onPrimary, size: 20),
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Bảng điểm',
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white),
+                    color: context.vd.onPrimary),
               ),
             ],
           ),
           const SizedBox(height: 14),
           TabBar(
             controller: controller,
-            indicatorColor: Colors.white,
+            indicatorColor: context.vd.onPrimary,
             indicatorWeight: 3,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
+            labelColor: context.vd.onPrimary,
+            unselectedLabelColor: context.vd.onPrimary.withValues(alpha: 0.6),
             labelPadding: const EdgeInsets.symmetric(horizontal: 8),
             labelStyle:
                 const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),

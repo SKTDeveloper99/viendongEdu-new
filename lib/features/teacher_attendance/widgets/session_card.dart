@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/ems_api_service.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// One of today's sessions: subject, section, time, roster size, room and
 /// the "Đã gửi / Đã chốt" badge.
@@ -14,7 +15,7 @@ class SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = session;
     return Material(
-      color: Colors.white,
+      color: context.vd.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -44,16 +45,16 @@ class SessionCard extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
+                        color: context.vd.successSoft,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         s.reportState == 'final'
                             ? 'Đã chốt ${s.markedCount}'
                             : 'Đã gửi ${s.markedCount}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF2E7D32),
+                          color: context.vd.success,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -63,33 +64,33 @@ class SessionCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 s.sectionCode,
-                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
+                  Icon(Icons.schedule, size: 14, color: context.vd.inkMuted),
                   const SizedBox(width: 4),
                   Text(
                     s.timeLabel,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
                   ),
                   const SizedBox(width: 12),
-                  Icon(Icons.groups, size: 14, color: Colors.grey[600]),
+                  Icon(Icons.groups, size: 14, color: context.vd.inkMuted),
                   const SizedBox(width: 4),
                   Text(
                     '${s.rosterSize}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
                   ),
                   if (s.room?.isNotEmpty == true) ...[
                     const SizedBox(width: 12),
-                    Icon(Icons.place, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.place, size: 14, color: context.vd.inkMuted),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         s.room!,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                        style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
                       ),
                     ),
                   ],

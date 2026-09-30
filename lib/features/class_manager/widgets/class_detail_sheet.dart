@@ -8,6 +8,7 @@ import 'class_attendance_tab.dart';
 import 'class_info_tab.dart';
 import 'class_manager_state_views.dart';
 import 'class_students_tab.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Opens the class detail bottom sheet (85% of the screen height).
 void showClassDetailSheet(
@@ -104,9 +105,9 @@ class _ClassDetailSheetState extends State<ClassDetailSheet>
                     const SizedBox(height: 3),
                     Text(
                       lop.subjectCode ?? '',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFFE65100),
+                        color: context.vd.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -119,9 +120,9 @@ class _ClassDetailSheetState extends State<ClassDetailSheet>
         const SizedBox(height: 12),
         TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFFE65100),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFFE65100),
+          labelColor: context.vd.primary,
+          unselectedLabelColor: context.vd.inkMuted,
+          indicatorColor: context.vd.primary,
           indicatorSize: TabBarIndicatorSize.label,
           labelStyle: const TextStyle(
             fontSize: 13,
@@ -133,7 +134,7 @@ class _ClassDetailSheetState extends State<ClassDetailSheet>
             Tab(text: 'Điểm danh'),
           ],
         ),
-        const Divider(height: 1, color: Color(0xFFF0F0F0)),
+        Divider(height: 1, color: context.vd.hairline),
         Expanded(
           child: ListenableBuilder(
             listenable: _vm,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/ems_api_service.dart';
-import '../attendance_colors.dart';
 import '../attendance_format.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Chạm vào học viên: xem giờ quẹt cổng chính xác (tới giây) và trạng thái
 /// hiện tại, để giáo viên đối chiếu khi học viên khiếu nại "em có quẹt mà".
@@ -31,7 +31,7 @@ void showStudentDetailSheet(
           const SizedBox(height: 4),
           Text(
             s.mssv + (s.classCode == null ? '' : ' • ${s.classCode}'),
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
           ),
           const Divider(height: 24),
           _DetailRow(
@@ -42,7 +42,7 @@ void showStudentDetailSheet(
                 : s.scannedAt == null
                 ? 'Đã quẹt (không có giờ)'
                 : schoolHhmmss(s.scannedAt!),
-            color: s.scanned ? attendanceGreen : Colors.grey[600]!,
+            color: s.scanned ? context.vd.success : context.vd.inkMuted,
           ),
           const SizedBox(height: 10),
           _DetailRow(
@@ -50,10 +50,10 @@ void showStudentDetailSheet(
             label: 'Điểm danh',
             value: markLabel(mark),
             color: mark == 'present'
-                ? attendanceGreen
+                ? context.vd.success
                 : mark == 'absent'
-                ? attendanceRed
-                : Colors.grey[700]!,
+                ? context.vd.danger
+                : context.vd.inkMuted,
           ),
           if (scanSyncedAt != null) ...[
             const SizedBox(height: 10),
@@ -61,7 +61,7 @@ void showStudentDetailSheet(
               icon: Icons.sync,
               label: 'Lấy quẹt cổng lúc',
               value: schoolHhmmss(scanSyncedAt),
-              color: Colors.grey[600]!,
+              color: context.vd.inkMuted,
             ),
           ],
         ],
@@ -88,7 +88,7 @@ class _DetailRow extends StatelessWidget {
     children: [
       Icon(icon, size: 18, color: color),
       const SizedBox(width: 10),
-      Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+      Text(label, style: TextStyle(fontSize: 13, color: context.vd.inkMuted)),
       const Spacer(),
       Text(
         value,

@@ -1,10 +1,10 @@
 // Table-driven tests for the grade ladder and the pass rule the grades screen
 // displays (lib/models/crm_student_grades.dart). Boundaries are exact.
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/features/grades/grade_item.dart';
 import 'package:viendongedu2_flutter/features/grades/widgets/grades_colors.dart';
 import 'package:viendongedu2_flutter/models/crm_student_grades.dart';
+import 'package:viendongedu2_flutter/theme/vd_tokens.dart';
 
 void main() {
   test('letterGradeForScore: every threshold', () {
@@ -58,14 +58,15 @@ void main() {
   });
 
   test('letter colours', () {
-    expect(gradeLetterColor('A'), const Color(0xFF4CAF50));
-    expect(gradeLetterColor('B+'), const Color(0xFF2196F3));
-    expect(gradeLetterColor('B'), const Color(0xFF2196F3));
-    expect(gradeLetterColor('C+'), const Color(0xFFFF9800));
-    expect(gradeLetterColor('C'), const Color(0xFFFF9800));
-    expect(gradeLetterColor('D+'), Colors.grey);
-    expect(gradeLetterColor('D'), Colors.grey);
-    expect(gradeLetterColor('F'), const Color(0xFFF44336));
-    expect(gradeLetterColor(''), Colors.grey);
+    const t = VdTokens.light;
+    expect(gradeLetterColor('A', t), t.success);
+    expect(gradeLetterColor('B+', t), t.info);
+    expect(gradeLetterColor('B', t), t.info);
+    expect(gradeLetterColor('C+', t), t.accent);
+    expect(gradeLetterColor('C', t), t.accent);
+    expect(gradeLetterColor('D+', t), t.inkMuted);
+    expect(gradeLetterColor('D', t), t.inkMuted);
+    expect(gradeLetterColor('F', t), t.danger);
+    expect(gradeLetterColor('', t), t.inkMuted);
   });
 }

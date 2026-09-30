@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/vd_theme.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// "Ngày làm việc của tôi" shortcut card.
 class MyDayCard extends StatelessWidget {
@@ -11,18 +12,18 @@ class MyDayCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
       child: Material(
-        color: VdColors.paper,
+        color: context.vd.surfaceAlt,
         borderRadius: BorderRadius.circular(VdTheme.cardRadius),
         child: InkWell(
           onTap: () => Navigator.pushNamed(context, '/teacher_my_day'),
           borderRadius: BorderRadius.circular(VdTheme.cardRadius),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.all(16),
             child: Row(
               children: [
                 Icon(
                   Icons.today_outlined,
-                  color: VdColors.terracotta,
+                  color: context.vd.primary,
                   size: 30,
                 ),
                 SizedBox(width: 12),
@@ -37,12 +38,12 @@ class MyDayCard extends StatelessWidget {
                       SizedBox(height: 3),
                       Text(
                         'Lịch dạy, điểm danh và sinh viên cần phản hồi',
-                        style: TextStyle(fontSize: 12, color: VdColors.ink60),
+                        style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: VdColors.terracotta),
+                Icon(Icons.chevron_right, color: context.vd.primary),
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../grade_item.dart';
 import 'grades_colors.dart';
+import '../../../theme/vd_tokens.dart';
 
 // ── Detail Tab ───────────────────────────────────────────
 class DetailTab extends StatelessWidget {
@@ -10,13 +11,13 @@ class DetailTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (grades.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.bar_chart, size: 64, color: Colors.grey),
+            Icon(Icons.bar_chart, size: 64, color: context.vd.inkFaint),
             SizedBox(height: 12),
-            Text('Chưa có điểm', style: TextStyle(color: Colors.grey)),
+            Text('Chưa có điểm', style: TextStyle(color: context.vd.inkMuted)),
           ],
         ),
       );
@@ -36,16 +37,16 @@ class GradeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = gradeLetterColor(item.grade.gradeLetter);
+    final color = gradeLetterColor(item.grade.gradeLetter, context.vd);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Colors.black12, blurRadius: 5, offset: Offset(0, 2)),
+              color: context.vd.shadow, blurRadius: 5, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
@@ -73,32 +74,32 @@ class GradeCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.school_outlined,
-                          size: 12, color: Color(0xFFE65100)),
+                      Icon(Icons.school_outlined,
+                          size: 12, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Text('${item.sotinchi} TC',
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                          style: TextStyle(
+                              fontSize: 12, color: context.vd.inkMuted)),
                       const SizedBox(width: 12),
-                      const Icon(Icons.tag,
-                          size: 12, color: Color(0xFFE65100)),
+                      Icon(Icons.tag,
+                          size: 12, color: context.vd.primary),
                       const SizedBox(width: 4),
                       Text(item.mhma,
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                          style: TextStyle(
+                              fontSize: 12, color: context.vd.inkMuted)),
                       if (item.solan > 1) ...[
                         const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Color(0xFFE65100).withValues(alpha: 0.12),
+                            color: context.vd.accentSoft,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text('Lần ${item.solan}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 10,
-                                  color: Color(0xFFE65100),
+                                  color: context.vd.primary,
                                   fontWeight: FontWeight.w600)),
                         ),
                       ],
@@ -140,7 +141,7 @@ class GradeCard extends StatelessWidget {
                 // Text(
                 //   '${item.diem4.toStringAsFixed(0)}/4',
                 //   style: const TextStyle(
-                //       fontSize: 11, color: Colors.grey),
+                //       fontSize: 11, color: context.vd.inkMuted),
                 // ),
               ],
             ),

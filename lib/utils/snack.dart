@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/vd_tokens.dart';
 
 void showSuccessSnack(BuildContext context, String msg, {Duration duration = const Duration(seconds: 3)}) {
   final h = MediaQuery.of(context).size.height;
@@ -7,12 +8,12 @@ void showSuccessSnack(BuildContext context, String msg, {Duration duration = con
     ..showSnackBar(SnackBar(
       content: Row(
         children: [
-          const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+          Icon(Icons.check_circle_rounded, color: context.vd.onPrimary, size: 20),
           const SizedBox(width: 10),
-          Expanded(child: Text(msg, style: const TextStyle(color: Colors.white, fontSize: 14))),
+          Expanded(child: Text(msg, style: TextStyle(color: context.vd.onPrimary, fontSize: 14))),
         ],
       ),
-      backgroundColor: const Color(0xFF4CAF50),
+      backgroundColor: context.vd.success,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       margin: EdgeInsets.only(bottom: h - 160, left: 16, right: 16),
@@ -27,12 +28,12 @@ void showErrorSnack(BuildContext context, String msg, {Duration duration = const
     ..showSnackBar(SnackBar(
       content: Row(
         children: [
-          const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+          Icon(Icons.error_rounded, color: context.vd.onPrimary, size: 20),
           const SizedBox(width: 10),
-          Expanded(child: Text(msg, style: const TextStyle(color: Colors.white, fontSize: 14))),
+          Expanded(child: Text(msg, style: TextStyle(color: context.vd.onPrimary, fontSize: 14))),
         ],
       ),
-      backgroundColor: const Color(0xFFF44336),
+      backgroundColor: context.vd.danger,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       margin: EdgeInsets.only(bottom: h - 160, left: 16, right: 16),

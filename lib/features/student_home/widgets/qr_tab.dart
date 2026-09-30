@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../../theme/vd_theme.dart';
 import '../student_home_view_model.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// QR tab: the student's MSSV as a code for attendance scanning.
 class QrTab extends StatelessWidget {
@@ -12,15 +12,15 @@ class QrTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey[100],
+      color: context.vd.surfaceAlt,
       child: Column(
         children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 44, 20, 10),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [VdColors.headerTop, VdColors.headerBottom],
+                colors: [context.vd.headerTop, context.vd.headerBottom],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -30,17 +30,17 @@ class QrTab extends StatelessWidget {
               children: [
                 Text(
                   vm.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.vd.onHeader,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'MSSV: ${vm.mssv}',
-                  style: const TextStyle(fontSize: 14, color: Colors.white70),
+                  style: TextStyle(fontSize: 14, color: context.vd.onHeader.withValues(alpha: 0.7)),
                 ),
               ],
             ),
@@ -49,11 +49,11 @@ class QrTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.vd.surface,
               borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: context.vd.shadow,
                   blurRadius: 20,
                   offset: Offset(0, 8),
                 ),
@@ -62,9 +62,9 @@ class QrTab extends StatelessWidget {
             child: QrImageView(data: vm.mssv, size: 220),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Quét mã để điểm danh',
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+            style: TextStyle(color: context.vd.inkMuted, fontSize: 14),
           ),
           const Spacer(),
         ],

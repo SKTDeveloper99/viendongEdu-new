@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../screens/stale_note.dart';
-import '../../../theme/vd_theme.dart';
 import 'schedule_body.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// "Lịch dạy hôm nay": stale note, retry button, title/date row with the
 /// collapse toggle, then the [ScheduleBody].
@@ -63,10 +63,10 @@ class ScheduleSection extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today,
                         size: 16,
-                        color: VdColors.terracotta,
+                        color: context.vd.primary,
                       ),
                       const SizedBox(width: 6),
                       const Text(
@@ -81,9 +81,9 @@ class ScheduleSection extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     dateLabel,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.black54,
+                      color: context.vd.inkMuted,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -99,7 +99,7 @@ class ScheduleSection extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: VdColors.terracotta.withValues(alpha: 0.12),
+                    color: context.vd.accentSoft,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -107,9 +107,9 @@ class ScheduleSection extends StatelessWidget {
                     children: [
                       Text(
                         expanded ? 'Thu gọn' : 'Mở rộng',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: VdColors.terracotta,
+                          color: context.vd.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -118,7 +118,7 @@ class ScheduleSection extends StatelessWidget {
                         expanded
                             ? Icons.keyboard_arrow_up
                             : Icons.keyboard_arrow_down,
-                        color: VdColors.terracotta,
+                        color: context.vd.primary,
                         size: 16,
                       ),
                     ],

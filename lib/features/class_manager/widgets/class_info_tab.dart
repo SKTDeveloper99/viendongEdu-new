@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models/crm_teacher_class.dart';
 import '../class_manager_format.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// "Thông tin" tab: static facts of the class.
 class ClassInfoTab extends StatelessWidget {
@@ -82,13 +83,13 @@ class _DetailRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: const Color(0xFFE65100)),
+        Icon(icon, size: 18, color: context.vd.primary),
         const SizedBox(width: 10),
         SizedBox(
           width: 90,
           child: Text(
             label,
-            style: const TextStyle(fontSize: 13, color: Colors.grey),
+            style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
           ),
         ),
         Expanded(

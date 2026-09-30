@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import '../class_detail_sheet_view_model.dart';
 import '../class_manager_format.dart';
 import '../class_manager_models.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Colour of an attendance progress bar (thresholds unchanged).
-Color attendanceBarColor(double pct) => pct >= 0.8
-    ? const Color(0xFF4CAF50)
+Color attendanceBarColor(double pct, VdTokens t) => pct >= 0.8
+    ? t.success
     : pct >= 0.5
-    ? const Color(0xFFFF9800)
-    : Colors.red;
+    ? t.accent
+    : t.danger;
 
 /// "Buổi học" list: one card per session with its EMS / CRM present count.
 class AttendanceSessionList extends StatelessWidget {
@@ -25,10 +26,10 @@ class AttendanceSessionList extends StatelessWidget {
   Widget build(BuildContext context) {
     final sessions = vm.sessions;
     if (sessions.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Chưa có buổi điểm danh',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: context.vd.inkMuted),
         ),
       );
     }
@@ -67,11 +68,11 @@ class _SessionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.vd.surface,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
+              color: context.vd.shadow,
               blurRadius: 4,
               offset: Offset(0, 2),
             ),
@@ -85,10 +86,10 @@ class _SessionCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today,
                         size: 13,
-                        color: Color(0xFFE65100),
+                        color: context.vd.primary,
                       ),
                       const SizedBox(width: 5),
                       Text(
@@ -101,9 +102,9 @@ class _SessionCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '${b.startTime ?? ''} – ${fmtTime(b.endTime)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF555555),
+                          color: context.vd.inkMuted,
                         ),
                       ),
                     ],
@@ -114,9 +115,9 @@ class _SessionCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           summary.countText,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF444444),
+                            color: context.vd.ink,
                           ),
                         ),
                       ),
@@ -128,8 +129,8 @@ class _SessionCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: summary.pct,
                       minHeight: 5,
-                      backgroundColor: Colors.grey[200],
-                      color: attendanceBarColor(summary.pct),
+                      backgroundColor: context.vd.surfaceAlt,
+                      color: attendanceBarColor(summary.pct, context.vd),
                     ),
                   ),
                 ],
@@ -140,8 +141,8 @@ class _SessionCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: marked
-                    ? const Color(0xFF4CAF50).withValues(alpha: 0.12)
-                    : Colors.grey.withValues(alpha: 0.12),
+                    ? context.vd.success.withValues(alpha: 0.12)
+                    : context.vd.inkMuted.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -149,7 +150,7 @@ class _SessionCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: marked ? const Color(0xFF4CAF50) : Colors.grey,
+                  color: marked ? context.vd.success : context.vd.inkMuted,
                 ),
               ),
             ),

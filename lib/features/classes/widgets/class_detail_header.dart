@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Orange header of the detail page: back arrow, subject name, semester.
 class ClassDetailHeader extends StatelessWidget {
@@ -12,9 +13,9 @@ class ClassDetailHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+          colors: [context.vd.primary, context.vd.accent],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -25,18 +26,18 @@ class ClassDetailHeader extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back_ios,
-                color: Colors.white, size: 20),
+            child: Icon(Icons.arrow_back_ios,
+                color: context.vd.onPrimary, size: 20),
           ),
           const SizedBox(height: 10),
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white)),
+                  color: context.vd.onPrimary)),
           const SizedBox(height: 4),
           Text(semTen,
-              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 13)),
         ],
       ),
     );

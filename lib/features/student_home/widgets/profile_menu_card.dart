@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
+import '../../../theme/vd_tokens.dart';
 
 class ProfileMenuCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color color;
+  final Color? color;
 
   const ProfileMenuCard({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color = VdColors.terracotta,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: context.vd.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -27,9 +27,9 @@ class ProfileMenuCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: context.vd.surfaceAlt,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[300]!, width: 1),
+            border: Border.all(color: context.vd.hairline, width: 1),
           ),
           child: Row(
             children: [
@@ -37,10 +37,10 @@ class ProfileMenuCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: (color ?? context.vd.primary).withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color ?? context.vd.primary, size: 20),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -52,7 +52,7 @@ class ProfileMenuCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
+              Icon(Icons.chevron_right, color: context.vd.inkFaint, size: 22),
             ],
           ),
         ),

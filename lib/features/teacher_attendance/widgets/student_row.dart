@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/ems_api_service.dart';
-import '../attendance_colors.dart';
 import '../attendance_format.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// One roster student: name, MSSV, gate scan, and the Có / Vắng / more marks.
 class StudentRow extends StatelessWidget {
@@ -23,7 +23,7 @@ class StudentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = student;
     return Material(
-      color: Colors.white,
+      color: context.vd.surface,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -32,18 +32,18 @@ class StudentRow extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
           child: Row(
             children: [
-              Expanded(child: _identity(s)),
+              Expanded(child: _identity(context, s)),
               _Pill(
                 label: 'Có',
                 selected: mark == 'present',
-                color: attendanceGreen,
+                color: context.vd.success,
                 onTap: () => onSelect('present'),
               ),
               const SizedBox(width: 6),
               _Pill(
                 label: 'Vắng',
                 selected: mark == 'absent',
-                color: attendanceRed,
+                color: context.vd.danger,
                 onTap: () => onSelect('absent'),
               ),
               PopupMenuButton<String>(
@@ -66,7 +66,7 @@ class StudentRow extends StatelessWidget {
     );
   }
 
-  Widget _identity(EmsRosterStudent s) => Column(
+  Widget _identity(BuildContext context, EmsRosterStudent s) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
@@ -76,20 +76,20 @@ class StudentRow extends StatelessWidget {
       const SizedBox(height: 2),
       Row(
         children: [
-          Text(s.mssv, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          Text(s.mssv, style: TextStyle(fontSize: 11, color: context.vd.inkMuted)),
           if (s.scanned) ...[
             const SizedBox(width: 8),
-            const Icon(
+            Icon(
               Icons.sensor_door_outlined,
               size: 13,
-              color: attendanceGreen,
+              color: context.vd.success,
             ),
             const SizedBox(width: 2),
             Text(
               s.scannedAt == null
                   ? 'đã quẹt cổng'
                   : 'quẹt ${schoolHhmm(s.scannedAt!)}',
-              style: const TextStyle(fontSize: 11, color: attendanceGreen),
+              style: TextStyle(fontSize: 11, color: context.vd.success),
             ),
           ],
         ],
@@ -101,7 +101,7 @@ class StudentRow extends StatelessWidget {
             'chưa điểm danh',
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey[500],
+              color: context.vd.inkMuted,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -131,7 +131,7 @@ class _Pill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? color : Colors.grey[200],
+          color: selected ? color : context.vd.surfaceAlt,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -139,7 +139,7 @@ class _Pill extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : Colors.grey[700],
+            color: selected ? context.vd.onPrimary : context.vd.inkMuted,
           ),
         ),
       ),

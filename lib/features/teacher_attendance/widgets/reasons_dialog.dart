@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../services/ems_api_service.dart';
 import '../attendance_format.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Bắt buộc nêu lý do cho từng học viên đã quẹt cổng mà bị ghi vắng.
 /// Trả về map mssv -> lý do, hoặc null nếu thầy/cô bấm Huỷ.
@@ -88,7 +89,7 @@ class _ReasonsDialogState extends State<ReasonsDialog> {
                 p.punchedAt == null
                     ? p.mssv
                     : '${p.mssv} • quẹt lúc ${schoolHhmm(p.punchedAt!)}',
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                style: TextStyle(fontSize: 11, color: context.vd.inkMuted),
               ),
               TextField(
                 controller: _controllers[p.mssv],

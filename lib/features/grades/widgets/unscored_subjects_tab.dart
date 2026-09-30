@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../grade_item.dart';
+import '../../../theme/vd_tokens.dart';
 
 // ── Chưa có điểm Tab ──────────────────────────────────────
 class UnscoredSubjectsTab extends StatelessWidget {
@@ -9,14 +10,14 @@ class UnscoredSubjectsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.hourglass_empty_rounded, size: 64, color: Colors.grey),
+            Icon(Icons.hourglass_empty_rounded, size: 64, color: context.vd.inkFaint),
             SizedBox(height: 12),
             Text('Không còn môn chưa có điểm',
-                style: TextStyle(color: Colors.grey)),
+                style: TextStyle(color: context.vd.inkMuted)),
           ],
         ),
       );
@@ -31,15 +32,15 @@ class UnscoredSubjectsTab extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE65100).withValues(alpha: 0.12),
+                  color: context.vd.accentSoft,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '${items.length} môn chưa có điểm',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFE65100)),
+                      color: context.vd.primary),
                 ),
               ),
             ],
@@ -54,11 +55,11 @@ class UnscoredSubjectsTab extends StatelessWidget {
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.vd.surface,
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                        color: Colors.black12,
+                        color: context.vd.shadow,
                         blurRadius: 5,
                         offset: Offset(0, 2)),
                   ],
@@ -68,8 +69,8 @@ class UnscoredSubjectsTab extends StatelessWidget {
                     Container(
                       width: 5,
                       height: 68,
-                      decoration: const BoxDecoration(
-                        color: Colors.grey,
+                      decoration: BoxDecoration(
+                        color: context.vd.inkMuted,
                         borderRadius: BorderRadius.horizontal(
                             left: Radius.circular(14)),
                       ),
@@ -88,32 +89,32 @@ class UnscoredSubjectsTab extends StatelessWidget {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Icon(Icons.school_outlined,
-                                    size: 12, color: Color(0xFFE65100)),
+                                Icon(Icons.school_outlined,
+                                    size: 12, color: context.vd.primary),
                                 const SizedBox(width: 4),
                                 Text('${item.sotinchi} TC',
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.grey)),
+                                    style: TextStyle(
+                                        fontSize: 12, color: context.vd.inkMuted)),
                                 const SizedBox(width: 12),
-                                const Icon(Icons.tag,
-                                    size: 12, color: Color(0xFFE65100)),
+                                Icon(Icons.tag,
+                                    size: 12, color: context.vd.primary),
                                 const SizedBox(width: 4),
                                 Text(item.mhma,
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.grey)),
+                                    style: TextStyle(
+                                        fontSize: 12, color: context.vd.inkMuted)),
                               ],
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(right: 14),
                       child: Text('Chưa học',
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey)),
+                              color: context.vd.inkMuted)),
                     ),
                   ],
                 ),

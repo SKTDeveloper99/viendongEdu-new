@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../attendance_colors.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Status line (CHƯA GỬI / CHƯA LƯU + counts) and the "Lưu điểm danh" button.
 class RosterBottomBar extends StatelessWidget {
@@ -35,10 +35,10 @@ class RosterBottomBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.vd.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: context.vd.shadow,
               blurRadius: 6,
             ),
           ],
@@ -53,20 +53,20 @@ class RosterBottomBar extends StatelessWidget {
                 'Vắng $absentCount • Chưa điểm danh $unmarkedCount',
                 style: TextStyle(
                   fontSize: 12,
-                  color: needsReasonCount != null ? attendanceRed : null,
+                  color: needsReasonCount != null ? context.vd.danger : null,
                 ),
               ),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: attendanceOrange),
+              style: FilledButton.styleFrom(backgroundColor: context.vd.primary),
               onPressed: saving ? null : onSave,
               child: saving
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: context.vd.onPrimary,
                       ),
                     )
                   : const Text('Lưu điểm danh'),

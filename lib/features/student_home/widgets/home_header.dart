@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
 import '../student_home_view_model.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Dashboard header: avatar, name/MSSV/class code and the notification bell.
 class HomeHeader extends StatelessWidget {
@@ -13,9 +13,9 @@ class HomeHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 44, 20, 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [VdColors.headerTop, VdColors.headerBottom],
+          colors: [context.vd.headerTop, context.vd.headerBottom],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -27,10 +27,10 @@ class HomeHeader extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.3),
+              color: context.vd.onHeader.withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 32),
+            child: Icon(Icons.person, color: context.vd.onHeader, size: 32),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -39,16 +39,16 @@ class HomeHeader extends StatelessWidget {
               children: [
                 Text(
                   vm.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.vd.onHeader,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'MSSV: ${vm.mssv}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(color: context.vd.onHeader.withValues(alpha: 0.7), fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 Container(
@@ -57,14 +57,14 @@ class HomeHeader extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: context.vd.onHeader.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     vm.classCode,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white,
+                      color: context.vd.onHeader,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -88,12 +88,12 @@ class HomeHeader extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: context.vd.onHeader.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.notifications_outlined,
-                    color: Colors.white,
+                    color: context.vd.onHeader,
                     size: 24,
                   ),
                 ),
@@ -103,8 +103,8 @@ class HomeHeader extends StatelessWidget {
                     right: -2,
                     child: Container(
                       padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
+                      decoration: BoxDecoration(
+                        color: context.vd.danger,
                         shape: BoxShape.circle,
                       ),
                       constraints: const BoxConstraints(
@@ -113,8 +113,8 @@ class HomeHeader extends StatelessWidget {
                       ),
                       child: Text(
                         vm.unreadCount > 99 ? '99+' : '${vm.unreadCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.vd.onHeader,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),

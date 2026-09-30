@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Error state with a retry button.
 class GradesErrorView extends StatelessWidget {
@@ -13,18 +14,18 @@ class GradesErrorView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+          Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
           const SizedBox(height: 12),
           Text(message,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: context.vd.inkMuted),
               textAlign: TextAlign.center),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE65100)),
+                backgroundColor: context.vd.primary),
             child:
-                const Text('Thử lại', style: TextStyle(color: Colors.white)),
+                Text('Thử lại', style: TextStyle(color: context.vd.onPrimary)),
           ),
         ],
       ),

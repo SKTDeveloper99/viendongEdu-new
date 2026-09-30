@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../class_models.dart';
 import 'class_card.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Count line plus the pull-to-refresh list of class cards.
 class ClassList extends StatelessWidget {
@@ -26,7 +27,7 @@ class ClassList extends StatelessWidget {
             children: [
               Text(
                 '${classes.length} lớp học',
-                style: const TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
               ),
             ],
           ),
@@ -34,7 +35,7 @@ class ClassList extends StatelessWidget {
         Expanded(
           child: RefreshIndicator(
             onRefresh: onRefresh,
-            color: const Color(0xFFE65100),
+            color: context.vd.primary,
             child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),

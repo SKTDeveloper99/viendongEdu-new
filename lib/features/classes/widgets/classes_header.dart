@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../class_models.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Orange header of the classes list: back arrow, title and the semester
 /// dropdown (shown once the semesters have loaded).
@@ -23,9 +24,9 @@ class ClassesHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFE65100), Color(0xFFFF8C00)],
+          colors: [context.vd.primary, context.vd.accent],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -38,55 +39,55 @@ class ClassesHeader extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.arrow_back_ios,
-                    color: Colors.white, size: 20),
+                child: Icon(Icons.arrow_back_ios,
+                    color: context.vd.onPrimary, size: 20),
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Lớp học',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: context.vd.onPrimary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
           const SizedBox(height: 16),
-          if (!loading && semesters.isNotEmpty) _dropdown(),
+          if (!loading && semesters.isNotEmpty) _dropdown(context),
         ],
       ),
     );
   }
 
-  Widget _dropdown() {
+  Widget _dropdown(BuildContext context) {
     return Container(
       padding: const EdgeInsets.only(left: 14, right: 6, top: 6, bottom: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2))
+        boxShadow: [
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2))
         ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<ClassSemester>(
           value: selected,
-          dropdownColor: Colors.white,
+          dropdownColor: context.vd.surface,
           borderRadius: BorderRadius.circular(14),
-          iconEnabledColor: const Color(0xFFE65100),
+          iconEnabledColor: context.vd.primary,
           icon: const Icon(Icons.expand_more_rounded, size: 20),
           isDense: true,
-          style: const TextStyle(
-              color: Color(0xFF333333),
+          style: TextStyle(
+              color: context.vd.ink,
               fontSize: 13,
               fontWeight: FontWeight.w500),
           selectedItemBuilder: (_) => semesters
               .map((s) => Center(
                     child: Text(s.ten,
-                        style: const TextStyle(
-                            color: Color(0xFFE65100),
+                        style: TextStyle(
+                            color: context.vd.primary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600)),
                   ))

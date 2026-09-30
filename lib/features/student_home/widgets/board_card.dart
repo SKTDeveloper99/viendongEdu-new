@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/vd_theme.dart';
 import '../student_home_view_model.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// "Thông tin mới từ trung tâm" — latest board item, or the retry card.
 class BoardCard extends StatelessWidget {
@@ -19,7 +19,7 @@ class BoardCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: Material(
-        color: Colors.white,
+        color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -39,12 +39,12 @@ class BoardCard extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: VdColors.orangeTint,
+                    color: context.vd.accentSoft,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.campaign_outlined,
-                    color: VdColors.terracotta,
+                    color: context.vd.primary,
                     size: 21,
                   ),
                 ),
@@ -55,12 +55,12 @@ class BoardCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'Thông tin mới từ trung tâm',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: VdColors.terracotta,
+                              color: context.vd.primary,
                             ),
                           ),
                           if (vm.boardUnread > 0) ...[
@@ -71,14 +71,14 @@ class BoardCard extends StatelessWidget {
                                 vertical: 1,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: context.vd.danger,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 '${vm.boardUnread} chưa đọc',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.white,
+                                  color: context.vd.onPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -101,7 +101,7 @@ class BoardCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: Colors.grey[400]),
+                Icon(Icons.chevron_right, color: context.vd.inkFaint),
               ],
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../attendance_format.dart';
 import 'offline_banner.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// Header above the roster: the needs-review notice, the gate-scan sync time,
 /// the scanned / unscanned / roster totals and the bulk-mark buttons.
@@ -57,17 +58,17 @@ class RosterQuickActions extends StatelessWidget {
             scanSyncedAt == null
                 ? 'Lấy quẹt cổng: chưa có dữ liệu'
                 : 'Lấy quẹt cổng lúc ${schoolHhmm(scanSyncedAt!)} — chưa quẹt KHÔNG phải vắng',
-            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 6),
           child: Text(
             'Đã quẹt $scannedCount • Chưa quẹt $unscannedCount • Sĩ số $rosterSize',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF444444),
+              color: context.vd.ink,
             ),
           ),
         ),

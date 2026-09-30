@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/skeleton.dart';
-import '../../../theme/vd_theme.dart';
 import 'gv_class_chip.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// The list part of the "Lịch dạy hôm nay" block: skeleton while loading,
 /// nothing when failed, a one-line summary when collapsed, an empty card, or
@@ -44,11 +44,11 @@ class ScheduleBody extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.vd.surface,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: context.vd.shadow,
                   blurRadius: 4,
                   offset: Offset(0, 2),
                 ),
@@ -59,30 +59,30 @@ class ScheduleBody extends StatelessWidget {
                 Icon(
                   n == 0 ? Icons.event_available : Icons.event_note,
                   size: 18,
-                  color: n == 0 ? Colors.green : VdColors.terracotta,
+                  color: n == 0 ? context.vd.success : context.vd.primary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: n == 0
                       ? Text(
                           summaryText,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey,
+                            color: context.vd.inkMuted,
                           ),
                         )
                       : RichText(
                           text: TextSpan(
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey,
+                              color: context.vd.inkMuted,
                             ),
                             children: [
                               const TextSpan(text: 'Hôm nay bạn có '),
                               TextSpan(
                                 text: '$n',
-                                style: const TextStyle(
-                                  color: Colors.red,
+                                style: TextStyle(
+                                  color: context.vd.danger,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -106,23 +106,23 @@ class ScheduleBody extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.vd.surface,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Colors.black12,
+                color: context.vd.shadow,
                 blurRadius: 4,
                 offset: Offset(0, 2),
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.event_available, size: 18, color: Colors.green),
+              Icon(Icons.event_available, size: 18, color: context.vd.success),
               SizedBox(width: 8),
               Text(
                 'Không có lịch dạy hôm nay',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
               ),
             ],
           ),

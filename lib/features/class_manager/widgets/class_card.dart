@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/crm_teacher_class.dart';
+import '../../../theme/vd_tokens.dart';
 
 /// One class in the list.
 class ClassCard extends StatelessWidget {
@@ -18,11 +19,11 @@ class ClassCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.vd.surface,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
+              color: context.vd.shadow,
               blurRadius: 5,
               offset: Offset(0, 2),
             ),
@@ -39,16 +40,16 @@ class ClassCard extends StatelessWidget {
                   children: [
                     RichText(
                       text: TextSpan(
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.black87,
+                          color: context.vd.ink,
                         ),
                         children: [
                           TextSpan(
                             text: mhma,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFE65100),
+                              color: context.vd.primary,
                             ),
                           ),
                           const TextSpan(text: ' · '),
@@ -62,9 +63,9 @@ class ClassCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       lop.sectionCode,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF444444),
+                        color: context.vd.ink,
                       ),
                       softWrap: true,
                     ),
@@ -72,32 +73,32 @@ class ClassCard extends StatelessWidget {
                     Row(
                       children: [
                         if (sotinchi > 0) ...[
-                          const Icon(
+                          Icon(
                             Icons.school_outlined,
                             size: 13,
-                            color: Color(0xFF555555),
+                            color: context.vd.inkMuted,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '$sotinchi tín chỉ',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF555555),
+                              color: context.vd.inkMuted,
                             ),
                           ),
                           const SizedBox(width: 12),
                         ],
-                        const Icon(
+                        Icon(
                           Icons.people_outline,
                           size: 13,
-                          color: Color(0xFF555555),
+                          color: context.vd.inkMuted,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${lop.enrolledStudents} SV',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF555555),
+                            color: context.vd.inkMuted,
                           ),
                         ),
                       ],
@@ -106,9 +107,9 @@ class ClassCard extends StatelessWidget {
                 ),
               ),
             ),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(right: 12),
-              child: Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+              child: Icon(Icons.chevron_right, color: context.vd.inkFaint, size: 20),
             ),
           ],
         ),

@@ -8,6 +8,7 @@ import 'widgets/grades_error_view.dart';
 import 'widgets/grades_header.dart';
 import 'widgets/overview_tab.dart';
 import 'widgets/subjects_tab.dart';
+import '../../theme/vd_tokens.dart';
 
 /// "Bảng điểm" — read-only grades: overview, per-subject detail, subjects
 /// still to study. Layout only; state lives in [GradesViewModel].
@@ -58,8 +59,8 @@ class _GradesScreenState extends State<GradesScreen>
 
   Widget _content() {
     if (_vm.loading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFE65100)));
+      return Center(
+          child: CircularProgressIndicator(color: context.vd.primary));
     }
     final error = _vm.error;
     if (error != null) {
@@ -78,7 +79,7 @@ class _GradesScreenState extends State<GradesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.vd.bg,
       body: SafeArea(
         top: false,
         child: Column(

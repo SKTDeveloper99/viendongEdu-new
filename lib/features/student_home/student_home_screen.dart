@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../../data/student_home_repository.dart';
 import '../../screens/student_board_screen.dart';
 import '../../services/crm_session_guard.dart';
-import '../../theme/vd_theme.dart';
 import 'student_home_view_model.dart';
 import 'widgets/dashboard_tab.dart';
 import 'widgets/home_bottom_nav.dart';
 import 'widgets/profile_tab.dart';
 import 'widgets/qr_tab.dart';
+import '../../theme/vd_tokens.dart';
 
 /// Student home ("Trang chủ") with three tabs: dashboard, QR and profile.
 /// Layout, navigation and dialogs only; state lives in
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VdColors.cream,
+      backgroundColor: context.vd.bg,
       body: ListenableBuilder(listenable: _vm, builder: (_, _) => _tab()),
       bottomNavigationBar: HomeBottomNav(
         currentIndex: _currentIndex,
