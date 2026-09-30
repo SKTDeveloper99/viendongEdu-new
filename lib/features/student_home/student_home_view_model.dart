@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../data/student_home_repository.dart';
 import '../../models/crm_student_schedule.dart';
 import '../../services/ems_api_service.dart';
+import '../../core/schedule/next_up.dart';
 import 'must_read_gate.dart';
+import 'next_up.dart' as next_up;
 
 /// State of the student home: today's classes, the header identity, the unread
 /// bell and the latest board card.
@@ -16,13 +20,19 @@ class StudentHomeViewModel extends ChangeNotifier {
   final MustReadGate _gate;
   final Future<void> Function(Duration) _delay;
   final DateTime Function() _now;
+  final Duration? _tickEvery;
+  Timer? _ticker;
 
+  /// [tickEvery] is how often the "Tiếp theo" countdown text refreshes
+  /// (default 1 minute); pass null to run no timer (tests).
   StudentHomeViewModel(
     this._repository, {
     MustReadGate? gate,
     Future<void> Function(Duration)? delay,
     DateTime Function()? now,
-  }) : _gate = gate ?? MustReadGate.shared,
+    Duration? tickEvery = const Duration(minutes: 1),
+  }) : _tickEvery = tickEvery,
+       _gate = gate ?? MustReadGate.shared,
        _delay = delay ?? Future<void>.delayed,
        _now = now ?? DateTime.now;
 
@@ -69,8 +79,29 @@ class StudentHomeViewModel extends ChangeNotifier {
     return v;
   }
 
+  /// The view model's clock (device time unless injected).
+  DateTime get now => _now();
+
+  /// "Tiếp theo" card state for [now]; display-only from the loaded schedule.
+  NextUp get upNext => next_up.nextUp(_todayClasses, _now());
+
+  /// Starts the once-a-minute countdown refresh (idempotent).
+  void startClock() {
+    final every = _tickEvery;
+    if (every == null || _ticker != null || _disposed) return;
+    _ticker = Timer.periodic(every, (_) {
+      if (!_disposed) notifyListeners();
+    });
+  }
+
+  void stopClock() {
+    _ticker?.cancel();
+    _ticker = null;
+  }
+
   /// Screen start-up: schedule first, everything else after a pause.
   void start() {
+    startClock();
     loadTodaySchedule();
     _loadSecondary();
   }
@@ -203,6 +234,7 @@ class StudentHomeViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    stopClock();
     super.dispose();
   }
 }

@@ -7,6 +7,7 @@ import '../../../theme/vd_tokens.dart';
 /// "Lịch dạy hôm nay": stale note, retry button, title/date row with the
 /// collapse toggle, then the [ScheduleBody].
 class ScheduleSection extends StatelessWidget {
+  final DateTime now;
   final List<Map<String, dynamic>> classes;
   final bool loading;
   final bool failed;
@@ -16,6 +17,7 @@ class ScheduleSection extends StatelessWidget {
   final VoidCallback onRetry;
   const ScheduleSection({
     super.key,
+    required this.now,
     required this.classes,
     required this.loading,
     required this.failed,
@@ -27,7 +29,6 @@ class ScheduleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
     final weekdays = [
       '',
       'Thứ 2',

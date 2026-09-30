@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../teacher_home_view_model.dart';
+import '../../../components/next_up_card.dart';
+import '../next_up.dart';
 import 'home_header.dart';
 import 'menu_grid.dart';
 import 'my_day_card.dart';
@@ -25,6 +27,7 @@ class HomeTab extends StatelessWidget {
     return Column(
       children: [
         HomeHeader(
+          now: vm.now,
           name: vm.displayName,
           code: vm.teacherCode,
           isCoHuu: vm.profile?.isCoHuu == true,
@@ -36,7 +39,16 @@ class HomeTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (!vm.scheduleLoading && !vm.scheduleFailed)
+                  NextUpCard(
+                    state: vm.upNext,
+                    emptyText: teacherNextUpEmpty,
+                    showClassCode: true,
+                    onAttendance: () =>
+                        Navigator.pushNamed(context, '/ems_attendance_gv'),
+                  ),
                 ScheduleSection(
+                  now: vm.now,
                   classes: vm.todayClasses,
                   loading: vm.scheduleLoading,
                   failed: vm.scheduleFailed,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/schedule/next_up.dart' show parseMinutes;
 import '../../../theme/vd_tokens.dart';
 
 ({String label, Color color}) gvBuoiInfo(String? b, VdTokens t) => switch (b) {
@@ -8,6 +9,22 @@ import '../../../theme/vd_tokens.dart';
   'T' => (label: 'Tối', color: t.evening),
   _ => (label: '', color: t.inkMuted),
 };
+
+// CrmScheduleSlot.toJson() carries no `buoi`, so the Buổi comes from the start
+// time exactly like the student home (hour < 12 Sáng, < 18 Chiều, else Tối).
+// A `buoi` key, if a caller still supplies one, is only the fallback.
+({String label, Color color}) gvBuoiFor(
+  String? startRaw,
+  String? buoi,
+  VdTokens t,
+) {
+  final start = parseMinutes(startRaw);
+  if (start == null) return gvBuoiInfo(buoi, t);
+  final hour = start ~/ 60;
+  if (hour < 12) return gvBuoiInfo('S', t);
+  if (hour < 18) return gvBuoiInfo('C', t);
+  return gvBuoiInfo('T', t);
+}
 
 class GvClassChip extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -21,7 +38,11 @@ class GvClassChip extends StatelessWidget {
     final start = data['thoigianbd']?.toString() ?? '';
     final endRaw = data['thoigiankt'] as String? ?? '';
     final end = endRaw.length >= 16 ? endRaw.substring(11, 16) : endRaw;
-    final buoi = gvBuoiInfo(data['buoi']?.toString(), context.vd);
+    final buoi = gvBuoiFor(
+      data['thoigianbd']?.toString(),
+      data['buoi']?.toString(),
+      context.vd,
+    );
 
     return Container(
       width: double.infinity,
@@ -30,7 +51,11 @@ class GvClassChip extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
         ],
         border: Border(left: BorderSide(color: buoi.color, width: 5)),
       ),
@@ -80,10 +105,7 @@ class GvClassChip extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 1),
                 child: Text(
                   classCode,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: context.vd.ink,
-                  ),
+                  style: TextStyle(fontSize: 11, color: context.vd.ink),
                 ),
               ),
             const SizedBox(height: 6),
@@ -113,10 +135,7 @@ class GvClassChip extends StatelessWidget {
                   Expanded(
                     child: Text(
                       room,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.vd.ink,
-                      ),
+                      style: TextStyle(fontSize: 12, color: context.vd.ink),
                     ),
                   ),
                 ],

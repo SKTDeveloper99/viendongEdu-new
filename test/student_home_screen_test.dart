@@ -20,6 +20,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:viendongedu2_flutter/features/student_home/student_home_screen.dart';
+import 'package:viendongedu2_flutter/features/student_home/widgets/class_chip.dart';
 import 'package:viendongedu2_flutter/models/crm_identity.dart';
 import 'package:viendongedu2_flutter/models/crm_student_schedule.dart';
 import 'package:viendongedu2_flutter/screens/student_board_screen.dart';
@@ -161,11 +162,11 @@ void main() {
     await pumpHome(tester);
 
     expect(find.text('Lịch học hôm nay'), findsOneWidget);
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
-    expect(find.text('Môn thử nghiệm tối'), findsOneWidget);
+    expect(find.descendant(of: find.byType(ClassChip), matching: find.text('Môn thử nghiệm sáng')), findsOneWidget);
+    expect(find.descendant(of: find.byType(ClassChip), matching: find.text('Môn thử nghiệm tối')), findsOneWidget);
     expect(find.text('Sáng'), findsOneWidget);
     expect(find.text('Tối'), findsOneWidget);
-    expect(find.text('07:30 – 09:30'), findsOneWidget);
+    expect(find.descendant(of: find.byType(ClassChip), matching: find.text('07:30 – 09:30')), findsOneWidget);
     expect(find.text('Học Viên Thử Nghiệm'), findsOneWidget);
     expect(find.text('MSSV: TEST260001'), findsOneWidget);
     expect(find.text('06CDTHUNGHIEM'), findsOneWidget);
