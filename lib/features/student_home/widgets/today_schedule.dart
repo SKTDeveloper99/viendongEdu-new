@@ -20,7 +20,7 @@ class TodaySchedule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = vm.now;
     final weekdays = [
       '',
       'Thứ 2',

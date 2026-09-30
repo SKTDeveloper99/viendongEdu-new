@@ -28,14 +28,9 @@ class MenuGrid extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       itemCount: items.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 0.9,
-        crossAxisSpacing: 6,
-        mainAxisSpacing: 6,
-      ),
+      gridDelegate: menuGridDelegate(context),
       itemBuilder: (context, index) {
         final m = items[index];
         return MenuItemWidget(

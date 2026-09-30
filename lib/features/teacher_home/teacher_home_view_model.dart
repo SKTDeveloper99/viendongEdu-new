@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../data/teacher_home_repository.dart';
 import '../../models/crm_teacher_profile.dart';
+import '../../core/schedule/next_up.dart';
 import '../../services/ems_api_service.dart';
 import '../../services/startup_pace.dart';
+import 'next_up.dart' as next_up;
 
 /// State of the teacher home: today's sessions, the "Cơ hữu" profile flag and
 /// the unread bell.
@@ -16,13 +20,22 @@ class TeacherHomeViewModel extends ChangeNotifier {
   final TeacherHomeRepository _repository;
   final Duration Function(String account, {required int windowMs}) _pace;
   final Future<void> Function(Duration) _delay;
+  final DateTime Function() _now;
+  final Duration? _tickEvery;
+  Timer? _ticker;
 
+  /// [tickEvery] is how often the "Tiếp theo" countdown text refreshes
+  /// (default 1 minute); pass null to run no timer (tests).
   TeacherHomeViewModel(
     this._repository, {
     Duration Function(String account, {required int windowMs})? pace,
     Future<void> Function(Duration)? delay,
+    DateTime Function()? now,
+    Duration? tickEvery = const Duration(minutes: 1),
   }) : _pace = pace ?? StartupPace.forAccount,
-       _delay = delay ?? Future<void>.delayed;
+       _delay = delay ?? Future<void>.delayed,
+       _now = now ?? DateTime.now,
+       _tickEvery = tickEvery;
 
   List<Map<String, dynamic>> _todayClasses = [];
   bool _scheduleLoading = true;
@@ -58,8 +71,29 @@ class TeacherHomeViewModel extends ChangeNotifier {
   bool get unauthorized => _authError != null;
   Object? get authError => _authError;
 
+  /// The view model's clock (device time unless injected).
+  DateTime get now => _now();
+
+  /// "Tiếp theo" card state for [now]; display-only from the loaded sessions.
+  NextUp get upNext => next_up.nextUp(_todayClasses, _now());
+
+  /// Starts the once-a-minute countdown refresh (idempotent).
+  void startClock() {
+    final every = _tickEvery;
+    if (every == null || _ticker != null || _disposed) return;
+    _ticker = Timer.periodic(every, (_) {
+      if (!_disposed) notifyListeners();
+    });
+  }
+
+  void stopClock() {
+    _ticker?.cancel();
+    _ticker = null;
+  }
+
   /// Screen start-up: overview after its pace, unread count after its own.
   void start() {
+    startClock();
     _loadFirstOverview();
     _startUnread();
   }
@@ -134,6 +168,7 @@ class TeacherHomeViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    stopClock();
     super.dispose();
   }
 }

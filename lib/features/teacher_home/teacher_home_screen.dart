@@ -42,6 +42,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   @override
   void dispose() {
     _vm.removeListener(_onChanged);
+    _vm.stopClock();
     if (_ownsViewModel) _vm.dispose();
     super.dispose();
   }

@@ -21,9 +21,14 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:viendongedu2_flutter/features/class_manager/class_manager_screen.dart';
 import 'package:viendongedu2_flutter/features/grades/grades_screen.dart';
+import 'package:viendongedu2_flutter/data/student_home_repository.dart';
+import 'package:viendongedu2_flutter/data/teacher_home_repository.dart';
+import 'package:viendongedu2_flutter/features/student_home/must_read_gate.dart';
 import 'package:viendongedu2_flutter/features/student_home/student_home_screen.dart';
+import 'package:viendongedu2_flutter/features/student_home/student_home_view_model.dart';
 import 'package:viendongedu2_flutter/features/teacher_attendance/teacher_attendance_screen.dart';
 import 'package:viendongedu2_flutter/features/teacher_home/teacher_home_screen.dart';
+import 'package:viendongedu2_flutter/features/teacher_home/teacher_home_view_model.dart';
 import 'package:viendongedu2_flutter/models/crm_identity.dart';
 import 'package:viendongedu2_flutter/models/crm_student_schedule.dart';
 import 'package:viendongedu2_flutter/screens/login_screen.dart';
@@ -47,7 +52,7 @@ Map<String, dynamic> _todayClass(String name, String start, String end) => {
   'day_code': dayCodeForWeekday(DateTime.now().weekday),
   'start_time': start,
   'end_time': end,
-  'room': 'P.101',
+  'room_name': 'P.101',
   'teacher_name': 'GV Thử Nghiệm',
 };
 
@@ -88,21 +93,27 @@ Map<String, dynamic> _boardItem(
   'acknowledged_at': null,
 };
 
-Map<String, dynamic> _cmClass(String id, String code, String subj, String name,
-        int credits, int enrolled, String sem) =>
-    {
-      'section_id': id,
-      'section_code': code,
-      'semester_code': sem,
-      'room': 'P.101',
-      'ngay_bat_dau': '2026-02-16T00:00:00.000Z',
-      'ngay_ket_thuc': '2026-06-20T00:00:00.000Z',
-      'ngay_thi': '2026-06-28T00:00:00.000Z',
-      'subject_code': subj,
-      'subject_name': name,
-      'credits': credits,
-      'enrolled_students': enrolled,
-    };
+Map<String, dynamic> _cmClass(
+  String id,
+  String code,
+  String subj,
+  String name,
+  int credits,
+  int enrolled,
+  String sem,
+) => {
+  'section_id': id,
+  'section_code': code,
+  'semester_code': sem,
+  'room': 'P.101',
+  'ngay_bat_dau': '2026-02-16T00:00:00.000Z',
+  'ngay_ket_thuc': '2026-06-20T00:00:00.000Z',
+  'ngay_thi': '2026-06-28T00:00:00.000Z',
+  'subject_code': subj,
+  'subject_name': name,
+  'credits': credits,
+  'enrolled_students': enrolled,
+};
 
 Map<String, dynamic> _slot(String name, String start, String end) => {
   'lmhid': '9001',
@@ -317,6 +328,28 @@ Future<void> _loadFonts() async {
   await icons.load();
 }
 
+// Home goldens freeze the time of day at 07:00 so the "Tiếp theo" card always
+// shows the 07:30 class ("bắt đầu sau 30 phút") and the greeting is "sáng".
+DateTime _homeClock() {
+  final d = DateTime.now();
+  return DateTime(d.year, d.month, d.day, 7);
+}
+
+// A gate that already fired: the board's must-read item must not push the
+// board screen over the home (that is what the old golden captured).
+StudentHomeViewModel _studentHomeVm() => StudentHomeViewModel(
+  const StudentHomeRepository(),
+  gate: MustReadGate()..tryShow(),
+  now: _homeClock,
+  tickEvery: null,
+);
+
+TeacherHomeViewModel _teacherHomeVm() => TeacherHomeViewModel(
+  const TeacherHomeRepository(),
+  now: _homeClock,
+  tickEvery: null,
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -369,44 +402,55 @@ void main() {
     await t.pumpAndSettle();
   }
 
-  final screens = <String, ({Widget Function() build, void Function() who,
-      Future<void> Function(WidgetTester)? after})>{
-    'login': (build: () => const LoginScreen(), who: () {}, after: null),
-    'student_home': (
-      build: () => const HomeScreen(),
-      who: asStudent,
-      after: null,
-    ),
-    'grades': (build: () => const GradesScreen(), who: asStudent, after: null),
-    'schedule': (
-      build: () => const ScheduleScreen(),
-      who: asStudent,
-      after: null,
-    ),
-    'student_board': (
-      build: () => const StudentBoardScreen(),
-      who: asStudent,
-      after: null,
-    ),
-    'teacher_home': (
-      build: () => const GvHomeScreen(),
-      who: asTeacher,
-      after: null,
-    ),
-    'class_manager': (
-      build: () => const GvQuanLyLopScreen(),
-      who: asTeacher,
-      after: null,
-    ),
-    'teacher_attendance_roster': (
-      build: () => const EmsAttendanceTeacherScreen(),
-      who: asTeacher,
-      after: (t) async {
-        await t.tap(find.text('Môn thử nghiệm'));
-        await t.pumpAndSettle();
-      },
-    ),
-  };
+  final screens =
+      <
+        String,
+        ({
+          Widget Function() build,
+          void Function() who,
+          Future<void> Function(WidgetTester)? after,
+        })
+      >{
+        'login': (build: () => const LoginScreen(), who: () {}, after: null),
+        'student_home': (
+          build: () => HomeScreen(viewModel: _studentHomeVm()),
+          who: asStudent,
+          after: null,
+        ),
+        'grades': (
+          build: () => const GradesScreen(),
+          who: asStudent,
+          after: null,
+        ),
+        'schedule': (
+          build: () => const ScheduleScreen(),
+          who: asStudent,
+          after: null,
+        ),
+        'student_board': (
+          build: () => const StudentBoardScreen(),
+          who: asStudent,
+          after: null,
+        ),
+        'teacher_home': (
+          build: () => GvHomeScreen(viewModel: _teacherHomeVm()),
+          who: asTeacher,
+          after: null,
+        ),
+        'class_manager': (
+          build: () => const GvQuanLyLopScreen(),
+          who: asTeacher,
+          after: null,
+        ),
+        'teacher_attendance_roster': (
+          build: () => const EmsAttendanceTeacherScreen(),
+          who: asTeacher,
+          after: (t) async {
+            await t.tap(find.text('Môn thử nghiệm'));
+            await t.pumpAndSettle();
+          },
+        ),
+      };
 
   for (final mode in ['light', 'dark']) {
     for (final e in screens.entries) {
