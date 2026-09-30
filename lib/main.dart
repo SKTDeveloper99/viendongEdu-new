@@ -10,7 +10,7 @@ import 'services/app_session.dart';
 import 'theme/vd_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/hv_home_screen.dart';
+import 'features/student_home/student_home_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'screens/exam_screen.dart';
 import 'screens/tuition_screen.dart';

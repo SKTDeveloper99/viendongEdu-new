@@ -5,7 +5,7 @@ import '../services/ems_api_service.dart';
 /// Danh sách thông báo — CHỈ giảng viên (route '/teacher/notifications',
 /// CRM). Học viên đọc thông báo qua Bảng tin ('/student_board',
 /// [EmsApiService.board]) kể từ khi gỡ backend Vercel “noti-backend-eight” (bot
-/// A5, 2026-09-25) — xem `hv_home_screen.dart`, không còn nút nào trỏ vào
+/// A5, 2026-09-25) — xem `features/student_home/student_home_screen.dart`, không còn nút nào trỏ vào
 /// màn hình này cho học viên.
 class _Noti {
   final String id;
