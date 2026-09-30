@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'app_session.dart';
+import 'conversation_push_route.dart';
 import '../theme/vd_tokens.dart';
 
 // Background message handler — phải là top-level function
@@ -105,13 +106,12 @@ class NotificationService {
     return route;
   }
 
-  /// Mặc định khi server không gắn `data['route']`: giảng viên có danh sách
-  /// '/notifications' (CRM `/teacher/notifications`); học viên KHÔNG có màn
-  /// tương đương nữa từ khi gỡ backend Vercel “noti-backend-eight” (bot A5,
-  /// 2026-09-25) — điều hướng thẳng vào Bảng tin, nơi CRM thật sự có dữ liệu.
+  /// Mặc định khi không có `data['route']`: giảng viên → '/notifications'
+  /// (CRM), học viên → Bảng tin (Vercel noti-backend đã gỡ, 2026-09-25).
   String _routeFor(RemoteMessage message) {
     if (message.data['route'] == '/student/board') return '/student_board';
-    return AppSession.instance.isGiangVien ? '/notifications' : '/student_board';
+    return conversationPushRoute(message.data) ??
+        (AppSession.instance.isGiangVien ? '/notifications' : '/student_board');
   }
 
   void _handleNotificationTap(RemoteMessage message) {

@@ -24,6 +24,7 @@ import 'screens/gv_schedule_screen.dart';
 import 'screens/gv_lophoc_screen.dart';
 import 'screens/gv_lichthi_screen.dart';
 import 'features/class_manager/class_manager_screen.dart';
+import 'features/teacher_conversations/conversation_inbox_screen.dart';
 import 'screens/capbu_screen.dart';
 import 'screens/change_password_screen.dart';
 import 'screens/registration_screen.dart';
@@ -156,6 +157,20 @@ class MyApp extends StatelessWidget {
         '/ems_attendance_gv': (context) => const EmsAttendanceTeacherScreen(),
         '/ems_attendance_hv': (context) => const EmsAttendanceStudentScreen(),
         '/profile_edit': (context) => const ProfileEditScreen(),
+        '/teacher_conversations': (context) =>
+            const TeacherConversationsScreen(),
+      },
+      // Push deep link: '/teacher_conversations/<id>' opens that thread.
+      onGenerateRoute: (settings) {
+        const prefix = '/teacher_conversations/';
+        final name = settings.name ?? '';
+        if (!name.startsWith(prefix)) return null;
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => TeacherConversationsScreen(
+            openThreadId: name.substring(prefix.length),
+          ),
+        );
       },
     );
   }
