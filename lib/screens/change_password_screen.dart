@@ -46,10 +46,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       final current = _oldCtrl.text.trim();
       final next = _newCtrl.text.trim();
       if (isTeacher) {
-        await AuthApi.changeTeacherPassword(
+        final freshToken = await AuthApi.changeTeacherPassword(
           currentPassword: current,
           newPassword: next,
         );
+        if (freshToken != null) AppSession.instance.emsToken = freshToken;
       } else {
         await AuthApi.changeStudentPassword(
           currentPassword: current,
@@ -80,149 +81,161 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       // Bắt buộc đổi mật khẩu: không cho back ra ngoài trước khi xong.
       canPop: !widget.forced,
       child: Scaffold(
-      backgroundColor: context.vd.bg,
-      body: SafeArea(top: false, child: Column(
-        children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [context.vd.primary, context.vd.accent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-            ),
-            child: Row(
-              children: [
-                if (!widget.forced)
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(Icons.arrow_back_ios,
-                        color: context.vd.onPrimary, size: 20),
+        backgroundColor: context.vd.bg,
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              // Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [context.vd.primary, context.vd.accent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                if (!widget.forced) const SizedBox(width: 8),
-                Text(
-                  widget.forced
-                      ? 'Vui lòng đổi mật khẩu'
-                      : 'Đổi mật khẩu',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: context.vd.onPrimary,
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(24),
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // Form
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: Column(
+                child: Row(
                   children: [
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: context.vd.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                              color: context.vd.shadow,
-                              blurRadius: 8,
-                              offset: Offset(0, 4)),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _PassField(
-                            controller: _oldCtrl,
-                            label: 'Mật khẩu hiện tại',
-                            show: _showOld,
-                            onToggle: () =>
-                                setState(() => _showOld = !_showOld),
-                            validator: (v) => (v == null || v.isEmpty)
-                                ? 'Vui lòng nhập mật khẩu hiện tại'
-                                : null,
-                          ),
-                          const SizedBox(height: 16),
-                          _PassField(
-                            controller: _newCtrl,
-                            label: 'Mật khẩu mới',
-                            show: _showNew,
-                            onToggle: () =>
-                                setState(() => _showNew = !_showNew),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) {
-                                return 'Vui lòng nhập mật khẩu mới';
-                              }
-                              if (v.length < 3) {
-                                return 'Mật khẩu phải có ít nhất 3 ký tự';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _PassField(
-                            controller: _confirmCtrl,
-                            label: 'Xác nhận mật khẩu mới',
-                            show: _showConfirm,
-                            onToggle: () =>
-                                setState(() => _showConfirm = !_showConfirm),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) {
-                                return 'Vui lòng xác nhận mật khẩu mới';
-                              }
-                              if (v != _newCtrl.text) {
-                                return 'Mật khẩu xác nhận không khớp';
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.vd.primary,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
-                          elevation: 4,
+                    if (!widget.forced)
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Icon(
+                          Icons.arrow_back_ios,
+                          color: context.vd.onPrimary,
+                          size: 20,
                         ),
-                        child: _loading
-                            ? SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    color: context.vd.onPrimary, strokeWidth: 2.5),
-                              )
-                            : Text(
-                                'Xác nhận đổi mật khẩu',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: context.vd.onPrimary),
-                              ),
+                      ),
+                    if (!widget.forced) const SizedBox(width: 8),
+                    Text(
+                      widget.forced ? 'Vui lòng đổi mật khẩu' : 'Đổi mật khẩu',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: context.vd.onPrimary,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+
+              // Form
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: context.vd.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.vd.shadow,
+                                blurRadius: 8,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              _PassField(
+                                controller: _oldCtrl,
+                                label: 'Mật khẩu hiện tại',
+                                show: _showOld,
+                                onToggle: () =>
+                                    setState(() => _showOld = !_showOld),
+                                validator: (v) => (v == null || v.isEmpty)
+                                    ? 'Vui lòng nhập mật khẩu hiện tại'
+                                    : null,
+                              ),
+                              const SizedBox(height: 16),
+                              _PassField(
+                                controller: _newCtrl,
+                                label: 'Mật khẩu mới',
+                                show: _showNew,
+                                onToggle: () =>
+                                    setState(() => _showNew = !_showNew),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Vui lòng nhập mật khẩu mới';
+                                  }
+                                  if (v.length < 3) {
+                                    return 'Mật khẩu phải có ít nhất 3 ký tự';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              _PassField(
+                                controller: _confirmCtrl,
+                                label: 'Xác nhận mật khẩu mới',
+                                show: _showConfirm,
+                                onToggle: () => setState(
+                                  () => _showConfirm = !_showConfirm,
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Vui lòng xác nhận mật khẩu mới';
+                                  }
+                                  if (v != _newCtrl.text) {
+                                    return 'Mật khẩu xác nhận không khớp';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: _loading ? null : _submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.vd.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: _loading
+                                ? SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: context.vd.onPrimary,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : Text(
+                                    'Xác nhận đổi mật khẩu',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: context.vd.onPrimary,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      )),
+        ),
       ),
     );
   }
@@ -266,8 +279,10 @@ class _PassField extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: context.vd.primary, width: 2),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }

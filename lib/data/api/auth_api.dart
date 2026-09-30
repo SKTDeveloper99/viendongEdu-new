@@ -63,14 +63,20 @@ abstract final class AuthApi {
 
   /// Đổi mật khẩu của giảng viên (và mọi staff khác dùng chung route này).
   /// `POST /auth/change-password {current_password, new_password}`.
-  static Future<void> changeTeacherPassword({
+  ///
+  /// Trả về token MỚI server cấp (không còn cờ must_change_password). Token
+  /// cũ vẫn mang cờ đó nên mọi `/teacher/*` bị 403 — người gọi PHẢI thay
+  /// token trong session (sự cố thử tải 2026-09-30).
+  static Future<String?> changeTeacherPassword({
     required String currentPassword,
     required String newPassword,
   }) async {
-    await EmsApiService.sendMap(
+    final r = await EmsApiService.sendMap(
       'POST',
       '/auth/change-password',
       body: {'current_password': currentPassword, 'new_password': newPassword},
     );
+    final token = r['token'];
+    return token is String && token.isNotEmpty ? token : null;
   }
 }
