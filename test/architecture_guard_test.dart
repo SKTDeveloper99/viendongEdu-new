@@ -16,7 +16,6 @@ const _maxWidgetLines = 200;
 /// Files that were already over [_maxLines] when the guard was introduced,
 /// with their line count at that time.
 const Map<String, int> _allowlist = {
-  'lib/screens/ems_attendance_teacher_screen.dart': 1215,
   'lib/screens/teacher_my_day_screen.dart': 668,
   'lib/screens/registration_screen.dart': 653,
   'lib/screens/schedule_screen.dart': 642,

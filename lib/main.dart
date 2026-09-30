@@ -27,7 +27,7 @@ import 'screens/change_password_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/student_board_screen.dart';
-import 'screens/ems_attendance_teacher_screen.dart';
+import 'features/teacher_attendance/teacher_attendance_screen.dart';
 import 'screens/ems_attendance_student_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/teacher_my_day_screen.dart';
