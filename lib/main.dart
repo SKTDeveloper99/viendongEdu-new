@@ -14,7 +14,7 @@ import 'screens/hv_home_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'screens/exam_screen.dart';
 import 'screens/tuition_screen.dart';
-import 'screens/grades_screen.dart';
+import 'features/grades/grades_screen.dart';
 import 'screens/classes_screen.dart';
 import 'screens/lephi_screen.dart';
 import 'screens/gv_home_screen.dart';
