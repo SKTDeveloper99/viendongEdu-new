@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:viendongedu2_flutter/screens/teacher_my_day_screen.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
+import 'package:viendongedu2_flutter/data/api/student_cases_api.dart';
 
 void main() {
   setUp(() {
@@ -71,8 +72,8 @@ void main() {
       );
     });
 
-    final cases = await EmsApiService.myOpenStudentCases();
-    final result = await EmsApiService.answerStudentCase(
+    final cases = await StudentCasesApi.myOpenStudentCases();
+    final result = await StudentCasesApi.answerStudentCase(
       cases.single.id,
       '  Đã gọi phụ huynh  ',
     );

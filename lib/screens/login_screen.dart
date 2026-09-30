@@ -7,6 +7,7 @@ import '../services/app_session.dart';
 import '../services/notification_service.dart';
 import '../services/startup_pace.dart';
 import 'change_password_screen.dart';
+import '../data/api/auth_api.dart';
 
 /// Đăng nhập CHỈ qua CRM (EMS) kể từ 6.1.0 — không còn đăng nhập IMS, không
 /// còn đối chiếu token. Học viên: MSSV + mật khẩu (mặc định = MSSV). Giảng
@@ -49,11 +50,11 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final CrmIdentity identity;
       if (_role == CrmRole.student) {
-        identity = await EmsApiService.studentLogin(loginId, pass);
+        identity = await AuthApi.studentLogin(loginId, pass);
       } else {
         await Future.delayed(StartupPace.forAccount(loginId, windowMs: 700));
         // Đăng nhập trước; thiết bị nhận thông báo đăng ký sau ở nền.
-        identity = await EmsApiService.teacherLogin(
+        identity = await AuthApi.teacherLogin(
           loginId,
           pass,
           platform: defaultTargetPlatform == TargetPlatform.iOS

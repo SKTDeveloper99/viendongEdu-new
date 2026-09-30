@@ -4,7 +4,7 @@ import '../models/crm_student_schedule.dart';
 import '../services/app_session.dart';
 import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
-
+import '../data/api/attendance_api.dart';
 String _fmtDate(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
@@ -54,7 +54,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (!mounted || !AppSession.instance.hasEms) return;
     }
     try {
-      final marks = await EmsApiService.myAttendance(limit: 400);
+      final marks = await AttendanceApi.myAttendance(limit: 400);
       if (!mounted) return;
       setState(() {
         _emsByKey.clear();

@@ -12,7 +12,7 @@ class CrmScheduleSlot {
   /// `sec.ims_lop_mon_hoc_id` — vẫn là id IMS, nhưng đây là DỮ LIỆU đã đồng bộ
   /// vào CRM (cột `sections.ims_lop_mon_hoc_id`), không phải một lời gọi tới
   /// IMS. Cần để dựng `session_key` cho EMS
-  /// (`EmsApiService.sessionKeyFor(lmhId: ...)`).
+  /// (`AttendanceApi.sessionKeyFor(lmhId: ...)`).
   final String lmhId;
   final String lmhMa;
   final String? mhTen;
@@ -199,7 +199,7 @@ class CrmClassStudent {
 ///
 /// LƯU Ý (CLAUDE.md "EMS write path"): đây là bảng `attendance` của CRM, một
 /// bản chụp — KHÔNG phải điểm danh EMS (bảng `attendance_marks`, nguồn thật).
-/// Màn hình vẫn phải hỏi EMS (`EmsApiService.sessionMarks`) cho trạng thái có
+/// Màn hình vẫn phải hỏi EMS (`AttendanceApi.sessionMarks`) cho trạng thái có
 /// mặt/vắng thật của một buổi cụ thể, giống hệt bản trước khi gỡ IMS.
 class CrmAttendanceRow {
   final String sessionId;

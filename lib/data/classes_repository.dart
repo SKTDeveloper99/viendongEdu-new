@@ -2,6 +2,7 @@ import '../models/crm_student_grades.dart';
 import '../models/crm_student_schedule.dart';
 import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
+import 'api/attendance_api.dart';
 
 /// Enrolment rows of one semester plus the student's grade rows, as fetched
 /// together when a semester is opened.
@@ -36,5 +37,5 @@ class ClassesRepository {
 
   /// The student's own EMS attendance marks (all sections, latest 300).
   Future<List<EmsStudentMark>> attendance() =>
-      EmsApiService.myAttendance(limit: 300);
+      AttendanceApi.myAttendance(limit: 300);
 }

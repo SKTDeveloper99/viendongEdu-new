@@ -3,6 +3,7 @@ import '../models/crm_identity.dart';
 import '../services/app_session.dart';
 import '../services/ems_api_service.dart';
 import '../utils/snack.dart';
+import '../data/api/auth_api.dart';
 
 /// Đổi mật khẩu CRM. Dùng cho CẢ HAI trường hợp:
 ///  - lối vào "Đổi mật khẩu" bình thường trong app (`forced: false`, mặc định);
@@ -44,12 +45,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       final current = _oldCtrl.text.trim();
       final next = _newCtrl.text.trim();
       if (isTeacher) {
-        await EmsApiService.changeTeacherPassword(
+        await AuthApi.changeTeacherPassword(
           currentPassword: current,
           newPassword: next,
         );
       } else {
-        await EmsApiService.changeStudentPassword(
+        await AuthApi.changeStudentPassword(
           currentPassword: current,
           newPassword: next,
         );

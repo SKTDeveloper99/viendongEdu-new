@@ -13,11 +13,11 @@
 // Giáo viên vẫn là người quyết định cuối cùng. Máy chỉ từ chối im lặng.
 
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import '../services/ems_attendance_cache.dart';
 import '../services/ems_api_service.dart';
 import '../utils/vietnamese_text.dart';
+import '../data/api/attendance_api.dart';
 
 class EmsAttendanceTeacherScreen extends StatefulWidget {
   const EmsAttendanceTeacherScreen({super.key});
@@ -47,7 +47,7 @@ class _EmsAttendanceTeacherScreenState
       _error = null;
     });
     try {
-      final s = await EmsApiService.mySessions();
+      final s = await AttendanceApi.mySessions();
       if (!mounted) return;
       setState(() {
         _sessions = s;
@@ -278,7 +278,7 @@ class _RosterScreenState extends State<_RosterScreen> {
     });
     final draft = await EmsAttendanceCache.loadDraft(_draftKey);
     try {
-      final r = await EmsApiService.roster(widget.session);
+      final r = await AttendanceApi.roster(widget.session);
       if (!mounted) return;
       var conflict = false;
       final serverMarks = <String, String>{
@@ -574,7 +574,7 @@ class _RosterScreenState extends State<_RosterScreen> {
       );
     }).toList();
     final removeList = _toRemove;
-    final res = await EmsApiService.saveMarks(
+    final res = await AttendanceApi.saveMarks(
       widget.session,
       marks,
       remove: removeList,
@@ -582,7 +582,7 @@ class _RosterScreenState extends State<_RosterScreen> {
     // A 200 response is not enough. Read the session back and prove every row
     // survived — and that every removed one is actually gone — before telling
     // the teacher it is safely stored.
-    final confirmed = await EmsApiService.roster(widget.session);
+    final confirmed = await AttendanceApi.roster(widget.session);
     final byMssv = {for (final s in confirmed.students) s.mssv: s.status};
     final missing = marks.where((m) => byMssv[m.mssv] != m.status).toList();
     final stillThere = removeList

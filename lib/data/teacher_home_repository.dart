@@ -1,6 +1,6 @@
 import '../services/app_session.dart';
 import '../services/crm_teacher_api.dart';
-import '../services/ems_api_service.dart';
+import 'api/teacher_notifications_api.dart';
 
 typedef CachedOverview = ({
   CrmTeacherOverview data,
@@ -20,7 +20,7 @@ class TeacherHomeRepository {
     void Function(CrmTeacherOverview o, DateTime savedAt)? onStored,
   }) => CrmTeacherApi.overviewCached(onStored: onStored);
 
-  Future<int> unreadCount() => EmsApiService.teacherUnreadCount();
+  Future<int> unreadCount() => TeacherNotificationsApi.teacherUnreadCount();
 
   // Identity always comes from the CRM login session (no network needed).
   String get teacherId => AppSession.instance.teacherId ?? '';
