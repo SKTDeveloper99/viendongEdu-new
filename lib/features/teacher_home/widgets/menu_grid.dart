@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../components/menu_item.dart';
 import '../../teacher_attendance/widgets/pending_send_badge.dart';
+import '../../teacher_conversations/widgets/messages_tile.dart';
 
-/// Four navigation tiles of the teacher home.
+/// Five navigation tiles of the teacher home.
 class MenuGrid extends StatelessWidget {
   const MenuGrid({super.key});
 
@@ -47,6 +48,7 @@ class MenuGrid extends StatelessWidget {
             const Positioned(top: 2, right: 2, child: PendingSendBadge()),
           ],
         ),
+        const MessagesTile(index: 4),
       ],
     );
   }

@@ -39,7 +39,7 @@ android {
         // Google Play refuses a versionCode that is not higher than the last
         // upload (91 = 6.1.0+91). iOS uses pubspec's build number (6.0.6 (1));
         // Android keeps its own counter. Raise by 1 for every Play upload.
-        versionCode = 94
+        versionCode = 95
         versionName = flutter.versionName
     }
 
