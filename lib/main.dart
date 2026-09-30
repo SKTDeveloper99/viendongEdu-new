@@ -17,7 +17,7 @@ import 'screens/tuition_screen.dart';
 import 'features/grades/grades_screen.dart';
 import 'features/classes/classes_screen.dart';
 import 'screens/lephi_screen.dart';
-import 'screens/gv_home_screen.dart';
+import 'features/teacher_home/teacher_home_screen.dart';
 import 'screens/gv_schedule_screen.dart';
 import 'screens/gv_lophoc_screen.dart';
 import 'screens/gv_lichthi_screen.dart';
