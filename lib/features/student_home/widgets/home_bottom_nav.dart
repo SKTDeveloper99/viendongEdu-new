@@ -89,7 +89,7 @@ class HomeBottomNav extends StatelessWidget {
                       size: 34,
                       color: currentIndex == 1
                           ? context.vd.primary
-                          : context.vd.onPrimary,
+                          : context.vd.onHeader,
                     ),
                   ),
                 ),

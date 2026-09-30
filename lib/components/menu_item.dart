@@ -8,7 +8,7 @@ SliverGridDelegate menuGridDelegate(BuildContext context) {
   final wide = MediaQuery.sizeOf(context).width >= 360;
   return SliverGridDelegateWithFixedCrossAxisCount(
     crossAxisCount: wide ? 4 : 3,
-    mainAxisExtent: 104,
+    mainAxisExtent: 96,
     crossAxisSpacing: 8,
     mainAxisSpacing: 8,
   );
