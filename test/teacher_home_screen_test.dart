@@ -11,11 +11,13 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:viendongedu2_flutter/features/teacher_home/teacher_home_screen.dart';
 import 'package:viendongedu2_flutter/features/teacher_home/widgets/gv_class_chip.dart';
+import 'package:viendongedu2_flutter/features/teacher_home/widgets/home_header.dart';
 import 'package:viendongedu2_flutter/models/crm_identity.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
@@ -43,6 +45,12 @@ Map<String, dynamic> _overview({String type = 'gvch'}) => {
     _slot('Môn thử nghiệm tối', '18:30', '20:30'),
   ],
 };
+
+// Bell badge only (the week strip also prints day numbers such as "3").
+final _bell = find.descendant(
+  of: find.byType(HomeHeader),
+  matching: find.text('3'),
+);
 
 void main() {
   late Map<String, int> hits;
@@ -143,7 +151,7 @@ void main() {
     expect(find.descendant(of: find.byType(GvClassChip), matching: find.text('Môn thử nghiệm sáng')), findsOneWidget);
     expect(find.descendant(of: find.byType(GvClassChip), matching: find.text('Môn thử nghiệm tối')), findsOneWidget);
     expect(find.descendant(of: find.byType(GvClassChip), matching: find.text('P.101')), findsNWidgets(2));
-    expect(find.text('3'), findsOneWidget);
+    expect(_bell, findsOneWidget);
     expect(find.text('Thu gọn'), findsOneWidget);
     await tester.tap(find.text('Thu gọn'));
     await tester.pump();
@@ -182,10 +190,9 @@ void main() {
     for (final entry in {
       'Ngày làm việc của tôi': '/teacher_my_day',
       'Lịch dạy': '/gv_schedule',
-      'Lớp học': '/gv_lophoc',
       'Lịch thi': '/gv_lichthi',
-      'Quản lý lớp': '/gv_quanly_lop',
-      'Điểm danh EMS': '/ems_attendance_gv',
+      'Lớp của tôi': '/gv_quanly_lop',
+      'Điểm danh': '/ems_attendance_gv',
     }.entries) {
       await pumpHome(tester);
       await tester.tap(find.text(entry.key).first);
@@ -197,6 +204,10 @@ void main() {
       );
       await tester.pumpWidget(const SizedBox());
     }
+    await pumpHome(tester);
+    expect(find.text('Lớp học'), findsNothing);
+    expect(find.text('Quản lý lớp'), findsNothing);
+    expect(find.text('Điểm danh EMS'), findsNothing);
   });
 
   testWidgets('chuông mở /notifications rồi tải lại số chưa đọc', (
@@ -219,7 +230,7 @@ void main() {
     mock(unreadFails: true);
     await pumpHome(tester);
     expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
-    expect(find.text('3'), findsNothing);
+    expect(_bell, findsNothing);
   });
 
   testWidgets('không có EMS: không gọi unread-count', (tester) async {
@@ -262,13 +273,24 @@ void main() {
   testWidgets('tab Cá nhân: thông tin, đổi mật khẩu, đăng xuất', (
     tester,
   ) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'x',
+      packageName: 'x',
+      version: '9.9.9',
+      buildNumber: '77',
+      buildSignature: '',
+    );
     mock();
     await pumpHome(tester);
 
     await tester.tap(find.text('Cá nhân'));
     await tester.pump();
     expect(find.text('Thông tin cá nhân'), findsOneWidget);
-    expect(find.text('Phần mềm Viendongedu phiên bản 1.1.43'), findsOneWidget);
+    await tester.pump();
+    expect(
+      find.text('Phần mềm Viendongedu phiên bản 9.9.9 (77)'),
+      findsOneWidget,
+    );
     expect(find.text('Thuộc bản quyền Cao đẳng Viễn Đông'), findsOneWidget);
 
     await tester.tap(find.text('Đổi mật khẩu'));

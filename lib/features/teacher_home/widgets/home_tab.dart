@@ -7,6 +7,7 @@ import 'home_header.dart';
 import 'menu_grid.dart';
 import 'my_day_card.dart';
 import 'schedule_section.dart';
+import 'week_strip.dart';
 
 /// Home tab: header, today's schedule, my-day card and the menu tiles.
 class HomeTab extends StatelessWidget {
@@ -47,15 +48,24 @@ class HomeTab extends StatelessWidget {
                     onAttendance: () =>
                         Navigator.pushNamed(context, '/ems_attendance_gv'),
                   ),
+                WeekStrip(
+                  today: vm.today,
+                  selected: vm.selectedDay,
+                  dotStartsFor: vm.dotStartsFor,
+                  onSelect: vm.selectDay,
+                ),
                 ScheduleSection(
                   now: vm.now,
-                  classes: vm.todayClasses,
-                  loading: vm.scheduleLoading,
-                  failed: vm.scheduleFailed,
+                  day: vm.viewingToday ? null : vm.selectedDay,
+                  classes: vm.shownClasses,
+                  loading: vm.shownLoading,
+                  failed: vm.shownFailed,
                   expanded: scheduleExpanded,
                   staleAt: vm.scheduleStaleAt,
                   onToggle: onToggleExpanded,
-                  onRetry: vm.loadOverview,
+                  onRetry: vm.viewingToday
+                      ? vm.loadOverview
+                      : vm.reloadSelectedDay,
                 ),
                 const MyDayCard(),
                 const MenuGrid(),

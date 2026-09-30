@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../components/menu_item.dart';
 import '../../teacher_attendance/widgets/pending_send_badge.dart';
 
-/// Five navigation tiles of the teacher home.
+/// Four navigation tiles of the teacher home.
 class MenuGrid extends StatelessWidget {
   const MenuGrid({super.key});
 
@@ -23,20 +23,14 @@ class MenuGrid extends StatelessWidget {
         ),
         MenuItemWidget(
           index: 1,
-          icon: Icons.class_rounded,
-          label: 'Lớp học',
-          onTap: () => Navigator.pushNamed(context, '/gv_lophoc'),
-        ),
-        MenuItemWidget(
-          index: 2,
           icon: Icons.assignment_outlined,
           label: 'Lịch thi',
           onTap: () => Navigator.pushNamed(context, '/gv_lichthi'),
         ),
         MenuItemWidget(
-          index: 3,
+          index: 2,
           icon: Icons.manage_accounts_outlined,
-          label: 'Quản lý lớp',
+          label: 'Lớp của tôi',
           onTap: () => Navigator.pushNamed(context, '/gv_quanly_lop'),
         ),
         Stack(
@@ -44,9 +38,9 @@ class MenuGrid extends StatelessWidget {
           children: [
             Positioned.fill(
               child: MenuItemWidget(
-                index: 4,
+                index: 3,
                 icon: Icons.fact_check_outlined,
-                label: 'Điểm danh EMS',
+                label: 'Điểm danh',
                 onTap: () => Navigator.pushNamed(context, '/ems_attendance_gv'),
               ),
             ),

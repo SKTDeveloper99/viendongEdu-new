@@ -1,3 +1,4 @@
+import '../models/crm_teacher_class.dart';
 import '../services/app_session.dart';
 import '../services/crm_teacher_api.dart';
 import 'api/teacher_notifications_api.dart';
@@ -19,6 +20,10 @@ class TeacherHomeRepository {
   Future<CachedOverview> overview({
     void Function(CrmTeacherOverview o, DateTime savedAt)? onStored,
   }) => CrmTeacherApi.overviewCached(onStored: onStored);
+
+  /// Sessions of one day (`GET /api/teacher/me/schedule?date=YYYY-MM-DD`).
+  Future<List<CrmScheduleSlot>> scheduleForDate(String date) =>
+      CrmTeacherApi.scheduleForDate(date);
 
   Future<int> unreadCount() => TeacherNotificationsApi.teacherUnreadCount();
 

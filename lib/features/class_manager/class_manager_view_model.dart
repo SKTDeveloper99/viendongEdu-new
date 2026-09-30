@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/class_manager_repository.dart';
 import '../../models/crm_teacher_class.dart';
+import '../../services/crm_teacher_api.dart';
 import '../../services/ems_api_service.dart';
 import 'class_manager_models.dart';
 
@@ -61,14 +62,27 @@ class ClassManagerViewModel extends ChangeNotifier {
       final data = await repository.semesters();
       final sems =
           data
-              .map((e) => ClassSemester(id: e.id, ma: e.ma, ten: e.ten))
+              .map(
+                (e) => ClassSemester(
+                  id: e.id,
+                  ma: e.ma,
+                  ten: e.ten,
+                  ngayBatDau: e.ngayBatDau,
+                ),
+              )
               .toList()
             ..sort((a, b) => b.id.compareTo(a.id));
       if (_disposed) return;
       _semesters = sems;
       _loadingSemesters = false;
       _notify();
-      if (sems.isNotEmpty) await selectSemester(sems.first);
+      final def = await CrmTeacherApi.defaultSemester(
+        sems,
+        (s) => s.ma,
+        (s) => s.ngayBatDau,
+      );
+      if (_disposed) return;
+      if (def != null) await selectSemester(def);
     } catch (e) {
       if (_disposed) return;
       if (_is401(e)) {

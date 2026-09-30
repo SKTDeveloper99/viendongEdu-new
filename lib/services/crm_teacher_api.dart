@@ -1,4 +1,5 @@
 import 'ems_api_service.dart';
+import '../core/default_semester.dart';
 import 'offline_snapshot.dart';
 import '../models/crm_teacher_profile.dart';
 import '../models/crm_teacher_class.dart';
@@ -54,11 +55,37 @@ class CrmTeacherApi {
               at,
             ),
     );
-    return (
-      data: CrmTeacherOverview.fromJson(r.data as Map<String, dynamic>),
-      savedAt: r.savedAt,
-      fresh: r.fresh,
-    );
+    final data = CrmTeacherOverview.fromJson(r.data as Map<String, dynamic>);
+    final cur = data.currentSemester;
+    if (cur != null && cur.isNotEmpty) {
+      await OfflineSnapshot.save(_currentSemesterKey, cur);
+    }
+    return (data: data, savedAt: r.savedAt, fresh: r.fresh);
+  }
+
+  /// The ONE default-semester choice for teacher screens: `current_semester`
+  /// of the cached overview, else the newest semester already started, else
+  /// the first item (see `pickDefaultSemester`).
+  static Future<T?> defaultSemester<T>(
+    List<T> items,
+    String Function(T) code,
+    String? Function(T) startRaw,
+  ) async => pickDefaultSemester(
+    items,
+    codeOf: code,
+    startOf: (s) => parseSemesterDate(startRaw(s)),
+    currentCode: await cachedCurrentSemester(),
+  );
+
+  static const _currentSemesterKey = 'teacher_current_semester';
+
+  /// `current_semester` of the last overview this account loaded (any age),
+  /// or null. Screens use it to pick their default semester without a new
+  /// network call.
+  static Future<String?> cachedCurrentSemester() async {
+    final v = await OfflineSnapshot.load(_currentSemesterKey);
+    final d = v?.data;
+    return d is String && d.isNotEmpty ? d : null;
   }
 
   static Future<({CrmTeacherOverview overview, DateTime savedAt})?>

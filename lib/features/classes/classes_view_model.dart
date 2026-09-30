@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/default_semester.dart';
 import '../../data/classes_repository.dart';
 import '../../models/crm_student_exams.dart' show semesterCodeLabel;
 import '../../models/crm_student_grades.dart';
@@ -49,7 +50,16 @@ class ClassesViewModel extends ChangeNotifier {
       for (final s in sections) {
         final code = s.semesterCode;
         if (code == null || code.isEmpty || !seen.add(code)) continue;
-        sems.add(ClassSemester(code: code, ten: semesterCodeLabel(code)));
+        DateTime? start;
+        for (final o in sections) {
+          final d = o.ngayBatDau;
+          if (o.semesterCode == code && d != null) {
+            if (start == null || d.isBefore(start)) start = d;
+          }
+        }
+        sems.add(
+          ClassSemester(code: code, ten: semesterCodeLabel(code), start: start),
+        );
       }
       // Mới nhất trước (mã học kỳ lớn hơn = mới hơn).
       sems.sort((a, b) => b.code.compareTo(a.code));
@@ -57,7 +67,12 @@ class ClassesViewModel extends ChangeNotifier {
       _semesters = sems;
       _loading = false;
       notifyListeners();
-      if (sems.isNotEmpty) await selectSemester(sems.first);
+      final def = pickDefaultSemester(
+        sems,
+        codeOf: (s) => s.code,
+        startOf: (s) => s.start,
+      );
+      if (def != null) await selectSemester(def);
     } catch (e) {
       if (_disposed) return;
       _loading = false;
@@ -84,13 +99,13 @@ class ClassesViewModel extends ChangeNotifier {
       // không có LMH đứng sau (ADR 004 trong crm-clean).
       _classes = data.sections.map((s) {
         CrmStudentGrade? g = grades.cast<CrmStudentGrade?>().firstWhere(
-              (g) => g?.sectionCode == s.sectionCode,
-              orElse: () => null,
-            );
+          (g) => g?.sectionCode == s.sectionCode,
+          orElse: () => null,
+        );
         g ??= grades.cast<CrmStudentGrade?>().firstWhere(
-              (g) => g?.subjectCode == s.subjectCode && g?.semesterCode == sem.code,
-              orElse: () => null,
-            );
+          (g) => g?.subjectCode == s.subjectCode && g?.semesterCode == sem.code,
+          orElse: () => null,
+        );
         return ClassItem.fromSection(s, grade: g);
       }).toList();
       _loadingClasses = false;

@@ -5,7 +5,13 @@ class ClassSemester {
   final int id;
   final String ma;
   final String ten;
-  const ClassSemester({required this.id, required this.ma, required this.ten});
+  final String? ngayBatDau;
+  const ClassSemester({
+    required this.id,
+    required this.ma,
+    required this.ten,
+    this.ngayBatDau,
+  });
 }
 
 /// One session, built by grouping the flat rows of

@@ -210,7 +210,7 @@ void main() {
     expect(find.text('TN-1'), findsWidgets);
     expect(find.text('Cơ hữu'), findsOneWidget);
     expect(find.text('Mã GV: TESTGV01'), findsOneWidget);
-    await tester.tap(find.text('Điểm danh'));
+    await tester.tap(find.text('Điểm danh').first); // NextUpCard button
     await tester.pumpAndSettle();
     expect(find.text('route:attendance'), findsOneWidget);
     vm.dispose();

@@ -14,12 +14,16 @@ class ScheduleBody extends StatelessWidget {
   final bool loading;
   final bool failed;
   final bool expanded;
+
+  /// False when the list shows another day (wording only).
+  final bool isToday;
   const ScheduleBody({
     super.key,
     required this.classes,
     required this.loading,
     required this.failed,
     required this.expanded,
+    this.isToday = true,
   });
 
   @override
@@ -30,10 +34,7 @@ class ScheduleBody extends StatelessWidget {
         alignment: Alignment.topCenter,
         children: [...previous, ?current],
       ),
-      child: KeyedSubtree(
-        key: ValueKey<bool>(loading),
-        child: _body(context),
-      ),
+      child: KeyedSubtree(key: ValueKey<bool>(loading), child: _body(context)),
     );
   }
 
@@ -42,8 +43,10 @@ class ScheduleBody extends StatelessWidget {
     final summaryText = failed
         ? 'Chưa tải được lịch dạy từ máy chủ'
         : n == 0
-        ? 'Hôm nay bạn không có lịch dạy nào 🎉'
-        : 'Hôm nay bạn có $n lịch dạy — nhấn để xem chi tiết';
+        ? (isToday
+              ? 'Hôm nay bạn không có lịch dạy nào 🎉'
+              : 'Ngày này bạn không có lịch dạy nào')
+        : '${isToday ? 'Hôm nay' : 'Ngày này'} bạn có $n lịch dạy — nhấn để xem chi tiết';
     if (loading) {
       return const Padding(
         padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
@@ -94,7 +97,10 @@ class ScheduleBody extends StatelessWidget {
                               color: context.vd.inkMuted,
                             ),
                             children: [
-                              const TextSpan(text: 'Hôm nay bạn có '),
+                              TextSpan(
+                                text:
+                                    '${isToday ? 'Hôm nay' : 'Ngày này'} bạn có ',
+                              ),
                               TextSpan(
                                 text: '$n',
                                 style: TextStyle(
@@ -137,7 +143,9 @@ class ScheduleBody extends StatelessWidget {
               Icon(Icons.event_available, size: 18, color: context.vd.success),
               SizedBox(width: 8),
               Text(
-                'Không có lịch dạy hôm nay',
+                isToday
+                    ? 'Không có lịch dạy hôm nay'
+                    : 'Không có lịch dạy ngày này',
                 style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
               ),
             ],

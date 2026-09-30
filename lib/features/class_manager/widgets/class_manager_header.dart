@@ -51,7 +51,7 @@ class ClassManagerHeader extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Quản lý lớp',
+                  'Lớp của tôi',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

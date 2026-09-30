@@ -8,6 +8,9 @@ import '../../../theme/vd_tokens.dart';
 /// collapse toggle, then the [ScheduleBody].
 class ScheduleSection extends StatelessWidget {
   final DateTime now;
+
+  /// Day shown in the list; null = today.
+  final DateTime? day;
   final List<Map<String, dynamic>> classes;
   final bool loading;
   final bool failed;
@@ -18,6 +21,7 @@ class ScheduleSection extends StatelessWidget {
   const ScheduleSection({
     super.key,
     required this.now,
+    this.day,
     required this.classes,
     required this.loading,
     required this.failed,
@@ -41,6 +45,11 @@ class ScheduleSection extends StatelessWidget {
     ];
     final dateLabel =
         '${weekdays[now.weekday]}, ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+    final other = day != null;
+    final d = day ?? now;
+    final title = other
+        ? 'Lịch dạy ${weekdays[d.weekday]}, ${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}'
+        : 'Lịch dạy hôm nay';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,9 +79,9 @@ class ScheduleSection extends StatelessWidget {
                         color: context.vd.primary,
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'Lịch dạy hôm nay',
-                        style: TextStyle(
+                      Text(
+                        title,
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
@@ -81,7 +90,7 @@ class ScheduleSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    dateLabel,
+                    other ? '${d.year}' : dateLabel,
                     style: TextStyle(
                       fontSize: 12,
                       color: context.vd.inkMuted,
@@ -134,6 +143,7 @@ class ScheduleSection extends StatelessWidget {
           loading: loading,
           failed: failed,
           expanded: expanded,
+          isToday: !other,
         ),
       ],
     );

@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
+import '../models/crm_teacher_profile.dart' show CrmSemester;
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
 import '../theme/vd_tokens.dart';
 
-class _Semester {
-  final int id;
-  final String ten;
-  const _Semester({required this.id, required this.ten});
-}
+typedef _Semester = CrmSemester;
 
 // Thứ tự ngày trong tuần theo ngayma
 const _dayOrder = {'2': 0, '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6};
@@ -42,13 +39,16 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
     setState(() { _loadingHocKy = true; _error = null; });
     try {
       final data = await CrmTeacherApi.semesters();
-      final sems = data
-          .map((e) => _Semester(id: e.id, ten: e.ten))
-          .toList()
-        ..sort((a, b) => b.id.compareTo(a.id));
+      final sems = [...data]..sort((a, b) => b.id.compareTo(a.id));
       if (!mounted) return;
       setState(() { _semesters = sems; _loadingHocKy = false; });
-      if (sems.isNotEmpty) await _fetchClasses(sems.first);
+      final def = await CrmTeacherApi.defaultSemester(
+        sems,
+        (s) => s.ma,
+        (s) => s.ngayBatDau,
+      );
+      if (!mounted) return;
+      if (def != null) await _fetchClasses(def);
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;

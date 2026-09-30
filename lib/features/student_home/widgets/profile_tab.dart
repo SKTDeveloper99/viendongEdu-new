@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../screens/hv_profile_info_screen.dart';
 import '../student_home_view_model.dart';
 import 'profile_menu_card.dart';
+import '../../../components/app_version_label.dart';
 import '../../../components/theme_mode_sheet.dart';
 import '../../../services/theme_controller.dart';
 import '../../../theme/vd_tokens.dart';
@@ -126,11 +127,7 @@ class ProfileTab extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
             child: Column(
               children: [
-                Text(
-                  'Phần mềm Viendongedu phiên bản 1.1.43',
-                  style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
-                  textAlign: TextAlign.center,
-                ),
+                const AppVersionLabel(),
                 SizedBox(height: 2),
                 Text(
                   'Thuộc bản quyền Cao đẳng Viễn Đông',

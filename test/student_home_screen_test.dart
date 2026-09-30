@@ -16,6 +16,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -162,11 +163,29 @@ void main() {
     await pumpHome(tester);
 
     expect(find.text('Lịch học hôm nay'), findsOneWidget);
-    expect(find.descendant(of: find.byType(ClassChip), matching: find.text('Môn thử nghiệm sáng')), findsOneWidget);
-    expect(find.descendant(of: find.byType(ClassChip), matching: find.text('Môn thử nghiệm tối')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('Môn thử nghiệm tối'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Sáng'), findsOneWidget);
     expect(find.text('Tối'), findsOneWidget);
-    expect(find.descendant(of: find.byType(ClassChip), matching: find.text('07:30 – 09:30')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('07:30 – 09:30'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Học Viên Thử Nghiệm'), findsOneWidget);
     expect(find.text('MSSV: TEST260001'), findsOneWidget);
     expect(find.text('06CDTHUNGHIEM'), findsOneWidget);
@@ -252,6 +271,13 @@ void main() {
   testWidgets('tab Cá nhân: thông tin, đổi mật khẩu, đăng xuất', (
     tester,
   ) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'x',
+      packageName: 'x',
+      version: '9.9.9',
+      buildNumber: '77',
+      buildSignature: '',
+    );
     mock();
     await pumpHome(tester);
 
@@ -260,7 +286,11 @@ void main() {
     expect(find.text('Thông tin cá nhân'), findsOneWidget);
     expect(find.text('Đổi mật khẩu'), findsOneWidget);
     expect(find.text('Đăng xuất'), findsOneWidget);
-    expect(find.text('Phần mềm Viendongedu phiên bản 1.1.43'), findsOneWidget);
+    await tester.pump();
+    expect(
+      find.text('Phần mềm Viendongedu phiên bản 9.9.9 (77)'),
+      findsOneWidget,
+    );
   });
 
   // MUST STAY LAST: consumes the once-per-session must-read prompt.

@@ -44,22 +44,20 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
     setState(() { _loadingHocKy = true; _error = null; });
     try {
       final data = await CrmTeacherApi.semesters();
-      final sems = data.map((e) {
-        return _Semester(
-          id: e.id,
-          ma: e.ma,
-          ten: e.ten,
-          ngayBatDau: e.ngayBatDau ?? '',
-          ngayKetThuc: e.ngayKetThuc ?? '',
-        );
-      }).toList();
+      final sems = data.map((e) => _Semester(
+          id: e.id, ma: e.ma, ten: e.ten,
+          ngayBatDau: e.ngayBatDau ?? '', ngayKetThuc: e.ngayKetThuc ?? '',
+        )).toList();
       sems.sort((a, b) => b.id.compareTo(a.id));
       if (!mounted) return;
       setState(() {
         _semesters = sems;
         _loadingHocKy = false;
       });
-      if (sems.isNotEmpty) await _fetchExams(sems.first);
+      final def = await CrmTeacherApi.defaultSemester(
+          sems, (s) => s.ma, (s) => s.ngayBatDau);
+      if (!mounted) return;
+      if (def != null) await _fetchExams(def);
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
@@ -224,7 +222,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                                   children: [
                                     Icon(Icons.event_busy, size: 64, color: context.vd.inkFaint),
                                     SizedBox(height: 12),
-                                    Text('Không có lịch thi',
+                                    Text('Chưa có lịch thi học kỳ này',
                                         style: TextStyle(color: context.vd.inkMuted)),
                                   ],
                                 ),

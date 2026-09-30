@@ -10,7 +10,10 @@ import '../../models/crm_student_schedule.dart';
 class ClassSemester {
   final String code;
   final String ten;
-  const ClassSemester({required this.code, required this.ten});
+
+  /// Earliest section start in this semester (null when unknown).
+  final DateTime? start;
+  const ClassSemester({required this.code, required this.ten, this.start});
 }
 
 // CRM /me/sections has no per-class evaluation weights (tylecc/tylegk/tyleck)

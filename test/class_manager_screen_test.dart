@@ -157,7 +157,7 @@ void main() {
     EmsApiService.client = _server();
     await pump(tester);
 
-    expect(find.text('Quản lý lớp'), findsOneWidget);
+    expect(find.text('Lớp của tôi'), findsOneWidget);
     expect(find.text('Học kỳ 1, 2026 - 2027'), findsOneWidget);
     expect(find.text('2 lớp'), findsOneWidget);
     expect(find.textContaining('Môn thử nghiệm A', findRichText: true), findsOneWidget);
