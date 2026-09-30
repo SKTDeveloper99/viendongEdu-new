@@ -24,6 +24,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     original = EmsApiService.client;
     EmsApiService.retryDelay = (_) => Duration.zero;
+    EmsApiService.resetConnectionState();
     final s = AppSession.instance;
     s.emsToken = 'test-token';
     s.role = CrmRole.student;
@@ -167,5 +168,78 @@ void main() {
     await EmsApiService.send('GET', '/student/me/tuition');
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getKeys().where((k) => k.startsWith('offline_v1_')), isEmpty);
+  });
+
+  group('unsure network never sends a write', () {
+    setUp(() => EmsApiService.probe = EmsApiService.defaultProbe);
+    test(
+      'write after a network failure: probe fails -> nothing sent',
+      () async {
+        final sent = <String>[];
+        EmsApiService.client = MockClient((req) async {
+          sent.add('${req.method} ${req.url.path}');
+          throw http.ClientException('offline');
+        });
+        await expectLater(
+          EmsApiService.send('POST', '/attendance/marks', body: {'x': 1}),
+          throwsA(
+            isA<EmsException>().having((e) => e.code, 'code', 'network_unsure'),
+          ),
+        );
+        expect(sent.where((s) => s.startsWith('POST')), isEmpty);
+      },
+    );
+
+    test(
+      'recent good contact: write goes straight through, no probe',
+      () async {
+        final sent = <String>[];
+        EmsApiService.client = MockClient((req) async {
+          sent.add('${req.method} ${req.url.path}');
+          return _json({'ok': true});
+        });
+        await EmsApiService.send('GET', '/student/me');
+        await EmsApiService.send('POST', '/attendance/marks', body: {'x': 1});
+        expect(sent.where((s) => s.endsWith('/app/min-version')), isEmpty);
+        expect(sent.last, 'POST /api/attendance/marks');
+      },
+    );
+
+    test(
+      'no recent contact: reachable probe (any status) lets write through',
+      () async {
+        final sent = <String>[];
+        EmsApiService.client = MockClient((req) async {
+          sent.add('${req.method} ${req.url.path}');
+          if (req.url.path.endsWith('/app/min-version')) {
+            return _json({'error': 'x'}, status: 404);
+          }
+          return _json({'ok': true});
+        });
+        await EmsApiService.send('POST', '/attendance/marks', body: {'x': 1});
+        expect(sent, [
+          'GET /api/app/min-version',
+          'POST /api/attendance/marks',
+        ]);
+      },
+    );
+
+    test('login is never blocked by the gate', () async {
+      EmsApiService.client = MockClient((req) async {
+        if (req.url.path.endsWith('/app/min-version')) {
+          throw http.ClientException('offline');
+        }
+        return _json({
+          'token': 't',
+          'student': {'mssv': 'TEST260001'},
+        });
+      });
+      await EmsApiService.send(
+        'POST',
+        '/auth/student/login',
+        body: {'mssv': 'TEST260001', 'password': 'x'},
+        auth: false,
+      );
+    });
   });
 }

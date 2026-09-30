@@ -190,6 +190,9 @@ class EmsApiService {
   }) async {
     final uri = _buildUri(path, query);
     if (method != 'GET') {
+      // Đăng nhập (auth:false) và đăng ký thiết bị nhận thông báo không qua
+      // cổng này: chúng tự báo lỗi riêng và không mang dữ liệu học vụ.
+      if (auth && !path.contains('/devices')) await _ensureConnectionSure();
       return _decode(await _once(method, uri, body: body, auth: auth));
     }
     // Identical in-flight GETs (same token + URL) share one request.
@@ -205,6 +208,55 @@ class EmsApiService {
     } finally {
       _inflight.remove(key);
     }
+  }
+
+  // ── Cổng "mạng chắc chắn" cho mọi lần GHI ────────────────────────────────
+  // Quy tắc của chủ trường (2026-09-30): khi không chắc mạng, KHÔNG gửi gì lên
+  // máy chủ. Một lần ghi trên mạng chập chờn có thể tới máy chủ mà câu trả lời
+  // bị mất — thầy/cô không biết đã lưu hay chưa. Nên: nếu chưa có phản hồi
+  // HTTP nào trong [_sureWindow] (hoặc lần gần nhất vừa lỗi mạng), hỏi thử một
+  // endpoint công khai rất nhỏ; không có phản hồi trong [_probeTimeout] thì
+  // KHÔNG gửi, ném lỗi `network_unsure` — màn hình giữ dữ liệu trên máy
+  // (điểm danh hiện "CHƯA GỬI") để người dùng bấm gửi lại khi mạng ổn.
+  // Đọc (GET) không qua cổng này: đọc được thì hiện bản đã lưu kèm giờ.
+  static const Duration _sureWindow = Duration(seconds: 20);
+  static const Duration _probeTimeout = Duration(seconds: 3);
+  static DateTime? _lastContact; // lần gần nhất nhận được BẤT KỲ phản hồi HTTP
+  static bool _lastFailed = false; // lần gần nhất lỗi mạng/quá hạn
+
+  static bool get _connectionSure =>
+      !_lastFailed &&
+      _lastContact != null &&
+      DateTime.now().difference(_lastContact!) < _sureWindow;
+
+  /// Hỏi thử máy chủ. Bất kỳ phản hồi HTTP nào (kể cả 4xx/5xx) đều chứng minh
+  /// có đường tới máy chủ; chỉ lỗi mạng hoặc quá 3 giây mới là "không chắc".
+  static Future<void> defaultProbe() =>
+      client.get(Uri.parse('$baseUrl/app/min-version')).timeout(_probeTimeout);
+
+  /// Thay được trong test (test/flutter_test_config.dart coi máy là có mạng).
+  static Future<void> Function() probe = defaultProbe;
+
+  static Future<void> _ensureConnectionSure() async {
+    if (_connectionSure) return;
+    try {
+      await probe();
+      _lastContact = DateTime.now();
+      _lastFailed = false;
+    } catch (_) {
+      _lastFailed = true;
+      throw EmsException(
+        'Mạng không ổn định nên CHƯA GỬI. Dữ liệu vẫn giữ trên máy — '
+        'bấm gửi lại khi mạng ổn.',
+        code: 'network_unsure',
+      );
+    }
+  }
+
+  /// Test-only: xoá trạng thái mạng giữa các test.
+  static void resetConnectionState() {
+    _lastContact = null;
+    _lastFailed = false;
   }
 
   static Uri _buildUri(String path, Map<String, String>? query) {
@@ -228,15 +280,20 @@ class EmsApiService {
     try {
       final headers = {..._headers(auth: auth), ...?extraHeaders};
       final encoded = body == null ? null : jsonEncode(body);
-      return await (method == 'POST'
-              ? client.post(uri, headers: headers, body: encoded)
-              : method == 'PATCH'
-              ? client.patch(uri, headers: headers, body: encoded)
-              : method == 'DELETE'
-              ? client.delete(uri, headers: headers, body: encoded)
-              : client.get(uri, headers: headers))
-          .timeout(method == 'GET' ? _readTimeout : _writeTimeout);
+      final res =
+          await (method == 'POST'
+                  ? client.post(uri, headers: headers, body: encoded)
+                  : method == 'PATCH'
+                  ? client.patch(uri, headers: headers, body: encoded)
+                  : method == 'DELETE'
+                  ? client.delete(uri, headers: headers, body: encoded)
+                  : client.get(uri, headers: headers))
+              .timeout(method == 'GET' ? _readTimeout : _writeTimeout);
+      _lastContact = DateTime.now();
+      _lastFailed = false;
+      return res;
     } catch (e) {
+      _lastFailed = true;
       // Mạng hỏng / quá hạn / DNS — không có statusCode, nên không bị coi là
       // từ chối có chủ đích và màn hình sẽ hiện nút "Thử lại".
       throw EmsException(
@@ -245,7 +302,10 @@ class EmsApiService {
     }
   }
 
-  /// GET with ONE retry on network error or 503. Writes never come here.
+  /// GET with ONE retry, only when the server answers 503 (busy). Offline and
+  /// timeouts are not retried: offline cannot succeed a second later, and
+  /// re-sending a timed-out read adds load exactly when the server is
+  /// struggling. Writes never come here.
   static Future<http.Response> _getWithRetry(
     Uri uri, {
     bool auth = true,
@@ -253,13 +313,7 @@ class EmsApiService {
   }) async {
     Future<http.Response> attempt() =>
         _once('GET', uri, auth: auth, extraHeaders: extraHeaders);
-    http.Response res;
-    try {
-      res = await attempt();
-    } on EmsException {
-      await Future<void>.delayed(retryDelay(0));
-      return attempt();
-    }
+    final res = await attempt();
     if (res.statusCode != 503) return res;
     final ra = int.tryParse(res.headers['retry-after'] ?? '') ?? 1;
     await Future<void>.delayed(retryDelay(ra < 0 ? 0 : ra));
