@@ -71,8 +71,8 @@ class ScheduleBody extends StatelessWidget {
                             color: context.vd.inkMuted,
                           ),
                         )
-                      : RichText(
-                          text: TextSpan(
+                      : Text.rich(
+                          TextSpan(
                             style: TextStyle(
                               fontSize: 13,
                               color: context.vd.inkMuted,

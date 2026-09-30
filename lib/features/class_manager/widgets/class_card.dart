@@ -38,8 +38,8 @@ class ClassCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    RichText(
-                      text: TextSpan(
+                    Text.rich(
+                      TextSpan(
                         style: TextStyle(
                           fontSize: 14,
                           color: context.vd.ink,

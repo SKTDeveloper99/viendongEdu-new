@@ -1,0 +1,6 @@
+tags:
+  golden:
+    # Screen screenshots (light + dark). Regenerate with:
+    #   flutter test --update-goldens --tags golden test/goldens/
+    # Skip on CI machines whose text rendering differs:
+    #   flutter test --exclude-tags golden
