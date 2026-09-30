@@ -11,7 +11,7 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:viendongedu2_flutter/models/crm_identity.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
-import 'package:viendongedu2_flutter/screens/ems_attendance_teacher_screen.dart';
+import 'package:viendongedu2_flutter/features/teacher_attendance/teacher_attendance_screen.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 import 'package:viendongedu2_flutter/services/ems_attendance_cache.dart';
 

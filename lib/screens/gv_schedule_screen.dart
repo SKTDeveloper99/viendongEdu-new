@@ -4,7 +4,7 @@ import '../services/crm_session_guard.dart';
 import '../services/app_session.dart';
 import '../components/skeleton.dart';
 import '../utils/snack.dart';
-import 'ems_attendance_teacher_screen.dart';
+import '../features/teacher_attendance/teacher_attendance_screen.dart';
 
 class GvScheduleScreen extends StatefulWidget {
   const GvScheduleScreen({super.key});
