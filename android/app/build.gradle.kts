@@ -37,9 +37,9 @@ android {
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         // Google Play refuses a versionCode that is not higher than the last
-        // upload (91 = 6.1.0+91). iOS uses pubspec's build number (6.0.6 (1));
+        // upload (96 = 6.0.6+3 pilot). iOS uses pubspec's build number (6.0.6 (1));
         // Android keeps its own counter. Raise by 1 for every Play upload.
-        versionCode = 95
+        versionCode = 96
         versionName = flutter.versionName
     }
 
