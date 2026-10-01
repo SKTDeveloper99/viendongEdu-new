@@ -8,7 +8,8 @@ import 'api/attendance_api.dart';
 class TeacherAttendanceRepository {
   const TeacherAttendanceRepository();
 
-  Future<List<EmsSession>> mySessions() => AttendanceApi.mySessions();
+  Future<List<EmsSession>> mySessions({String? date}) =>
+      AttendanceApi.mySessions(date: date);
 
   Future<EmsRoster> roster(EmsSession session) => AttendanceApi.roster(session);
 

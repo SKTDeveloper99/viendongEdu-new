@@ -17,6 +17,7 @@ class FakeRepo implements TeacherConversationsRepository {
   bool listFresh = true;
   TeacherThread? threadData;
   Object? sendError;
+  Object? classesError;
   List<PickerClass> classes = const [];
   final sent = <String>[];
   final resolved = <String>[];
@@ -59,7 +60,10 @@ class FakeRepo implements TeacherConversationsRepository {
   Future<int> unreadCount() async => 0;
 
   @override
-  Future<List<PickerClass>> currentSemesterClasses() async => classes;
+  Future<List<PickerClass>> currentSemesterClasses() async {
+    if (classesError != null) throw classesError!;
+    return classes;
+  }
 }
 
 TeacherConversation _conv(
@@ -205,6 +209,19 @@ void main() {
     await tester.enterText(find.byType(TextField), 'bình');
     await tester.pumpAndSettle();
     expect(find.text('THUNGHIEM Bình'), findsOneWidget);
+  });
+
+  testWidgets('picker gives a useful safe error for unexpected load failures', (
+    tester,
+  ) async {
+    final repo = FakeRepo()..classesError = StateError('secret backend detail');
+    await tester.pumpWidget(_app(NewConversationScreen(repository: repo)));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Không tải được danh sách lớp và sinh viên. Vui lòng thử lại.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('secret backend detail'), findsNothing);
   });
 
   test('push route /conversations opens the thread for teachers only', () {

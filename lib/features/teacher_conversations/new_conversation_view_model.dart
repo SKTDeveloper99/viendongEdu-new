@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/network/ems_exception.dart';
 import '../../data/teacher_conversations_repository.dart';
 import '../../models/teacher_conversation_models.dart';
 import 'conversation_format.dart';
@@ -30,7 +31,9 @@ class NewConversationViewModel extends ChangeNotifier {
       _classes = await _repo.currentSemesterClasses();
     } catch (e) {
       if (isAuthError(e)) _authError = e;
-      _error = conversationErrorText(e);
+      _error = e is EmsException
+          ? conversationErrorText(e)
+          : 'Không tải được danh sách lớp và sinh viên. Vui lòng thử lại.';
     }
     _loading = false;
     _notify();

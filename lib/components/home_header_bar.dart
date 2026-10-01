@@ -94,55 +94,64 @@ class HomeHeaderBar extends StatelessWidget {
   );
 
   Widget _bell(VdTokens t) => VdPressable(
-    child: GestureDetector(
-      onTap: onBell,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: t.onHeader.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.notifications_outlined,
-                color: t.onHeader,
-                size: 24,
-              ),
-            ),
-            if (unreadCount > 0)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
+    child: Semantics(
+      button: true,
+      label: unreadCount > 0 ? 'Thông báo, $unreadCount chưa đọc' : 'Thông báo',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onBell,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: t.danger,
+                    color: t.onHeader.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    unreadCount > 99 ? '99+' : '$unreadCount',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: t.onHeader,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Icon(
+                    Icons.notifications_outlined,
+                    color: t.onHeader,
+                    size: 24,
                   ),
                 ),
-              ),
-          ],
+                if (unreadCount > 0)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      decoration: BoxDecoration(
+                        color: t.danger,
+                        shape: BoxShape.circle,
+                      ),
+                      child: ExcludeSemantics(
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: t.onHeader,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     ),

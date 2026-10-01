@@ -20,7 +20,6 @@ const Map<String, int> _allowlist = {
   'lib/screens/registration_screen.dart': 653,
   'lib/screens/schedule_screen.dart': 642,
   'lib/screens/student_questions_screen.dart': 583,
-  'lib/screens/gv_schedule_screen.dart': 571,
   'lib/screens/student_board_screen.dart': 490,
   'lib/screens/tuition_screen.dart': 482,
   'lib/screens/gv_lichthi_screen.dart': 468,

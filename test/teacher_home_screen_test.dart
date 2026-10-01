@@ -148,9 +148,27 @@ void main() {
     expect(find.text('Mã GV: TESTGV01'), findsOneWidget);
     expect(find.text('Cơ hữu'), findsOneWidget);
     expect(find.text('Lịch dạy hôm nay'), findsOneWidget);
-    expect(find.descendant(of: find.byType(GvClassChip), matching: find.text('Môn thử nghiệm sáng')), findsOneWidget);
-    expect(find.descendant(of: find.byType(GvClassChip), matching: find.text('Môn thử nghiệm tối')), findsOneWidget);
-    expect(find.descendant(of: find.byType(GvClassChip), matching: find.text('P.101')), findsNWidgets(2));
+    expect(
+      find.descendant(
+        of: find.byType(GvClassChip),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(GvClassChip),
+        matching: find.text('Môn thử nghiệm tối'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(GvClassChip),
+        matching: find.text('P.101'),
+      ),
+      findsNWidgets(2),
+    );
     expect(_bell, findsOneWidget);
     expect(find.text('Thu gọn'), findsOneWidget);
     await tester.tap(find.text('Thu gọn'));
@@ -222,6 +240,18 @@ void main() {
     Navigator.of(tester.element(find.text('route:/notifications'))).pop();
     await tester.pumpAndSettle();
     expect(hits['/api/teacher/notifications/unread-count']!, before + 1);
+  });
+
+  testWidgets('huy hiệu 99+ vẫn có nút thông báo accessible và mở tuyến', (
+    tester,
+  ) async {
+    mock(unread: 120);
+    await pumpHome(tester);
+    expect(find.text('99+'), findsOneWidget);
+    expect(find.bySemanticsLabel('Thông báo, 120 chưa đọc'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Thông báo, 120 chưa đọc'));
+    await tester.pumpAndSettle();
+    expect(find.text('route:/notifications'), findsOneWidget);
   });
 
   testWidgets('lỗi số chưa đọc bị nuốt: lịch vẫn hiện, không có chấm', (

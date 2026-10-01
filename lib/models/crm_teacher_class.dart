@@ -1,3 +1,11 @@
+num? _numericValue(Object? value) {
+  if (value is num) return value;
+  if (value is String) return num.tryParse(value.trim());
+  return null;
+}
+
+int? _integerValue(Object? value) => _numericValue(value)?.toInt();
+
 /// Mô hình lịch dạy — dùng chung cho bốn endpoint có cùng khuôn dạng cột
 /// (mirror của IMS `giangvien/tkbtheongay` / `tkbtheohocky`):
 ///   - `GET /api/teacher/me/schedule?date=`            (theo ngày)
@@ -53,7 +61,7 @@ class CrmScheduleSlot {
     lmhId: j['lmhid']?.toString() ?? '',
     lmhMa: j['lmhma']?.toString() ?? '',
     mhTen: j['mhten']?.toString(),
-    soTinChi: (j['sotinchi'] as num?)?.toInt(),
+    soTinChi: _integerValue(j['sotinchi']),
     phongTen: j['phongten']?.toString(),
     tietBd: j['tietbd']?.toString(),
     ngayMa: j['ngayma']?.toString(),
@@ -130,17 +138,17 @@ class CrmTeacherClass {
     sectionCode: j['section_code']?.toString() ?? '',
     semesterCode: j['semester_code']?.toString(),
     room: j['room']?.toString(),
-    siSo: (j['si_so'] as num?)?.toInt(),
+    siSo: _integerValue(j['si_so']),
     ngayBatDau: j['ngay_bat_dau']?.toString(),
     ngayKetThuc: j['ngay_ket_thuc']?.toString(),
     ngayThi: j['ngay_thi']?.toString(),
     subjectCode: j['subject_code']?.toString(),
     subjectName: j['subject_name']?.toString(),
-    credits: (j['credits'] as num?)?.toInt(),
-    enrolledStudents: (j['enrolled_students'] as num?)?.toInt() ?? 0,
-    sessions: (j['sessions'] as num?)?.toInt() ?? 0,
-    attendanceRows: (j['attendance_rows'] as num?)?.toInt() ?? 0,
-    gradeRows: (j['grade_rows'] as num?)?.toInt() ?? 0,
+    credits: _integerValue(j['credits']),
+    enrolledStudents: _integerValue(j['enrolled_students']) ?? 0,
+    sessions: _integerValue(j['sessions']) ?? 0,
+    attendanceRows: _integerValue(j['attendance_rows']) ?? 0,
+    gradeRows: _integerValue(j['grade_rows']) ?? 0,
   );
 }
 
@@ -183,13 +191,13 @@ class CrmClassStudent {
     status: j['status']?.toString(),
     classCode: j['class_code']?.toString(),
     gradeId: j['grade_id']?.toString(),
-    midtermScore: j['midterm_score'] as num?,
-    finalExamScore: j['final_exam_score'] as num?,
-    finalScore: j['final_score'] as num?,
+    midtermScore: _numericValue(j['midterm_score']),
+    finalExamScore: _numericValue(j['final_exam_score']),
+    finalScore: _numericValue(j['final_score']),
     gradeStatus: j['grade_status']?.toString(),
-    attendanceRows: (j['attendance_rows'] as num?)?.toInt() ?? 0,
-    presentRows: (j['present_rows'] as num?)?.toInt() ?? 0,
-    absentRows: (j['absent_rows'] as num?)?.toInt() ?? 0,
+    attendanceRows: _integerValue(j['attendance_rows']) ?? 0,
+    presentRows: _integerValue(j['present_rows']) ?? 0,
+    absentRows: _integerValue(j['absent_rows']) ?? 0,
   );
 }
 
@@ -228,20 +236,19 @@ class CrmAttendanceRow {
     this.notes,
   });
 
-  factory CrmAttendanceRow.fromJson(Map<String, dynamic> j) =>
-      CrmAttendanceRow(
-        sessionId: j['session_id']?.toString() ?? '',
-        date: j['date']?.toString(),
-        startTime: j['start_time']?.toString(),
-        endTime: j['end_time']?.toString(),
-        room: j['room']?.toString(),
-        sessionStatus: j['session_status']?.toString(),
-        attendanceId: j['attendance_id']?.toString(),
-        mssv: j['mssv']?.toString(),
-        fullName: j['full_name']?.toString(),
-        status: j['status']?.toString(),
-        notes: j['notes']?.toString(),
-      );
+  factory CrmAttendanceRow.fromJson(Map<String, dynamic> j) => CrmAttendanceRow(
+    sessionId: j['session_id']?.toString() ?? '',
+    date: j['date']?.toString(),
+    startTime: j['start_time']?.toString(),
+    endTime: j['end_time']?.toString(),
+    room: j['room']?.toString(),
+    sessionStatus: j['session_status']?.toString(),
+    attendanceId: j['attendance_id']?.toString(),
+    mssv: j['mssv']?.toString(),
+    fullName: j['full_name']?.toString(),
+    status: j['status']?.toString(),
+    notes: j['notes']?.toString(),
+  );
 }
 
 /// `GET /api/teacher/me/exams?semester=` — thay IMS `giangvien/lichthi`.
@@ -290,10 +297,10 @@ class CrmTeacherExam {
     examId: j['exam_id']?.toString() ?? '',
     examDate: j['exam_date']?.toString(),
     startTime: j['start_time']?.toString(),
-    durationMinutes: int.tryParse('${j['duration_minutes'] ?? ''}'),
+    durationMinutes: _integerValue(j['duration_minutes']),
     examType: j['exam_type']?.toString(),
     examFormat: j['exam_format']?.toString(),
-    classSize: int.tryParse('${j['class_size'] ?? ''}'),
+    classSize: _integerValue(j['class_size']),
     proctor1: j['proctor_1']?.toString(),
     proctor2: j['proctor_2']?.toString(),
     note: j['note']?.toString(),
@@ -301,7 +308,7 @@ class CrmTeacherExam {
     classCode: j['class_code']?.toString(),
     subjectCode: j['subject_code']?.toString(),
     subjectName: j['subject_name']?.toString(),
-    credits: int.tryParse('${j['credits'] ?? ''}'),
+    credits: _integerValue(j['credits']),
     semesterCode: j['semester_code']?.toString(),
     semesterName: j['semester_name']?.toString(),
   );

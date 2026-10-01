@@ -45,42 +45,48 @@ void main() {
     expect(AppSession.instance.emsDenied, isFalse);
   });
 
-  test('applyIdentity + persist + tryRestore round-trips a CRM session', () async {
-    final identity = CrmIdentity(
-      role: CrmRole.student,
-      token: 'crm-token-1',
-      mssv: '2600001234',
-      fullName: 'Nguyễn Văn A',
-      mustChangePassword: false,
-    );
-    AppSession.instance.applyIdentity(identity);
-    await AppSession.instance.persist();
+  test(
+    'applyIdentity + persist + tryRestore round-trips a CRM session',
+    () async {
+      final identity = CrmIdentity(
+        role: CrmRole.student,
+        token: 'crm-token-1',
+        mssv: '2600001234',
+        fullName: 'Nguyễn Văn A',
+        mustChangePassword: false,
+      );
+      AppSession.instance.applyIdentity(identity);
+      await AppSession.instance.persist();
 
-    // Xoá sạch bộ nhớ, chỉ còn SharedPreferences đã lưu ở trên.
-    AppSession.instance
-      ..emsToken = null
-      ..role = null
-      ..mssv = null
-      ..fullName = null;
+      // Xoá sạch bộ nhớ, chỉ còn SharedPreferences đã lưu ở trên.
+      AppSession.instance
+        ..emsToken = null
+        ..role = null
+        ..mssv = null
+        ..fullName = null;
 
-    final restored = await AppSession.instance.tryRestore();
-    expect(restored, isTrue);
-    expect(AppSession.instance.isLoggedIn, isTrue);
-    expect(AppSession.instance.role, CrmRole.student);
-    expect(AppSession.instance.mssv, '2600001234');
-    expect(AppSession.instance.fullName, 'Nguyễn Văn A');
-  });
+      final restored = await AppSession.instance.tryRestore();
+      expect(restored, isTrue);
+      expect(AppSession.instance.isLoggedIn, isTrue);
+      expect(AppSession.instance.role, CrmRole.student);
+      expect(AppSession.instance.mssv, '2600001234');
+      expect(AppSession.instance.fullName, 'Nguyễn Văn A');
+    },
+  );
 
-  test('a bare IMS token with no CRM identity does not count as logged in', () async {
-    final prefs = await SharedPreferences.getInstance();
-    // Giả lập một bản cài đặt CŨ (trước 6.1.0): có token IMS nhưng chưa từng
-    // có 'crm_identity'.
-    await prefs.setString('auth_token', 'stale-ims-token');
+  test(
+    'a bare IMS token with no CRM identity does not count as logged in',
+    () async {
+      final prefs = await SharedPreferences.getInstance();
+      // Giả lập một bản cài đặt CŨ (trước 6.1.0): có token IMS nhưng chưa từng
+      // có 'crm_identity'.
+      await prefs.setString('auth_token', 'stale-ims-token');
 
-    final restored = await AppSession.instance.tryRestore();
-    expect(restored, isFalse);
-    expect(AppSession.instance.isLoggedIn, isFalse);
-  });
+      final restored = await AppSession.instance.tryRestore();
+      expect(restored, isFalse);
+      expect(AppSession.instance.isLoggedIn, isFalse);
+    },
+  );
 
   test('teacher schedule cannot fall back to an IMS attendance writer', () {
     final source = File(
@@ -90,7 +96,16 @@ void main() {
     expect(source, isNot(contains('GvAttendanceScreen')));
     expect(source, isNot(contains('GvQrAttendanceScreen')));
     expect(source, isNot(contains('postDiemDanhLuu')));
-    expect(source, contains('EmsAttendanceTeacherScreen'));
+    expect(source, contains('ScheduleCard'));
+    final card = File(
+      'lib/features/teacher_attendance/schedule_card.dart',
+    ).readAsStringSync();
+    expect(card, contains('TeacherRosterScreen'));
+    expect(card, contains('matchScheduleSession'));
+    expect(card, contains('repository.mySessions(date: widget.date)'));
+    expect(card, isNot(contains('GvAttendanceScreen')));
+    expect(card, isNot(contains('GvQrAttendanceScreen')));
+    expect(card, isNot(contains('postDiemDanhLuu')));
   });
 
   test('student home has a one-tap attendance destination', () {

@@ -32,7 +32,7 @@ class _Repo implements TeacherAttendanceRepository {
   bool rosterDown = false;
 
   @override
-  Future<List<EmsSession>> mySessions() async => const [];
+  Future<List<EmsSession>> mySessions({String? date}) async => const [];
 
   @override
   Future<EmsRoster> roster(EmsSession s) async {
