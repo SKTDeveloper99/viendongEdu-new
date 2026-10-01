@@ -1,3 +1,4 @@
+import '../core/school_calendar.dart';
 import 'ems_api_service.dart';
 import '../core/default_semester.dart';
 import 'offline_snapshot.dart';
@@ -89,14 +90,15 @@ class CrmTeacherApi {
   }
 
   static Future<({CrmTeacherOverview overview, DateTime savedAt})?>
-  cachedOverview() async {
+  cachedOverview({SchoolCalendar? calendar}) async {
     final cached = await OfflineSnapshot.load('teacher_overview');
     final data = cached?.data;
     if (cached == null || data is! Map<String, dynamic>) return null;
-    final now = DateTime.now();
-    if (cached.savedAt.year != now.year ||
-        cached.savedAt.month != now.month ||
-        cached.savedAt.day != now.day) {
+    final today = (calendar ?? SchoolCalendar()).today;
+    final savedSchoolDay = SchoolCalendar(clock: () => cached.savedAt).today;
+    if (savedSchoolDay.year != today.year ||
+        savedSchoolDay.month != today.month ||
+        savedSchoolDay.day != today.day) {
       return null;
     }
     return (

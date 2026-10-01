@@ -134,6 +134,29 @@ class RosterViewModel extends ChangeNotifier {
     try {
       final r = await repository.roster(session);
       if (_disposed) return;
+      if (r.sessionKey.trim().isEmpty || r.sessionKey != session.sessionKey) {
+        throw EmsException(
+          'EMS trả về một buổi học khác. Chưa mở danh sách; vui lòng tải lại lịch.',
+        );
+      }
+      if (session.rosterSize > 0 && r.students.length != session.rosterSize) {
+        throw EmsException(
+          'Sĩ số EMS không khớp buổi đã chọn '
+          '(${r.students.length}/${session.rosterSize}). '
+          'Chưa mở danh sách; vui lòng tải lại lịch.',
+        );
+      }
+      final seenMssv = <String>{};
+      if (r.students.any((student) {
+        final mssv = student.mssv.trim();
+        final name = student.fullName.trim();
+        return mssv.isEmpty || name.isEmpty || !seenMssv.add(mssv);
+      })) {
+        throw EmsException(
+          'Danh sách EMS thiếu tên/mã học viên hoặc có mã bị trùng. '
+          'Chưa mở danh sách; vui lòng tải lại lịch.',
+        );
+      }
       final merged = mergeDraftWithRoster(draft, r.students);
       _students = r.students;
       _scanSyncedAt = r.scanSyncedAt;

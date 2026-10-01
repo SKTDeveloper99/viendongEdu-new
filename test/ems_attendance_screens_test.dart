@@ -18,6 +18,7 @@ MockClient _teacherMock({
   required http.Response Function(Map<String, dynamic> body) onPost,
   required List<Map<String, dynamic>> Function() students,
   required List<Map<String, dynamic>> posts,
+  int rosterSize = 2,
 }) {
   return MockClient((request) async {
     if (request.url.path.endsWith('/attendance/my-sessions')) {
@@ -31,7 +32,7 @@ MockClient _teacherMock({
               'session_date': '2026-09-08',
               'start_time': '18:00',
               'end_time': '20:30',
-              'roster_size': 2,
+              'roster_size': rosterSize,
               'marked_count': 0,
               'session_key': '123:18-00:2026-09-08',
             },
@@ -150,6 +151,7 @@ void main() {
       );
       final posts = <Map<String, dynamic>>[];
       EmsApiService.client = _teacherMock(
+        rosterSize: 1,
         onPost: (body) => http.Response('{}', 200),
         students: () => [
           {
@@ -452,6 +454,7 @@ void main() {
   ) async {
     final posts = <Map<String, dynamic>>[];
     EmsApiService.client = _teacherMock(
+      rosterSize: 3,
       posts: posts,
       students: () => [
         {'mssv': '2600000001', 'full_name': 'Trần Văn An', 'scanned': true},
@@ -501,6 +504,7 @@ void main() {
   // 18/09 Dũng: xếp tên A–Z để dò tay. Theo TÊN (chữ cuối), bỏ dấu.
   testWidgets('A–Z sorts by given name without diacritics', (tester) async {
     EmsApiService.client = _teacherMock(
+      rosterSize: 4,
       posts: [],
       students: () => [
         {'mssv': '2600000001', 'full_name': 'Nguyễn Thị Lan Phương'},

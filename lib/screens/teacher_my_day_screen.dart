@@ -3,19 +3,29 @@ import '../services/ems_api_service.dart';
 import '../data/api/attendance_api.dart';
 import '../data/api/student_cases_api.dart';
 import '../theme/vd_tokens.dart';
+import '../core/school_calendar.dart';
+import '../components/teacher_day_summary_number.dart';
+
+typedef TeacherSessionsLoader =
+    Future<List<EmsSession>> Function({String? date});
+
 /// Một mặt làm việc duy nhất cho giảng viên: buổi dạy hôm nay từ EMS và các
 /// ca sinh viên đang chờ chính người này phản hồi từ Student Cases.
 ///
 /// Hai phần tải độc lập. Lịch điểm danh hỏng không được che hàng đợi sinh viên,
 /// và hàng đợi hỏng cũng không được làm biến mất lịch dạy.
 class TeacherMyDayScreen extends StatefulWidget {
-  const TeacherMyDayScreen({super.key});
+  final SchoolCalendar? calendar;
+  final TeacherSessionsLoader? loadSessions;
+
+  const TeacherMyDayScreen({super.key, this.calendar, this.loadSessions});
 
   @override
   State<TeacherMyDayScreen> createState() => _TeacherMyDayScreenState();
 }
 
 class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
+  late final SchoolCalendar _calendar;
   List<EmsSession>? _sessions;
   List<TeacherStudentCase>? _cases;
   String? _sessionsError;
@@ -27,13 +37,8 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
   @override
   void initState() {
     super.initState();
+    _calendar = widget.calendar ?? SchoolCalendar();
     _loadAll();
-  }
-
-  static String _today() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
   }
 
   Future<void> _loadAll() async {
@@ -48,7 +53,9 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
 
   Future<void> _loadSessions() async {
     try {
-      final rows = await AttendanceApi.mySessions(date: _today());
+      final rows = await (widget.loadSessions ?? AttendanceApi.mySessions)(
+        date: _calendar.todayIso,
+      );
       if (!mounted) return;
       setState(() {
         _sessions = rows;
@@ -458,44 +465,16 @@ class _DaySummary extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _SummaryNumber(value: '$sessions', label: 'buổi dạy'),
-              _SummaryNumber(value: '$unmarked', label: 'chưa điểm danh'),
-              _SummaryNumber(value: '$cases', label: 'ca cần phản hồi'),
-              _SummaryNumber(value: '$overdue', label: 'quá hạn'),
+              TeacherDaySummaryNumber(value: '$sessions', label: 'buổi dạy'),
+              TeacherDaySummaryNumber(value: '$unmarked', label: 'chưa điểm danh'),
+              TeacherDaySummaryNumber(value: '$cases', label: 'ca cần phản hồi'),
+              TeacherDaySummaryNumber(value: '$overdue', label: 'quá hạn'),
             ],
           ),
         ],
       ),
     );
   }
-}
-
-class _SummaryNumber extends StatelessWidget {
-  final String value;
-  final String label;
-  const _SummaryNumber({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: context.vd.onPrimary,
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 10),
-        ),
-      ],
-    ),
-  );
 }
 
 class _SectionTitle extends StatelessWidget {

@@ -44,7 +44,7 @@ class _SkeletonState extends State<Skeleton>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _anim,
-      builder: (_, __) => Container(
+      builder: (_, _) => Container(
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
@@ -161,6 +161,6 @@ Widget skeletonList({int count = 4, Color? accentColor}) {
   return ListView.builder(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
     itemCount: count,
-    itemBuilder: (_, __) => SkeletonCard(accentColor: accentColor),
+    itemBuilder: (_, _) => SkeletonCard(accentColor: accentColor),
   );
 }

@@ -16,10 +16,15 @@ const _session = EmsSession(
 /// Records every call in order. [rosters] are served one per roster() call
 /// (the last one repeats); [posts] answer saveMarks in order.
 class _FakeRepo implements TeacherAttendanceRepository {
-  _FakeRepo({required this.rosters, this.posts = const []});
+  _FakeRepo({
+    required this.rosters,
+    this.posts = const [],
+    this.rosterSessionKey = 'k1',
+  });
 
   final List<List<EmsRosterStudent>> rosters;
   final List<Object> posts; // EmsSaveResult or an exception to throw
+  final String rosterSessionKey;
   EmsAttendanceDraft? draft;
   final log = <String>[];
   final sent = <List<EmsMark>>[];
@@ -35,7 +40,7 @@ class _FakeRepo implements TeacherAttendanceRepository {
     log.add('roster');
     final list = rosters[_r < rosters.length ? _r : rosters.length - 1];
     _r++;
-    return EmsRoster(sessionKey: 'k1', students: list);
+    return EmsRoster(sessionKey: rosterSessionKey, students: list);
   }
 
   @override
@@ -268,5 +273,54 @@ void main() {
         RosterViewModel.isClientRefusal(EmsException('x', statusCode: c));
     expect([400, 403, 404, 409, 422].every(r), isTrue);
     expect([null, 401, 408, 429, 500, 503].any(r), isFalse);
+  });
+
+  test(
+    'wrong generic 45-student roster is rejected before rendering',
+    () async {
+      const selected = EmsSession(
+        sectionId: 'section-linh',
+        sectionCode: 'MON-A',
+        sessionDate: '2026-10-05',
+        startTime: '09:00',
+        endTime: '10:00',
+        sessionKey: '101:09-00:2026-10-05',
+        rosterSize: 2,
+      );
+      final repo = _FakeRepo(
+        rosterSessionKey: selected.sessionKey,
+        rosters: [
+          [
+            for (var i = 0; i < 45; i++)
+              _s('OLD${i.toString().padLeft(2, '0')}'),
+          ],
+        ],
+      );
+      final vm = RosterViewModel(repo, selected);
+
+      await vm.load();
+
+      expect(vm.students, isEmpty);
+      expect(vm.error, contains('45/2'));
+      expect(repo.log, ['loadDraft:${selected.sessionKey}', 'roster']);
+    },
+  );
+
+  test('roster with missing or duplicate identity is rejected', () async {
+    final invalidRosters = [
+      [_s(_a), EmsRosterStudent(mssv: _b, fullName: '  ')],
+      [_s(_a), EmsRosterStudent(mssv: _a, fullName: 'Tên trùng mã')],
+      [_s(_a), EmsRosterStudent(mssv: '  ', fullName: 'Thiếu mã')],
+    ];
+    for (final students in invalidRosters) {
+      final repo = _FakeRepo(rosters: [students]);
+      final vm = RosterViewModel(repo, _session);
+
+      await vm.load();
+
+      expect(vm.students, isEmpty);
+      expect(vm.error, contains('thiếu tên/mã học viên hoặc có mã bị trùng'));
+      vm.dispose();
+    }
   });
 }

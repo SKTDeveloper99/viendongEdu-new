@@ -12,7 +12,10 @@ abstract final class AttendanceApi {
 
   static Future<List<EmsSession>> mySessions({String? date}) async {
     final q = (date == null || date.isEmpty) ? '' : '?date=$date';
-    final body = await EmsApiService.sendMap('GET', '/attendance/my-sessions$q');
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/attendance/my-sessions$q',
+    );
     // `from_schedule: false` = máy chủ KHÔNG có buổi nào hôm nay và đang trả
     // về danh sách mọi lớp của giáo viên (không giờ, không phòng) thay thế.
     // Đó không phải buổi học hôm nay: lưu điểm danh vào đó bị từ chối (422)
@@ -32,7 +35,8 @@ abstract final class AttendanceApi {
         '?section_id=${Uri.encodeQueryComponent(s.sectionId)}'
         '&date=${Uri.encodeQueryComponent(s.sessionDate)}'
         '&start_time=${Uri.encodeQueryComponent(s.startTime ?? '')}'
-        '&end_time=${Uri.encodeQueryComponent(s.endTime ?? '')}';
+        '&end_time=${Uri.encodeQueryComponent(s.endTime ?? '')}'
+        '${s.scheduleSessionId == null || s.scheduleSessionId!.isEmpty ? '' : '&session_id=${Uri.encodeQueryComponent(s.scheduleSessionId!)}'}';
     final body = await EmsApiService.sendMap('GET', '/attendance/roster$q');
     return EmsRoster.fromJson(body);
   }
@@ -86,6 +90,8 @@ abstract final class AttendanceApi {
         'date': s.sessionDate,
         'start_time': ?s.startTime,
         'end_time': ?s.endTime,
+        if (s.scheduleSessionId?.isNotEmpty ?? false)
+          'schedule_session_id': s.scheduleSessionId,
         'marks': marks.map((m) => m.toJson()).toList(),
         // Bỏ điểm danh những học viên giáo viên đã bỏ chọn.
         if (remove.isNotEmpty) 'remove': remove,
@@ -96,7 +102,10 @@ abstract final class AttendanceApi {
 
   /// Học viên xem điểm danh EMS của chính mình.
   static Future<List<EmsStudentMark>> myAttendance({int limit = 100}) async {
-    final body = await EmsApiService.sendMap('GET', '/student/me/attendance-ems?limit=$limit');
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/student/me/attendance-ems?limit=$limit',
+    );
     final list = body['marks'] ?? body['history'] ?? body['items'];
     if (list is! List) return <EmsStudentMark>[];
     return list

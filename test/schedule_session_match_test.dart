@@ -71,4 +71,68 @@ void main() {
       isNull,
     );
   });
+
+  test('unmaterialized EMS row fails closed', () {
+    const unmaterialized = EmsSession(
+      sectionId: '',
+      sectionCode: 'MON-A',
+      sessionDate: '2026-10-05',
+      startTime: '09:00',
+      endTime: '10:00',
+      sessionKey: '',
+    );
+    expect(
+      matchScheduleSession(
+        sessions: const [unmaterialized],
+        sectionCode: 'MON-A',
+        date: '2026-10-05',
+        startTime: '09:00',
+        endTime: '10:00',
+      ),
+      isNull,
+    );
+  });
+
+  test('timestamp-shaped CRM times still match exact EMS times', () {
+    expect(
+      matchScheduleSession(
+        sessions: monday,
+        sectionCode: 'MON-A',
+        date: '2026-10-05',
+        startTime: '2026-10-05T09:00:00+07:00',
+        endTime: '2026-10-05T10:00:00+07:00',
+      )?.rosterSize,
+      2,
+    );
+  });
+
+  test('zoned timestamps compare as Vietnam wall time', () {
+    expect(normalizeSchoolTime('2026-10-05T02:00:00Z'), '09:00');
+    expect(normalizeSchoolTime('2026-10-05T09:00:00+07:00'), '09:00');
+    expect(normalizeSchoolTime('2026-10-05T05:00:00-04:00'), '16:00');
+    expect(normalizeSchoolTime('2026-10-05T25:00:00'), isEmpty);
+    expect(normalizeSchoolTime('not a time'), isEmpty);
+  });
+
+  test('invalid session dates cannot match by textual prefix', () {
+    expect(
+      matchScheduleSession(
+        sessions: [
+          EmsSession(
+            sectionId: 'section-a',
+            sectionCode: 'MON-A',
+            sessionDate: '2026-10-05Tnonsense',
+            startTime: '09:00',
+            endTime: '10:00',
+            sessionKey: 'broken',
+          ),
+        ],
+        sectionCode: 'MON-A',
+        date: '2026-10-05',
+        startTime: '09:00',
+        endTime: '10:00',
+      ),
+      isNull,
+    );
+  });
 }

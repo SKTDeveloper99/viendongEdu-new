@@ -19,7 +19,13 @@ import '../../theme/vd_tokens.dart';
 class ScheduleCard extends StatefulWidget {
   final Map<String, dynamic> data;
   final String date;
-  const ScheduleCard({super.key, required this.data, required this.date});
+  final TeacherAttendanceRepository repository;
+  const ScheduleCard({
+    super.key,
+    required this.data,
+    required this.date,
+    this.repository = const TeacherAttendanceRepository(),
+  });
 
   @override
   State<ScheduleCard> createState() => _ScheduleCardState();
@@ -71,7 +77,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
         showErrorSnack(context, 'Không xác định được buổi học đã chọn.');
         return;
       }
-      final repository = const TeacherAttendanceRepository();
+      final repository = widget.repository;
       final sessions = await repository.mySessions(date: widget.date);
       if (!mounted) return;
       final session = matchScheduleSession(
@@ -342,6 +348,5 @@ class _ScheduleCardState extends State<ScheduleCard> {
 }
 
 String _time(String? value) {
-  final s = value?.trim() ?? '';
-  return s.length >= 5 ? s.substring(0, 5) : s;
+  return normalizeSchoolTime(value);
 }

@@ -1,5 +1,6 @@
 /// Một buổi dạy trong sổ lịch bền vững của EMS.
 class EmsSession {
+  final String? scheduleSessionId;
   final String sectionId;
   final String sectionCode;
   final String? subjectName;
@@ -13,6 +14,7 @@ class EmsSession {
   final String reportState;
 
   const EmsSession({
+    this.scheduleSessionId,
     required this.sectionId,
     required this.sectionCode,
     required this.sessionDate,
@@ -33,6 +35,7 @@ class EmsSession {
       : '$startTime – $endTime';
 
   factory EmsSession.fromJson(Map<String, dynamic> j) => EmsSession(
+    scheduleSessionId: j['schedule_session_id']?.toString(),
     sectionId: j['section_id']?.toString() ?? '',
     sectionCode: j['section_code']?.toString() ?? '',
     subjectName: j['subject_name']?.toString(),
@@ -48,6 +51,7 @@ class EmsSession {
   );
 
   Map<String, dynamic> toJson() => {
+    'schedule_session_id': ?scheduleSessionId,
     'section_id': sectionId,
     'section_code': sectionCode,
     'subject_name': ?subjectName,

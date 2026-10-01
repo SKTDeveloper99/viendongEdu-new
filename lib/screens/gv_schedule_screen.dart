@@ -3,16 +3,22 @@ import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
 import '../features/teacher_attendance/schedule_card.dart';
+import '../core/school_calendar.dart';
+import '../models/crm_teacher_class.dart';
 import '../theme/vd_tokens.dart';
 
 class GvScheduleScreen extends StatefulWidget {
-  const GvScheduleScreen({super.key});
+  final SchoolCalendar? calendar;
+  final Future<List<CrmScheduleSlot>> Function(String date)? loadSchedule;
+
+  const GvScheduleScreen({super.key, this.calendar, this.loadSchedule});
   @override
   State<GvScheduleScreen> createState() => _GvScheduleScreenState();
 }
 
 class _GvScheduleScreenState extends State<GvScheduleScreen> {
-  DateTime _selectedDate = DateTime.now();
+  late final SchoolCalendar _calendar;
+  late DateTime _selectedDate;
   late DateTime _currentMonday;
   List<Map<String, dynamic>> _classes = [];
   bool _loading = true;
@@ -22,7 +28,9 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
   @override
   void initState() {
     super.initState();
-    _currentMonday = _findMonday(DateTime.now());
+    _calendar = widget.calendar ?? SchoolCalendar();
+    _selectedDate = _calendar.today;
+    _currentMonday = _findMonday(_selectedDate);
     _fetch(_selectedDate);
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
@@ -61,9 +69,10 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
       _error = null;
     });
     try {
-      final dateStr =
-          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      final data = await CrmTeacherApi.scheduleForDate(dateStr);
+      final dateStr = SchoolCalendar.isoDate(date);
+      final data = await (widget.loadSchedule ?? CrmTeacherApi.scheduleForDate)(
+        dateStr,
+      );
       if (!mounted) return;
       setState(() {
         _classes = data.map((e) => e.toJson()).toList();
@@ -83,8 +92,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
   DateTime _findMonday(DateTime d) => d.subtract(Duration(days: d.weekday - 1));
   List<DateTime> get _weekDays =>
       List.generate(7, (i) => _currentMonday.add(Duration(days: i)));
-  String _fmtDate(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  String _fmtDate(DateTime d) => SchoolCalendar.isoDate(d);
 
   void _prevWeek() {
     setState(
@@ -101,8 +109,9 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
   }
 
   void _selectDate(DateTime date) {
-    setState(() => _selectedDate = date);
-    _fetch(date);
+    final selected = SchoolCalendar.dateOnly(date);
+    setState(() => _selectedDate = selected);
+    _fetch(selected);
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
 
@@ -230,8 +239,9 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                         final isSelected =
                             _fmtDate(day) == _fmtDate(_selectedDate);
                         final isToday =
-                            _fmtDate(day) == _fmtDate(DateTime.now());
+                            _fmtDate(day) == _fmtDate(_calendar.today);
                         return GestureDetector(
+                          key: ValueKey('schedule-day-${_fmtDate(day)}'),
                           onTap: () => _selectDate(day),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -277,6 +287,9 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
                                 ),
                                 if (isToday)
                                   Container(
+                                    key: ValueKey(
+                                      'schedule-today-${_fmtDate(day)}',
+                                    ),
                                     width: 6,
                                     height: 6,
                                     margin: const EdgeInsets.only(top: 3),

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/teacher_home_repository.dart';
 import '../../core/default_semester.dart';
+import '../../core/school_calendar.dart';
 import '../../models/crm_student_schedule.dart' show dayCodeForWeekday;
 import '../../models/crm_teacher_class.dart';
 import '../../models/crm_teacher_profile.dart';
@@ -38,7 +39,7 @@ class TeacherHomeViewModel extends ChangeNotifier {
     Duration? tickEvery = const Duration(minutes: 1),
   }) : _pace = pace ?? StartupPace.forAccount,
        _delay = delay ?? Future<void>.delayed,
-       _now = now ?? DateTime.now,
+       _now = now ?? (() => SchoolCalendar().now),
        _tickEvery = tickEvery;
 
   List<Map<String, dynamic>> _todayClasses = [];
@@ -64,9 +65,7 @@ class TeacherHomeViewModel extends ChangeNotifier {
   bool get scheduleLoading => _scheduleLoading;
   bool get scheduleFailed => _scheduleFailed;
 
-  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-  static String _iso(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  static DateTime _dateOnly(DateTime d) => SchoolCalendar.dateOnly(d);
 
   DateTime get today => _dateOnly(_now());
 
@@ -128,7 +127,7 @@ class TeacherHomeViewModel extends ChangeNotifier {
     _dayClasses = [];
     notifyListeners();
     try {
-      final r = await _repository.scheduleForDate(_iso(d));
+      final r = await _repository.scheduleForDate(SchoolCalendar.isoDate(d));
       if (_disposed || req != _dayRequest) return;
       _dayClasses = r.map((s) => s.toJson()).toList();
     } catch (e) {
@@ -175,7 +174,7 @@ class TeacherHomeViewModel extends ChangeNotifier {
   bool get unauthorized => _authError != null;
   Object? get authError => _authError;
 
-  /// The view model's clock (device time unless injected).
+  /// Vietnam school wall time (or the injected school clock in tests).
   DateTime get now => _now();
 
   /// "Tiếp theo" card state for [now]; display-only from the loaded sessions.

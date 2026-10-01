@@ -61,7 +61,9 @@ MockClient _mock({
             'session_date': '2026-09-08',
             'start_time': '18:00',
             'end_time': '20:30',
-            'roster_size': 2,
+            // Individual tests intentionally use partial rosters to exercise
+            // merge/read-back behavior, so skip the independent size guard.
+            'roster_size': 0,
             'marked_count': 0,
             'session_key': _key,
           },

@@ -310,7 +310,7 @@ class _BoardImage extends StatelessWidget {
       httpHeaders: EmsApiService.authHeaders,
       fit: BoxFit.cover,
       width: double.infinity,
-      placeholder: (_, __) => Container(
+      placeholder: (_, _) => Container(
         height: inCard ? null : 180,
         color: context.vd.hairline,
         child: Center(
@@ -322,7 +322,7 @@ class _BoardImage extends StatelessWidget {
           ),
         ),
       ),
-      errorWidget: (_, __, ___) => Container(
+      errorWidget: (_, _, _) => Container(
         height: inCard ? null : 140,
         color: context.vd.hairline,
         child: Icon(Icons.broken_image_outlined,
