@@ -20,11 +20,13 @@ class _FakeRepo implements TeacherAttendanceRepository {
     required this.rosters,
     this.posts = const [],
     this.rosterSessionKey = 'k1',
+    this.rosterError,
   });
 
   final List<List<EmsRosterStudent>> rosters;
   final List<Object> posts; // EmsSaveResult or an exception to throw
   final String rosterSessionKey;
+  final EmsException? rosterError;
   EmsAttendanceDraft? draft;
   final log = <String>[];
   final sent = <List<EmsMark>>[];
@@ -38,6 +40,7 @@ class _FakeRepo implements TeacherAttendanceRepository {
   @override
   Future<EmsRoster> roster(EmsSession s) async {
     log.add('roster');
+    if (rosterError != null) throw rosterError!;
     final list = rosters[_r < rosters.length ? _r : rosters.length - 1];
     _r++;
     return EmsRoster(sessionKey: rosterSessionKey, students: list);
@@ -157,6 +160,126 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(repo.log, List.filled(5, 'saveDraft:queued=false'));
   });
+
+  test(
+    'offline open uses matching draft students, marks and saved time',
+    () async {
+      final repo =
+          _FakeRepo(rosters: const [], rosterError: EmsException('offline'))
+            ..draft = EmsAttendanceDraft(
+              marks: const {_a: 'present'},
+              notes: const {_a: 'từ bản nháp'},
+              queued: false,
+              students: [_s(_a), _s(_b)],
+              session: _session,
+              savedAt: DateTime(2026, 9, 8, 7, 5),
+            );
+      final vm = RosterViewModel(repo, _session);
+
+      await vm.load();
+
+      expect(vm.error, isNull);
+      expect(vm.students.map((s) => s.mssv), [_a, _b]);
+      expect(vm.marks, {_a: 'present'});
+      expect(
+        vm.offlineBanner,
+        'Đang ngoại tuyến – danh sách lưu lúc 07:05. '
+        'Điểm danh sẽ tự gửi khi có mạng.',
+      );
+    },
+  );
+
+  test(
+    'offline without a usable draft keeps the current error state',
+    () async {
+      final repo = _FakeRepo(
+        rosters: const [],
+        rosterError: EmsException('offline'),
+      );
+      final vm = RosterViewModel(repo, _session);
+
+      await vm.load();
+
+      expect(vm.students, isEmpty);
+      expect(vm.offlineBanner, isNull);
+      expect(vm.error, contains('Không có kết nối'));
+    },
+  );
+
+  test(
+    'online session-key mismatch never falls back to a saved draft',
+    () async {
+      final repo =
+          _FakeRepo(
+              rosterSessionKey: 'wrong-session',
+              rosters: [
+                [_s(_a)],
+              ],
+            )
+            ..draft = EmsAttendanceDraft(
+              marks: const {_a: 'present'},
+              notes: const {},
+              queued: false,
+              students: [_s(_a)],
+              session: _session,
+            );
+      final vm = RosterViewModel(repo, _session);
+
+      await vm.load();
+
+      expect(vm.students, isEmpty);
+      expect(vm.offlineBanner, isNull);
+      expect(vm.error, contains('một buổi học khác'));
+    },
+  );
+
+  test('offline draft for a different session is never rendered', () async {
+    final repo =
+        _FakeRepo(rosters: const [], rosterError: EmsException('offline'))
+          ..draft = EmsAttendanceDraft(
+            marks: const {_a: 'present'},
+            notes: const {},
+            queued: false,
+            students: [_s(_a)],
+            session: const EmsSession(
+              sectionId: 'other',
+              sectionCode: 'OTHER',
+              sessionDate: '2026-09-08',
+              sessionKey: 'other-key',
+            ),
+          );
+    final vm = RosterViewModel(repo, _session);
+
+    await vm.load();
+
+    expect(vm.students, isEmpty);
+    expect(vm.offlineBanner, isNull);
+    expect(vm.error, contains('Không có kết nối'));
+  });
+
+  for (final status in [400, 401, 403, 404, 408, 409, 422, 429]) {
+    test('a $status roster answer never falls back to a saved draft', () async {
+      final repo =
+          _FakeRepo(
+              rosters: const [],
+              rosterError: EmsException('máy chủ trả lời', statusCode: status),
+            )
+            ..draft = EmsAttendanceDraft(
+              marks: const {_a: 'present'},
+              notes: const {},
+              queued: false,
+              students: [_s(_a)],
+              session: _session,
+            );
+      final vm = RosterViewModel(repo, _session);
+
+      await vm.load();
+
+      expect(vm.students, isEmpty);
+      expect(vm.offlineBanner, isNull);
+      expect(vm.error, contains('máy chủ trả lời'));
+    });
+  }
 
   group('invariant 3: save', () {
     test('cancelled unmarked confirm sends nothing', () async {

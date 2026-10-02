@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:viendongedu2_flutter/data/teacher_attendance_repository.dart';
+import 'package:viendongedu2_flutter/features/teacher_attendance/roster_screen.dart';
 import 'package:viendongedu2_flutter/models/crm_identity.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
 import 'package:viendongedu2_flutter/screens/ems_attendance_student_screen.dart';
@@ -107,6 +109,52 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Không có kết nối'), findsOneWidget);
     expect(find.text('OLD-CLASS'), findsNothing);
+  });
+
+  testWidgets('offline roster shows cached students, marks and banner', (
+    tester,
+  ) async {
+    const session = EmsSession(
+      sectionId: 'section-d14',
+      sectionCode: 'D14',
+      sessionDate: '2026-09-08',
+      sessionKey: 'd14:18-00:2026-09-08',
+      subjectName: 'Lớp D14',
+    );
+    await EmsAttendanceCache.saveDraft(
+      session.sessionKey,
+      const {'2600000001': 'present'},
+      const {},
+      queued: false,
+      students: const [
+        EmsRosterStudent(mssv: '2600000001', fullName: 'Nguyễn Văn A'),
+      ],
+      session: session,
+    );
+    EmsApiService.client = MockClient(
+      (_) async => throw http.ClientException('offline'),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TeacherRosterScreen(
+          repository: TeacherAttendanceRepository(),
+          session: session,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nguyễn Văn A'), findsOneWidget);
+    expect(
+      find.textContaining('Đang ngoại tuyến – danh sách lưu lúc'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Điểm danh sẽ tự gửi khi có mạng.'),
+      findsOneWidget,
+    );
+    expect(find.text('Lưu điểm danh'), findsOneWidget);
   });
 
   testWidgets(

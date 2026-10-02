@@ -135,22 +135,48 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
     final visible = _vm.visibleStudents;
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-      itemCount: students.length + 1,
+      itemCount: students.length + 1 + (_vm.offlineBanner == null ? 0 : 1),
       separatorBuilder: (_, _) => const SizedBox(height: 6),
-      itemBuilder: (_, i) => i == 0
-          ? RosterQuickActions(
-              needsReview: _vm.needsReview,
-              scanSyncedAt: _vm.scanSyncedAt,
-              scannedCount: _vm.scannedCount,
-              unscannedCount: _vm.unscannedCount,
-              rosterSize: students.length,
-              scansPending: _vm.scansPending,
-              allPresent: _vm.allPresent,
-              onMarkScannedPresent: _vm.markScannedPresent,
-              onMarkAllPresent: _vm.markAllPresent,
-              onResetToScanned: _vm.resetToScanned,
-            )
-          : _row(visible[i - 1]),
+      itemBuilder: (_, i) {
+        final banner = _vm.offlineBanner;
+        if (banner != null && i == 0) {
+          return Material(
+            color: context.vd.warningSoft,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.cloud_off, color: context.vd.warning),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      banner,
+                      style: TextStyle(color: context.vd.warning),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        final contentIndex = i - (banner == null ? 0 : 1);
+        return contentIndex == 0
+            ? RosterQuickActions(
+                needsReview: _vm.needsReview,
+                scanSyncedAt: _vm.scanSyncedAt,
+                scannedCount: _vm.scannedCount,
+                unscannedCount: _vm.unscannedCount,
+                rosterSize: students.length,
+                scansPending: _vm.scansPending,
+                allPresent: _vm.allPresent,
+                onMarkScannedPresent: _vm.markScannedPresent,
+                onMarkAllPresent: _vm.markAllPresent,
+                onResetToScanned: _vm.resetToScanned,
+              )
+            : _row(visible[contentIndex - 1]);
+      },
     );
   }
 

@@ -1,4 +1,5 @@
 import '../../utils/vietnamese_text.dart';
+import '../../services/ems_api_service.dart';
 
 /// School time (UTC+7) as HH:mm.
 String schoolHhmm(DateTime d) {
@@ -29,4 +30,19 @@ String givenNameSortKey(String fullName) {
   final parts = plain.split(RegExp(r'\s+'));
   final given = parts.isEmpty ? '' : parts.last;
   return '$given|$plain';
+}
+
+List<EmsRosterStudent> sortRosterByGivenName(
+  List<EmsRosterStudent> students,
+  bool enabled,
+) {
+  if (!enabled) return students;
+  final sorted = List<EmsRosterStudent>.of(students);
+  sorted.sort((a, b) {
+    final c = givenNameSortKey(
+      a.fullName,
+    ).compareTo(givenNameSortKey(b.fullName));
+    return c != 0 ? c : a.mssv.compareTo(b.mssv);
+  });
+  return sorted;
 }
