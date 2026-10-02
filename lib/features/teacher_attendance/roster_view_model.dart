@@ -9,30 +9,10 @@ import 'attendance_outbox.dart';
 import 'attendance_sender.dart' hide isClientRefusal;
 import 'attendance_sender.dart' as snd show isClientRefusal;
 import 'draft_merge.dart';
+import 'offline_roster.dart';
+import 'roster_prompts.dart';
 
-/// What the save flow asks of the view. The view model never shows a dialog
-/// or a snackbar itself; it awaits these.
-class RosterPrompts {
-  const RosterPrompts({
-    required this.confirmUnmarked,
-    required this.askReasons,
-    required this.toast,
-  });
-
-  /// Lists the undecided students; true = save the [chosen] marks anyway.
-  final Future<bool> Function(List<EmsRosterStudent> undecided, int chosen)
-  confirmUnmarked;
-
-  /// Reason per punched student, or null when the dialog was dismissed.
-  final Future<Map<String, String>?> Function(
-    List<EmsPunchedStudent> people,
-    Map<String, String> initial,
-    String Function(String mssv) nameOf,
-  )
-  askReasons;
-
-  final void Function(String message, {bool good}) toast;
-}
+export 'roster_prompts.dart';
 
 /// Roster of one session: the teacher's marks and notes, the offline draft
 /// (written before every send) and the save state machine.
@@ -56,7 +36,9 @@ class RosterViewModel extends ChangeNotifier {
   bool _saving = false;
   bool _queued = false;
   bool _needsReview = false;
+  bool _usingOfflineRoster = false;
   String? _error;
+  String? _offlineBanner;
   List<EmsRosterStudent> _students = const [];
   DateTime? _scanSyncedAt;
   bool _disposed = false;
@@ -79,6 +61,7 @@ class RosterViewModel extends ChangeNotifier {
   bool get queued => _queued;
   bool get needsReview => _needsReview;
   String? get error => _error;
+  String? get offlineBanner => _offlineBanner;
   List<EmsRosterStudent> get students => _students;
   DateTime? get scanSyncedAt => _scanSyncedAt;
   bool get sortAz => _sortAz;
@@ -86,17 +69,8 @@ class RosterViewModel extends ChangeNotifier {
   Map<String, String> get marks => Map.unmodifiable(_marks);
   String? markOf(String mssv) => _marks[mssv];
 
-  List<EmsRosterStudent> get visibleStudents {
-    if (!_sortAz) return _students;
-    final sorted = List<EmsRosterStudent>.of(_students);
-    sorted.sort((a, b) {
-      final c = givenNameSortKey(
-        a.fullName,
-      ).compareTo(givenNameSortKey(b.fullName));
-      return c != 0 ? c : a.mssv.compareTo(b.mssv);
-    });
-    return sorted;
-  }
+  List<EmsRosterStudent> get visibleStudents =>
+      sortRosterByGivenName(_students, _sortAz);
 
   int get presentCount => _marks.values.where((v) => v == 'present').length;
   int get absentCount => _marks.values.where((v) => v == 'absent').length;
@@ -129,10 +103,27 @@ class RosterViewModel extends ChangeNotifier {
   Future<void> load() async {
     _loading = true;
     _error = null;
+    _offlineBanner = null;
+    _usingOfflineRoster = false;
     _notify();
     final draft = await repository.loadDraft(draftKey);
+    late final EmsRoster r;
     try {
-      final r = await repository.roster(session);
+      r = await repository.roster(session);
+    } on EmsException catch (e) {
+      if (_disposed) return;
+      final offline = offlineRosterFromFailure(e, draft, session);
+      if (offline != null) {
+        _openOffline(offline);
+        return;
+      }
+      _students = const [];
+      _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
+      _loading = false;
+      _notify();
+      return;
+    }
+    try {
       if (_disposed) return;
       if (r.sessionKey.trim().isEmpty || r.sessionKey != session.sessionKey) {
         throw EmsException(
@@ -168,6 +159,8 @@ class RosterViewModel extends ChangeNotifier {
         ..addAll(merged.notes);
       _needsReview = merged.needsReview;
       _queued = merged.queued;
+      _usingOfflineRoster = false;
+      _offlineBanner = null;
       _loading = false;
       _notify();
       final keep = merged.draftToSave;
@@ -190,6 +183,25 @@ class RosterViewModel extends ChangeNotifier {
       _loading = false;
       _notify();
     }
+  }
+
+  void _openOffline(OfflineRosterState offline) {
+    final draft = offline.draft;
+    _students = draft.students;
+    _scanSyncedAt = null;
+    _marks
+      ..clear()
+      ..addAll(draft.marks);
+    _notes
+      ..clear()
+      ..addAll(draft.notes);
+    _needsReview = false;
+    _queued = draft.queued;
+    _usingOfflineRoster = true;
+    _offlineBanner = offline.banner;
+    _loading = false;
+    _error = null;
+    _notify();
   }
 
   Future<void> _persistDraft() => repository
@@ -278,6 +290,10 @@ class RosterViewModel extends ChangeNotifier {
     _notify();
     try {
       await _persistDraft();
+      if (_usingOfflineRoster) {
+        ui.toast('CHƯA GỬI. Đã giữ trên máy, sẽ tự gửi khi có mạng.');
+        return;
+      }
       await _sendMarks(ui);
     } on EmsPunchConflict catch (c) {
       // Không phải lỗi — máy đang hỏi. Hỏi lý do rồi gửi lại đúng một lần.

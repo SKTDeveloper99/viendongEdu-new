@@ -12,6 +12,7 @@ class EmsAttendanceDraft {
     required this.queued,
     this.students = const [],
     this.session,
+    this.savedAt,
   });
 
   final Map<String, String> marks;
@@ -22,6 +23,9 @@ class EmsAttendanceDraft {
   /// Session identity needed to resend without the roster screen. Null on
   /// drafts written by older releases; those are left for the screen.
   final EmsSession? session;
+
+  /// Last time this draft (including its cached roster) was written locally.
+  final DateTime? savedAt;
 }
 
 /// A stored draft together with the key it was saved under.
@@ -179,6 +183,9 @@ class EmsAttendanceCache {
                   .map(EmsRosterStudent.fromJson)
                   .toList()
             : const [],
+        savedAt: DateTime.tryParse(
+          data['updated_at']?.toString() ?? '',
+        )?.toLocal(),
       );
     } catch (_) {
       return null;

@@ -34,6 +34,7 @@ void main() {
     expect(draft?.queued, isTrue);
     expect(draft?.marks['2600000001'], 'present');
     expect(draft?.notes['2600000002'], 'review later');
+    expect(draft?.savedAt, isNotNull);
 
     await EmsAttendanceCache.clearDraft(key);
     expect(await EmsAttendanceCache.loadDraft(key), isNull);

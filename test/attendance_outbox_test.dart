@@ -79,6 +79,7 @@ class _Repo implements TeacherAttendanceRepository {
       queued: queued,
       students: students,
       session: session,
+      savedAt: DateTime.now(),
     );
   }
 
@@ -187,6 +188,44 @@ void main() {
     expect(repo.sends, 0);
     expect(repo.drafts['k1']?.queued, isTrue);
   });
+
+  test(
+    'offline roster save queues; reconnect sends through outbox exactly once',
+    () async {
+      repo.drafts['k1'] = EmsAttendanceDraft(
+        marks: const {_a: 'present', _b: 'absent'},
+        notes: const {},
+        queued: false,
+        students: [_s(_a), _s(_b)],
+        session: _session,
+        savedAt: DateTime(2026, 9, 8, 7, 5),
+      );
+      repo.rosterDown = true;
+      final vm = RosterViewModel(repo, _session, outbox: outbox);
+      await vm.load();
+
+      await vm.save(
+        RosterPrompts(
+          confirmUnmarked: (_, _) async => true,
+          askReasons: (_, _, _) async => null,
+          toast: (_, {good = false}) {},
+        ),
+      );
+
+      expect(repo.sends, 0);
+      expect(repo.drafts['k1']?.queued, isTrue);
+      expect(outbox.pendingCount.value, 1);
+
+      repo.rosterDown = false;
+      await outbox.drain();
+      await Future<void>.delayed(Duration.zero);
+      expect(repo.sends, 1);
+
+      await outbox.drain();
+      expect(repo.sends, 1);
+      vm.dispose();
+    },
+  );
 
   test('old draft without session identity is left for the screen', () async {
     _queue(repo, withSession: false);
