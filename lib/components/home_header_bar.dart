@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../core/greeting.dart';
 import '../theme/vd_tokens.dart';
+import 'greeting_doodle.dart';
 import 'vd_pressable.dart';
 
 /// Compact home header on the header gradient: greeting by device time, name,
 /// identity chips (MSSV / teacher code / Cơ hữu) and the bell with its badge.
+/// A faint chalk [GreetingDoodle] sits behind the text, left of the bell.
 class HomeHeaderBar extends StatelessWidget {
   final DateTime now;
   final String name;
@@ -36,46 +38,65 @@ class HomeHeaderBar extends StatelessWidget {
         ),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  greetingFor(now),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: t.onHeader.withValues(alpha: 0.85),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: t.onHeader,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [for (final c in chips) _chip(t, c)],
-                ),
-              ],
+          Positioned(
+            right: 52,
+            top: -6,
+            child: GreetingDoodle(
+              now: now,
+              color: t.onHeader.withValues(alpha: 0.55),
             ),
           ),
-          const SizedBox(width: 8),
-          _bell(t),
+          _content(t),
         ],
       ),
     );
   }
+
+  Widget _content(VdTokens t) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              greetingFor(now),
+              style: TextStyle(
+                fontSize: 13,
+                color: t.onHeader.withValues(alpha: 0.85),
+              ),
+            ),
+            const SizedBox(height: 2),
+            // A long name ellipsizes before reaching the doodle.
+            Padding(
+              padding: const EdgeInsets.only(right: 64),
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: t.onHeader,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [for (final c in chips) _chip(t, c)],
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(width: 8),
+      _bell(t),
+    ],
+  );
 
   Widget _chip(VdTokens t, String text) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

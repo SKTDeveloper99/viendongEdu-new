@@ -14,6 +14,7 @@ class VdMotion {
   static const Duration _countUp = Duration(milliseconds: 600);
   static const Duration _stagger = Duration(milliseconds: 30);
   static const Duration _staggerCap = Duration(milliseconds: 240);
+  static const Duration _doodle = Duration(milliseconds: 1600);
 
   static const Curve curve = Curves.easeOutCubic;
   static const Curve curveInOut = Curves.easeInOutCubic;
@@ -28,6 +29,9 @@ class VdMotion {
   Duration get standard => reduced ? Duration.zero : _standard;
   Duration get press => reduced ? Duration.zero : _press;
   Duration get countUp => reduced ? Duration.zero : _countUp;
+
+  /// Header greeting doodle drawing itself in, once (WCAG 2.2.2: < 5 s).
+  Duration get doodle => reduced ? Duration.zero : _doodle;
 
   /// Entrance delay for the [index]-th item: 30 ms each, capped at 240 ms.
   Duration staggerDelay(int index) {
