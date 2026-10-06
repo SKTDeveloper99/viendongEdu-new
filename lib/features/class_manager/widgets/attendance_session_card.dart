@@ -14,25 +14,28 @@ class PlanHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            header,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: context.vd.ink,
-            ),
-          ),
-          if (note != null) ...[
-            const SizedBox(height: 2),
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              note!,
-              style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+              header,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.vd.ink,
+              ),
             ),
+            if (note != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                note!,
+                style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -79,15 +82,17 @@ class SessionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Icon(
                           Icons.calendar_today,
                           size: 13,
                           color: context.vd.primary,
                         ),
-                        const SizedBox(width: 5),
-                        if (showNumber && b.number > 0) ...[
+                        if (showNumber && b.number > 0)
                           Text(
                             'Buổi ${b.number}',
                             style: TextStyle(
@@ -96,8 +101,6 @@ class SessionCard extends StatelessWidget {
                               color: context.vd.primary,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                        ],
                         Text(
                           fmtDate(b.date),
                           style: const TextStyle(
@@ -105,9 +108,8 @@ class SessionCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         Text(
-                          '${b.startTime ?? ''} – ${fmtTime(b.endTime)}',
+                          '${fmtTime(b.startTime)} – ${fmtTime(b.endTime)}',
                           style: TextStyle(
                             fontSize: 12,
                             color: context.vd.inkMuted,
