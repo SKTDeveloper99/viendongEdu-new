@@ -24,12 +24,19 @@ class SessionGroup {
   final String? room;
   final List<CrmAttendanceRow> students = [];
 
+  /// Buổi dự kiến (tương lai), không có điểm danh.
+  final bool planned;
+
+  /// "Buổi N" theo thứ tự ngày (từ 1); 0 khi chưa đánh số.
+  int number = 0;
+
   SessionGroup({
     required this.sessionId,
     this.date,
     this.startTime,
     this.endTime,
     this.room,
+    this.planned = false,
   });
 }
 
@@ -55,9 +62,13 @@ class SessionRowSummary {
   final bool marked; // EMS has marks for the session
   final double pct;
   final String countText;
+
+  /// Planned future session: shown muted as "Sắp tới".
+  final bool planned;
   const SessionRowSummary({
     required this.marked,
     required this.pct,
     required this.countText,
+    this.planned = false,
   });
 }

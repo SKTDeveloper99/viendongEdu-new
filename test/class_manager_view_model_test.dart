@@ -75,9 +75,13 @@ class _FakeRepo extends ClassManagerRepository {
   @override
   Future<List<CrmClassStudent>> students(String sectionId) =>
       studentsFn(sectionId);
+  CrmClassPlan? plan;
   @override
   Future<List<CrmAttendanceRow>> attendance(String sectionId) =>
       attendanceFn(sectionId);
+  @override
+  Future<CrmAttendanceResult> attendanceResult(String sectionId) async =>
+      CrmAttendanceResult(rows: await attendanceFn(sectionId), plan: plan);
   @override
   Future<Map<String, String>> sessionMarks(String sessionKey) {
     requestedKeys.add(sessionKey);
@@ -219,6 +223,74 @@ void main() {
       final s2 = vm.summaryOf(vm.sessions[1]);
       expect(s2.marked, isFalse);
       expect(s2.countText, '1 / 3 có mặt trên CRM — chưa xác nhận trên EMS');
+    });
+
+    test(
+      'plan: header, numbering, planned rows are muted and not asked',
+      () async {
+        final repo = _FakeRepo()
+          ..plan = const CrmClassPlan(
+            totalSessions: 3,
+            doneSessions: 1,
+            lastDate: '2026-03-16',
+            plannedPeriods: 30,
+            requiredPeriods: 45,
+            periodsMismatch: true,
+          )
+          ..attendanceFn = (_) async => [
+            _row('s1', '2026-03-02', 'TEST260001', 'present'),
+            const CrmAttendanceRow(
+              sessionId: 'planned:2026-03-16',
+              date: '2026-03-16',
+              startTime: '07:00',
+              endTime: '09:30',
+              sessionStatus: 'planned',
+            ),
+            const CrmAttendanceRow(
+              sessionId: 'planned:2026-03-09',
+              date: '2026-03-09',
+              startTime: '07:00',
+              endTime: '09:30',
+              sessionStatus: 'planned',
+            ),
+          ];
+        final vm = ClassDetailSheetViewModel(
+          repo,
+          lop: _lop('sec-a', 'TN261A', enrolled: 3),
+          lmhId: '900',
+          now: () => DateTime.utc(2026, 12, 1),
+        );
+        await vm.loadAttendance();
+
+        expect(vm.planHeader, 'Đã dạy 1/3 buổi · Kết thúc 16/03/2026');
+        expect(
+          vm.planMismatchNote,
+          'Lịch: 30 tiết · Quy định: 45 tiết — kiểm tra với PĐT',
+        );
+        expect(vm.sessions.map((s) => s.number), [1, 2, 3]);
+        expect(vm.sessions.map((s) => s.planned), [false, true, true]);
+        expect(repo.requestedKeys, ['900:07-00:2026-03-02']);
+        final planned = vm.summaryOf(vm.sessions[1]);
+        expect(planned.planned, isTrue);
+        expect(planned.marked, isFalse);
+        expect(planned.countText, 'Sắp tới');
+        // Planned rows carry no student: totals unaffected.
+        expect(vm.totals, hasLength(1));
+      },
+    );
+
+    test('no plan (old server): no header, rows as before', () async {
+      final vm = ClassDetailSheetViewModel(
+        _FakeRepo(),
+        lop: _lop('sec-a', 'TN261A'),
+        lmhId: '900',
+        now: () => DateTime.utc(2026, 12, 1),
+      );
+      await vm.loadAttendance();
+      expect(vm.plan, isNull);
+      expect(vm.planHeader, isNull);
+      expect(vm.planMismatchNote, isNull);
+      expect(vm.sessions.any((s) => s.planned), isFalse);
     });
 
     test('no lmhid: EMS is never asked', () async {

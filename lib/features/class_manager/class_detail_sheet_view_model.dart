@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../data/class_manager_repository.dart';
 import '../../models/crm_teacher_class.dart';
 import '../../services/ems_api_service.dart';
+import 'class_manager_format.dart';
 import 'class_manager_models.dart';
 
 /// State of one class's detail sheet: student list, CRM attendance rows
@@ -30,6 +31,7 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
 
   List<CrmAttendanceRow> _attendanceRows = [];
   List<SessionGroup> _sessions = [];
+  CrmClassPlan? _plan;
   List<StudentAttendanceTotal> _totals = [];
   bool _loadingAttendance = false;
   String? _attendanceError;
@@ -46,6 +48,9 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
   String? get studentsError => _studentsError;
 
   List<SessionGroup> get sessions => _sessions;
+
+  /// null on old servers: the list then looks as before.
+  CrmClassPlan? get plan => _plan;
   List<StudentAttendanceTotal> get totals => _totals;
   bool get loadingAttendance => _loadingAttendance;
   String? get attendanceError => _attendanceError;
@@ -107,8 +112,10 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
     _attendanceError = null;
     _notify();
     try {
-      final rows = await _repository.attendance(lop.sectionId);
+      final result = await _repository.attendanceResult(lop.sectionId);
       if (_disposed) return;
+      final rows = result.rows;
+      _plan = result.plan;
       _attendanceRows = rows;
       _sessions = groupBySession(rows);
       _totals = aggregateByStudent(rows);
@@ -139,6 +146,7 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
           startTime: r.startTime,
           endTime: r.endTime,
           room: r.room,
+          planned: r.isPlanned,
         ),
       );
       if (r.mssv != null && r.mssv!.isNotEmpty) {
@@ -147,6 +155,9 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
     }
     final list = byId.values.toList()
       ..sort((a, b) => (a.date ?? '').compareTo(b.date ?? ''));
+    for (var i = 0; i < list.length; i++) {
+      list[i].number = i + 1;
+    }
     return list;
   }
 
@@ -188,6 +199,7 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
     if (lmhId == null) return;
     final today = _todayHcm();
     final due = _sessions.where((b) {
+      if (b.planned) return false;
       final ngay = b.date ?? '';
       return ngay.length >= 10 && ngay.substring(0, 10).compareTo(today) <= 0;
     }).toList();
@@ -221,6 +233,14 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
 
   /// What the "Buổi học" row of [b] shows.
   SessionRowSummary summaryOf(SessionGroup b) {
+    if (b.planned) {
+      return const SessionRowSummary(
+        marked: false,
+        pct: 0,
+        countText: 'Sắp tới',
+        planned: true,
+      );
+    }
     final siso = lop.enrolledStudents;
     final key = sessionKeyOf(b);
     final ems = key == null ? null : _emsCounts[key];
@@ -234,6 +254,24 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
         ? '$crmPresent / $siso có mặt trên CRM — chưa xác nhận trên EMS'
         : '0 / $siso — chưa điểm danh';
     return SessionRowSummary(marked: marked, pct: pct, countText: countText);
+  }
+
+  /// "Đã dạy 12/30 buổi · Kết thúc 20/12/2026"; null without a plan.
+  String? get planHeader {
+    final p = _plan;
+    if (p == null || p.totalSessions == null) return null;
+    final done = p.doneSessions ?? 0;
+    final end = fmtDate(p.lastDate);
+    return 'Đã dạy $done/${p.totalSessions} buổi'
+        '${end.isEmpty ? '' : ' · Kết thúc $end'}';
+  }
+
+  /// Muted second line when scheduled periods differ from the regulation.
+  String? get planMismatchNote {
+    final p = _plan;
+    if (p == null || !p.periodsMismatch) return null;
+    return 'Lịch: ${p.plannedPeriods ?? '?'} tiết · '
+        'Quy định: ${p.requiredPeriods ?? '?'} tiết — kiểm tra với PĐT';
   }
 
   @override

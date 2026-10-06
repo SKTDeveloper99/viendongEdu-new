@@ -222,6 +222,10 @@ class CrmAttendanceRow {
   final String? status;
   final String? notes;
 
+  /// Buổi dự kiến trong tương lai (chưa có bản ghi thật; không điểm danh được).
+  bool get isPlanned =>
+      sessionStatus == 'planned' || sessionId.startsWith('planned:');
+
   const CrmAttendanceRow({
     required this.sessionId,
     this.date,
@@ -249,6 +253,55 @@ class CrmAttendanceRow {
     status: j['status']?.toString(),
     notes: j['notes']?.toString(),
   );
+}
+
+/// `plan` of `GET /me/classes/:id/attendance`: tổng số buổi và ngày kết thúc
+/// theo lịch. Máy chủ cũ không gửi (null). Mọi trường đều có thể thiếu.
+class CrmClassPlan {
+  final String? source;
+  final int? totalSessions;
+  final int? doneSessions;
+  final int? remainingSessions;
+  final String? firstDate;
+  final String? lastDate;
+  final int? plannedPeriods;
+  final int? requiredPeriods;
+  final bool periodsMismatch;
+
+  const CrmClassPlan({
+    this.source,
+    this.totalSessions,
+    this.doneSessions,
+    this.remainingSessions,
+    this.firstDate,
+    this.lastDate,
+    this.plannedPeriods,
+    this.requiredPeriods,
+    this.periodsMismatch = false,
+  });
+
+  /// null when [j] is not a JSON object.
+  static CrmClassPlan? tryParse(Object? j) {
+    if (j is! Map) return null;
+    return CrmClassPlan(
+      source: j['source']?.toString(),
+      totalSessions: _integerValue(j['total_sessions']),
+      doneSessions: _integerValue(j['done_sessions']),
+      remainingSessions: _integerValue(j['remaining_sessions']),
+      firstDate: j['first_date']?.toString(),
+      lastDate: j['last_date']?.toString(),
+      plannedPeriods: _integerValue(j['planned_periods']),
+      requiredPeriods: _integerValue(j['required_periods']),
+      periodsMismatch: j['periods_mismatch'] == true,
+    );
+  }
+}
+
+/// Rows + optional plan of the class attendance endpoint.
+class CrmAttendanceResult {
+  final List<CrmAttendanceRow> rows;
+  final CrmClassPlan? plan;
+  const CrmAttendanceResult({required this.rows, this.plan});
 }
 
 /// `GET /api/teacher/me/exams?semester=` — thay IMS `giangvien/lichthi`.

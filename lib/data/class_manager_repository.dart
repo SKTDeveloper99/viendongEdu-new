@@ -35,6 +35,9 @@ class ClassManagerRepository {
   Future<List<CrmAttendanceRow>> attendance(String sectionId) =>
       CrmTeacherApi.classAttendance(sectionId);
 
+  Future<CrmAttendanceResult> attendanceResult(String sectionId) =>
+      CrmTeacherApi.classAttendanceResult(sectionId);
+
   /// mssv -> EMS status ('present' | 'late' | 'absent' | 'excused').
   Future<Map<String, String>> sessionMarks(String sessionKey) =>
       AttendanceApi.sessionMarks(sessionKey);

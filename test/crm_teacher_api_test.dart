@@ -269,6 +269,70 @@ void main() {
     });
   });
 
+  group('CrmTeacherApi.classAttendanceResult plan', () {
+    Map<String, dynamic> planned() => {
+      'session_id': 'planned:2026-10-20',
+      'date': '2026-10-20',
+      'start_time': '18:00:00',
+      'end_time': '20:30:00',
+      'session_status': 'planned',
+      'mssv': null,
+      'full_name': null,
+      'status': null,
+    };
+
+    test('plan present, planned row flagged, extra fields ignored', () async {
+      EmsApiService.client = jsonMock(
+        (_) => {
+          'attendance': [planned()],
+          'plan': {
+            'source': 'schedule',
+            'total_sessions': 30,
+            'done_sessions': '12',
+            'remaining_sessions': 18,
+            'first_date': '2026-09-01',
+            'last_date': '2026-12-20',
+            'planned_periods': 90,
+            'required_periods': 75,
+            'periods_mismatch': true,
+            'something_new': 1,
+          },
+        },
+      );
+      final r = await CrmTeacherApi.classAttendanceResult('sec');
+      expect(r.rows.single.isPlanned, isTrue);
+      expect(r.rows.single.sessionStatus, 'planned');
+      expect(r.plan, isNotNull);
+      expect(r.plan!.totalSessions, 30);
+      expect(r.plan!.doneSessions, 12);
+      expect(r.plan!.lastDate, '2026-12-20');
+      expect(r.plan!.periodsMismatch, isTrue);
+      expect(r.plan!.requiredPeriods, 75);
+    });
+
+    test('plan null / absent / partial are tolerated', () async {
+      EmsApiService.client = jsonMock((_) => {'attendance': [], 'plan': null});
+      expect((await CrmTeacherApi.classAttendanceResult('s')).plan, isNull);
+
+      EmsApiService.client = jsonMock((_) => {'attendance': []});
+      final old = await CrmTeacherApi.classAttendanceResult('s');
+      expect(old.plan, isNull);
+      expect(old.rows, isEmpty);
+
+      EmsApiService.client = jsonMock(
+        (_) => {
+          'attendance': [],
+          'plan': {'total_sessions': 5},
+        },
+      );
+      final p = (await CrmTeacherApi.classAttendanceResult('s')).plan!;
+      expect(p.totalSessions, 5);
+      expect(p.doneSessions, isNull);
+      expect(p.periodsMismatch, isFalse);
+      expect((await CrmTeacherApi.classAttendance('s')), isEmpty);
+    });
+  });
+
   group('CrmTeacherApi.exams', () {
     test('parses { exams: [...] } with string-typed numeric fields', () async {
       EmsApiService.client = jsonMock(
@@ -353,7 +417,11 @@ void main() {
 
       final overview = await CrmTeacherApi.overview(semester: '261');
       expect(overview.teacher.name, 'Thử Nghiệm');
-      expect(overview.teacher.isCoHuu, isFalse, reason: "'gvtg' không phải cơ hữu");
+      expect(
+        overview.teacher.isCoHuu,
+        isFalse,
+        reason: "'gvtg' không phải cơ hữu",
+      );
       expect(overview.currentSemester, '261');
       expect(overview.todaySessions, hasLength(1));
       expect(overview.summary.studentCount, 120);

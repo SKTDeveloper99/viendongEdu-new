@@ -223,6 +223,11 @@ class CrmTeacherApi {
   /// đây chỉ là bản chụp CRM, không phải điểm danh EMS thật.
   static Future<List<CrmAttendanceRow>> classAttendance(
     String sectionId,
+  ) async => (await classAttendanceResult(sectionId)).rows;
+
+  /// Như [classAttendance] nhưng kèm `plan` (null nếu máy chủ cũ không gửi).
+  static Future<CrmAttendanceResult> classAttendanceResult(
+    String sectionId,
   ) async {
     final body =
         await EmsApiService.send(
@@ -231,11 +236,16 @@ class CrmTeacherApi {
             )
             as Map<String, dynamic>;
     final list = body['attendance'];
-    if (list is! List) return const [];
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(CrmAttendanceRow.fromJson)
-        .toList();
+    final rows = list is! List
+        ? const <CrmAttendanceRow>[]
+        : list
+              .whereType<Map<String, dynamic>>()
+              .map(CrmAttendanceRow.fromJson)
+              .toList();
+    return CrmAttendanceResult(
+      rows: rows,
+      plan: CrmClassPlan.tryParse(body['plan']),
+    );
   }
 
   /// `GET /api/teacher/me/exams?semester=`. Thay IMS `giangvien/lichthi`.
