@@ -1,4 +1,5 @@
 import 'ems_api_service.dart';
+import 'offline_snapshot.dart';
 import '../models/crm_money_tuition.dart';
 import '../models/crm_money_fees.dart';
 import '../models/crm_money_capbu.dart';
@@ -12,9 +13,21 @@ import '../models/crm_money_capbu.dart';
 /// điện thoại. "chưa có luật" hiện đúng như vậy, không bao giờ hiện 0.
 class CrmMoneyApi {
   /// `GET /api/student/me/tuition` → tổng học phí đã áp luật thu sẵn.
+  /// Mất mạng thì trả bản tốt gần nhất đã lưu trên máy (kèm giờ lưu);
+  /// lỗi đăng nhập (401) vẫn ném ra để màn hình đưa về trang đăng nhập.
   static Future<CrmTuitionResponse> getTuition() async {
-    final body = await EmsApiService.send('GET', '/student/me/tuition');
-    return CrmTuitionResponse.fromJson(body as Map<String, dynamic>);
+    try {
+      final body = await EmsApiService.send('GET', '/student/me/tuition');
+      final map = body as Map<String, dynamic>;
+      await OfflineSnapshot.save('student_tuition', map);
+      return CrmTuitionResponse.fromJson(map);
+    } catch (e) {
+      if (e is EmsException && e.statusCode == 401) rethrow;
+      final saved = await OfflineSnapshot.load('student_tuition');
+      if (saved == null || saved.data is! Map<String, dynamic>) rethrow;
+      return CrmTuitionResponse.fromJson(saved.data as Map<String, dynamic>)
+          .withOfflineSavedAt(saved.savedAt);
+    }
   }
 
   /// `GET /api/student/me/cong-no` → sổ công nợ IMS sống, nguồn RIÊNG với

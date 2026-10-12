@@ -86,6 +86,12 @@ class CrmTuitionSummary {
   final bool moneyKnown;
   final String? moneyUnknownReason;
 
+  /// LAW M-52: 'bang_ke' khi số liệu là sổ Phòng Kế toán (IMS bảng kê).
+  final String? source;
+
+  /// true khi sổ Phòng Kế toán ghi còn nợ (cùng sổ với điều kiện dự thi M-32).
+  final bool owes;
+
   const CrmTuitionSummary({
     this.owedTotal,
     this.paid,
@@ -94,6 +100,8 @@ class CrmTuitionSummary {
     this.otherReceipts = const CrmOtherReceipts(),
     this.moneyKnown = true,
     this.moneyUnknownReason,
+    this.source,
+    this.owes = false,
   });
 
   factory CrmTuitionSummary.fromJson(Map<String, dynamic>? j) =>
@@ -108,6 +116,8 @@ class CrmTuitionSummary {
         // chưa có luật — tránh một field vắng bị hiểu nhầm thành "chưa biết".
         moneyKnown: j?['money_known'] != false,
         moneyUnknownReason: _strOrNull(j?['money_unknown_reason']),
+        source: _strOrNull(j?['source']),
+        owes: j?['owes'] == true,
       );
 }
 
@@ -117,11 +127,18 @@ class CrmTuitionResponse {
   final CrmTuitionSummary summary;
   final List<CrmTuitionPayment> payments;
 
+  /// Khác null khi đây là bản lưu trên máy (không kết nối được máy chủ).
+  final DateTime? offlineSavedAt;
+
   const CrmTuitionResponse({
     this.mssv,
     required this.summary,
     this.payments = const [],
+    this.offlineSavedAt,
   });
+
+  CrmTuitionResponse withOfflineSavedAt(DateTime at) => CrmTuitionResponse(
+        mssv: mssv, summary: summary, payments: payments, offlineSavedAt: at);
 
   factory CrmTuitionResponse.fromJson(Map<String, dynamic> j) =>
       CrmTuitionResponse(

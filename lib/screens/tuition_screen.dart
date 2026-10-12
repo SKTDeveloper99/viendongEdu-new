@@ -3,12 +3,11 @@ import '../models/crm_money_tuition.dart';
 import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
 import '../theme/vd_tokens.dart';
+import '../components/tuition_notes.dart';
 
-// ── Helpers ─────────────────────────────────────────────
-// LUẬT TIỀN (CLAUDE.md): hiện NGUYÊN VĂN số máy chủ trả. null nghĩa là
-// "chưa có luật"/không tính được — không bao giờ hiện 0.
+// LUẬT TIỀN: hiện NGUYÊN VĂN số máy chủ; null = "Đang đối chiếu", không bao giờ 0.
 String _fmtAmount(int? amount) {
-  if (amount == null) return 'chưa có luật';
+  if (amount == null) return 'Đang đối chiếu';
   final s = amount.abs().toString();
   final buf = StringBuffer();
   for (var i = 0; i < s.length; i++) {
@@ -138,11 +137,12 @@ class _TuitionScreenState extends State<TuitionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  TuitionNotices(response: _tuition), // M-53 + bản lưu
                   // ── Summary (từ summary đã áp luật, không tự tính) ──
                   _SummarySection(summary: summary),
                   const SizedBox(height: 12),
-
-                  if (_congNo != null) _CongNoCard(congNo: _congNo!),
+                  // M-52: bảng kê đã là sổ IMS — không hiện số thứ hai.
+                  if (_congNo != null && summary?.source != 'bang_ke') _CongNoCard(congNo: _congNo!),
                   const SizedBox(height: 20),
 
                   // ── Section label ──
@@ -257,13 +257,13 @@ class _SummarySection extends StatelessWidget {
         const SizedBox(height: 12),
 
         // ── 2 stat cards — đọc thẳng từ summary, không tự cộng ──
-        Row(
+        if (!unknown) Row(
           children: [
             Expanded(
               child: _MiniCard(
                 icon: Icons.check_circle_outline,
                 label: 'Đã đóng',
-                text: _fmtAmount(s?.paid),
+                text: _fmtAmount(s.paid),
                 color: context.vd.success,
               ),
             ),
@@ -272,7 +272,7 @@ class _SummarySection extends StatelessWidget {
               child: _MiniCard(
                 icon: Icons.account_balance_wallet_outlined,
                 label: 'Còn lại',
-                text: _fmtAmount(s?.balance),
+                text: _fmtAmount(s.balance),
                 color: context.vd.danger,
               ),
             ),
