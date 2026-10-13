@@ -19,7 +19,10 @@ num? _num(Object? v) {
   return null;
 }
 
-int _int(Object? v) => _num(v)?.toInt() ?? 0;
+int? _count(Object? v) {
+  final n = _num(v);
+  return n != null && n >= 0 && n == n.roundToDouble() ? n.toInt() : null;
+}
 
 String? _str(Object? v) {
   final s = v?.toString().trim();
@@ -38,6 +41,10 @@ class CareMoney {
 
   /// Còn nợ tính tới hạn giữa kỳ — chỉ khi máy chủ nói `owes: true`.
   final bool owes;
+  final DateTime? asOf;
+  final bool stale;
+
+  bool get overpaid => known && balance == 0 && paid! > owedTotal!;
 
   const CareMoney._(
     this.known,
@@ -45,9 +52,19 @@ class CareMoney {
     this.paid,
     this.balance,
     this.owes,
+    this.asOf,
+    this.stale,
   );
 
-  static const unknown = CareMoney._(false, null, null, null, false);
+  static const unknown = CareMoney._(
+    false,
+    null,
+    null,
+    null,
+    false,
+    null,
+    false,
+  );
 
   factory CareMoney.fromJson(Object? raw) {
     if (raw is! Map) return unknown;
@@ -56,8 +73,22 @@ class CareMoney {
     final owed = _num(j['owedTotal']);
     final paid = _num(j['paid']);
     final bal = _num(j['balance']);
-    if (owed == null || paid == null || bal == null || bal < 0) return unknown;
-    return CareMoney._(true, owed, paid, bal, j['owes'] == true);
+    if ([
+      owed,
+      paid,
+      bal,
+    ].any((n) => n == null || n < 0 || n != n.roundToDouble())) {
+      return unknown;
+    }
+    return CareMoney._(
+      true,
+      owed,
+      paid,
+      bal,
+      j['owes'] == true,
+      DateTime.tryParse('${j['as_of'] ?? ''}'),
+      j['stale'] == true,
+    );
   }
 
   Map<String, dynamic> toJson() => known
@@ -67,6 +98,8 @@ class CareMoney {
           'paid': paid,
           'balance': balance,
           'owes': owes,
+          'as_of': ?asOf?.toUtc().toIso8601String(),
+          'stale': stale,
         }
       : {'money_known': false};
 }
@@ -76,17 +109,24 @@ class CareSection {
   final String sectionId;
   final String? sectionCode;
   final String? subjectName;
-  final int present;
-  final int absent;
+  final int? present;
+  final int? absent;
 
   /// Buổi đã dạy mà chưa có dấu điểm danh: "Chờ giáo viên xác nhận" —
   /// không bao giờ tính là vắng.
-  final int unrecorded;
+  final int? unrecorded;
 
   /// Buổi có hai dấu trái nhau — không tính có mặt, không tính vắng.
-  final int conflicts;
+  final int? conflicts;
   final num? midterm;
   final num? finalScore;
+  final bool scoresReadable;
+
+  bool get attendanceKnown =>
+      present != null &&
+      absent != null &&
+      unrecorded != null &&
+      conflicts != null;
 
   const CareSection({
     required this.sectionId,
@@ -98,18 +138,25 @@ class CareSection {
     this.conflicts = 0,
     this.midterm,
     this.finalScore,
+    this.scoresReadable = true,
   });
 
   factory CareSection.fromJson(Map<String, dynamic> j) => CareSection(
     sectionId: _str(j['section_id']) ?? '',
     sectionCode: _str(j['section_code']),
     subjectName: _str(j['subject_name']),
-    present: _int(j['present']),
-    absent: _int(j['absent']),
-    unrecorded: _int(j['unrecorded']),
-    conflicts: _int(j['conflicts']),
+    present: _count(j['present']),
+    absent: _count(j['absent']),
+    unrecorded: _count(j['unrecorded']),
+    conflicts: _count(j['conflicts']),
     midterm: _num(j['midterm_score']),
     finalScore: _num(j['final_score']),
+    scoresReadable:
+        j['scores_readable'] != false &&
+        j.containsKey('midterm_score') &&
+        j.containsKey('final_score') &&
+        (j['midterm_score'] == null || _num(j['midterm_score']) != null) &&
+        (j['final_score'] == null || _num(j['final_score']) != null),
   );
 
   Map<String, dynamic> toJson() => {
@@ -120,8 +167,9 @@ class CareSection {
     'absent': absent,
     'unrecorded': unrecorded,
     'conflicts': conflicts,
-    'midterm_score': ?midterm,
-    'final_score': ?finalScore,
+    'midterm_score': midterm,
+    'final_score': finalScore,
+    'scores_readable': scoresReadable,
   };
 }
 
@@ -211,13 +259,15 @@ class TeacherCareStudent {
   int get myAbsences => !attendanceFresh
       ? 0
       : sections
-            .where((s) => mySectionIds.contains(s.sectionId))
-            .fold(0, (sum, s) => sum + s.absent);
+            .where(
+              (s) => s.attendanceKnown && mySectionIds.contains(s.sectionId),
+            )
+            .fold(0, (sum, s) => sum + (s.absent ?? 0));
 
   /// Lý do "Cần chú ý" — rỗng nghĩa là không cần chú ý.
   List<String> get attentionReasons => [
     if (myAbsences > 0) 'Vắng $myAbsences buổi',
-    if (hasFailedSubjects) 'Có môn chưa đạt',
+    if (gradesFresh && hasFailedSubjects) 'Có môn chưa đạt',
   ];
 
   bool get needsAttention => attentionReasons.isNotEmpty;

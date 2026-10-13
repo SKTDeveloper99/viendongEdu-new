@@ -58,8 +58,11 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
   void _open(CareClass cls) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            ClassStudentsScreen(careClass: cls, staleSince: _vm.staleSince),
+        builder: (_) => ClassStudentsScreen(
+          careClass: cls,
+          savedAt: _vm.savedAt,
+          staleSince: _vm.staleSince,
+        ),
       ),
     );
   }
@@ -116,7 +119,10 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
                   backLabel: 'Trang chủ',
                   title: 'Sinh viên của tôi',
                 ),
-                if (_vm.staleSince != null) StaleNote(_vm.staleSince!),
+                if (_vm.staleSince != null)
+                  StaleNote(_vm.staleSince!, fontSize: 16),
+                if (_vm.refreshing && !_vm.loading)
+                  const LinearProgressIndicator(),
                 const SizedBox(height: 14),
                 ..._content(),
               ],

@@ -4,13 +4,14 @@ import '../../data/teacher_students_repository.dart';
 import '../../models/teacher_care_student.dart';
 import '../../screens/stale_note.dart';
 import '../../services/crm_session_guard.dart';
-import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
 import 'care_format.dart';
+import 'student_detail_view_model.dart';
 import 'widgets/academic_cards.dart';
 import 'widgets/care_card.dart';
 import 'widgets/care_layout.dart';
 import 'widgets/money_card.dart';
+import 'widgets/care_state_views.dart';
 
 /// Level 3: one student — grades, attendance and tuition. Paints the row
 /// from the list at once, then replaces it with the server's latest copy;
@@ -22,6 +23,7 @@ class StudentDetailScreen extends StatefulWidget {
   final String sectionId;
   final String backLabel;
   final DateTime? staleSince;
+  final DateTime? savedAt;
   final TeacherStudentsRepository repository;
 
   const StudentDetailScreen({
@@ -30,6 +32,7 @@ class StudentDetailScreen extends StatefulWidget {
     required this.sectionId,
     required this.backLabel,
     this.staleSince,
+    this.savedAt,
     this.repository = const TeacherStudentsRepository(),
   });
 
@@ -38,41 +41,44 @@ class StudentDetailScreen extends StatefulWidget {
 }
 
 class _StudentDetailScreenState extends State<StudentDetailScreen> {
-  late TeacherCareStudent _s = widget.student;
-  late DateTime? _staleSince = widget.staleSince;
+  late final StudentDetailViewModel _vm;
+  bool _authHandled = false;
 
   @override
   void initState() {
     super.initState();
-    _refresh();
+    _vm = StudentDetailViewModel(
+      widget.repository,
+      widget.student,
+      savedAt: widget.savedAt,
+      staleSince: widget.staleSince,
+    );
+    _vm.addListener(_onChanged);
+    _vm.refresh();
   }
 
-  Future<void> _refresh() async {
-    try {
-      final fresh = await widget.repository.student(widget.student.mssv);
-      if (!mounted || fresh.mssv != widget.student.mssv) return;
-      setState(() {
-        // The single-student copy keeps the teacher's class list from the
-        // list call when it does not carry one.
-        _s =
-            fresh.mySectionIds.isEmpty && widget.student.mySectionIds.isNotEmpty
-            ? TeacherCareStudent.fromJson({
-                ...fresh.toJson(),
-                'can_review_sections': widget.student.mySectionIds,
-              })
-            : fresh;
-        _staleSince = null;
-      });
-    } on EmsException catch (e) {
-      if (mounted && e.statusCode == 401) await handleCrmAuthError(context, e);
-    } catch (_) {
-      // Keep the list copy; it is already labelled when it is old.
+  void _onChanged() {
+    if (_vm.authError == null) {
+      _authHandled = false;
+    } else if (!_authHandled && mounted) {
+      _authHandled = true;
+      handleCrmAuthError(context, _vm.authError!);
     }
   }
 
+  @override
+  void dispose() {
+    _vm.removeListener(_onChanged);
+    _vm.dispose();
+    super.dispose();
+  }
+
   List<Widget> _academic() {
-    final one = widget.sectionId.isEmpty ? null : _s.section(widget.sectionId);
-    final sections = widget.sectionId.isEmpty ? _s.sections : [?one];
+    final student = _vm.student;
+    final one = widget.sectionId.isEmpty
+        ? null
+        : student.section(widget.sectionId);
+    final sections = widget.sectionId.isEmpty ? student.sections : [?one];
     if (sections.isEmpty) {
       return const [
         CareCard(
@@ -86,14 +92,14 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
       for (final sec in sections) ...[
         GradesCard(
           section: sec,
-          fresh: _s.gradesFresh,
+          fresh: student.gradesFresh,
           title: many
               ? 'Điểm · ${sec.subjectName ?? sec.sectionCode ?? ''}'
               : 'Điểm môn này',
         ),
         AttendanceCard(
           section: sec,
-          fresh: _s.attendanceFresh,
+          fresh: student.attendanceFresh,
           title: many
               ? 'Chuyên cần · ${sec.subjectName ?? sec.sectionCode ?? ''}'
               : 'Chuyên cần',
@@ -104,40 +110,60 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = _s;
     return Scaffold(
       backgroundColor: context.vd.bg,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refresh,
-          color: context.vd.primary,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-            children: [
-              CareBackHeader(
-                backLabel: widget.backLabel,
-                title: s.name.isEmpty ? s.mssv : s.name,
-                subtitle: [s.mssv, ?s.classCode].join(' · '),
-              ),
-              if (_staleSince != null) StaleNote(_staleSince!),
-              const SizedBox(height: 14),
-              if (s.money.owes) const OweBanner(),
-              ..._academic(),
-              MoneyCard(money: s.money),
-              if (s.needsAttention)
-                CareCard(
-                  title: 'Cần chú ý',
-                  children: [
-                    for (final r in s.attentionReasons)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(r, style: const TextStyle(fontSize: 18)),
+        child: ListenableBuilder(
+          listenable: _vm,
+          builder: (context, _) {
+            final s = _vm.student;
+            return RefreshIndicator(
+              onRefresh: _vm.refresh,
+              color: context.vd.primary,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+                children: [
+                  CareBackHeader(
+                    backLabel: widget.backLabel,
+                    title: _vm.blocked
+                        ? 'Hồ sơ sinh viên'
+                        : s.name.isEmpty
+                        ? s.mssv
+                        : s.name,
+                    subtitle: _vm.blocked
+                        ? null
+                        : [s.mssv, ?s.classCode].join(' · '),
+                  ),
+                  if (_vm.refreshing) const LinearProgressIndicator(),
+                  if (_vm.error != null)
+                    CareMessageView(message: _vm.error!, onRetry: _vm.refresh),
+                  if (!_vm.blocked && _vm.staleSince != null)
+                    StaleNote(_vm.staleSince!, fontSize: 16),
+                  const SizedBox(height: 14),
+                  if (!_vm.blocked) ...[
+                    if (s.money.owes) const OweBanner(),
+                    ..._academic(),
+                    MoneyCard(money: s.money),
+                    if (s.needsAttention)
+                      CareCard(
+                        title: 'Cần chú ý',
+                        children: [
+                          for (final r in s.attentionReasons)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                r,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ),
+                        ],
                       ),
                   ],
-                ),
-            ],
-          ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

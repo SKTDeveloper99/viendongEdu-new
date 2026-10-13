@@ -27,9 +27,18 @@ class MoneyCard extends StatelessWidget {
         CareLine('Đã nộp', formatVnd(money.paid!)),
         CareLine(
           'Còn nợ',
-          balance > 0 ? formatVnd(balance) : 'Đã đóng đủ',
+          balance > 0
+              ? formatVnd(balance)
+              : money.overpaid
+              ? 'Đã đóng dư'
+              : 'Đã đóng đủ',
           valueColor: balance > 0 ? context.vd.danger : context.vd.success,
         ),
+        if (money.asOf != null)
+          CareLine(
+            money.stale ? 'Lần cập nhật gần nhất' : 'Cập nhật lúc',
+            formatCareTime(money.asOf!),
+          ),
       ],
     );
   }

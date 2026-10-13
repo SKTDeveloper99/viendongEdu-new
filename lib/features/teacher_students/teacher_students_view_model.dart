@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../data/teacher_students_repository.dart';
 import '../../models/teacher_care_student.dart';
 import '../../services/ems_api_service.dart';
+import 'care_read_error.dart';
 
 /// One of the teacher's classes with the students the CRM follows in it.
 class CareClass {
@@ -38,10 +39,14 @@ class TeacherStudentsViewModel extends ChangeNotifier {
   DateTime? _savedAt;
   bool _fresh = true;
   bool _disposed = false;
+  bool _refreshing = false;
+  bool _accessDenied = false;
 
   List<TeacherCareStudent> get students => _students;
   List<CareClass> get classes => _classes;
   bool get loading => _loading;
+  bool get refreshing => _refreshing;
+  DateTime? get savedAt => _savedAt;
   String? get error => _error;
   bool get unauthorized => _authError != null;
   Object? get authError => _authError;
@@ -53,6 +58,8 @@ class TeacherStudentsViewModel extends ChangeNotifier {
   int get attentionCount => _students.where((s) => s.needsAttention).length;
 
   Future<void> load() async {
+    if (_refreshing || _disposed) return;
+    _refreshing = true;
     _error = null;
     _authError = null;
     if (_students.isEmpty) _loading = true;
@@ -60,18 +67,30 @@ class TeacherStudentsViewModel extends ChangeNotifier {
     try {
       final r = await _repository.students();
       if (_disposed) return;
+      if (_accessDenied && !r.fresh) {
+        throw EmsException('Access denied', statusCode: 403);
+      }
       _students = r.data;
       _classes = groupByClass(r.data);
       _savedAt = r.savedAt;
       _fresh = r.fresh;
+      _accessDenied = false;
     } catch (e) {
       if (_disposed) return;
-      if (e is EmsException && e.statusCode == 401) _authError = e;
-      _error = e is EmsException && e.message.isNotEmpty
-          ? e.message
-          : 'Không tải được danh sách. Kiểm tra mạng và thử lại.';
+      if (careAccessDenied(e)) {
+        _accessDenied = true;
+        _students = const [];
+        _classes = const [];
+        _savedAt = null;
+        _fresh = true;
+        if (e is EmsException && e.statusCode == 401) _authError = e;
+      } else if (_savedAt != null) {
+        _fresh = false;
+      }
+      _error = careReadError(e);
     }
     _loading = false;
+    _refreshing = false;
     notifyListeners();
   }
 
@@ -84,7 +103,7 @@ class TeacherStudentsViewModel extends ChangeNotifier {
     final others = <TeacherCareStudent>[];
     for (final s in students) {
       var placed = false;
-      for (final id in s.mySectionIds) {
+      for (final id in s.mySectionIds.toSet()) {
         final sec = s.section(id);
         if (sec == null) continue;
         info.putIfAbsent(id, () => sec);

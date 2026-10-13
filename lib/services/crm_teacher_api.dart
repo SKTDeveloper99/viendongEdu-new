@@ -1,4 +1,5 @@
 import '../core/school_calendar.dart';
+import '../data/api/teacher_students_api.dart';
 import 'ems_api_service.dart';
 import '../core/default_semester.dart';
 import 'offline_snapshot.dart';
@@ -275,70 +276,12 @@ class CrmTeacherApi {
         .toList();
   }
 
-  static const _studentCareKey = 'teacher_student_care';
-
-  /// `GET /api/student-care` (mọi trang) — sinh viên giảng viên phụ trách,
-  /// kèm `dossier.money_one` (LUẬT M-54). Thành công thì lưu bản gọn; mạng
-  /// hỏng thì trả bản lưu gần nhất (`fresh: false`). 401/403 không bao giờ
-  /// bị che bằng bản cũ.
+  /// All student-care pages; a complete last-good copy when offline.
   static Future<({List<TeacherCareStudent> data, DateTime savedAt, bool fresh})>
-  studentCare() async {
-    try {
-      final out = <TeacherCareStudent>[];
-      for (var page = 1; page <= 20; page++) {
-        final body =
-            await EmsApiService.send(
-                  'GET',
-                  '/student-care',
-                  query: {'limit': '100', 'page': '$page'},
-                )
-                as Map<String, dynamic>;
-        final list = body['students'] is List ? body['students'] as List : [];
-        out.addAll(
-          list.whereType<Map<String, dynamic>>().map(
-            TeacherCareStudent.fromJson,
-          ),
-        );
-        final total = (body['total'] as num?)?.toInt() ?? 0;
-        if (list.length < 100 || out.length >= total) break;
-      }
-      await OfflineSnapshot.save(
-        _studentCareKey,
-        out.map((s) => s.toJson()).toList(),
-      );
-      return (data: out, savedAt: DateTime.now(), fresh: true);
-    } catch (e) {
-      if (e is EmsException && (e.statusCode == 401 || e.statusCode == 403)) {
-        rethrow;
-      }
-      final stored = await OfflineSnapshot.load(_studentCareKey);
-      final data = stored?.data;
-      if (stored == null || data is! List) rethrow;
-      return (
-        data: data
-            .whereType<Map<String, dynamic>>()
-            .map(TeacherCareStudent.fromJson)
-            .toList(),
-        savedAt: stored.savedAt,
-        fresh: false,
-      );
-    }
-  }
+  studentCare() => TeacherStudentsApi.students();
 
-  /// `GET /api/student-care/student/:mssv` — một sinh viên, mới nhất.
-  static Future<TeacherCareStudent> studentCareOne(String mssv) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/student-care/student/${Uri.encodeComponent(mssv)}',
-            )
-            as Map<String, dynamic>;
-    final s = body['student'];
-    if (s is! Map<String, dynamic>) {
-      throw EmsException('Máy chủ trả về dữ liệu không đọc được.');
-    }
-    return TeacherCareStudent.fromJson(s);
-  }
+  static Future<TeacherCareStudent> studentCareOne(String mssv) =>
+      TeacherStudentsApi.student(mssv);
 }
 
 /// `GET /api/teacher/me/overview` — toàn bộ payload.

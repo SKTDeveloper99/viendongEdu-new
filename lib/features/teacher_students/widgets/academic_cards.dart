@@ -21,7 +21,7 @@ class GradesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return CareCard(
       title: title,
-      children: fresh
+      children: fresh && section.scoresReadable
           ? [
               CareLine('Giữa kỳ', formatScore(section.midterm)),
               CareLine('Cuối kỳ', formatScore(section.finalScore)),
@@ -46,7 +46,7 @@ class AttendanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!fresh) {
+    if (!fresh || !section.attendanceKnown) {
       return CareCard(
         title: title,
         children: const [CareLine('Điểm danh', unknownText)],
@@ -60,12 +60,12 @@ class AttendanceCard extends StatelessWidget {
         CareLine(
           'Vắng',
           '${s.absent} buổi',
-          valueColor: s.absent > 0 ? context.vd.danger : null,
+          valueColor: s.absent! > 0 ? context.vd.danger : null,
         ),
-        if (s.unrecorded > 0)
+        if (s.unrecorded! > 0)
           CareLine('Chờ giáo viên xác nhận', '${s.unrecorded} buổi'),
-        if (s.conflicts > 0) CareLine(unknownText, '${s.conflicts} buổi'),
-        if (s.unrecorded > 0)
+        if (s.conflicts! > 0) CareLine(unknownText, '${s.conflicts} buổi'),
+        if (s.unrecorded! > 0)
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(

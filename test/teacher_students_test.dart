@@ -22,6 +22,7 @@ import 'package:viendongedu2_flutter/models/teacher_care_student.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
 import 'package:viendongedu2_flutter/services/crm_teacher_api.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
+import 'package:viendongedu2_flutter/services/offline_snapshot.dart';
 
 const _json = {'content-type': 'application/json; charset=utf-8'};
 const _sec = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -345,6 +346,10 @@ void main() {
       CrmTeacherApi.studentCare(),
       throwsA(isA<EmsException>()),
     );
+    expect(await OfflineSnapshot.load('teacher_student_care'), isNull);
+    failNetwork = false;
+    await CrmTeacherApi.studentCare();
+    failNetwork = true;
     failStatus = 500;
     final r = await CrmTeacherApi.studentCare();
     expect(r.fresh, isFalse);
