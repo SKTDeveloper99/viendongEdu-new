@@ -100,7 +100,7 @@ class CrmStudentApi {
         .toList();
   }
 
-  /// `GET /api/student/me/schedule?semester=` → { mssv, schedule }.
+  /// `GET /api/student/me/schedule?semester=` → { mssv, schedule, chua_co_lich }.
   /// Thay `hocvien/tkbtheongay` (`ApiService.getScheduleByDate` /
   /// `getTodaySchedule`) — xem ghi chú "weeks_pattern" trong
   /// lib/models/crm_student_schedule.dart về khác biệt theo-tuần so với
@@ -115,12 +115,7 @@ class CrmStudentApi {
                   : {'semester': semester},
             )
             as Map<String, dynamic>;
-    final list = body['schedule'];
-    if (list is! List) return const [];
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(CrmScheduleItem.fromJson)
-        .toList();
+    return CrmStudentScheduleView.fromJson(body).schedule;
   }
 
   static Future<({List<CrmScheduleItem> data, DateTime savedAt, bool fresh})>
@@ -128,13 +123,26 @@ class CrmStudentApi {
     String? semester,
     void Function(List<CrmScheduleItem> items, DateTime savedAt)? onStored,
   }) async {
-    List<CrmScheduleItem> parse(dynamic body) {
-      final list = body is Map ? body['schedule'] : null;
-      if (list is! List) return const [];
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(CrmScheduleItem.fromJson)
-          .toList();
+    final r = await scheduleViewCached(
+      semester: semester,
+      onStored: onStored == null
+          ? null
+          : (view, at) => onStored(view.schedule, at),
+    );
+    return (data: r.data.schedule, savedAt: r.savedAt, fresh: r.fresh);
+  }
+
+  /// The schedule screen needs both slots and the separate S-38 subjects.
+  /// Keep [scheduleCached] list-only for home-screen callers.
+  static Future<({CrmStudentScheduleView data, DateTime savedAt, bool fresh})>
+  scheduleViewCached({
+    String? semester,
+    void Function(CrmStudentScheduleView view, DateTime savedAt)? onStored,
+  }) async {
+    CrmStudentScheduleView parse(dynamic body) {
+      return CrmStudentScheduleView.fromJson(
+        body is Map<String, dynamic> ? body : const {},
+      );
     }
 
     final r = await EmsApiService.sendCached(

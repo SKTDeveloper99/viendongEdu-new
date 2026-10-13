@@ -90,6 +90,59 @@ class CrmStudentSection {
       );
 }
 
+/// Registered subjects without a published timetable (S-38). These are not
+/// recurring slots and must never pass through [CrmScheduleItem.occursOn].
+class CrmUnscheduledSection {
+  final String sectionCode;
+  final String? semesterCode;
+  final String subjectCode;
+  final String subjectName;
+
+  const CrmUnscheduledSection({
+    this.sectionCode = '',
+    this.semesterCode,
+    this.subjectCode = '',
+    this.subjectName = '',
+  });
+
+  factory CrmUnscheduledSection.fromJson(Map<String, dynamic> j) =>
+      CrmUnscheduledSection(
+        sectionCode: j['section_code']?.toString() ?? '',
+        semesterCode: j['semester_code']?.toString(),
+        subjectCode: j['subject_code']?.toString() ?? '',
+        subjectName: j['subject_name']?.toString() ?? '',
+      );
+}
+
+class CrmStudentScheduleView {
+  final List<CrmScheduleItem> schedule;
+  final List<CrmUnscheduledSection> chuaCoLich;
+
+  const CrmStudentScheduleView({
+    this.schedule = const [],
+    this.chuaCoLich = const [],
+  });
+
+  factory CrmStudentScheduleView.fromJson(Map<String, dynamic> j) {
+    final slots = j['schedule'];
+    final unscheduled = j['chua_co_lich'];
+    return CrmStudentScheduleView(
+      schedule: slots is List
+          ? slots
+                .whereType<Map<String, dynamic>>()
+                .map(CrmScheduleItem.fromJson)
+                .toList()
+          : const [],
+      chuaCoLich: unscheduled is List
+          ? unscheduled
+                .whereType<Map<String, dynamic>>()
+                .map(CrmUnscheduledSection.fromJson)
+                .toList()
+          : const [],
+    );
+  }
+}
+
 /// Mã thứ của `ref_days` (migrations/003_phase_a_teachers_schema.sql):
 /// '2'..'7' = Thứ 2..Thứ 7, 'CN' = Chủ nhật. `DateTime.weekday` là 1..7
 /// (Mon..Sun) — hàm này đổi 1-1 giữa hai hệ.
