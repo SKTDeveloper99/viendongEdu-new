@@ -1,9 +1,11 @@
 import '../core/school_calendar.dart';
+import '../data/api/teacher_students_api.dart';
 import 'ems_api_service.dart';
 import '../core/default_semester.dart';
 import 'offline_snapshot.dart';
 import '../models/crm_teacher_profile.dart';
 import '../models/crm_teacher_class.dart';
+import '../models/teacher_care_student.dart';
 
 /// Lời gọi CRM cho các màn hình giáo viên (trừ điểm danh EMS — đã có sẵn
 /// trong [EmsApiService]). Thay cho `ApiService` (IMS) cho toàn bộ slice
@@ -273,6 +275,13 @@ class CrmTeacherApi {
         .map(CrmTeacherExam.fromJson)
         .toList();
   }
+
+  /// All student-care pages; a complete last-good copy when offline.
+  static Future<({List<TeacherCareStudent> data, DateTime savedAt, bool fresh})>
+  studentCare() => TeacherStudentsApi.students();
+
+  static Future<TeacherCareStudent> studentCareOne(String mssv) =>
+      TeacherStudentsApi.student(mssv);
 }
 
 /// `GET /api/teacher/me/overview` — toàn bộ payload.

@@ -15,7 +15,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:viendongedu2_flutter/components/next_up_card.dart';
+import 'package:viendongedu2_flutter/data/teacher_home_repository.dart';
 import 'package:viendongedu2_flutter/features/teacher_home/teacher_home_screen.dart';
+import 'package:viendongedu2_flutter/features/teacher_home/teacher_home_view_model.dart';
 import 'package:viendongedu2_flutter/features/teacher_home/widgets/gv_class_chip.dart';
 import 'package:viendongedu2_flutter/features/teacher_home/widgets/home_header.dart';
 import 'package:viendongedu2_flutter/models/crm_identity.dart';
@@ -50,6 +53,14 @@ Map<String, dynamic> _overview({String type = 'gvch'}) => {
 final _bell = find.descendant(
   of: find.byType(HomeHeader),
   matching: find.text('3'),
+);
+
+Finder _scheduledSubject(String name) =>
+    find.descendant(of: find.byType(GvClassChip), matching: find.text(name));
+
+final _upcomingSubject = find.descendant(
+  of: find.byType(NextUpCard),
+  matching: find.text('Môn thử nghiệm sáng'),
 );
 
 void main() {
@@ -110,11 +121,17 @@ void main() {
     tester.view.physicalSize = const Size(800, 1800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    final vm = TeacherHomeViewModel(
+      const TeacherHomeRepository(),
+      now: () => DateTime(2026, 9, 30, 7),
+      tickEvery: null,
+    );
+    addTearDown(vm.dispose);
     await tester.pumpWidget(
       MaterialApp(
         initialRoute: '/gv_home',
         routes: {
-          '/gv_home': (_) => const GvHomeScreen(),
+          '/gv_home': (_) => GvHomeScreen(viewModel: vm),
           for (final r in [
             '/teacher_my_day',
             '/gv_schedule',
@@ -170,6 +187,7 @@ void main() {
       findsNWidgets(2),
     );
     expect(_bell, findsOneWidget);
+    expect(_upcomingSubject, findsOneWidget);
     expect(find.text('Thu gọn'), findsOneWidget);
     await tester.tap(find.text('Thu gọn'));
     await tester.pump();
@@ -178,7 +196,9 @@ void main() {
       find.textContaining('nhấn để xem chi tiết', findRichText: true),
       findsOneWidget,
     );
-    expect(find.text('Môn thử nghiệm sáng'), findsNothing);
+    expect(_scheduledSubject('Môn thử nghiệm sáng'), findsNothing);
+    expect(_scheduledSubject('Môn thử nghiệm tối'), findsNothing);
+    expect(_upcomingSubject, findsOneWidget);
   });
 
   testWidgets('giảng viên thỉnh giảng: không có huy hiệu Cơ hữu', (
@@ -259,7 +279,9 @@ void main() {
   ) async {
     mock(unreadFails: true);
     await pumpHome(tester);
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(_scheduledSubject('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(_scheduledSubject('Môn thử nghiệm tối'), findsOneWidget);
+    expect(_upcomingSubject, findsOneWidget);
     expect(_bell, findsNothing);
   });
 
@@ -280,7 +302,9 @@ void main() {
     await tester.tap(find.text('Không có kết nối. Thử tải lịch lại'));
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(_scheduledSubject('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(_scheduledSubject('Môn thử nghiệm tối'), findsOneWidget);
+    expect(_upcomingSubject, findsOneWidget);
     expect(find.text('Không có kết nối. Thử tải lịch lại'), findsNothing);
   });
 
@@ -293,7 +317,9 @@ void main() {
 
     mock(overviewFails: true);
     await pumpHome(tester);
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(_scheduledSubject('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(_scheduledSubject('Môn thử nghiệm tối'), findsOneWidget);
+    expect(_upcomingSubject, findsOneWidget);
     expect(
       find.textContaining('Chưa cập nhật được — dữ liệu lúc'),
       findsOneWidget,

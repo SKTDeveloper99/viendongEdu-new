@@ -18,7 +18,6 @@ const _maxWidgetLines = 200;
 const Map<String, int> _allowlist = {
   'lib/screens/teacher_my_day_screen.dart': 668,
   'lib/screens/registration_screen.dart': 653,
-  'lib/screens/schedule_screen.dart': 642,
   'lib/screens/student_questions_screen.dart': 583,
   'lib/screens/student_board_screen.dart': 490,
   'lib/screens/tuition_screen.dart': 482,

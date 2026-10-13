@@ -4,7 +4,7 @@ import '../../../components/menu_item.dart';
 import '../../teacher_attendance/widgets/pending_send_badge.dart';
 import '../../teacher_conversations/widgets/messages_tile.dart';
 
-/// Five navigation tiles of the teacher home.
+/// Six navigation tiles of the teacher home.
 class MenuGrid extends StatelessWidget {
   const MenuGrid({super.key});
 
@@ -49,6 +49,12 @@ class MenuGrid extends StatelessWidget {
           ],
         ),
         const MessagesTile(index: 4),
+        MenuItemWidget(
+          index: 5,
+          icon: Icons.groups_outlined,
+          label: 'Sinh viên của tôi',
+          onTap: () => Navigator.pushNamed(context, '/gv_sinh_vien'),
+        ),
       ],
     );
   }

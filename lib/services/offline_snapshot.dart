@@ -56,6 +56,18 @@ class OfflineSnapshot {
     }
   }
 
+  /// A denied read invalidates its old copy without changing other resources.
+  static Future<void> remove(String resource) async {
+    final key = _key(resource);
+    if (key == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(key);
+    } catch (_) {
+      // Keep the original access error visible even if storage fails.
+    }
+  }
+
   /// Call before clearing the session so another account cannot inherit data.
   static Future<void> clearCurrentAccount() async {
     final scope = _scope;

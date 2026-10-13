@@ -5,7 +5,8 @@ import '../theme/vd_tokens.dart';
 /// refresh failed.
 class StaleNote extends StatelessWidget {
   final DateTime savedAt;
-  const StaleNote(this.savedAt, {super.key});
+  final double fontSize;
+  const StaleNote(this.savedAt, {super.key, this.fontSize = 12});
 
   static String _two(int n) => n.toString().padLeft(2, '0');
 
@@ -16,7 +17,7 @@ class StaleNote extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Text(
         'Chưa cập nhật được — dữ liệu lúc ${_two(t.hour)}:${_two(t.minute)} ${_two(t.day)}/${_two(t.month)}',
-        style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+        style: TextStyle(fontSize: fontSize, color: context.vd.inkFaint),
       ),
     );
   }
