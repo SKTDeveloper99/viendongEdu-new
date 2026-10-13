@@ -8,8 +8,8 @@ library;
 //   flutter test --exclude-tags golden                          # skip on CI
 //
 // Real fonts are loaded (BeVietnamPro + MaterialIcons) so the PNGs are
-// readable. Screens that print today's date (schedule, home) differ by a few
-// pixels day to day, so comparison allows a small diff ratio.
+// readable. Schedule dates are fixed; home dates still differ by a few pixels
+// day to day, so comparison allows a small diff ratio.
 import 'dart:convert';
 import 'dart:io';
 
@@ -49,7 +49,7 @@ Map<String, dynamic> _todayClass(String name, String start, String end) => {
   'subject_name': name,
   'semester_code': '262',
   'section_code': '06CDTHUNGHIEM-$start',
-  'day_code': dayCodeForWeekday(DateTime.now().weekday),
+  'day_code': dayCodeForWeekday((_scheduleDate ?? DateTime.now()).weekday),
   'start_time': start,
   'end_time': end,
   'room_name': 'P.101',
@@ -335,6 +335,10 @@ DateTime _homeClock() {
   return DateTime(d.year, d.month, d.day, 7);
 }
 
+// Match the date in the existing schedule goldens; no visual change intended.
+DateTime _scheduleClock() => DateTime(2026, 9, 30, 7);
+DateTime? _scheduleDate;
+
 // A gate that already fired: the board's must-read item must not push the
 // board screen over the home (that is what the old golden captured).
 StudentHomeViewModel _studentHomeVm() => StudentHomeViewModel(
@@ -363,6 +367,7 @@ void main() {
   });
 
   setUp(() {
+    _scheduleDate = null;
     SharedPreferences.setMockInitialValues({});
     EmsApiService.client = MockClient((req) async => _route(req));
   });
@@ -423,7 +428,7 @@ void main() {
           after: null,
         ),
         'schedule': (
-          build: () => const ScheduleScreen(),
+          build: () => ScheduleScreen(now: _scheduleClock),
           who: asStudent,
           after: null,
         ),
@@ -458,6 +463,7 @@ void main() {
         tester.view.physicalSize = const Size(780, 1688);
         tester.view.devicePixelRatio = 2;
         addTearDown(tester.view.reset);
+        if (e.key == 'schedule') _scheduleDate = _scheduleClock();
         e.value.who();
         await tester.pumpWidget(
           MaterialApp(

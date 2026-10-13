@@ -6,19 +6,27 @@ import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
 import '../data/api/attendance_api.dart';
 import '../theme/vd_tokens.dart';
+import '../components/student_schedule_header.dart';
+import '../components/student_schedule_card.dart';
+import '../components/unscheduled_subjects.dart';
+
 String _fmtDate(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key});
+  const ScheduleScreen({super.key, this.now});
+
+  final DateTime Function()? now;
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  DateTime _currentMonday = DateTime.now();
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _currentMonday;
+  late DateTime _selectedDate;
+
+  DateTime _now() => widget.now?.call() ?? DateTime.now();
 
   // CRM /me/schedule không có API theo-ngày như IMS `hocvien/tkbtheongay`:
   // nó trả TOÀN BỘ lịch học lặp-hàng-tuần của mọi học kỳ đã ghi danh trong
@@ -26,6 +34,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // lọc theo ngày ở client (CrmScheduleItem.occursOn), và giữ cache theo
   // ngày để build() không lọc lại mỗi lần.
   List<CrmScheduleItem>? _fullSchedule;
+  List<CrmUnscheduledSection> _chuaCoLich = const [];
+  bool _scheduleFailed = false;
   final Map<String, List<CrmScheduleItem>> _cache = {};
   bool _loading = false;
   DateTime? _staleAt;
@@ -71,6 +81,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               _emsByKey[k] = m;
             }
           }
+
           put(_markKey(code, date));
           if (hhmm != null) put(_markKey(code, date, hhmm));
         }
@@ -94,7 +105,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final code = data.sectionCode;
     final start = (data.startTime ?? '').trim();
     final hhmm = start.length >= 5 ? start.substring(0, 5) : null;
-    final m = (hhmm != null ? _emsByKey[_markKey(code, date, hhmm)] : null) ??
+    final m =
+        (hhmm != null ? _emsByKey[_markKey(code, date, hhmm)] : null) ??
         _emsByKey[_markKey(code, date)];
     if (m?.status != null) {
       return switch (m!.status) {
@@ -110,12 +122,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     // docs/ims_to_crm_student_academic_map.md). Falls back to "pending".
     return 'pending';
   }
+
   final ScrollController _chipScroll = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
+    final now = _now();
     _currentMonday = _findMonday(now);
     _selectedDate = now;
     _fetchDate(now);
@@ -132,20 +145,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   void _scrollToSelected() {
     if (!_chipScroll.hasClients) return;
     final weekDays = _weekDays;
-    int index = weekDays.indexWhere((d) => _fmtDate(d) == _fmtDate(_selectedDate));
+    int index = weekDays.indexWhere(
+      (d) => _fmtDate(d) == _fmtDate(_selectedDate),
+    );
     if (index == -1) return;
     const chipWidth = 60.0;
     const chipMargin = 8.0;
     final chipOffset = index * (chipWidth + chipMargin);
     final viewport = _chipScroll.position.viewportDimension;
-    final center = (chipOffset - viewport / 2 + chipWidth / 2)
-        .clamp(0.0, _chipScroll.position.maxScrollExtent);
-    _chipScroll.animateTo(center,
-        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    final center = (chipOffset - viewport / 2 + chipWidth / 2).clamp(
+      0.0,
+      _chipScroll.position.maxScrollExtent,
+    );
+    _chipScroll.animateTo(
+      center,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
-  DateTime _findMonday(DateTime d) =>
-      d.subtract(Duration(days: d.weekday - 1));
+  DateTime _findMonday(DateTime d) => d.subtract(Duration(days: d.weekday - 1));
 
   List<DateTime> get _weekDays =>
       List.generate(7, (i) => _currentMonday.add(Duration(days: i)));
@@ -154,11 +173,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final key = _fmtDate(date);
     if (_cache.containsKey(key)) return; // đã có cache
 
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _scheduleFailed = false;
+    });
     try {
       if (_fullSchedule == null) {
-        final r = await CrmStudentApi.scheduleCached();
-        _fullSchedule = r.data;
+        final r = await CrmStudentApi.scheduleViewCached();
+        if (!mounted) return;
+        _fullSchedule = r.data.schedule;
+        _chuaCoLich = r.data.chuaCoLich;
         _staleAt = r.fresh ? null : r.savedAt;
       }
       if (!mounted) return;
@@ -167,7 +191,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _cache[key] = []);
+      setState(() {
+        _scheduleFailed = true;
+        _chuaCoLich = const [];
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -201,9 +228,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       lastDate: DateTime(2030),
       locale: const Locale('vi', 'VN'),
       builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: ColorScheme.light(primary: context.vd.primary),
-        ),
+        data: Theme.of(
+          ctx,
+        ).copyWith(colorScheme: ColorScheme.light(primary: context.vd.primary)),
         child: child!,
       ),
     );
@@ -238,405 +265,82 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           style: TextStyle(color: context.vd.onPrimary, fontSize: 13),
         ),
       ),
-      body: SafeArea(top: false, child: Column(
-        children: [
-          // ── Header ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [context.vd.primary, context.vd.accent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(24)),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            StudentScheduleHeader(
+              weekDays: weekDays,
+              weekLabel: weekLabel,
+              selectedDate: _selectedDate,
+              today: _now(),
+              chipScroll: _chipScroll,
+              onPrevWeek: _prevWeek,
+              onNextWeek: _nextWeek,
+              onSelectDate: _selectDate,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Back + title
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Icon(Icons.arrow_back_ios,
-                          color: context.vd.onPrimary, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Lịch học',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: context.vd.onPrimary,
+
+            if (_staleAt != null) StaleNote(_staleAt!),
+            // ── Content ──
+            Expanded(
+              child: _loading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: context.vd.primary,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Week navigator
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: _prevWeek,
-                      child: Icon(Icons.chevron_left,
-                          color: context.vd.onPrimary, size: 28),
-                    ),
-                    Text(
-                      weekLabel,
-                      style: TextStyle(
-                        color: context.vd.onPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: _nextWeek,
-                      child: Icon(Icons.chevron_right,
-                          color: context.vd.onPrimary, size: 28),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Day chips
-                SizedBox(
-                  height: 84,
-                  child: ListView.builder(
-                    controller: _chipScroll,
-                    scrollDirection: Axis.horizontal,
-                    itemCount: weekDays.length,
-                    itemBuilder: (context, i) {
-                      final day = weekDays[i];
-                      final isSelected = _fmtDate(day) == _fmtDate(_selectedDate);
-                      final isToday = _fmtDate(day) == _fmtDate(DateTime.now());
-                      return GestureDetector(
-                        onTap: () => _selectDate(day),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 60,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? context.vd.surface
-                                : context.vd.surface.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                ['T2','T3','T4','T5','T6','T7','CN'][day.weekday - 1],
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: isSelected
-                                      ? context.vd.primary
-                                      : context.vd.onPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${day.day}',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected
-                                      ? context.vd.primary
-                                      : context.vd.onPrimary,
-                                ),
-                              ),
-                              if (isToday)
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  margin: const EdgeInsets.only(top: 3),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? context.vd.primary
-                                        : context.vd.surface,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (_staleAt != null) StaleNote(_staleAt!),
-          // ── Content ──
-          Expanded(
-            child: _loading
-                ? Center(
-                    child: CircularProgressIndicator(color: context.vd.primary),
-                  )
-                : classes == null
-                    ? Center(
-                        child: CircularProgressIndicator(color: context.vd.primary),
-                      )
-                    : classes.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.event_available,
-                                    size: 64, color: context.vd.inkFaint),
-                                SizedBox(height: 12),
-                                Text('Không có lịch học',
-                                    style: TextStyle(color: context.vd.inkFaint)),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            color: context.vd.primary,
-                            onRefresh: () async {
-                              _cache.remove(_fmtDate(_selectedDate));
-                              _fullSchedule = null;
-                              await Future.wait([
-                                _fetchDate(_selectedDate),
-                                _loadEmsMarks(force: true),
-                              ]);
-                            },
-                            child: ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                              itemCount: classes.length,
-                              itemBuilder: (context, i) =>
-                                  _ScheduleCard(
-                                    data: classes[i],
-                                    status: _statusFor(
-                                        classes[i], _fmtDate(_selectedDate)),
-                                  ),
-                            ),
-                          ),
-          ),
-        ],
-      )),
-    );
-  }
-}
-
-// ── Schedule Card ────────────────────────────────────────
-class _ScheduleCard extends StatelessWidget {
-  final CrmScheduleItem data;
-  /// Từ EMS (xem `_ScheduleScreenState._statusFor`), không phải IMS.
-  final String status;
-  const _ScheduleCard({required this.data, required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final subject = data.subjectName;
-    final classCode = data.sectionCode;
-    final room = data.room.trim();
-    final teacher = data.teacherName;
-    final start = data.startTime ?? '';
-    final end = data.endTime ?? '';
-    // CRM /me/schedule chỉ trả buổi HỌC — lịch thi nằm ở /me/exams riêng
-    // (xem exam_screen.dart), nên không còn khái niệm "loaitkb == lichthi"
-    // trộn trong cùng một feed như IMS `tkbtheongay` nữa. `isLichThi` giữ lại
-    // như một cờ luôn false (thay vì xoá hẳn nhánh hiển thị) để badge "Lịch
-    // thi" bên dưới không chết hẳn nếu một bot khác sau này gộp lịch thi vào
-    // đây — không dùng `const` để tránh cảnh báo dead_code từ analyzer.
-    final isLichThi = DateTime.now().year < 0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isLichThi ? context.vd.evening.withValues(alpha: 0.12) : context.vd.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-        children: [
-          // Thanh màu trái — đổi màu theo điểm danh / loại tkb
-          Container(
-            width: 5,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              color: isLichThi
-                  ? context.vd.evening
-                  : switch (status) {
-                      'present' => context.vd.success,
-                      'absent'  => context.vd.danger,
-                      'excused' => context.vd.info,
-                      _         => context.vd.inkMuted,
-                    },
-              borderRadius:
-                  const BorderRadius.horizontal(left: Radius.circular(16)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          subject,
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      if (isLichThi)
-                        Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: context.vd.evening.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.assignment_outlined,
-                                  size: 12, color: context.vd.evening),
-                              SizedBox(width: 4),
-                              Text('Lịch thi',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.vd.evening)),
-                            ],
-                          ),
-                        ),
-                      _StatusBadge(status: status),
-                      const SizedBox(width: 12),
-                    ],
-                  ),
-                  if (classCode.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2, right: 12),
+                    )
+                  : _scheduleFailed
+                  ? Center(
                       child: Text(
-                        classCode,
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: context.vd.inkMuted,
-                            fontWeight: FontWeight.w400),
+                        'Đang đối chiếu',
+                        style: TextStyle(color: context.vd.inkMuted),
+                      ),
+                    )
+                  : classes == null
+                  ? const SizedBox.shrink()
+                  : classes.isEmpty && _chuaCoLich.isEmpty
+                  ? Center(child: _emptyDay(context))
+                  : RefreshIndicator(
+                      color: context.vd.primary,
+                      onRefresh: _refresh,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        children: [
+                          if (classes.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: _emptyDay(context),
+                            ),
+                          for (final data in classes)
+                            StudentScheduleCard(
+                              data: data,
+                              status: _statusFor(data, key),
+                            ),
+                          if (_chuaCoLich.isNotEmpty)
+                            UnscheduledSubjects(sections: _chuaCoLich),
+                        ],
                       ),
                     ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.access_time,
-                          size: 13, color: context.vd.primary),
-                      const SizedBox(width: 4),
-                      Text(
-                        end.isNotEmpty ? '$start – $end' : start,
-                        style: const TextStyle(
-                            fontSize: 12, color: Color.fromARGB(255, 0, 0, 0)),
-                      ),
-                      const SizedBox(width: 10),
-                      Icon(Icons.person_outline,
-                          size: 13, color: context.vd.primary),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          teacher,
-                          style: const TextStyle(
-                              fontSize: 12, color: Color.fromARGB(255, 0, 0, 0)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.room,
-                          size: 13, color: context.vd.primary),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          room,
-                          style: const TextStyle(
-                              fontSize: 12, color: Color.fromARGB(255, 0, 0, 0)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
   }
-}
 
-// ── Status Badge ─────────────────────────────────────────
-class _StatusBadge extends StatelessWidget {
-  final String status;
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final cfg = switch (status) {
-      'present' => (
-          label: 'Có mặt',
-          color: context.vd.success,
-          bg: context.vd.successSoft,
-          icon: Icons.check_circle_outline,
-        ),
-      'absent' => (
-          label: 'Vắng mặt',
-          color: context.vd.danger,
-          bg: context.vd.dangerSoft,
-          icon: Icons.cancel_outlined,
-        ),
-      'excused' => (
-          label: 'Báo nghỉ',
-          color: context.vd.info,
-          bg: context.vd.infoSoft,
-          icon: Icons.event_busy_outlined,
-        ),
-      _ => (
-          label: 'Chưa điểm danh',
-          color: context.vd.inkMuted,
-          bg: context.vd.surfaceAlt,
-          icon: Icons.radio_button_unchecked,
-        ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: cfg.bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(cfg.icon, size: 12, color: cfg.color),
-          const SizedBox(width: 4),
-          Text(
-            cfg.label,
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: cfg.color),
-          ),
-        ],
-      ),
-    );
+  Future<void> _refresh() async {
+    _cache.clear();
+    _fullSchedule = null;
+    await Future.wait([_fetchDate(_selectedDate), _loadEmsMarks(force: true)]);
   }
+
+  Widget _emptyDay(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(Icons.event_available, size: 64, color: context.vd.inkFaint),
+      const SizedBox(height: 12),
+      Text('Không có lịch học', style: TextStyle(color: context.vd.inkFaint)),
+    ],
+  );
 }
