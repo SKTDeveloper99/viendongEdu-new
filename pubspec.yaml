@@ -50,7 +50,7 @@ dependencies:
   connectivity_plus: ^7.3.1
   firebase_crashlytics: 5.3.0
   geolocator: ^14.0.1
-  firebase_remote_config: ^6.7.0
+  firebase_remote_config: 6.6.0
 
 dev_dependencies:
   flutter_test:
