@@ -36,6 +36,8 @@ import 'screens/ems_attendance_student_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/teacher_my_day_screen.dart';
 import 'screens/student_questions_screen.dart';
+import 'core/remote/app_remote_config.dart';
+import 'features/infinite/infinite_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -51,6 +53,7 @@ void main() async {
   } catch (e) {
     debugPrint('[Firebase] init failed: $e');
   }
+  await AppRemoteConfig.init();
   // Crashlytics: crash reports only. PRIVACY (users include minors): never call
   // setUserIdentifier or log MSSV, names, phone, tokens or request bodies.
   try {
@@ -155,6 +158,7 @@ class MyApp extends StatelessWidget {
         // chuông đẩy (push) nào.
         '/student_board': (context) => const StudentBoardScreen(),
         '/student_questions': (context) => const StudentQuestionsScreen(),
+        '/infinite': (context) => const InfiniteScreen(),
         // Điểm danh EMS — EMS là nguồn dữ liệu điểm danh chính thức.
         '/ems_attendance_gv': (context) => const EmsAttendanceTeacherScreen(),
         '/ems_attendance_hv': (context) => const EmsAttendanceStudentScreen(),

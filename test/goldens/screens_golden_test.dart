@@ -186,7 +186,7 @@ http.Response _route(http.Request req) {
   }
   if (p.endsWith('/student/me')) {
     return _ok({
-      'student': {'mssv': 'TEST260001', 'class_code': '06CDTHUNGHIEM'},
+      'student': {'mssv': '2600000001', 'class_code': '06CDTHUNGHIEM'},
     });
   }
   if (p.endsWith('/board/unread-count')) {
@@ -387,7 +387,7 @@ void main() {
   void asStudent() => AppSession.instance
     ..emsToken = 'test-token'
     ..role = CrmRole.student
-    ..mssv = 'TEST260001'
+    ..mssv = '2600000001'
     ..fullName = 'Học Viên Thử Nghiệm'
     ..emsDenied = false;
 

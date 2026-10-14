@@ -279,6 +279,7 @@ class RosterViewModel extends ChangeNotifier {
       final go = await ui.confirmUnmarked(undecided, _marks.length);
       if (!go) return;
     }
+    if (!await askOtherReasons(ui, _marks, _notes, nameOf)) return;
     if (!AttendanceSendLock.tryAcquire(draftKey)) {
       ui.toast('Đang tự động gửi buổi này, vui lòng đợi giây lát.');
       return;
