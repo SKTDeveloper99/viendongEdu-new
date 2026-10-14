@@ -7,6 +7,7 @@ import 'infinite_view_model.dart';
 import 'quest.dart';
 import 'widgets/cosmetic_avatar.dart';
 import 'widgets/quest_card.dart';
+import 'widgets/lobby_hero.dart';
 
 /// Viễn Đông Infinite: quests at school, cosmetics as rewards.
 class InfiniteScreen extends StatefulWidget {
@@ -46,30 +47,13 @@ class _InfiniteScreenState extends State<InfiniteScreen> {
         builder: (context, _) => ListView(
           padding: const EdgeInsets.only(bottom: 24),
           children: [
-            const SizedBox(height: 16),
-            Center(
-              child: CosmeticAvatar(name: name, frame: _vm.frame),
+            LobbyHero(
+              name: name,
+              frame: _vm.frame,
+              title: _vm.title,
+              completed: _vm.quests.where(_vm.isClaimed).length,
+              total: _vm.quests.length,
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (_vm.title != null)
-              Center(
-                child: Text(
-                  _vm.title!.title!,
-                  style: TextStyle(
-                    color: context.vd.warning,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
             _heading(context, 'Nhiệm vụ'),
             if (_vm.quests.isEmpty)
               const Padding(
@@ -94,12 +78,28 @@ class _InfiniteScreenState extends State<InfiniteScreen> {
                   'Hoàn thành nhiệm vụ để mở khóa khung và danh hiệu.',
                 ),
               ),
-            for (final c in _vm.owned)
-              CosmeticTile(
-                cosmetic: c,
-                equipped: c.id == _vm.frame?.id || c.id == _vm.title?.id,
-                onTap: () => _vm.equip(c),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _vm.owned.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  mainAxisExtent: 176,
+                ),
+                itemBuilder: (context, index) {
+                  final c = _vm.owned[index];
+                  return CosmeticTile(
+                    cosmetic: c,
+                    equipped: c.id == _vm.frame?.id || c.id == _vm.title?.id,
+                    onTap: () => _vm.equip(c),
+                  );
+                },
               ),
+            ),
           ],
         ),
       ),

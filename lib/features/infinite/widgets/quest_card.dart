@@ -38,23 +38,31 @@ class _QuestCardState extends State<QuestCard> {
   @override
   Widget build(BuildContext context) {
     final q = widget.quest;
-    final rewards = q.rewards
-        .map(cosmeticById)
-        .nonNulls
-        .map((c) => c.title ?? c.name)
-        .join(' • ');
+    final rewards = q.rewards.map(cosmeticById).nonNulls;
+    final icon = q.url == null
+        ? Icons.location_on_rounded
+        : q.url!.contains('tiktok')
+        ? Icons.play_circle_fill_rounded
+        : Icons.thumb_up_alt_rounded;
     return Card(
       color: context.vd.surface,
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(
+          color: widget.claimed ? context.vd.success : context.vd.hairline,
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(
-                  widget.claimed ? Icons.check_circle : Icons.flag_outlined,
+                  icon,
                   color: widget.claimed
                       ? context.vd.success
                       : context.vd.primary,
@@ -64,7 +72,7 @@ class _QuestCardState extends State<QuestCard> {
                   child: Text(
                     q.title,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 17,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -75,11 +83,46 @@ class _QuestCardState extends State<QuestCard> {
               const SizedBox(height: 6),
               Text(q.desc, style: TextStyle(color: context.vd.inkMuted)),
             ],
-            if (rewards.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Phần thưởng: $rewards',
-                style: TextStyle(color: context.vd.warning),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final c in rewards)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.vd.warningSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '✦ ${c.title ?? c.name}',
+                      style: TextStyle(
+                        color: context.vd.warning,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            if (widget.claimed) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Icon(Icons.check_circle, size: 20, color: context.vd.success),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Đã xong',
+                    style: TextStyle(
+                      color: context.vd.success,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ],
             if (!widget.claimed) ..._actions(context, q),
@@ -103,7 +146,10 @@ class _QuestCardState extends State<QuestCard> {
       ),
     ],
     const SizedBox(height: 10),
-    Row(
+    Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.end,
       children: [
         if (q.url != null)
           OutlinedButton.icon(
@@ -111,7 +157,6 @@ class _QuestCardState extends State<QuestCard> {
             icon: const Icon(Icons.open_in_new, size: 18),
             label: const Text('Mở liên kết'),
           ),
-        const Spacer(),
         FilledButton.icon(
           onPressed: widget.busy || widget.needsOpen
               ? null
