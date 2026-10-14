@@ -227,6 +227,7 @@ void main() {
       MaterialApp(
         routes: {
           '/': (_) => const Scaffold(body: Text('route:/')),
+          '/login': (_) => const Scaffold(body: Text('route:/login')),
           '/gv': (_) => GvHomeScreen(viewModel: vm),
         },
         initialRoute: '/gv',
@@ -238,7 +239,9 @@ void main() {
     await tester.tap(find.text('Đăng xuất'));
     await tester.pumpAndSettle();
     expect(repo.cleared, 1);
-    expect(find.text('route:/'), findsOneWidget);
+    // Straight to login with nothing left behind (no splash page turn).
+    expect(find.text('route:/login'), findsOneWidget);
+    expect(find.text('route:/', skipOffstage: false), findsNothing);
     vm.dispose();
   });
 
