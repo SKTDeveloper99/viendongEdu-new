@@ -72,4 +72,15 @@ void main() {
     expect(studentDataOpen(null, minPrefix: 25), isTrue);
     expect(studentDataOpen('2416160001', minPrefix: 0), isTrue);
   });
+
+  test('a quest with its own place is checked there, not at school', () {
+    final b = parseQuestBook(
+      '{"school": {"lat": 10.85, "lng": 106.63},'
+      ' "quests": [{"id": "t", "title": "t", "rewards": [],'
+      ' "place": {"lat": -37.9489, "lng": 145.0471, "radius_m": 150}}]}',
+    )!;
+    final p = b.quests.single.place!;
+    expect(atSchool(p, -37.9489, 145.0471, 10), isTrue);
+    expect(atSchool(b.school, -37.9489, 145.0471, 10), isFalse);
+  });
 }

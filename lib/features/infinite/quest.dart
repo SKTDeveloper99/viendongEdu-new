@@ -24,6 +24,7 @@ class Quest {
     this.code,
     this.from,
     this.to,
+    this.place,
   });
 
   final String id;
@@ -38,6 +39,9 @@ class Quest {
   final String? code;
   final DateTime? from;
   final DateTime? to;
+
+  /// Own location (e.g. a test spot); null = the school point.
+  final School? place;
 
   bool activeOn(DateTime day) {
     final d = DateTime(day.year, day.month, day.day);
@@ -70,12 +74,12 @@ String? _text(Object? v) =>
 QuestBook? parseQuestBook(String raw) {
   try {
     final j = jsonDecode(raw) as Map<String, dynamic>;
-    final s = j['school'] as Map<String, dynamic>;
-    final school = School(
+    School point(Map<String, dynamic> s) => School(
       (s['lat'] as num).toDouble(),
       (s['lng'] as num).toDouble(),
       (s['radius_m'] as num? ?? 150).toDouble(),
     );
+    final school = point(j['school'] as Map<String, dynamic>);
     final quests = <Quest>[
       for (final q in (j['quests'] as List).cast<Map<String, dynamic>>())
         Quest(
@@ -87,6 +91,9 @@ QuestBook? parseQuestBook(String raw) {
           code: _text(q['code']),
           from: _date(q['from']),
           to: _date(q['to']),
+          place: q['place'] == null
+              ? null
+              : point(q['place'] as Map<String, dynamic>),
         ),
     ];
     return QuestBook(school, quests);

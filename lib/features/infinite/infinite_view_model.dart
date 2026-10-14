@@ -63,8 +63,13 @@ class InfiniteViewModel extends ChangeNotifier {
     try {
       final fix = await _repo.currentFix();
       if (fix.problem != null) return fix.problem!;
-      if (!atSchool(_book!.school, fix.lat, fix.lng, fix.accuracyM)) {
-        return 'Bạn chưa ở trường. Đến khuôn viên trường rồi thử lại.';
+      if (!atSchool(
+        q.place ?? _book!.school,
+        fix.lat,
+        fix.lng,
+        fix.accuracyM,
+      )) {
+        return 'Bạn chưa ở đúng địa điểm. Đến khuôn viên trường rồi thử lại.';
       }
       await _repo.markClaimed(q);
       _claimed = {..._claimed, q.id};
