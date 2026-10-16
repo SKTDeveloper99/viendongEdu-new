@@ -1,3 +1,4 @@
+import '../components/skeleton.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'stale_note.dart';
 import 'package:flutter/material.dart';
@@ -222,9 +223,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
   }
 
   Widget _buildBody() {
-    if (_loading) {
-      return Center(child: CircularProgressIndicator(color: context.vd.primary));
-    }
+    if (_loading) return skeletonList(accentColor: context.vd.primary);
 
     // Trạng thái lỗi phải CUỘN ĐƯỢC, nếu không RefreshIndicator không kéo được
     // và người dùng kẹt lại với một màn hình chết.

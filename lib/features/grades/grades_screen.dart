@@ -1,3 +1,4 @@
+import '../../components/skeleton.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/grades_repository.dart';
@@ -60,8 +61,7 @@ class _GradesScreenState extends State<GradesScreen>
 
   Widget _content() {
     if (_vm.loading) {
-      return Center(
-          child: CircularProgressIndicator(color: context.vd.primary));
+      return skeletonList(accentColor: context.vd.primary);
     }
     final error = _vm.error;
     if (error != null) {

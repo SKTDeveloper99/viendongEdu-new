@@ -99,7 +99,9 @@ class StudentHomeViewModel extends ChangeNotifier {
     _ticker = null;
   }
 
-  /// Screen start-up: schedule first, everything else after a pause.
+  /// Screen start-up: schedule first, then the rest together after a short
+  /// stagger. These reads cost 3–15 ms on the server (measured 2026-10-16),
+  /// so the old 900 ms + 500 ms pacing only made the header and board late.
   void start() {
     startClock();
     loadTodaySchedule();
@@ -107,14 +109,11 @@ class StudentHomeViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadSecondary() async {
-    await _delay(const Duration(milliseconds: 900));
-    if (_disposed) return;
-    await _loadProfile();
-    if (_disposed) return;
-    await _delay(const Duration(milliseconds: 500));
+    await _delay(const Duration(milliseconds: 200));
     if (_disposed) return;
     loadUnreadCount();
     loadBoard();
+    await _loadProfile();
   }
 
   // Lịch học hôm nay = mọi buổi trong /me/schedule (mọi học kỳ, server không

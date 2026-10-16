@@ -1,3 +1,4 @@
+import '../components/skeleton.dart';
 import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_student_schedule.dart';
@@ -284,11 +285,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             // ── Content ──
             Expanded(
               child: _loading
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        color: context.vd.primary,
-                      ),
-                    )
+                  ? skeletonList(accentColor: context.vd.primary)
                   : _scheduleFailed
                   ? Center(
                       child: Text(

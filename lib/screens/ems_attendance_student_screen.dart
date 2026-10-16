@@ -8,6 +8,7 @@
 //
 // Buổi chưa được thầy/cô ghi vẫn hiện là CHỜ XÁC NHẬN, tuyệt đối không là vắng.
 
+import '../components/skeleton.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
 import '../data/api/attendance_api.dart';
@@ -84,7 +85,7 @@ class _EmsAttendanceStudentScreenState
   }
 
   Widget _buildBody() {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return skeletonList(accentColor: context.vd.primary);
     if (_error != null) {
       return _center(
         Icons.cloud_off,

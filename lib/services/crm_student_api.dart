@@ -75,7 +75,12 @@ class CrmStudentApi {
   /// summed client-side over /me/grades.
   static Future<CrmGraduationSummary> graduationSummary() async {
     final body =
-        await EmsApiService.send('GET', '/student/me/graduation-summary')
+        await EmsApiService.send(
+              'GET',
+              '/student/me/graduation-summary',
+              // Academic part only: the server skips the tuition engine.
+              query: {'part': 'academic'},
+            )
             as Map<String, dynamic>;
     return CrmGraduationSummary.fromJson(body);
   }

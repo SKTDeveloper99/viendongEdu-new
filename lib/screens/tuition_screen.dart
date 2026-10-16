@@ -1,3 +1,4 @@
+import '../components/skeleton.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_money_tuition.dart';
 import '../services/crm_money_api.dart';
@@ -105,8 +106,7 @@ class _TuitionScreenState extends State<TuitionScreen> {
 
           Expanded(
             child: _loading
-                ? Center(
-                    child: CircularProgressIndicator(color: context.vd.primary))
+                ? skeletonList(accentColor: context.vd.primary)
                 : _error != null
                     ? Center(
                         child: Column(

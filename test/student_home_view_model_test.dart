@@ -189,7 +189,7 @@ void main() {
   });
 
   test(
-    'start: schedule now, profile after 900 ms, then 500 ms → bell+board',
+    'start: schedule now, then bell+board+profile together after 200 ms',
     () async {
       repo.unreadFn = () async => BoardUnread(unread: 2, mustReadPending: 1);
       repo.boardFn = (_) async => (
@@ -202,13 +202,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
 
-      expect(delays, [
-        const Duration(milliseconds: 900),
-        const Duration(milliseconds: 500),
-      ]);
+      expect(delays, [const Duration(milliseconds: 200)]);
       expect(repo.order.first, 'schedule');
-      expect(repo.order.indexOf('profile'), 1);
-      expect(repo.order.sublist(2).toSet(), {'unread', 'board'});
+      expect(repo.order.sublist(1).toSet(), {'unread', 'board', 'profile'});
       expect(vm.classCode, '06CDTHUNGHIEM');
       expect(vm.unreadCount, 3);
       expect(vm.boardUnread, 1);

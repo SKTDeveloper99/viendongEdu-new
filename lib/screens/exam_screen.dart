@@ -1,3 +1,4 @@
+import '../components/skeleton.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_student_exams.dart';
 import '../services/crm_student_api.dart';
@@ -239,8 +240,7 @@ class _ExamScreenState extends State<ExamScreen> {
           // ── Content ──
           Expanded(
             child: _loading || _switchingSemester
-                ? Center(
-                    child: CircularProgressIndicator(color: context.vd.primary))
+                ? skeletonList(accentColor: context.vd.primary)
                 : _error != null
                     ? Center(
                         child: Column(
