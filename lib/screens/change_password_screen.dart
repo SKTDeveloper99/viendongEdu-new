@@ -5,6 +5,7 @@ import '../services/ems_api_service.dart';
 import '../utils/snack.dart';
 import '../data/api/auth_api.dart';
 import '../theme/vd_tokens.dart';
+import '../core/password_policy.dart';
 
 /// Đổi mật khẩu CRM. Dùng cho CẢ HAI trường hợp:
 ///  - lối vào "Đổi mật khẩu" bình thường trong app (`forced: false`, mặc định);
@@ -30,6 +31,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _showConfirm = false;
   bool _loading = false;
 
+  /// Server refusal, shown above the button (a top snackbar hides behind
+  /// the keyboard — owner report 2026-10-14).
+  String? _error;
+
   @override
   void dispose() {
     _oldCtrl.dispose();
@@ -40,7 +45,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final isTeacher = AppSession.instance.role == CrmRole.teacher;
       final current = _oldCtrl.text.trim();
@@ -69,7 +78,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       }
     } on EmsException catch (e) {
       if (!mounted) return;
-      showErrorSnack(context, e.message);
+      setState(() => _error = e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Không kết nối được máy chủ. Vui lòng thử lại.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -166,13 +178,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 onToggle: () =>
                                     setState(() => _showNew = !_showNew),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) {
-                                    return 'Vui lòng nhập mật khẩu mới';
-                                  }
-                                  if (v.length < 3) {
-                                    return 'Mật khẩu phải có ít nhất 3 ký tự';
-                                  }
-                                  return null;
+                                  return newPasswordProblem(
+                                    v ?? '',
+                                    current: _oldCtrl.text.trim(),
+                                    mssv: AppSession.instance.mssv,
+                                    student:
+                                        AppSession.instance.role !=
+                                        CrmRole.teacher,
+                                  );
                                 },
                               ),
                               const SizedBox(height: 16),
@@ -196,7 +209,26 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Mật khẩu mới: ít nhất 8 ký tự, có cả chữ và số, '
+                          'không chứa mã số sinh viên.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.vd.inkMuted,
+                          ),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            style: TextStyle(
+                              color: context.vd.danger,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           height: 50,

@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Viễn Đông Infinite plain answers (seeded to Firestore, never committed)
+firebase/infinite/secrets.json

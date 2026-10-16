@@ -542,7 +542,7 @@ void main() {
     await tester.pump();
     // An (quẹt) có mặt, Cường giữ dấu VẮNG máy chủ đã lưu, Bích về chưa điểm danh.
     expect(
-      find.textContaining('Có 1 • Trễ 0 • Phép 0 • Vắng 1 • Chưa điểm danh 1'),
+      find.textContaining('Có 1 • Vắng 1 • Khác 0 • Chưa điểm danh 1'),
       findsOneWidget,
     );
     expect(find.text('Tất cả có mặt'), findsOneWidget);

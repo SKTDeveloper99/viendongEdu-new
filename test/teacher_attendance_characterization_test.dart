@@ -142,7 +142,7 @@ void main() {
       expect(find.textContaining('CHƯA GỬI • kết nối lại'), findsOneWidget);
       expect(
         find.textContaining(
-          'Có 1 • Trễ 0 • Phép 0 • Vắng 1 • Chưa điểm danh 0',
+          'Có 1 • Vắng 1 • Khác 0 • Chưa điểm danh 0',
         ),
         findsOneWidget,
       );

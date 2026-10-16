@@ -6,7 +6,7 @@ import '../attendance_format.dart';
 import '../../../theme/vd_motion.dart';
 import '../../../theme/vd_tokens.dart';
 
-/// One roster student: name, MSSV, gate scan, and the Có / Vắng / more marks.
+/// One roster student: name, MSSV, gate scan, and the Có / Vắng / Khác marks.
 class StudentRow extends StatelessWidget {
   const StudentRow({
     super.key,
@@ -53,13 +53,20 @@ class StudentRow extends StatelessWidget {
                 color: context.vd.danger,
                 onTap: () => _select('absent'),
               ),
+              const SizedBox(width: 6),
+              // Ba lựa chọn (chủ trường 2026-10-14, A-25): "Khác" gom đi trễ,
+              // có phép, ốm… và bắt buộc lý do khi lưu. Dấu "Đi trễ" cũ vẫn
+              // hiện là Khác.
+              _Pill(
+                label: 'Khác',
+                selected: mark == 'excused' || mark == 'late',
+                color: context.vd.warning,
+                onTap: () => _select('excused'),
+              ),
               PopupMenuButton<String>(
-                tooltip: 'Trạng thái khác',
-                onSelected: (value) =>
-                    _select(value == 'unmarked' ? null : value),
+                tooltip: 'Bỏ điểm danh',
+                onSelected: (_) => _select(null),
                 itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'late', child: Text('Đi trễ')),
-                  PopupMenuItem(value: 'excused', child: Text('Vắng có phép')),
                   PopupMenuItem(
                     value: 'unmarked',
                     child: Text('Chưa điểm danh'),
@@ -83,7 +90,10 @@ class StudentRow extends StatelessWidget {
       const SizedBox(height: 2),
       Row(
         children: [
-          Text(s.mssv, style: TextStyle(fontSize: 11, color: context.vd.inkMuted)),
+          Text(
+            s.mssv,
+            style: TextStyle(fontSize: 11, color: context.vd.inkMuted),
+          ),
           if (s.scanned) ...[
             const SizedBox(width: 8),
             Icon(
@@ -138,7 +148,7 @@ class _Pill extends StatelessWidget {
       child: AnimatedContainer(
         duration: VdMotion.of(context).quick,
         curve: VdMotion.curve,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? color : context.vd.surfaceAlt,
           borderRadius: BorderRadius.circular(20),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/menu_item.dart';
+import '../../../core/lantern_gate.dart';
+import '../../../services/app_session.dart';
 import '../../../models/mock_data.dart';
 
 IconData mapStringToIcon(String? name) => switch (name) {
@@ -15,6 +17,7 @@ IconData mapStringToIcon(String? name) => switch (name) {
   'receipt_long' => Icons.receipt_long,
   'campaign' => Icons.campaign,
   'help' => Icons.question_answer_outlined,
+  'games' => Icons.sports_esports_outlined,
   _ => Icons.help_outline,
 };
 
@@ -25,6 +28,7 @@ class MenuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = MockData.menuItems;
+    final dataOpen = studentDataOpen(AppSession.instance.mssv);
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -33,12 +37,16 @@ class MenuGrid extends StatelessWidget {
       gridDelegate: menuGridDelegate(context),
       itemBuilder: (context, index) {
         final m = items[index];
+        final route = m['route']?.toString() ?? '/home';
         return MenuItemWidget(
           index: index,
           icon: mapStringToIcon(m['icon']?.toString()),
           label: m['label']?.toString() ?? '',
-          onTap: () =>
-              Navigator.pushNamed(context, m['route']?.toString() ?? '/home'),
+          onTap: () => !dataOpen && dataRoutes.contains(route)
+              ? ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text(noDataText)))
+              : Navigator.pushNamed(context, route),
         );
       },
     );

@@ -48,6 +48,13 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
       initial: initial,
       nameOf: nameOf,
     ),
+    askOtherReasons: (people, initial, nameOf) => showReasonsDialog(
+      context,
+      people: people,
+      initial: initial,
+      nameOf: nameOf,
+      intro: otherIntro,
+    ),
     toast: _toast,
   );
 

@@ -47,7 +47,7 @@ class _StudentRepo extends StudentHomeRepository {
   @override
   String? get fullName => 'Học Viên Thử Nghiệm';
   @override
-  String? get mssv => 'TEST260001';
+  String? get mssv => '2600000001';
   @override
   bool get hasEms => true;
   @override
@@ -118,7 +118,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Chào buổi sáng,'), findsOneWidget);
-    expect(find.text('MSSV: TEST260001'), findsOneWidget);
+    expect(find.text('MSSV: 2600000001'), findsOneWidget);
     expect(find.text('Tiếp theo'), findsOneWidget);
     expect(find.text('bắt đầu sau 30 phút'), findsOneWidget);
 

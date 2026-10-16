@@ -82,7 +82,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _logout() async {
     await _vm.logout();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/');
+    // Straight to login, clearing the stack (splash then login was a
+    // double page turn — owner report 2026-10-14).
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 
   Widget _tab() => switch (_currentIndex) {

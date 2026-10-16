@@ -1,6 +1,6 @@
 // Characterization test for the student home screen ("Trang chủ").
 //
-// Fixture is fictional (MSSV TEST260001). The mock client answers the four
+// Fixture is fictional (MSSV 2600000001). The mock client answers the four
 // endpoints the screen reads:
 //   GET /student/me/schedule           → today's classes (day_code = today)
 //   GET /student/me                    → class code for the header
@@ -82,7 +82,7 @@ void main() {
     AppSession.instance
       ..emsToken = 'test-token'
       ..role = CrmRole.student
-      ..mssv = 'TEST260001'
+      ..mssv = '2600000001'
       ..fullName = 'Học Viên Thử Nghiệm'
       ..emsDenied = false;
     hits = {};
@@ -116,7 +116,7 @@ void main() {
       if (p.endsWith('/student/me')) {
         return http.Response(
           jsonEncode({
-            'student': {'mssv': 'TEST260001', 'class_code': '06CDTHUNGHIEM'},
+            'student': {'mssv': '2600000001', 'class_code': '06CDTHUNGHIEM'},
           }),
           200,
           headers: _json,
@@ -187,7 +187,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Học Viên Thử Nghiệm'), findsOneWidget);
-    expect(find.text('MSSV: TEST260001'), findsOneWidget);
+    expect(find.text('MSSV: 2600000001'), findsOneWidget);
     expect(find.text('06CDTHUNGHIEM'), findsOneWidget);
     expect(find.text('3'), findsOneWidget); // unread 2 + must-read pending 1
     expect(find.text('Thu gọn'), findsOneWidget);

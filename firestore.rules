@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// Viễn Đông Infinite (proof of concept, Spark plan: no Cloud Functions).
+// The rules are the referee: a claim is create-once, stamped with server
+// time, and must carry the right code while the quest window is open.
+// Answers live in infinite_secrets, which no phone can read; rules can.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function secret(questId) {
+      return /databases/$(database)/documents/infinite_secrets/$(questId);
+    }
+
+    // Quests without a secret doc are open (link and check-in quests).
+    function claimOk(questId, d) {
+      let path = secret(questId);
+      return !exists(path) || (
+        (!('code' in get(path).data) ||
+          (d.get('code', '') is string && d.get('code', '') == get(path).data.code)) &&
+        (!('from' in get(path).data) || request.time >= get(path).data.from) &&
+        (!('to' in get(path).data) || request.time < get(path).data.to)
+      );
+    }
+
+    function num(d, k) {
+      return !(k in d) || d[k] is number;
+    }
+
+    match /infinite_players/{uid}/profiles/{profile} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && profile.matches('[a-f0-9]{32}')
+        && request.resource.data.keys().hasOnly(['frame', 'title', 'at'])
+        && request.resource.data.at == request.time
+        && (request.resource.data.get('frame', null) == null || request.resource.data.frame is string)
+        && (request.resource.data.get('title', null) == null || request.resource.data.title is string);
+
+      match /claims/{questId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null && request.auth.uid == uid
+          && profile.matches('[a-f0-9]{32}')
+          && questId.matches('[a-z0-9-]{1,40}')
+          && request.resource.data.keys().hasOnly(['at', 'code', 'lat', 'lng', 'acc'])
+          && request.resource.data.at == request.time
+          && num(request.resource.data, 'lat')
+          && num(request.resource.data, 'lng')
+          && num(request.resource.data, 'acc')
+          && claimOk(questId, request.resource.data);
+        allow update, delete: if false;
+      }
+    }
+
+    // Answers: written by the owner with the seed script, never by phones.
+    match /infinite_secrets/{questId} {
+      allow read, write: if false;
+    }
+
+    // Legacy collections from an older app were fully open (read, write:
+    // true) before Infinite. They stay exactly that open so nothing that
+    // uses them breaks — this is a known exposure for the owner to close.
+    // Any other path is closed.
+    match /{collection}/{document=**} {
+      allow read, write: if collection in [
+        'App Version', 'ApplicationForm', 'Notification',
+        'Report Error', 'User Sync', 'users'
+      ];
+    }
+  }
+}

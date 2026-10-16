@@ -4,6 +4,15 @@ import '../../../services/ems_api_service.dart';
 import '../attendance_format.dart';
 import '../../../theme/vd_tokens.dart';
 
+const punchIntro =
+    'Những học viên này đã quẹt thẻ vào trường hôm nay. '
+    'Thầy/cô vẫn có quyền ghi VẮNG — chỉ cần cho biết vì sao, '
+    'và lý do sẽ được lưu lại.';
+
+const otherIntro =
+    'Thầy/cô chọn "Khác" cho những học viên này. Ghi rõ lý do '
+    '(đi trễ, có phép, ốm…) — phòng đào tạo sẽ xem trước khi chuyển IMS.';
+
 /// Bắt buộc nêu lý do cho từng học viên đã quẹt cổng mà bị ghi vắng.
 /// Trả về map mssv -> lý do, hoặc null nếu thầy/cô bấm Huỷ.
 Future<Map<String, String>?> showReasonsDialog(
@@ -11,6 +20,7 @@ Future<Map<String, String>?> showReasonsDialog(
   required List<EmsPunchedStudent> people,
   required Map<String, String> initial,
   required String Function(String mssv) nameOf,
+  String intro = punchIntro,
 }) {
   // Hộp thoại TỰ giữ controller và tự dispose trong dispose() của chính nó.
   //
@@ -22,8 +32,12 @@ Future<Map<String, String>?> showReasonsDialog(
   return showDialog<Map<String, String>>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) =>
-        ReasonsDialog(people: people, initial: initial, nameOf: nameOf),
+    builder: (ctx) => ReasonsDialog(
+      people: people,
+      initial: initial,
+      nameOf: nameOf,
+      intro: intro,
+    ),
   );
 }
 
@@ -37,11 +51,13 @@ class ReasonsDialog extends StatefulWidget {
     required this.people,
     required this.initial,
     required this.nameOf,
+    this.intro = punchIntro,
   });
 
   final List<EmsPunchedStudent> people;
   final Map<String, String> initial;
   final String Function(String mssv) nameOf;
+  final String intro;
 
   @override
   State<ReasonsDialog> createState() => _ReasonsDialogState();
@@ -73,12 +89,7 @@ class _ReasonsDialogState extends State<ReasonsDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Những học viên này đã quẹt thẻ vào trường hôm nay. '
-              'Thầy/cô vẫn có quyền ghi VẮNG — chỉ cần cho biết vì sao, '
-              'và lý do sẽ được lưu lại.',
-              style: TextStyle(fontSize: 13),
-            ),
+            Text(widget.intro, style: const TextStyle(fontSize: 13)),
             const SizedBox(height: 12),
             for (final p in widget.people) ...[
               Text(

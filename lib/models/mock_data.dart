@@ -1,5 +1,6 @@
 class MockData {
   static const menuItems = [
+    {'icon': 'games', 'label': 'Infinite', 'route': '/infinite'},
     {'icon': 'calendar_today', 'label': 'Lịch học', 'route': '/schedule'},
     {'icon': 'assignment', 'label': 'Lịch thi', 'route': '/exam'},
     {'icon': 'add_circle', 'label': 'Đăng ký môn', 'route': '/registration'},

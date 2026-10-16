@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/lantern_gate.dart';
+
 import '../student_home_view_model.dart';
 import '../../../components/next_up_card.dart';
 import '../next_up.dart';
@@ -24,6 +26,8 @@ class DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Lantern gate: MSSV below the release prefix sees no schedule data.
+    final dataOpen = studentDataOpen(vm.mssv == '–' ? null : vm.mssv);
     return Column(
       children: [
         HomeHeader(vm: vm),
@@ -37,13 +41,14 @@ class DashboardTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (!vm.scheduleLoading && !vm.scheduleFailed)
+                  if (dataOpen && !vm.scheduleLoading && !vm.scheduleFailed)
                     NextUpCard(state: vm.upNext, emptyText: studentNextUpEmpty),
-                  TodaySchedule(
-                    vm: vm,
-                    scheduleExpanded: scheduleExpanded,
-                    onToggleExpanded: onToggleExpanded,
-                  ),
+                  if (dataOpen)
+                    TodaySchedule(
+                      vm: vm,
+                      scheduleExpanded: scheduleExpanded,
+                      onToggleExpanded: onToggleExpanded,
+                    ),
                   BoardCard(vm: vm),
                   const MenuGrid(),
                 ],
