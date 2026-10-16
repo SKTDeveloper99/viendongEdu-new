@@ -2,71 +2,58 @@ import 'package:flutter/material.dart';
 
 import '../../../theme/vd_tokens.dart';
 import '../quest.dart';
+import 'map_pin.dart';
+import 'quest_actions.dart';
 
-/// One quest: open the link, type the code if any, claim at school.
-class QuestCard extends StatefulWidget {
+/// One quest, drawn for its kind: check in, open a link, type a code,
+/// scan a QR, or answer a quiz. Unknown kinds ask for an app update.
+class QuestCard extends StatelessWidget {
   const QuestCard({
     super.key,
     required this.quest,
+    required this.rewards,
     required this.claimed,
     required this.needsOpen,
     required this.busy,
     required this.onOpen,
     required this.onClaim,
+    this.message,
+    this.margin = const EdgeInsets.fromLTRB(16, 0, 16, 14),
   });
 
+  /// Result of the last claim attempt, shown under the buttons.
+  final String? message;
+
   final Quest quest;
+  final List<Cosmetic> rewards;
   final bool claimed;
   final bool needsOpen;
   final bool busy;
   final VoidCallback onOpen;
   final void Function(String code) onClaim;
-
-  @override
-  State<QuestCard> createState() => _QuestCardState();
-}
-
-class _QuestCardState extends State<QuestCard> {
-  final _code = TextEditingController();
-
-  @override
-  void dispose() {
-    _code.dispose();
-    super.dispose();
-  }
+  final EdgeInsets margin;
 
   @override
   Widget build(BuildContext context) {
-    final q = widget.quest;
-    final rewards = q.rewards.map(cosmeticById).nonNulls;
-    final icon = q.url == null
-        ? Icons.location_on_rounded
-        : q.url!.contains('tiktok')
-        ? Icons.play_circle_fill_rounded
-        : Icons.thumb_up_alt_rounded;
+    final q = quest;
+    final vd = context.vd;
     return Card(
-      color: context.vd.surface,
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      color: vd.surface,
+      margin: margin,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(
-          color: widget.claimed ? context.vd.success : context.vd.hairline,
-        ),
+        side: BorderSide(color: claimed ? vd.success : vd.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  icon,
-                  color: widget.claimed
-                      ? context.vd.success
-                      : context.vd.primary,
-                ),
+                Icon(questIcon(q), color: claimed ? vd.success : vd.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -77,11 +64,16 @@ class _QuestCardState extends State<QuestCard> {
                     ),
                   ),
                 ),
+                if (q.spot != null && q.spot!.label.isNotEmpty)
+                  Text(
+                    q.spot!.label,
+                    style: TextStyle(color: vd.inkFaint, fontSize: 12),
+                  ),
               ],
             ),
             if (q.desc.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text(q.desc, style: TextStyle(color: context.vd.inkMuted)),
+              Text(q.desc, style: TextStyle(color: vd.inkMuted)),
             ],
             const SizedBox(height: 12),
             Wrap(
@@ -95,13 +87,13 @@ class _QuestCardState extends State<QuestCard> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: context.vd.warningSoft,
+                      color: vd.warningSoft,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '✦ ${c.title ?? c.name}',
                       style: TextStyle(
-                        color: context.vd.warning,
+                        color: vd.warning,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -109,68 +101,48 @@ class _QuestCardState extends State<QuestCard> {
                   ),
               ],
             ),
-            if (widget.claimed) ...[
+            if (claimed) ...[
               const SizedBox(height: 14),
               Row(
                 children: [
-                  Icon(Icons.check_circle, size: 20, color: context.vd.success),
+                  Icon(Icons.check_circle, size: 20, color: vd.success),
                   const SizedBox(width: 6),
                   Text(
                     'Đã xong',
                     style: TextStyle(
-                      color: context.vd.success,
+                      color: vd.success,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
+            ] else if (!q.playable) ...[
+              const SizedBox(height: 14),
+              Text(
+                'Cập nhật ứng dụng để chơi nhiệm vụ này.',
+                style: TextStyle(
+                  color: vd.inkMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ] else
+              QuestActions(
+                quest: q,
+                needsOpen: needsOpen,
+                busy: busy,
+                onOpen: onOpen,
+                onClaim: onClaim,
+              ),
+            if (message != null && !claimed) ...[
+              const SizedBox(height: 10),
+              Text(
+                message!,
+                style: TextStyle(color: vd.danger, fontWeight: FontWeight.w600),
+              ),
             ],
-            if (!widget.claimed) ..._actions(context, q),
           ],
         ),
       ),
     );
   }
-
-  List<Widget> _actions(BuildContext context, Quest q) => [
-    if (q.code != null) ...[
-      const SizedBox(height: 10),
-      TextField(
-        controller: _code,
-        textCapitalization: TextCapitalization.characters,
-        decoration: const InputDecoration(
-          labelText: 'Mã bí mật trong bài đăng',
-          isDense: true,
-          border: OutlineInputBorder(),
-        ),
-      ),
-    ],
-    const SizedBox(height: 10),
-    Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      alignment: WrapAlignment.end,
-      children: [
-        if (q.url != null)
-          OutlinedButton.icon(
-            onPressed: widget.onOpen,
-            icon: const Icon(Icons.open_in_new, size: 18),
-            label: const Text('Mở liên kết'),
-          ),
-        FilledButton.icon(
-          onPressed: widget.busy || widget.needsOpen
-              ? null
-              : () => widget.onClaim(_code.text),
-          icon: widget.busy
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.location_on, size: 18),
-          label: const Text('Nhận thưởng'),
-        ),
-      ],
-    ),
-  ];
 }

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/core/lantern_gate.dart';
 import 'package:viendongedu2_flutter/features/infinite/quest.dart';
@@ -11,18 +14,73 @@ void main() {
       'checkin-1',
       'tiktok-1',
       'fanpage-1',
+      'qr-1',
+      'quiz-1',
+      'field-1',
     ]);
+    expect(book.skipped, 0);
     expect(s.radiusM, 150);
     for (final q in book.quests) {
+      expect(q.spot, isNotNull, reason: '${q.id} has a map pin');
       for (final r in q.rewards) {
-        expect(cosmeticById(r), isNotNull, reason: '$r in ${q.id}');
+        expect(book.cosmeticById(r), isNotNull, reason: '$r in ${q.id}');
       }
     }
   });
 
-  test('bad Remote Config JSON is rejected, not half-used', () {
+  test('the built-in book equals firebase/infinite/book.json', () {
+    final file = jsonDecode(
+      File('firebase/infinite/book.json').readAsStringSync(),
+    );
+    expect(jsonDecode(defaultQuestsJson), file);
+  });
+
+  test('an unusable document is rejected so the last good copy stays', () {
     expect(parseQuestBook('{"school": {}}'), isNull);
     expect(parseQuestBook('not json'), isNull);
+    expect(parseQuestBook('[1, 2]'), isNull);
+  });
+
+  test('one bad quest is skipped, the rest still play', () {
+    final b = parseQuestBook(
+      '{"school": {"lat": 10.85, "lng": 106.63}, "quests": ['
+      '{"id": "ok-1", "title": "Ok", "rewards": ["frame_blue", "nope"]},'
+      '{"id": "Bad Id", "title": "x"},'
+      '{"id": "no-title"},'
+      '{"id": "ok-1", "title": "duplicate"},'
+      '{"id": "link-1", "kind": "link", "title": "no url"},'
+      '{"id": "qr-9", "kind": "qr", "title": "no hash"},'
+      '{"id": "quiz-9", "kind": "quiz", "title": "one choice",'
+      ' "code_sha256": "ab", "choices": ["a"]},'
+      '{"id": "dance-1", "kind": "dance", "title": "Future kind"},'
+      '"garbage"],'
+      ' "cosmetics": [{"id": "frame_new", "name": "Mới", "frame": "accent"},'
+      ' {"id": "broken"}]}',
+    )!;
+    expect(b.quests.map((q) => q.id), ['ok-1', 'dance-1']);
+    expect(b.quests.last.playable, isFalse);
+    expect(b.skipped, 8);
+    expect(b.cosmeticById('frame_new')?.frameToken, 'accent');
+    expect(b.cosmeticById('frame_blue'), isNotNull, reason: 'built-ins kept');
+  });
+
+  test('kill switch and notice come from the book', () {
+    final b = parseQuestBook(
+      '{"enabled": false, "notice": "Bảo trì",'
+      ' "school": {"lat": 1, "lng": 2}}',
+    )!;
+    expect(b.enabled, isFalse);
+    expect(b.notice, 'Bảo trì');
+    expect(b.quests, isEmpty);
+  });
+
+  test('answers are hashed with the quest id; plain text is never shipped', () {
+    final quiz = book.quests.firstWhere((q) => q.id == 'quiz-1');
+    expect(quiz.codeMatches('Khung và danh hiệu'), isTrue);
+    expect(quiz.codeMatches('  khung VÀ danh   hiệu '), isTrue);
+    expect(quiz.codeMatches('Giảm học phí'), isFalse);
+    expect(defaultQuestsJson.contains('VD-QR'), isFalse);
+    expect(codeSha256('a', 'X'), isNot(codeSha256('b', 'X')));
   });
 
   test('at the gate counts; 1 km away does not', () {
@@ -37,12 +95,11 @@ void main() {
   });
 
   test('code check ignores case and spaces; no code = any input', () {
-    const q = Quest(
+    final q = Quest(
       id: 'x',
+      kind: QuestKind.code,
       title: 't',
-      desc: '',
-      rewards: [],
-      code: 'Vien Dong',
+      codeHash: codeSha256('x', 'VIENDONG'),
     );
     expect(q.codeMatches(' viendong '), isTrue);
     expect(q.codeMatches('vien'), isFalse);

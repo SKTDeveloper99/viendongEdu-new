@@ -13,6 +13,20 @@
       },
       "description": "Students with MSSV prefix below this see 'Không có dữ liệu' on data screens. 0 = open to all.",
       "valueType": "NUMBER"
+    },
+    "infinite_book_v2": {
+      "defaultValue": {
+        "value": "{\"v\":2,\"enabled\":true,\"school\":{\"lat\":10.851835539538312,\"lng\":106.62820562524071,\"radius_m\":150},\"map\":{\"aspect\":1.7908,\"focus_x\":0.45},\"quests\":[{\"id\":\"checkin-1\",\"kind\":\"checkin\",\"title\":\"Có mặt ở trường\",\"desc\":\"Đến cổng chính và bấm Nhận thưởng khi đang ở trong khuôn viên.\",\"spot\":{\"x\":0.426,\"y\":0.6,\"label\":\"Cổng chính\"},\"rewards\":[\"frame_blue\",\"title_explorer\"]},{\"id\":\"tiktok-1\",\"kind\":\"link\",\"title\":\"Ghé TikTok của trường\",\"desc\":\"Mở TikTok của trường, xem một video, rồi nhận thưởng khi ở trường.\",\"url\":\"https://www.tiktok.com/@caodangviendong\",\"spot\":{\"x\":0.43,\"y\":0.21,\"label\":\"Bảng tên trường\"},\"rewards\":[\"frame_night\",\"title_tiktok\"]},{\"id\":\"fanpage-1\",\"kind\":\"link\",\"title\":\"Ghé Fanpage của trường\",\"desc\":\"Mở Fanpage của trường, đọc bài mới nhất, rồi nhận thưởng khi ở trường.\",\"url\":\"https://www.facebook.com/Tuyensinhcaodangviendong/\",\"spot\":{\"x\":0.79,\"y\":0.72,\"label\":\"Đường vào trường\"},\"rewards\":[\"frame_gold\",\"title_fanpage\"]},{\"id\":\"qr-1\",\"kind\":\"qr\",\"title\":\"Săn mã ở băng rôn\",\"desc\":\"Tìm mã QR Viễn Đông Infinite gần băng rôn tuyển sinh và quét nó.\",\"hint\":\"Không quét được? Nhập dòng chữ in dưới mã QR.\",\"code_sha256\":\"c3fcda789e2527a5bd6639429e6e19d2059a4e4eb5abf51c9ceb52970ee48087\",\"spot\":{\"x\":0.614,\"y\":0.43,\"label\":\"Băng rôn\"},\"rewards\":[\"frame_red\",\"title_hunter\"]},{\"id\":\"quiz-1\",\"kind\":\"quiz\",\"title\":\"Câu đố vườn cây\",\"desc\":\"Trả lời đúng một câu hỏi nhỏ về Viễn Đông Infinite.\",\"question\":\"Hoàn thành nhiệm vụ Infinite, bạn nhận được gì?\",\"choices\":[\"Điểm cộng môn học\",\"Khung và danh hiệu\",\"Giảm học phí\"],\"code_sha256\":\"932ece8be829495902ee21ecca3d4e102407b5e8f6fa69c994014046ea315573\",\"at_school\":false,\"spot\":{\"x\":0.18,\"y\":0.62,\"label\":\"Vườn cây\"},\"rewards\":[\"frame_teal\",\"title_scholar\"]},{\"id\":\"field-1\",\"kind\":\"code\",\"title\":\"Mật mã sân bóng\",\"desc\":\"Mật mã được đọc ở sân bóng trong các buổi sinh hoạt và sự kiện thể thao.\",\"hint\":\"Mật mã gồm chữ in hoa, không dấu.\",\"code_sha256\":\"198172f2e4d665ed91037182b6d0b963d754cff7f4fc03ca5a4be6b5e7e1c606\",\"spot\":{\"x\":0.38,\"y\":0.75,\"label\":\"Sân bóng\"},\"rewards\":[\"frame_green\",\"title_striker\"]}]}"
+      },
+      "description": "Viễn Đông Infinite v2 book (builds after 6.0.6+6). Edit firebase/infinite/book.json, then run infinite_book.mjs template. Old builds read infinite_quests.",
+      "valueType": "JSON"
+    },
+    "base_url": {
+      "defaultValue": {
+        "value": "http://ims-api.viendong.edu.vn/api/v1"
+      },
+      "description": "IMS API base (mirrors live; was missing from the template).",
+      "valueType": "STRING"
     }
   }
 }

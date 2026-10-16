@@ -11,7 +11,11 @@ import 'package:viendongedu2_flutter/theme/vd_theme.dart';
 
 class _PreviewRepository extends InfiniteRepository {
   @override
-  QuestBook loadBook() => parseQuestBook(defaultQuestsJson)!;
+  Future<QuestBook> loadBook() async => parseQuestBook(defaultQuestsJson)!;
+  @override
+  Future<Set<String>> cloudClaimed() async => {};
+  @override
+  Future<void> cloudEquip(String? frame, String? title) async {}
   @override
   Future<Set<String>> claimed() async => {'checkin-1'};
   @override
@@ -109,7 +113,11 @@ void main() {
     await show(true);
     await tester.pumpAndSettle();
     expect(tester.hasRunningAnimations, isFalse);
-    await tester.scrollUntilVisible(find.text('Bộ sưu tập'), 300);
+    await tester.scrollUntilVisible(
+      find.text('Bộ sưu tập'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
@@ -135,7 +143,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Đã hoàn thành 1/3 nhiệm vụ'), findsOneWidget);
+      expect(find.text('Đã hoàn thành 1/6 nhiệm vụ'), findsOneWidget);
       expect(find.text('Đã xong'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await expectLater(

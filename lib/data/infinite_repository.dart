@@ -5,6 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/remote/app_remote_config.dart';
 import '../features/infinite/quest.dart';
 import '../services/app_session.dart';
+import 'infinite_cloud.dart';
+
+export 'infinite_cloud.dart' show CloudVerdict;
 
 /// A GPS fix, or why there is none.
 class Fix {
@@ -16,15 +19,52 @@ class Fix {
   final String? problem;
 }
 
-/// Quest book, GPS and the per-student progress kept on this phone.
-/// Progress is local only: reinstalling or changing phone starts over.
+/// Quest book, GPS and per-student progress.
+///
+/// Progress is written on the phone first (always works) and mirrored to
+/// Firestore through [InfiniteCloud] when Firebase is reachable.
 class InfiniteRepository {
+  InfiniteRepository({InfiniteCloud? cloud}) : _cloud = cloud;
+
+  final InfiniteCloud? _cloud;
+  InfiniteCloud get cloud => _cloud ?? (_sharedCloud ??= InfiniteCloud());
+  static InfiniteCloud? _sharedCloud;
+
   String get _who => AppSession.instance.mssv ?? 'guest';
   String _k(String name) => 'infinite.$_who.$name';
+  static const _lastGoodKey = 'infinite.book_v2.last_good';
 
-  QuestBook loadBook() =>
-      parseQuestBook(AppRemoteConfig.questsJson) ??
-      parseQuestBook(defaultQuestsJson)!;
+  /// Remote Config, else the last book that parsed on this phone, else the
+  /// built-in one. A good remote book becomes the new last-good copy.
+  Future<QuestBook> loadBook() async {
+    final p = await SharedPreferences.getInstance();
+    final remote = AppRemoteConfig.bookJson;
+    if (remote.isNotEmpty) {
+      final book = parseQuestBook(remote);
+      if (book != null) {
+        await p.setString(_lastGoodKey, remote);
+        return book;
+      }
+    }
+    final cached = p.getString(_lastGoodKey);
+    return (cached == null ? null : parseQuestBook(cached)) ??
+        parseQuestBook(defaultQuestsJson)!;
+  }
+
+  Future<Set<String>> cloudClaimed() => cloud.claimed(_who);
+
+  Future<CloudVerdict> cloudClaim(Quest q, String code, Fix? fix) =>
+      cloud.claim(
+        _who,
+        q,
+        code: code,
+        lat: fix?.lat,
+        lng: fix?.lng,
+        accuracyM: fix?.accuracyM,
+      );
+
+  Future<void> cloudEquip(String? frame, String? title) =>
+      cloud.equip(_who, frame, title);
 
   Future<Set<String>> claimed() async =>
       ((await SharedPreferences.getInstance()).getStringList(_k('claimed')) ??
@@ -57,9 +97,14 @@ class InfiniteRepository {
 
   Future<void> markOpened(String questId) => _addTo('opened', [questId]);
 
-  Future<void> markClaimed(Quest q) async {
-    await _addTo('claimed', [q.id]);
-    await _addTo('unlocked', q.rewards);
+  Future<void> markClaimed(Quest q) => markClaimedIds([q.id], q.rewards);
+
+  Future<void> markClaimedIds(
+    Iterable<String> ids,
+    Iterable<String> rewards,
+  ) async {
+    await _addTo('claimed', ids);
+    await _addTo('unlocked', rewards);
   }
 
   Future<void> equip(String slot, String? id) async {

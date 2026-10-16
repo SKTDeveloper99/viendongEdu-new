@@ -131,6 +131,12 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [Locale('vi', 'VN'), Locale('en', 'US')],
       locale: const Locale('vi', 'VN'),
       initialRoute: '/',
+      // Debug only: --dart-define=INFINITE_DEMO=true opens the game alone
+      // (demo on a simulator without a student password).
+      onGenerateInitialRoutes:
+          kDebugMode && const bool.fromEnvironment('INFINITE_DEMO')
+          ? (_) => [MaterialPageRoute(builder: (_) => const InfiniteScreen())]
+          : null,
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
