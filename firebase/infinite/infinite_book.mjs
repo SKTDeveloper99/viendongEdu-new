@@ -6,7 +6,8 @@
 //   node firebase/infinite/infinite_book.mjs hash ID CODE   print code_sha256
 //   node firebase/infinite/infinite_book.mjs template   write book into remoteconfig.template.json
 //   node firebase/infinite/infinite_book.mjs seed       write answers to Firestore infinite_secrets
-//   node firebase/infinite/infinite_book.mjs publish [--place LAT,LNG]
+//   node firebase/infinite/infinite_book.mjs live       where the LIVE config sends students (read-only)
+//   node firebase/infinite/infinite_book.mjs publish [--place LAT,LNG --test]
 //        merge the book into LIVE Remote Config (other keys untouched);
 //        --place moves every at-school quest to a test spot
 //
@@ -148,15 +149,66 @@ async function seed() {
   }
 }
 
+// Metres between two points (haversine).
+function metres(a, b) {
+  const r = (x) => (x * Math.PI) / 180;
+  const h = Math.sin(r(b.lat - a.lat) / 2) ** 2
+    + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+
+// Every point a key sends students to: the school, map and each quest's place.
+function pointsOf(value) {
+  let v; try { v = JSON.parse(value ?? ''); } catch { return null; }
+  const out = [];
+  const walk = (o, path) => {
+    if (!o || typeof o !== 'object') return;
+    if (typeof o.lat === 'number' && typeof o.lng === 'number') out.push({ path, lat: o.lat, lng: o.lng });
+    for (const [k, x] of Object.entries(o)) walk(x, path ? `${path}.${k}` : k);
+  };
+  walk(v, '');
+  return out;
+}
+
+const SCHOOL_KEYS = ['infinite_book_v2', 'infinite_quests'];
+const MAX_FROM_SCHOOL_M = 2000;
+
+// Read-only: where does the LIVE config send students?
+async function live({ quiet = false } = {}) {
+  const school = book().school;
+  const token = await accessToken();
+  const res = await fetch(`https://firebaseremoteconfig.googleapis.com/v1/projects/${PROJECT}/remoteConfig`,
+    { headers: { authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`read live config: ${res.status}`);
+  const cfg = await res.json();
+  let bad = 0;
+  for (const key of SCHOOL_KEYS) {
+    const pts = pointsOf(cfg.parameters?.[key]?.defaultValue?.value);
+    if (!pts) { console.log(`- ${key}: missing or not JSON`); continue; }
+    for (const p of pts) {
+      const d = Math.round(metres(school, p));
+      if (d > MAX_FROM_SCHOOL_M) bad += 1;
+      if (!quiet || d > MAX_FROM_SCHOOL_M) console.log(`${d > MAX_FROM_SCHOOL_M ? '✗' : '✓'} ${key} ${p.path || '(root)'} ${p.lat},${p.lng} — ${d} m from Viễn Đông`);
+    }
+  }
+  console.log(bad ? `✗ ${bad} point(s) are NOT at Viễn Đông (live version ${cfg.version?.versionNumber})`
+    : `✓ every point is at Viễn Đông (live version ${cfg.version?.versionNumber})`);
+  return bad;
+}
+
 async function publish(args) {
   check();
   const b = book();
   const i = args.indexOf('--place');
-  if (i >= 0) {
+  const testPlace = i >= 0;
+  if (testPlace) {
+    // A test spot sends EVERY student's at-school quest elsewhere (10-16: Melbourne
+    // stayed live). Only with an explicit --test, and the verify below will shout.
+    if (!args.includes('--test')) throw new Error('--place moves every at-school quest; add --test if this is really a test publish');
     const [lat, lng] = (args[i + 1] ?? '').split(',').map(Number);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('--place LAT,LNG');
     for (const q of b.quests) if (q.at_school !== false) q.place = { lat, lng, radius_m: 150 };
-    console.log(`test spot ${lat},${lng} on at-school quests`);
+    console.log(`⚠ TEST spot ${lat},${lng} on at-school quests — republish WITHOUT --place before students play`);
   }
   const token = await accessToken();
   const url = `https://firebaseremoteconfig.googleapis.com/v1/projects/${PROJECT}/remoteConfig`;
@@ -170,6 +222,14 @@ async function publish(args) {
     description: 'Viễn Đông Infinite v2 book (builds after 6.0.6+6). Source: firebase/infinite/book.json.',
     valueType: 'JSON',
   };
+  // Builds up to 6.0.6+6 still read infinite_quests. A normal publish restores it
+  // from the template (the school point), so old phones are not left elsewhere.
+  if (!testPlace) {
+    const tpl = readJson(join(root, 'remoteconfig.template.json'));
+    const old = tpl.parameters?.infinite_quests;
+    if (!old) throw new Error('remoteconfig.template.json has no infinite_quests');
+    live.parameters.infinite_quests = old;
+  }
   delete live.version;
   const put = await fetch(url, {
     method: 'PUT',
@@ -179,7 +239,11 @@ async function publish(args) {
   if (!put.ok) throw new Error(`publish: ${put.status} ${await put.text()}`);
   const v = (await put.json()).version?.versionNumber;
   console.log(`✓ published Remote Config version ${v} (kept: ${Object.keys(live.parameters).join(', ')})`);
+  const bad = await live_check();
+  if (bad && !testPlace) process.exitCode = 1;
 }
+
+const live_check = () => live({ quiet: true });
 
 const [cmd, ...args] = process.argv.slice(2);
 try {
@@ -187,9 +251,10 @@ try {
   else if (cmd === 'template') template();
   else if (cmd === 'seed') await seed();
   else if (cmd === 'publish') await publish(args);
+  else if (cmd === 'live') { if (await live()) process.exitCode = 1; }
   else if (cmd === 'hash') console.log(hash(args[0], args.slice(1).join(' ')));
   else {
-    console.log('usage: infinite_book.mjs check | hash ID CODE | template | seed | publish [--place LAT,LNG]');
+    console.log('usage: infinite_book.mjs check | hash ID CODE | template | seed | live | publish [--place LAT,LNG --test]');
     process.exit(2);
   }
 } catch (e) {
