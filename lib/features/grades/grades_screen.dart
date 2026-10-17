@@ -72,7 +72,11 @@ class _GradesScreenState extends State<GradesScreen>
       children: [
         OverviewTab(stats: _vm.stats, grades: _vm.grades),
         DetailTab(grades: _vm.grades),
-        SubjectsTab(chuaDiem: _vm.ungraded, chuaHoc: _vm.remaining),
+        SubjectsTab(
+          chuaDiem: _vm.ungraded,
+          chuaHoc: _vm.remaining,
+          hasCurriculum: _vm.stats?.hasCurriculum ?? true,
+        ),
       ],
     );
   }

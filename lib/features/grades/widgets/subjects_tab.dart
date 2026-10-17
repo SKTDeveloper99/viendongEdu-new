@@ -8,7 +8,13 @@ import '../../../theme/vd_tokens.dart';
 class SubjectsTab extends StatefulWidget {
   final List<GradeItem> chuaDiem;
   final List<RemainingSubjectItem> chuaHoc;
-  const SubjectsTab({super.key, required this.chuaDiem, required this.chuaHoc});
+  final bool hasCurriculum;
+  const SubjectsTab({
+    super.key,
+    required this.chuaDiem,
+    required this.chuaHoc,
+    this.hasCurriculum = true,
+  });
 
   @override
   State<SubjectsTab> createState() => _SubjectsTabState();
@@ -50,7 +56,10 @@ class _SubjectsTabState extends State<SubjectsTab> {
         Expanded(
           child: _selected == 0
               ? UnscoredSubjectsTab(items: widget.chuaDiem)
-              : RemainingSubjectsTab(items: widget.chuaHoc),
+              : RemainingSubjectsTab(
+                  items: widget.chuaHoc,
+                  hasCurriculum: widget.hasCurriculum,
+                ),
         ),
       ],
     );

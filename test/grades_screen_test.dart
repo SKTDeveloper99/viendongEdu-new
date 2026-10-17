@@ -199,7 +199,8 @@ void main() {
     await pump(tester);
 
     expect(find.text('0.00'), findsNWidgets(1));
-    expect(find.text('0 / 0 môn đạt'), findsOneWidget);
+    // No has_curriculum from the server = curriculum unknown, not "0 / 0".
+    expect(find.text('Chưa có chương trình đào tạo'), findsOneWidget);
     expect(find.text('Phân bổ điểm chữ'), findsNothing);
 
     await tester.tap(find.text('Chi tiết'));
@@ -211,8 +212,48 @@ void main() {
     expect(find.text('Không còn môn chưa có điểm'), findsOneWidget);
     await tester.tap(find.text('Chưa học'));
     await tester.pumpAndSettle();
-    expect(find.text('Không còn môn chưa học'), findsOneWidget);
+    expect(find.text('Chưa có chương trình đào tạo cho hệ của bạn'), findsOneWidget);
   });
+
+  testWidgets(
+    'partial-open student (CRM T-33/T-35): raw scores show, curriculum says unknown',
+    (tester) async {
+      EmsApiService.client = _server(
+        summary: {
+          'academic': {
+            'total': 4,
+            'scored': 3,
+            'passed': 2,
+            'failed': 1,
+            'average_score': 6.0,
+            'has_curriculum': false,
+            'required_subjects': 0,
+            'required_passed': 0,
+            'remaining_subjects_count': 0,
+            'academically_clear': null,
+          },
+          'remaining_subjects': [],
+        },
+      );
+      await pump(tester);
+
+      expect(find.text('6.00'), findsOneWidget);
+      expect(find.text('Chưa có chương trình đào tạo'), findsOneWidget);
+      expect(find.text('0 / 0 môn đạt'), findsNothing);
+      expect(find.text('—'), findsOneWidget);
+
+      await tester.tap(find.text('Chi tiết'));
+      await tester.pumpAndSettle();
+      expect(find.text('Môn thử nghiệm A'), findsWidgets);
+
+      await tester.tap(find.text('Môn học'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chưa học').first); // the filter chip
+      await tester.pumpAndSettle();
+      expect(find.text('Không còn môn chưa học'), findsNothing);
+      expect(find.text('Chưa có chương trình đào tạo cho hệ của bạn'), findsOneWidget);
+    },
+  );
 
   testWidgets('server error → retry state, header still visible; retry works', (
     tester,

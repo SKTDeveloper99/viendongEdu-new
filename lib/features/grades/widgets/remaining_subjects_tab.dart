@@ -5,7 +5,11 @@ import '../../../theme/vd_tokens.dart';
 // ── Chưa đạt Tab ─────────────────────────────────────────
 class RemainingSubjectsTab extends StatelessWidget {
   final List<RemainingSubjectItem> items;
-  const RemainingSubjectsTab({super.key, required this.items});
+
+  /// False when the server has no confirmed curriculum for the student: an
+  /// empty list then means "unknown", not "nothing left".
+  final bool hasCurriculum;
+  const RemainingSubjectsTab({super.key, required this.items, this.hasCurriculum = true});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +20,9 @@ class RemainingSubjectsTab extends StatelessWidget {
           children: [
             Icon(Icons.hourglass_empty_rounded, size: 64, color: context.vd.inkFaint),
             SizedBox(height: 12),
-            Text('Không còn môn chưa học',
+            Text(hasCurriculum
+                    ? 'Không còn môn chưa học'
+                    : 'Chưa có chương trình đào tạo cho hệ của bạn',
                 style: TextStyle(color: context.vd.inkMuted)),
           ],
         ),

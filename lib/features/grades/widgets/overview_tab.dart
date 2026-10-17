@@ -28,10 +28,10 @@ class OverviewTab extends StatelessWidget {
     final tcDat = s?.requiredPassed ?? 0;
     final tcTong = s?.requiredSubjects ?? 0;
     final tbTichLuy = s?.averageScore ?? 0;
-    final tbTongKet = s?.averageScore ?? 0;
     final tcChuaDiem = ((s?.total ?? 0) - (s?.scored ?? 0)).clamp(0, 1 << 30);
     final tcKhongDat = s?.failed ?? 0;
     final progress = tcTong > 0 ? (tcDat / tcTong).clamp(0.0, 1.0) : 0.0;
+    final noCurriculum = s != null && !s.hasCurriculum; // progress unknown, not 0/0
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -91,7 +91,7 @@ class OverviewTab extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'Tổng kết: ${tbTongKet.toStringAsFixed(2)}',
+                          'Tổng kết: ${tbTichLuy.toStringAsFixed(2)}',
                           style: TextStyle(
                               color: context.vd.onPrimary,
                               fontSize: 12,
@@ -105,7 +105,7 @@ class OverviewTab extends StatelessWidget {
                               color: context.vd.onPrimary.withValues(alpha: 0.7), size: 14),
                           const SizedBox(width: 5),
                           Text(
-                            '$tcDat / $tcTong môn đạt',
+                            noCurriculum ? 'Chưa có chương trình đào tạo' : '$tcDat / $tcTong môn đạt',
                             style: TextStyle(
                                 color: context.vd.onPrimary,
                                 fontSize: 13,
@@ -139,7 +139,7 @@ class OverviewTab extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '${(p * 100).toInt()}%',
+                              noCurriculum ? '—' : '${(p * 100).toInt()}%',
                               style: TextStyle(
                                 color: context.vd.onPrimary,
                                 fontSize: 22,
