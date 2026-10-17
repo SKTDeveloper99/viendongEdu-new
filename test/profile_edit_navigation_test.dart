@@ -25,11 +25,9 @@ void main() {
   tearDown(() => EmsApiService.client = http.Client());
 
   Widget testApp(Widget home) => MaterialApp(
-        home: home,
-        routes: {
-          '/profile_edit': (context) => const ProfileEditScreen(),
-        },
-      );
+    home: home,
+    routes: {'/profile_edit': (context) => const ProfileEditScreen()},
+  );
 
   testWidgets('học viên: nút sửa hồ sơ mở ProfileEditScreen', (tester) async {
     AppSession.instance
@@ -94,15 +92,19 @@ void main() {
       return http.Response('{}', 404);
     });
 
-    await tester.pumpWidget(testApp(GvProfileInfoScreen(
-      profile: const CrmTeacherProfile(
-        teacherId: '99',
-        teacherCode: 'GV-TEST',
-        name: 'Thử Nghiệm',
+    await tester.pumpWidget(
+      testApp(
+        GvProfileInfoScreen(
+          profile: const CrmTeacherProfile(
+            teacherId: '99',
+            teacherCode: 'GV-TEST',
+            name: 'Thử Nghiệm',
+          ),
+          fallbackName: 'Thử Nghiệm',
+          teacherCode: 'GV-TEST',
+        ),
       ),
-      fallbackName: 'Thử Nghiệm',
-      teacherCode: 'GV-TEST',
-    )));
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Sửa hồ sơ'));

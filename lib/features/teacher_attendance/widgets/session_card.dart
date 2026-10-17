@@ -90,7 +90,10 @@ class SessionCard extends StatelessWidget {
                       child: Text(
                         s.room!,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.vd.inkMuted,
+                        ),
                       ),
                     ),
                   ],

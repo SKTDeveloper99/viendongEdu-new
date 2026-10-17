@@ -92,7 +92,8 @@ void main() {
         'cong_no': null,
         'computable': false,
         'has_money_rows': false,
-        'note': 'Chưa có nghĩa vụ học phí được ghi nhận trong hệ thống tại thời điểm này.',
+        'note':
+            'Chưa có nghĩa vụ học phí được ghi nhận trong hệ thống tại thời điểm này.',
       });
       expect(c.computable, isFalse);
       expect(c.phaiNop, isNull);
@@ -112,7 +113,13 @@ void main() {
           'paid_side_contaminated': false,
         },
         'by_type': [
-          {'type_id': 162, 'type_name': 'Lệ phí', 'bucket': 'le_phi_khac', 'tong': 1000000, 'so_lan': 2},
+          {
+            'type_id': 162,
+            'type_name': 'Lệ phí',
+            'bucket': 'le_phi_khac',
+            'tong': 1000000,
+            'so_lan': 2,
+          },
         ],
         'items': [
           {
@@ -147,11 +154,18 @@ void main() {
         'count': 1,
         'items': [
           {
-            'id': '1', 'ma': 'M1', 'ten': 'HP HK1', 'ky_hieu': 'K1',
+            'id': '1',
+            'ma': 'M1',
+            'ten': 'HP HK1',
+            'ky_hieu': 'K1',
             'ngay_cap': '2026-01-19T00:00:00.000Z',
-            'don_gia': 10200000, 'thanh_tien': 10200000, 'vat': '',
-            'total': 10200000, 'ghi_chu': null,
-            'hocky_id': '76', 'hocky_ten': 'Học kỳ 1, 2025 - 2026',
+            'don_gia': 10200000,
+            'thanh_tien': 10200000,
+            'vat': '',
+            'total': 10200000,
+            'ghi_chu': null,
+            'hocky_id': '76',
+            'hocky_ten': 'Học kỳ 1, 2025 - 2026',
           },
         ],
       });
@@ -199,7 +213,9 @@ void main() {
       );
       expect(
         () => CrmMoneyApi.getTuition(),
-        throwsA(isA<EmsException>().having((e) => e.statusCode, 'statusCode', 404)),
+        throwsA(
+          isA<EmsException>().having((e) => e.statusCode, 'statusCode', 404),
+        ),
       );
     });
   });

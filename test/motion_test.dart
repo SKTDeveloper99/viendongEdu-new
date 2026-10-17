@@ -16,13 +16,17 @@ Widget _host(Widget child, {bool disable = false, bool accessible = false}) {
 void main() {
   testWidgets('VdMotion is zero when animations are disabled', (tester) async {
     late VdMotion m;
-    await tester.pumpWidget(_host(
-      Builder(builder: (c) {
-        m = VdMotion.of(c);
-        return const SizedBox();
-      }),
-      disable: true,
-    ));
+    await tester.pumpWidget(
+      _host(
+        Builder(
+          builder: (c) {
+            m = VdMotion.of(c);
+            return const SizedBox();
+          },
+        ),
+        disable: true,
+      ),
+    );
     expect(m.reduced, isTrue);
     expect(m.standard, Duration.zero);
     expect(m.quick, Duration.zero);
@@ -33,23 +37,34 @@ void main() {
 
   testWidgets('VdMotion is zero with accessible navigation', (tester) async {
     late VdMotion m;
-    await tester.pumpWidget(_host(
-      Builder(builder: (c) {
-        m = VdMotion.of(c);
-        return const SizedBox();
-      }),
-      accessible: true,
-    ));
+    await tester.pumpWidget(
+      _host(
+        Builder(
+          builder: (c) {
+            m = VdMotion.of(c);
+            return const SizedBox();
+          },
+        ),
+        accessible: true,
+      ),
+    );
     expect(m.standard, Duration.zero);
   });
 
-  testWidgets('VdMotion durations stay in 120-600 ms and stagger is capped',
-      (tester) async {
+  testWidgets('VdMotion durations stay in 120-600 ms and stagger is capped', (
+    tester,
+  ) async {
     late VdMotion m;
-    await tester.pumpWidget(_host(Builder(builder: (c) {
-      m = VdMotion.of(c);
-      return const SizedBox();
-    })));
+    await tester.pumpWidget(
+      _host(
+        Builder(
+          builder: (c) {
+            m = VdMotion.of(c);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
     expect(m.reduced, isFalse);
     expect(m.quick, const Duration(milliseconds: 150));
     expect(m.staggerDelay(2), const Duration(milliseconds: 60));
@@ -66,12 +81,12 @@ void main() {
     expect(find.text('xin chào'), findsOneWidget);
   });
 
-  testWidgets('VdFadeIn under reduced motion shows content immediately',
-      (tester) async {
-    await tester.pumpWidget(_host(
-      const VdFadeIn(index: 8, child: Text('ngay')),
-      disable: true,
-    ));
+  testWidgets('VdFadeIn under reduced motion shows content immediately', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(const VdFadeIn(index: 8, child: Text('ngay')), disable: true),
+    );
     final op = tester.widget<Opacity>(find.byType(Opacity));
     expect(op.opacity, 1.0);
   });

@@ -83,8 +83,11 @@ void main() {
     var calls = 0;
     EmsApiService.client = MockClient((request) async {
       calls++;
-      return http.Response('{"error":"lỗi máy chủ"}', 500,
-          headers: {'content-type': 'application/json'});
+      return http.Response(
+        '{"error":"lỗi máy chủ"}',
+        500,
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     await tester.pumpWidget(const MaterialApp(home: GvLopHocScreen()));

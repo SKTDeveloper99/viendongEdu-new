@@ -5,6 +5,7 @@ import '../../data/teacher_attendance_repository.dart';
 import '../../services/ems_api_service.dart';
 import 'attendance_outbox.dart';
 import 'roster_view_model.dart';
+import 'widgets/absence_check_dialog.dart';
 import 'widgets/attendance_message.dart';
 import 'widgets/reasons_dialog.dart';
 import 'widgets/roster_bottom_bar.dart';
@@ -36,7 +37,12 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
     outbox: AttendanceOutbox.instance,
   );
 
+  bool _absencesChecked = false;
   late final RosterPrompts _prompts = RosterPrompts(
+    // Once per opened roster, so a teacher fixing marks is not asked again.
+    confirmAbsences: (absent, other) async => _absencesChecked =
+        _absencesChecked ||
+        await showAbsenceCheckDialog(context, absent: absent, other: other),
     confirmUnmarked: (undecided, chosen) => showUnmarkedConfirmDialog(
       context,
       undecided: undecided,

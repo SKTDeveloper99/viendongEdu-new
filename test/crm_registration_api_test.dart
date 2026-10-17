@@ -68,14 +68,17 @@ void main() {
       expect(page.offerings, isEmpty);
     });
 
-    test('offerings rỗng không làm vỡ app (đúng thực tế 2026-09-24: 0 dòng)', () {
-      final page = CrmRegistrationOfferingsPage.fromJson({
-        'period_id': '125',
-        'semester_code': '261',
-        'offerings': [],
-      });
-      expect(page.offerings, isEmpty);
-    });
+    test(
+      'offerings rỗng không làm vỡ app (đúng thực tế 2026-09-24: 0 dòng)',
+      () {
+        final page = CrmRegistrationOfferingsPage.fromJson({
+          'period_id': '125',
+          'semester_code': '261',
+          'offerings': [],
+        });
+        expect(page.offerings, isEmpty);
+      },
+    );
   });
 
   group('CrmRegistrationResult.fromJson', () {
@@ -107,11 +110,18 @@ void main() {
   group('CrmRegistrationApi network', () {
     test('getOfferings mặc định KHÔNG gửi scope=all', () async {
       EmsApiService.client = MockClient((request) async {
-        expect(request.url.path, endsWith('/student/me/registration/offerings'));
+        expect(
+          request.url.path,
+          endsWith('/student/me/registration/offerings'),
+        );
         expect(request.url.queryParameters['period_id'], '125');
         expect(request.url.queryParameters.containsKey('scope'), isFalse);
         return http.Response(
-          jsonEncode({'period_id': '125', 'curriculum_resolved': true, 'offerings': []}),
+          jsonEncode({
+            'period_id': '125',
+            'curriculum_resolved': true,
+            'offerings': [],
+          }),
           200,
           headers: {'content-type': 'application/json'},
         );
@@ -120,17 +130,23 @@ void main() {
       expect(page.curriculumResolved, isTrue);
     });
 
-    test('getOfferings(allSections: true) gửi scope=all ("Xem tất cả lớp")', () async {
-      EmsApiService.client = MockClient((request) async {
-        expect(request.url.queryParameters['scope'], 'all');
-        return http.Response(
-          jsonEncode({'period_id': '125', 'offerings': []}),
-          200,
-          headers: {'content-type': 'application/json'},
+    test(
+      'getOfferings(allSections: true) gửi scope=all ("Xem tất cả lớp")',
+      () async {
+        EmsApiService.client = MockClient((request) async {
+          expect(request.url.queryParameters['scope'], 'all');
+          return http.Response(
+            jsonEncode({'period_id': '125', 'offerings': []}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        });
+        await CrmRegistrationApi.getOfferings(
+          periodId: '125',
+          allSections: true,
         );
-      });
-      await CrmRegistrationApi.getOfferings(periodId: '125', allSections: true);
-    });
+      },
+    );
 
     test('register gửi offering_id, đọc recorded_in/synced_to_ims', () async {
       EmsApiService.client = MockClient((request) async {
@@ -159,31 +175,40 @@ void main() {
       expect(res.status, 'pending');
     });
 
-    test('register: lỗi period_closed hiện nguyên văn message máy chủ', () async {
-      EmsApiService.client = MockClient(
-        (_) async => http.Response(
-          jsonEncode({
-            'error': 'registration_period_closed',
-            'message': 'Đợt đăng ký đã đóng.',
-          }),
-          403,
-          headers: {'content-type': 'application/json'},
-        ),
-      );
-      expect(
-        () => CrmRegistrationApi.register('169'),
-        throwsA(isA<EmsException>()
-            .having((e) => e.code, 'code', 'registration_period_closed')
-            .having((e) => e.message, 'message', 'Đợt đăng ký đã đóng.')),
-      );
-    });
+    test(
+      'register: lỗi period_closed hiện nguyên văn message máy chủ',
+      () async {
+        EmsApiService.client = MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'error': 'registration_period_closed',
+              'message': 'Đợt đăng ký đã đóng.',
+            }),
+            403,
+            headers: {'content-type': 'application/json'},
+          ),
+        );
+        expect(
+          () => CrmRegistrationApi.register('169'),
+          throwsA(
+            isA<EmsException>()
+                .having((e) => e.code, 'code', 'registration_period_closed')
+                .having((e) => e.message, 'message', 'Đợt đăng ký đã đóng.'),
+          ),
+        );
+      },
+    );
 
     test('cancel DELETE đúng đường dẫn /:id', () async {
       EmsApiService.client = MockClient((request) async {
         expect(request.method, 'DELETE');
         expect(request.url.path, endsWith('/student/me/registration/req-1'));
         return http.Response(
-          jsonEncode({'already_withdrawn': false, 'id': 'req-1', 'status': 'withdrawn'}),
+          jsonEncode({
+            'already_withdrawn': false,
+            'id': 'req-1',
+            'status': 'withdrawn',
+          }),
           200,
           headers: {'content-type': 'application/json'},
         );

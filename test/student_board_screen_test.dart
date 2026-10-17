@@ -31,9 +31,13 @@ void main() {
   }
 
   testWidgets('hiện thông báo, nhãn KHẨN và dấu bắt buộc đọc', (tester) async {
-    EmsApiService.client =
-        MockClient((_) async => http.Response(_realBoardJson, 200,
-            headers: {'content-type': 'application/json; charset=utf-8'}));
+    EmsApiService.client = MockClient(
+      (_) async => http.Response(
+        _realBoardJson,
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      ),
+    );
 
     await pump(tester);
 
@@ -43,32 +47,44 @@ void main() {
     expect(find.text('Bắt buộc đọc'), findsOneWidget);
   });
 
-  testWidgets('mở thông báo → đóng dấu đã đọc và hiện nút xác nhận',
-      (tester) async {
+  testWidgets('mở thông báo → đóng dấu đã đọc và hiện nút xác nhận', (
+    tester,
+  ) async {
     final calls = <String>[];
     EmsApiService.client = MockClient((req) async {
       calls.add('${req.method} ${req.url.path}');
       if (req.method == 'POST') {
-        return http.Response(jsonEncode({'id': 'x', 'read_at': 'now'}), 200,
-            headers: {'content-type': 'application/json'});
+        return http.Response(
+          jsonEncode({'id': 'x', 'read_at': 'now'}),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
       }
-      return http.Response(_realBoardJson, 200,
-          headers: {'content-type': 'application/json; charset=utf-8'});
+      return http.Response(
+        _realBoardJson,
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
     });
 
     await pump(tester);
     await tester.tap(find.text('KHẨN: kiểm thử bảng tin'));
     await tester.pumpAndSettle();
 
-    expect(calls.any((c) => c.endsWith('/read')), isTrue,
-        reason: 'mở thông báo phải đóng dấu đã đọc');
+    expect(
+      calls.any((c) => c.endsWith('/read')),
+      isTrue,
+      reason: 'mở thông báo phải đóng dấu đã đọc',
+    );
     expect(find.text('Tôi đã đọc và hiểu'), findsOneWidget);
   });
 
-  testWidgets('EMS chết → trạng thái thử lại, KHÔNG phải màn hình trắng',
-      (tester) async {
-    EmsApiService.client =
-        MockClient((_) async => http.Response('<html>502</html>', 502));
+  testWidgets('EMS chết → trạng thái thử lại, KHÔNG phải màn hình trắng', (
+    tester,
+  ) async {
+    EmsApiService.client = MockClient(
+      (_) async => http.Response('<html>502</html>', 502),
+    );
 
     await pump(tester);
 
@@ -79,9 +95,13 @@ void main() {
   });
 
   testWidgets('chưa có thông báo nào → trạng thái rỗng', (tester) async {
-    EmsApiService.client = MockClient((_) async => http.Response(
-        '{"items":[]}', 200,
-        headers: {'content-type': 'application/json'}));
+    EmsApiService.client = MockClient(
+      (_) async => http.Response(
+        '{"items":[]}',
+        200,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
 
     await pump(tester);
 

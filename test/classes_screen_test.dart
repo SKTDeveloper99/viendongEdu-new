@@ -19,17 +19,21 @@ import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 
 const _json = {'content-type': 'application/json; charset=utf-8'};
 
-Map<String, dynamic> _section(String sem, String code, String subj,
-        String name, int credits) =>
-    {
-      'semester_code': sem,
-      'section_id': 1,
-      'section_code': code,
-      'subject_code': subj,
-      'subject_name': name,
-      'credits': credits,
-      'teacher_name': 'GV Thử Nghiệm',
-    };
+Map<String, dynamic> _section(
+  String sem,
+  String code,
+  String subj,
+  String name,
+  int credits,
+) => {
+  'semester_code': sem,
+  'section_id': 1,
+  'section_code': code,
+  'subject_code': subj,
+  'subject_name': name,
+  'credits': credits,
+  'teacher_name': 'GV Thử Nghiệm',
+};
 
 final _allSections = [
   _section('252', 'TN252A', 'TN101', 'Môn thử nghiệm A', 3),
@@ -65,10 +69,26 @@ final _gradesBody = {
 
 final _attendanceBody = {
   'marks': [
-    {'session_date': '2026-03-02T00:00:00.000Z', 'status': 'present', 'section_code': 'TN252A'},
-    {'session_date': '2026-03-09T00:00:00.000Z', 'status': 'absent', 'section_code': 'TN252A'},
-    {'session_date': '2026-03-16T00:00:00.000Z', 'status': 'excused', 'section_code': 'TN252A'},
-    {'session_date': '2026-03-02T00:00:00.000Z', 'status': 'present', 'section_code': 'OTHER'},
+    {
+      'session_date': '2026-03-02T00:00:00.000Z',
+      'status': 'present',
+      'section_code': 'TN252A',
+    },
+    {
+      'session_date': '2026-03-09T00:00:00.000Z',
+      'status': 'absent',
+      'section_code': 'TN252A',
+    },
+    {
+      'session_date': '2026-03-16T00:00:00.000Z',
+      'status': 'excused',
+      'section_code': 'TN252A',
+    },
+    {
+      'session_date': '2026-03-02T00:00:00.000Z',
+      'status': 'present',
+      'section_code': 'OTHER',
+    },
   ],
 };
 
@@ -84,17 +104,22 @@ MockClient _server({
     if (path.endsWith('/student/me/sections')) {
       sectionsCalls++;
       if (sectionsStatus != 200) {
-        return http.Response('{"error":"boom"}', sectionsStatus,
-            headers: _json);
+        return http.Response(
+          '{"error":"boom"}',
+          sectionsStatus,
+          headers: _json,
+        );
       }
       final all = sections ?? _allSections;
       final sem = req.url.queryParameters['semester'];
       final rows = sem == null
           ? all
           : all.where((s) => s['semester_code'] == sem).toList();
-      return http.Response(jsonEncode({'mssv': 'TEST260001', 'sections': rows}),
-          200,
-          headers: _json);
+      return http.Response(
+        jsonEncode({'mssv': 'TEST260001', 'sections': rows}),
+        200,
+        headers: _json,
+      );
     }
     if (path.endsWith('/student/me/grades')) {
       return http.Response(jsonEncode(_gradesBody), 200, headers: _json);
@@ -114,8 +139,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('latest semester selected first; cards show class info',
-      (tester) async {
+  testWidgets('latest semester selected first; cards show class info', (
+    tester,
+  ) async {
     EmsApiService.client = _server();
     await pump(tester);
 
@@ -146,47 +172,55 @@ void main() {
     expect(find.text('0 TC'), findsNothing); // credits 0 → no chip
   });
 
-  testWidgets('detail page: info, scores (section + subject fallback), attendance',
-      (tester) async {
-    EmsApiService.client = _server();
-    await pump(tester);
+  testWidgets(
+    'detail page: info, scores (section + subject fallback), attendance',
+    (tester) async {
+      EmsApiService.client = _server();
+      await pump(tester);
 
-    await tester.tap(find.text('Môn thử nghiệm A'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Môn thử nghiệm A'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Học kỳ 2, 2025 - 2026'), findsOneWidget);
-    expect(find.text('Mã lớp'), findsOneWidget);
-    expect(find.text('Mã môn'), findsOneWidget);
-    expect(find.text('TN101'), findsOneWidget);
-    expect(find.text('Điểm số'), findsOneWidget);
-    expect(find.text('Chuyên cần'), findsNothing);
-    expect(find.text('Giữa kỳ'), findsOneWidget);
-    expect(find.text('7.5'), findsOneWidget);
-    expect(find.text('Cuối kỳ'), findsOneWidget);
-    expect(find.text('9'), findsOneWidget);
-    expect(find.text('Tổng kết'), findsOneWidget);
-    expect(find.text('8.5'), findsOneWidget);
-    expect(find.text('Thống kê điểm danh'), findsOneWidget);
-    expect(find.text('33%'), findsOneWidget); // 1 present of 3 (OTHER excluded)
-    expect(find.text('Tổng: 3 buổi'), findsOneWidget);
-    expect(find.text('Chi tiết các buổi học'), findsOneWidget);
-    expect(find.text('Buổi 3'), findsOneWidget);
-    expect(find.text('02/03/2026'), findsOneWidget);
-    expect(find.text('Có mặt'), findsWidgets);
-    expect(find.text('Vắng mặt'), findsWidgets);
-    expect(find.text('Báo nghỉ'), findsOneWidget);
+      expect(find.text('Học kỳ 2, 2025 - 2026'), findsOneWidget);
+      expect(find.text('Mã lớp'), findsOneWidget);
+      expect(find.text('Mã môn'), findsOneWidget);
+      expect(find.text('TN101'), findsOneWidget);
+      expect(find.text('Điểm số'), findsOneWidget);
+      expect(find.text('Chuyên cần'), findsNothing);
+      expect(find.text('Giữa kỳ'), findsOneWidget);
+      expect(find.text('7.5'), findsOneWidget);
+      expect(find.text('Cuối kỳ'), findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
+      expect(find.text('Tổng kết'), findsOneWidget);
+      expect(find.text('8.5'), findsOneWidget);
+      expect(find.text('Thống kê điểm danh'), findsOneWidget);
+      expect(
+        find.text('33%'),
+        findsOneWidget,
+      ); // 1 present of 3 (OTHER excluded)
+      expect(find.text('Tổng: 3 buổi'), findsOneWidget);
+      expect(find.text('Chi tiết các buổi học'), findsOneWidget);
+      expect(find.text('Buổi 3'), findsOneWidget);
+      expect(find.text('02/03/2026'), findsOneWidget);
+      expect(find.text('Có mặt'), findsWidgets);
+      expect(find.text('Vắng mặt'), findsWidgets);
+      expect(find.text('Báo nghỉ'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.arrow_back_ios));
-    await tester.pumpAndSettle();
-    expect(find.text('2 lớp học'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.arrow_back_ios));
+      await tester.pumpAndSettle();
+      expect(find.text('2 lớp học'), findsOneWidget);
 
-    await tester.tap(find.text('Môn thử nghiệm B'));
-    await tester.pumpAndSettle();
-    expect(find.text('Điểm số'), findsOneWidget);
-    expect(find.text('6.0'), findsOneWidget); // subject+semester fallback
-    expect(find.text('Giữa kỳ'), findsNothing);
-    expect(find.text('Thống kê điểm danh'), findsNothing); // no marks for TN252B
-  });
+      await tester.tap(find.text('Môn thử nghiệm B'));
+      await tester.pumpAndSettle();
+      expect(find.text('Điểm số'), findsOneWidget);
+      expect(find.text('6.0'), findsOneWidget); // subject+semester fallback
+      expect(find.text('Giữa kỳ'), findsNothing);
+      expect(
+        find.text('Thống kê điểm danh'),
+        findsNothing,
+      ); // no marks for TN252B
+    },
+  );
 
   testWidgets('no enrolments → empty state', (tester) async {
     EmsApiService.client = _server(sections: []);
@@ -196,8 +230,9 @@ void main() {
     expect(find.byType(DropdownButton<dynamic>), findsNothing);
   });
 
-  testWidgets('server error → retry state; retry loads classes',
-      (tester) async {
+  testWidgets('server error → retry state; retry loads classes', (
+    tester,
+  ) async {
     EmsApiService.client = _server(sectionsStatus: 404);
     await pump(tester);
 

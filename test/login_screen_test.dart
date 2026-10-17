@@ -39,16 +39,13 @@ void main() {
   /// App giả lập tối thiểu: chỉ đủ để biết đã điều hướng tới đâu, không kéo
   /// theo các màn hình thật (vốn còn gọi IMS và cần rất nhiều dữ liệu mock).
   Widget testApp() => const MaterialApp(
-        initialRoute: '/login',
-        routes: {
-          '/login': _r,
-          '/home': _home,
-          '/gv_home': _gvHome,
-        },
-      );
+    initialRoute: '/login',
+    routes: {'/login': _r, '/home': _home, '/gv_home': _gvHome},
+  );
 
-  testWidgets('học viên đăng nhập đúng mật khẩu vào thẳng /home',
-      (tester) async {
+  testWidgets('học viên đăng nhập đúng mật khẩu vào thẳng /home', (
+    tester,
+  ) async {
     EmsApiService.client = MockClient((req) async {
       expect(req.url.path, '/api/auth/student/login');
       final body = jsonDecode(req.body) as Map<String, dynamic>;
@@ -81,8 +78,9 @@ void main() {
     expect(AppSession.instance.mustChangePassword, isFalse);
   });
 
-  testWidgets('giảng viên chuyển vai trò rồi đăng nhập vào /gv_home',
-      (tester) async {
+  testWidgets('giảng viên chuyển vai trò rồi đăng nhập vào /gv_home', (
+    tester,
+  ) async {
     EmsApiService.client = MockClient((req) async {
       expect(req.url.path, '/api/auth/teacher/login');
       final body = jsonDecode(req.body) as Map<String, dynamic>;
@@ -146,13 +144,16 @@ void main() {
     expect(find.byIcon(Icons.arrow_back_ios), findsNothing);
   });
 
-  testWidgets('sai mật khẩu hiện đúng thông báo lỗi từ máy chủ',
-      (tester) async {
-    EmsApiService.client = MockClient((_) async => http.Response(
-          jsonEncode({'error': 'Sai mã số sinh viên hoặc mật khẩu.'}),
-          401,
-          headers: {'content-type': 'application/json'},
-        ));
+  testWidgets('sai mật khẩu hiện đúng thông báo lỗi từ máy chủ', (
+    tester,
+  ) async {
+    EmsApiService.client = MockClient(
+      (_) async => http.Response(
+        jsonEncode({'error': 'Sai mã số sinh viên hoặc mật khẩu.'}),
+        401,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
 
     await tester.pumpWidget(testApp());
     await tester.enterText(find.byType(TextField).at(0), 'TEST2600003');
@@ -166,11 +167,7 @@ void main() {
 }
 
 Widget _r(BuildContext _) => const LoginScreen();
-Widget _home(BuildContext _) => const Scaffold(
-      key: Key('home'),
-      body: Text('home'),
-    );
-Widget _gvHome(BuildContext _) => const Scaffold(
-      key: Key('gv_home'),
-      body: Text('gv_home'),
-    );
+Widget _home(BuildContext _) =>
+    const Scaffold(key: Key('home'), body: Text('home'));
+Widget _gvHome(BuildContext _) =>
+    const Scaffold(key: Key('gv_home'), body: Text('gv_home'));

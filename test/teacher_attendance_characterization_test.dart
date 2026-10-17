@@ -141,9 +141,7 @@ void main() {
       expect(find.textContaining('Tự gửi đã dừng'), findsNothing);
       expect(find.textContaining('CHƯA GỬI • kết nối lại'), findsOneWidget);
       expect(
-        find.textContaining(
-          'Có 1 • Vắng 1 • Khác 0 • Chưa điểm danh 0',
-        ),
+        find.textContaining('Có 1 • Vắng 1 • Khác 0 • Chưa điểm danh 0'),
         findsOneWidget,
       );
       expect(posts, isEmpty, reason: 'no automatic resend');
@@ -255,6 +253,10 @@ void main() {
     await tester.tap(find.text('Vắng').first);
     await tester.pump();
     await tester.tap(find.text('Lưu điểm danh'));
+    await tester.pumpAndSettle();
+    // Owner 2026-10-17: a session with Vắng asks the teacher to check once.
+    expect(find.text('Kính nhờ Thầy/Cô kiểm tra lại'), findsOneWidget);
+    await tester.tap(find.text('Đã kiểm tra, lưu'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('Cần nêu lý do'), findsOneWidget);

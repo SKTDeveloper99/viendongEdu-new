@@ -16,10 +16,11 @@ class _FakeRepo extends ClassesRepository {
     Future<List<CrmStudentSection>> Function()? all,
     Future<SemesterClassesData> Function(String)? semester,
     Future<List<EmsStudentMark>> Function()? marks,
-  })  : all = all ?? (() async => const []),
-        semester = semester ??
-            ((_) async => const SemesterClassesData(sections: [], grades: [])),
-        marks = marks ?? (() async => const []);
+  }) : all = all ?? (() async => const []),
+       semester =
+           semester ??
+           ((_) async => const SemesterClassesData(sections: [], grades: [])),
+       marks = marks ?? (() async => const []);
 
   @override
   Future<List<CrmStudentSection>> allSections() => all();
@@ -34,26 +35,30 @@ class _FakeRepo extends ClassesRepository {
   Future<List<EmsStudentMark>> attendance() => marks();
 }
 
-CrmStudentSection _s(String sem, String code, String subj) =>
-    CrmStudentSection(
-      semesterCode: sem,
-      sectionCode: code,
-      subjectCode: subj,
-      subjectName: 'Môn $subj',
-      credits: 2,
-      teacherName: 'GV Thử Nghiệm',
-    );
+CrmStudentSection _s(String sem, String code, String subj) => CrmStudentSection(
+  semesterCode: sem,
+  sectionCode: code,
+  subjectCode: subj,
+  subjectName: 'Môn $subj',
+  credits: 2,
+  teacherName: 'GV Thử Nghiệm',
+);
 
-CrmStudentGrade _g(String? section, String subj, String sem, double? total,
-        {double? mid, double? fin}) =>
-    CrmStudentGrade(
-      sectionCode: section,
-      subjectCode: subj,
-      semesterCode: sem,
-      finalScore: total,
-      midtermScore: mid,
-      finalExamScore: fin,
-    );
+CrmStudentGrade _g(
+  String? section,
+  String subj,
+  String sem,
+  double? total, {
+  double? mid,
+  double? fin,
+}) => CrmStudentGrade(
+  sectionCode: section,
+  subjectCode: subj,
+  semesterCode: sem,
+  finalScore: total,
+  midtermScore: mid,
+  finalExamScore: fin,
+);
 
 EmsStudentMark _m(String date, String status, String section) =>
     EmsStudentMark(sessionDate: date, status: status, sectionCode: section);
@@ -105,24 +110,28 @@ void main() {
       vm.dispose();
     });
 
-    test('selectSemester swaps the class list; refreshSelected reloads it',
-        () async {
-      final repo = _FakeRepo(
-        all: () async => [_s('251', 'A1', 'TN1'), _s('252', 'B1', 'TN2')],
-        semester: (sem) async => SemesterClassesData(
-            sections: [_s(sem, sem == '251' ? 'A1' : 'B1', 'TN')], grades: []),
-      );
-      final vm = ClassesViewModel(repo);
-      await vm.fetchSemesters();
+    test(
+      'selectSemester swaps the class list; refreshSelected reloads it',
+      () async {
+        final repo = _FakeRepo(
+          all: () async => [_s('251', 'A1', 'TN1'), _s('252', 'B1', 'TN2')],
+          semester: (sem) async => SemesterClassesData(
+            sections: [_s(sem, sem == '251' ? 'A1' : 'B1', 'TN')],
+            grades: [],
+          ),
+        );
+        final vm = ClassesViewModel(repo);
+        await vm.fetchSemesters();
 
-      await vm.selectSemester(vm.semesters.last);
-      expect(vm.selected!.code, '251');
-      expect(vm.classes.single.lmhma, 'A1');
+        await vm.selectSemester(vm.semesters.last);
+        expect(vm.selected!.code, '251');
+        expect(vm.classes.single.lmhma, 'A1');
 
-      await vm.refreshSelected();
-      expect(repo.semesterCalls, ['252', '251', '251']);
-      vm.dispose();
-    });
+        await vm.refreshSelected();
+        expect(repo.semesterCalls, ['252', '251', '251']);
+        vm.dispose();
+      },
+    );
 
     test('empty: no enrolments → nothing selected, empty list', () async {
       final vm = ClassesViewModel(_FakeRepo());
@@ -135,32 +144,39 @@ void main() {
       vm.dispose();
     });
 
-    test('semester list error: message kept, not unauthorized; retry recovers',
-        () async {
-      var fail = true;
-      final vm = ClassesViewModel(_FakeRepo(all: () async {
-        if (fail) throw EmsException('Máy chủ lỗi', statusCode: 500);
-        return [_s('252', 'B1', 'TN2')];
-      }));
+    test(
+      'semester list error: message kept, not unauthorized; retry recovers',
+      () async {
+        var fail = true;
+        final vm = ClassesViewModel(
+          _FakeRepo(
+            all: () async {
+              if (fail) throw EmsException('Máy chủ lỗi', statusCode: 500);
+              return [_s('252', 'B1', 'TN2')];
+            },
+          ),
+        );
 
-      await vm.fetchSemesters();
-      expect(vm.loading, isFalse);
-      expect(vm.error, 'Máy chủ lỗi');
-      expect(vm.unauthorized, isFalse);
+        await vm.fetchSemesters();
+        expect(vm.loading, isFalse);
+        expect(vm.error, 'Máy chủ lỗi');
+        expect(vm.unauthorized, isFalse);
 
-      fail = false;
-      await vm.fetchSemesters();
-      expect(vm.error, isNull);
-      expect(vm.semesters, hasLength(1));
-      vm.dispose();
-    });
+        fail = false;
+        await vm.fetchSemesters();
+        expect(vm.error, isNull);
+        expect(vm.semesters, hasLength(1));
+        vm.dispose();
+      },
+    );
 
-    test('a failing class load leaves an empty list, no error state',
-        () async {
-      final vm = ClassesViewModel(_FakeRepo(
-        all: () async => [_s('252', 'B1', 'TN2')],
-        semester: (_) async => throw EmsException('boom', statusCode: 500),
-      ));
+    test('a failing class load leaves an empty list, no error state', () async {
+      final vm = ClassesViewModel(
+        _FakeRepo(
+          all: () async => [_s('252', 'B1', 'TN2')],
+          semester: (_) async => throw EmsException('boom', statusCode: 500),
+        ),
+      );
       await vm.fetchSemesters();
       expect(vm.error, isNull);
       expect(vm.loadingClasses, isFalse);
@@ -169,33 +185,41 @@ void main() {
       vm.dispose();
     });
 
-    test('401 raises the unauthorized flag; a later success clears it',
-        () async {
-      final auth = EmsException('Hết phiên', statusCode: 401);
-      var fail = true;
-      final vm = ClassesViewModel(_FakeRepo(all: () async {
-        if (fail) throw auth;
-        return [];
-      }));
+    test(
+      '401 raises the unauthorized flag; a later success clears it',
+      () async {
+        final auth = EmsException('Hết phiên', statusCode: 401);
+        var fail = true;
+        final vm = ClassesViewModel(
+          _FakeRepo(
+            all: () async {
+              if (fail) throw auth;
+              return [];
+            },
+          ),
+        );
 
-      await vm.fetchSemesters();
-      expect(vm.unauthorized, isTrue);
-      expect(vm.authError, same(auth));
-      expect(vm.loading, isFalse);
+        await vm.fetchSemesters();
+        expect(vm.unauthorized, isTrue);
+        expect(vm.authError, same(auth));
+        expect(vm.loading, isFalse);
 
-      fail = false;
-      await vm.fetchSemesters();
-      expect(vm.unauthorized, isFalse);
-      expect(vm.authError, isNull);
-      vm.dispose();
-    });
+        fail = false;
+        await vm.fetchSemesters();
+        expect(vm.unauthorized, isFalse);
+        expect(vm.authError, isNull);
+        vm.dispose();
+      },
+    );
 
     test('401 while loading a semester also raises the flag', () async {
       final auth = EmsException('Hết phiên', statusCode: 401);
-      final vm = ClassesViewModel(_FakeRepo(
-        all: () async => [_s('252', 'B1', 'TN2')],
-        semester: (_) async => throw auth,
-      ));
+      final vm = ClassesViewModel(
+        _FakeRepo(
+          all: () async => [_s('252', 'B1', 'TN2')],
+          semester: (_) async => throw auth,
+        ),
+      );
       await vm.fetchSemesters();
       expect(vm.authError, same(auth));
       vm.dispose();
@@ -210,16 +234,17 @@ void main() {
   });
 
   group('ClassDetailViewModel', () {
-    test('loaded: only this section, oldest first, statuses mapped',
-        () async {
+    test('loaded: only this section, oldest first, statuses mapped', () async {
       final vm = ClassDetailViewModel(
-        _FakeRepo(marks: () async => [
-              _m('2026-03-16T00:00:00.000Z', 'excused', 'B1'),
-              _m('2026-03-02T00:00:00.000Z', 'present', 'B1'),
-              _m('2026-03-09T00:00:00.000Z', 'absent', 'B1'),
-              _m('2026-03-23T00:00:00.000Z', 'late', 'B1'),
-              _m('2026-03-02T00:00:00.000Z', 'present', 'OTHER'),
-            ]),
+        _FakeRepo(
+          marks: () async => [
+            _m('2026-03-16T00:00:00.000Z', 'excused', 'B1'),
+            _m('2026-03-02T00:00:00.000Z', 'present', 'B1'),
+            _m('2026-03-09T00:00:00.000Z', 'absent', 'B1'),
+            _m('2026-03-23T00:00:00.000Z', 'late', 'B1'),
+            _m('2026-03-02T00:00:00.000Z', 'present', 'OTHER'),
+          ],
+        ),
         sectionCode: 'B1',
       );
       expect(vm.loading, isTrue);
@@ -227,8 +252,12 @@ void main() {
       await vm.load();
 
       expect(vm.loading, isFalse);
-      expect(vm.sessions.map((s) => s.ngay),
-          ['2026-03-02', '2026-03-09', '2026-03-16', '2026-03-23']);
+      expect(vm.sessions.map((s) => s.ngay), [
+        '2026-03-02',
+        '2026-03-09',
+        '2026-03-16',
+        '2026-03-23',
+      ]);
       expect(vm.present, 2); // present + late
       expect(vm.absent, 1);
       expect(vm.pending, 1); // excused has no hiendien

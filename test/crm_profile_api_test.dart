@@ -88,7 +88,9 @@ void main() {
         expect(request.method, 'GET');
         expect(request.url.path, endsWith('/student/me'));
         return http.Response(
-          jsonEncode({'student': {'mssv': 'TEST2600001', 'email': 'a@thunghiem.test'}}),
+          jsonEncode({
+            'student': {'mssv': 'TEST2600001', 'email': 'a@thunghiem.test'},
+          }),
           200,
           headers: {'content-type': 'application/json'},
         );
@@ -97,30 +99,35 @@ void main() {
       expect(p.mssv, 'TEST2600001');
     });
 
-    test('updateStudentProfile gửi PATCH thật (không phải GET/POST) tới /student/me/profile', () async {
-      EmsApiService.client = MockClient((request) async {
-        expect(request.method, 'PATCH');
-        expect(request.url.path, endsWith('/student/me/profile'));
-        expect(request.headers['Authorization'], 'Bearer test-token');
-        final body = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(body['email'], 'moi@thunghiem.test');
-        expect(body.containsKey('sdt'), isFalse); // không gửi trường trống
-        return http.Response(
-          jsonEncode({
-            'recorded_in': 'ems',
-            'synced_to_ims': false,
-            'mssv': 'TEST2600001',
-            'email': 'moi@thunghiem.test',
-            'sdt': null,
-            'cmnd': null,
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
+    test(
+      'updateStudentProfile gửi PATCH thật (không phải GET/POST) tới /student/me/profile',
+      () async {
+        EmsApiService.client = MockClient((request) async {
+          expect(request.method, 'PATCH');
+          expect(request.url.path, endsWith('/student/me/profile'));
+          expect(request.headers['Authorization'], 'Bearer test-token');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['email'], 'moi@thunghiem.test');
+          expect(body.containsKey('sdt'), isFalse); // không gửi trường trống
+          return http.Response(
+            jsonEncode({
+              'recorded_in': 'ems',
+              'synced_to_ims': false,
+              'mssv': 'TEST2600001',
+              'email': 'moi@thunghiem.test',
+              'sdt': null,
+              'cmnd': null,
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        });
+        final p = await CrmProfileApi.updateStudentProfile(
+          email: 'moi@thunghiem.test',
         );
-      });
-      final p = await CrmProfileApi.updateStudentProfile(email: 'moi@thunghiem.test');
-      expect(p.email, 'moi@thunghiem.test');
-    });
+        expect(p.email, 'moi@thunghiem.test');
+      },
+    );
 
     test('updateTeacherProfile PATCH tới /teacher/me/profile', () async {
       EmsApiService.client = MockClient((request) async {
@@ -152,9 +159,15 @@ void main() {
       );
       expect(
         () => CrmProfileApi.updateStudentProfile(email: 'sai-dinh-dang'),
-        throwsA(isA<EmsException>()
-            .having((e) => e.statusCode, 'statusCode', 400)
-            .having((e) => e.message, 'message', 'Email không đúng định dạng.')),
+        throwsA(
+          isA<EmsException>()
+              .having((e) => e.statusCode, 'statusCode', 400)
+              .having(
+                (e) => e.message,
+                'message',
+                'Email không đúng định dạng.',
+              ),
+        ),
       );
     });
   });

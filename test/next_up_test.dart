@@ -80,10 +80,7 @@ void main() {
     });
 
     test('59 minutes is "sau N phút", 60 is "lúc"', () {
-      expect(
-        student.nextUp(day, at(12, 1)).countdown,
-        'bắt đầu sau 59 phút',
-      );
+      expect(student.nextUp(day, at(12, 1)).countdown, 'bắt đầu sau 59 phút');
       expect(student.nextUp(day, at(12, 0)).countdown, 'lúc 13:00');
     });
 
@@ -98,10 +95,7 @@ void main() {
   });
 
   group('teacher nextUp', () {
-    final sessions = [
-      t('Sáng', '07:30', '09:30'),
-      t('Tối', '18:30', '20:30'),
-    ];
+    final sessions = [t('Sáng', '07:30', '09:30'), t('Tối', '18:30', '20:30')];
 
     test('reads the toJson keys and carries the class code', () {
       final r = teacher.nextUp(sessions, at(7, 0));

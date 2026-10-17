@@ -68,8 +68,10 @@ void main() {
       if (!f.existsSync()) {
         problems.add('${e.key} no longer exists: remove it from the allowlist');
       } else if (_lines(f) <= _maxLines) {
-        problems.add('${e.key} is now within $_maxLines lines: remove it from '
-            'the allowlist');
+        problems.add(
+          '${e.key} is now within $_maxLines lines: remove it from '
+          'the allowlist',
+        );
       }
     }
     expect(problems, isEmpty, reason: problems.join('\n'));
@@ -91,20 +93,23 @@ void main() {
     expect(problems, isEmpty, reason: problems.join('\n'));
   });
 
-  test('feature view models import only foundation, never material/widgets',
-      () {
-    final banned = RegExp(
-        r'''import\s+['"]package:flutter/(material|widgets)\.dart['"]''');
-    final problems = <String>[];
-    for (final f in _dartFiles('lib/features')) {
-      final path = _rel(f);
-      if (!path.endsWith('_view_model.dart')) continue;
-      if (banned.hasMatch(f.readAsStringSync())) {
-        problems.add('$path imports material.dart or widgets.dart');
+  test(
+    'feature view models import only foundation, never material/widgets',
+    () {
+      final banned = RegExp(
+        r'''import\s+['"]package:flutter/(material|widgets)\.dart['"]''',
+      );
+      final problems = <String>[];
+      for (final f in _dartFiles('lib/features')) {
+        final path = _rel(f);
+        if (!path.endsWith('_view_model.dart')) continue;
+        if (banned.hasMatch(f.readAsStringSync())) {
+          problems.add('$path imports material.dart or widgets.dart');
+        }
       }
-    }
-    expect(problems, isEmpty, reason: problems.join('\n'));
-  });
+      expect(problems, isEmpty, reason: problems.join('\n'));
+    },
+  );
 
   test('feature views never touch the API services directly', () {
     final banned = RegExp(r'\b(EmsApiService|CrmStudentApi|CrmTeacherApi)\b');
@@ -115,8 +120,10 @@ void main() {
           path.endsWith('_screen.dart') || path.contains('/widgets/');
       if (!isView) continue;
       if (banned.hasMatch(f.readAsStringSync())) {
-        problems.add('$path references EmsApiService/CrmStudentApi/'
-            'CrmTeacherApi');
+        problems.add(
+          '$path references EmsApiService/CrmStudentApi/'
+          'CrmTeacherApi',
+        );
       }
     }
     expect(problems, isEmpty, reason: problems.join('\n'));
@@ -124,14 +131,17 @@ void main() {
 
   test('feature code never touches the per-domain EMS API classes', () {
     final banned = RegExp(
-        r'\b(AuthApi|AttendanceApi|StudentCasesApi|BoardApi|'
-        r'TeacherNotificationsApi)\b');
+      r'\b(AuthApi|AttendanceApi|StudentCasesApi|BoardApi|'
+      r'TeacherNotificationsApi)\b',
+    );
     final problems = <String>[];
     for (final f in _dartFiles('lib/features')) {
       final path = _rel(f);
       if (banned.hasMatch(f.readAsStringSync())) {
-        problems.add('$path references a lib/data/api class directly; go '
-            'through a repository in lib/data/');
+        problems.add(
+          '$path references a lib/data/api class directly; go '
+          'through a repository in lib/data/',
+        );
       }
     }
     expect(problems, isEmpty, reason: problems.join('\n'));
@@ -145,17 +155,23 @@ void main() {
       final n = _colorLiteral.allMatches(f.readAsStringSync()).length;
       final allowed = _colorLiteralAllowlist[path] ?? 0;
       if (n > allowed) {
-        problems.add('$path has $n colour literals (allowed $allowed): use '
-            'context.vd.<token>');
+        problems.add(
+          '$path has $n colour literals (allowed $allowed): use '
+          'context.vd.<token>',
+        );
       } else if (n < allowed) {
-        problems.add('$path shrank to $n colour literals: lower its '
-            'allowlist entry from $allowed (delete it at 0)');
+        problems.add(
+          '$path shrank to $n colour literals: lower its '
+          'allowlist entry from $allowed (delete it at 0)',
+        );
       }
     }
     for (final path in _colorLiteralAllowlist.keys) {
       if (!File(path).existsSync()) {
-        problems.add('$path no longer exists: remove it from the colour '
-            'allowlist');
+        problems.add(
+          '$path no longer exists: remove it from the colour '
+          'allowlist',
+        );
       }
     }
     expect(problems, isEmpty, reason: problems.join('\n'));

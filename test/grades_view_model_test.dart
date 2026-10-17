@@ -31,18 +31,17 @@ CrmStudentGrade _g(int id, String sem, String code, double? score) =>
 GradesData _data({
   List<CrmStudentGrade> grades = const [],
   List<CrmRemainingSubject> remaining = const [],
-}) =>
-    GradesData(
-      grades: CrmStudentGradesView(
-        mssv: 'TEST260001',
-        summary: const CrmStudentGradesSummary(),
-        grades: grades,
-      ),
-      summary: CrmGraduationSummary(
-        academic: const CrmAcademicSummary(requiredSubjects: 5),
-        remainingSubjects: remaining,
-      ),
-    );
+}) => GradesData(
+  grades: CrmStudentGradesView(
+    mssv: 'TEST260001',
+    summary: const CrmStudentGradesSummary(),
+    grades: grades,
+  ),
+  summary: CrmGraduationSummary(
+    academic: const CrmAcademicSummary(requiredSubjects: 5),
+    remainingSubjects: remaining,
+  ),
+);
 
 void main() {
   test('starts in loading state', () {
@@ -55,7 +54,9 @@ void main() {
 
   test('loaded: scored sorted best first, unscored split, retakes numbered, '
       'remaining statuses mapped', () async {
-    final vm = GradesViewModel(_FakeRepo(() async => _data(
+    final vm = GradesViewModel(
+      _FakeRepo(
+        () async => _data(
           grades: [
             _g(1, '251', 'TN1', 9.0),
             _g(2, '251', 'TN2', 3.0),
@@ -64,12 +65,20 @@ void main() {
           ],
           remaining: const [
             CrmRemainingSubject(
-                subjectCode: 'R1', credits: 2, completionStatus: 'pending'),
+              subjectCode: 'R1',
+              credits: 2,
+              completionStatus: 'pending',
+            ),
             CrmRemainingSubject(
-                subjectCode: 'R2', credits: 3, completionStatus: 'failed'),
+              subjectCode: 'R2',
+              credits: 3,
+              completionStatus: 'failed',
+            ),
             CrmRemainingSubject(subjectCode: 'R3', credits: 1),
           ],
-        )));
+        ),
+      ),
+    );
     var notified = 0;
     vm.addListener(() => notified++);
 
@@ -123,10 +132,12 @@ void main() {
       'a later success clears it', () async {
     final auth = EmsException('Hết phiên', statusCode: 401);
     var fail = true;
-    final vm = GradesViewModel(_FakeRepo(() async {
-      if (fail) throw auth;
-      return _data();
-    }));
+    final vm = GradesViewModel(
+      _FakeRepo(() async {
+        if (fail) throw auth;
+        return _data();
+      }),
+    );
 
     await vm.refresh();
     expect(vm.unauthorized, isTrue);

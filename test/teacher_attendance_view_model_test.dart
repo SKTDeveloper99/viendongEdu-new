@@ -110,8 +110,10 @@ EmsPunchConflict _conflict() => EmsPunchConflict(
 );
 
 class _Ui {
-  _Ui({this.confirm = true, this.reasons});
+  _Ui({this.confirm = true, this.reasons, this.checked = true});
   final bool confirm;
+  final bool checked;
+  int absenceChecks = 0;
   final Map<String, String>? reasons;
   final toasts = <String>[];
   int confirms = 0;
@@ -126,6 +128,10 @@ class _Ui {
       return reasons;
     },
     toast: (m, {good = false}) => toasts.add(m),
+    confirmAbsences: (absent, other) async {
+      absenceChecks++;
+      return checked;
+    },
   );
 }
 
@@ -296,6 +302,45 @@ void main() {
       await vm.save(ui.prompts);
       expect(ui.confirms, 1);
       expect(repo.log, isEmpty);
+    });
+
+    test('Vắng check: "Xem lại" sends nothing; checked → sends', () async {
+      final repo = _FakeRepo(
+        rosters: [
+          [_s(_a)],
+          [_s(_a, 'absent')],
+        ],
+        posts: [const EmsSaveResult(saved: 1), const EmsSaveResult(saved: 1)],
+      );
+      final vm = RosterViewModel(repo, _session);
+      await vm.load();
+      vm.select(_a, 'absent');
+      await Future<void>.delayed(Duration.zero);
+      repo.log.clear();
+      final back = _Ui(checked: false);
+      await vm.save(back.prompts);
+      expect(back.absenceChecks, 1);
+      expect(repo.log, isEmpty);
+      final ui = _Ui();
+      await vm.save(ui.prompts);
+      expect(ui.absenceChecks, 1);
+      expect(repo.log, contains('saveMarks'));
+    });
+
+    test('Vắng check never asks when everyone is present', () async {
+      final repo = _FakeRepo(
+        rosters: [
+          [_s(_a)],
+          [_s(_a, 'present')],
+        ],
+        posts: [const EmsSaveResult(saved: 1)],
+      );
+      final vm = RosterViewModel(repo, _session);
+      await vm.load();
+      vm.select(_a, 'present');
+      final ui = _Ui();
+      await vm.save(ui.prompts);
+      expect(ui.absenceChecks, 0);
     });
 
     test('draft queued before send; cleared only after read-back', () async {

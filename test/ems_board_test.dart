@@ -62,7 +62,10 @@ void main() {
     });
 
     test('thông báo đính chính được nhận ra', () {
-      final item = AnnouncementItem.fromJson({'id': 'x', 'is_correction': true});
+      final item = AnnouncementItem.fromJson({
+        'id': 'x',
+        'is_correction': true,
+      });
       expect(item.isCorrection, isTrue);
     });
   });
@@ -72,8 +75,12 @@ void main() {
       final item = AnnouncementItem.fromJson({
         'id': 'x',
         'images': [
-          {'id': 'img-1', 'url': '/api/v1/student/board/images/img-1',
-           'width': 1920, 'height': 1280},
+          {
+            'id': 'img-1',
+            'url': '/api/v1/student/board/images/img-1',
+            'width': 1920,
+            'height': 1280,
+          },
         ],
       });
       expect(item.images, hasLength(1));
@@ -82,14 +89,22 @@ void main() {
 
     test('ghép URL tuyệt đối KHÔNG lặp lại /api', () {
       const img = AnnouncementImage(
-          id: 'img-1', url: '/api/v1/student/board/images/img-1');
-      expect(img.absoluteUrl, '${EmsApiService.baseUrl}/v1/student/board/images/img-1');
+        id: 'img-1',
+        url: '/api/v1/student/board/images/img-1',
+      );
+      expect(
+        img.absoluteUrl,
+        '${EmsApiService.baseUrl}/v1/student/board/images/img-1',
+      );
       expect(img.absoluteUrl.contains('/api/api'), isFalse);
     });
 
     test('thông báo không ảnh trả về danh sách rỗng, không null', () {
       expect(AnnouncementItem.fromJson({'id': 'x'}).images, isEmpty);
-      expect(AnnouncementItem.fromJson({'id': 'x', 'images': 'hỏng'}).images, isEmpty);
+      expect(
+        AnnouncementItem.fromJson({'id': 'x', 'images': 'hỏng'}).images,
+        isEmpty,
+      );
     });
 
     test('thiếu kích thước thì không có tỉ lệ (widget dùng mặc định)', () {
@@ -101,20 +116,39 @@ void main() {
   group('EmsException', () {
     test('401 được thử lại; chỉ 403/404 khoá phiên EMS hiện tại', () {
       expect(EmsException('x', statusCode: 401).isDeliberateDenial, isFalse);
-      expect(EmsException('x', statusCode: 403, code: 'account_deactivated')
-          .isDeliberateDenial, isTrue);
-      expect(EmsException('x', statusCode: 404, code: 'not_provisioned')
-          .isDeliberateDenial, isTrue);
+      expect(
+        EmsException(
+          'x',
+          statusCode: 403,
+          code: 'account_deactivated',
+        ).isDeliberateDenial,
+        isTrue,
+      );
+      expect(
+        EmsException(
+          'x',
+          statusCode: 404,
+          code: 'not_provisioned',
+        ).isDeliberateDenial,
+        isTrue,
+      );
     });
 
     test('lỗi mạng (không có statusCode) thì ĐƯỢC phép thử lại', () {
-      expect(EmsException('Không tải được bảng tin. Vui lòng thử lại.')
-          .isDeliberateDenial, isFalse);
+      expect(
+        EmsException(
+          'Không tải được bảng tin. Vui lòng thử lại.',
+        ).isDeliberateDenial,
+        isFalse,
+      );
       expect(EmsException('x', statusCode: 502).isDeliberateDenial, isFalse);
     });
 
     test('giữ mã máy tách khỏi câu tiếng Việt', () {
-      final e = EmsException('Tài khoản đã bị khoá.', code: 'account_deactivated');
+      final e = EmsException(
+        'Tài khoản đã bị khoá.',
+        code: 'account_deactivated',
+      );
       expect(e.code, 'account_deactivated');
       expect(e.toString(), 'Tài khoản đã bị khoá.');
     });
@@ -123,7 +157,10 @@ void main() {
   group('Cấu hình', () {
     test('base URL là https production, không IP/port cứng', () {
       expect(EmsApiService.baseUrl, startsWith('https://'));
-      expect(EmsApiService.baseUrl, isNot(matches(RegExp(r'\d+\.\d+\.\d+\.\d+'))));
+      expect(
+        EmsApiService.baseUrl,
+        isNot(matches(RegExp(r'\d+\.\d+\.\d+\.\d+'))),
+      );
       expect(EmsApiService.baseUrl, endsWith('/api'));
     });
   });

@@ -461,6 +461,9 @@ void main() {
     await tester.tap(find.text('Có').last);
     await tester.pump();
     await tester.tap(find.text('Lưu điểm danh'));
+    await tester.pumpAndSettle();
+    // Owner 2026-10-17: Vắng asks the teacher to check once per roster.
+    await tester.tap(find.text('Đã kiểm tra, lưu'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 

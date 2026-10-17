@@ -27,74 +27,92 @@ void main() {
   });
   tearDown(() => EmsApiService.client = http.Client());
 
-  testWidgets('không có đợt đăng ký nào -> hiện trạng thái rỗng, KHÔNG ẩn màn hình', (tester) async {
-    EmsApiService.client = MockClient((request) async {
-      if (request.url.path.endsWith('/registration/periods')) {
-        return http.Response(
-          jsonEncode({'semester_code': '261', 'periods': []}),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      return http.Response('{}', 404);
-    });
+  testWidgets(
+    'không có đợt đăng ký nào -> hiện trạng thái rỗng, KHÔNG ẩn màn hình',
+    (tester) async {
+      EmsApiService.client = MockClient((request) async {
+        if (request.url.path.endsWith('/registration/periods')) {
+          return http.Response(
+            jsonEncode({'semester_code': '261', 'periods': []}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('{}', 404);
+      });
 
-    await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
+      await tester.pumpAndSettle();
 
-    // Owner rule: no hidden screens — the screen itself must still render.
-    expect(find.text('Đăng ký môn học'), findsOneWidget);
-    expect(find.textContaining('Hiện không có đợt đăng ký nào'), findsOneWidget);
-  });
+      // Owner rule: no hidden screens — the screen itself must still render.
+      expect(find.text('Đăng ký môn học'), findsOneWidget);
+      expect(
+        find.textContaining('Hiện không có đợt đăng ký nào'),
+        findsOneWidget,
+      );
+    },
+  );
 
-  testWidgets('đợt mở, không có lớp mở đăng ký -> hiện trạng thái rỗng của danh sách lớp', (tester) async {
-    EmsApiService.client = MockClient((request) async {
-      final path = request.url.path;
-      if (path.endsWith('/registration/periods')) {
-        return http.Response(
-          jsonEncode({
-            'semester_code': '261',
-            'periods': [
-              {
-                'period_id': '125',
-                'period_code': 'HK261',
-                'period_name': 'Học kỳ 1, 2026 -2027',
-                'start_at': '2026-08-10T00:00:00.000Z',
-                'end_at': '2026-08-21T23:59:59.000Z',
-                'is_open': false,
-                'semester_code': '261',
-              },
-            ],
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      if (path.endsWith('/registration/offerings')) {
-        return http.Response(
-          jsonEncode({'period_id': '125', 'curriculum_resolved': true, 'offerings': []}),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      if (path.endsWith('/registration/results')) {
-        return http.Response(
-          jsonEncode({'semester_code': '261', 'results': []}),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      return http.Response('{}', 404);
-    });
+  testWidgets(
+    'đợt mở, không có lớp mở đăng ký -> hiện trạng thái rỗng của danh sách lớp',
+    (tester) async {
+      EmsApiService.client = MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/registration/periods')) {
+          return http.Response(
+            jsonEncode({
+              'semester_code': '261',
+              'periods': [
+                {
+                  'period_id': '125',
+                  'period_code': 'HK261',
+                  'period_name': 'Học kỳ 1, 2026 -2027',
+                  'start_at': '2026-08-10T00:00:00.000Z',
+                  'end_at': '2026-08-21T23:59:59.000Z',
+                  'is_open': false,
+                  'semester_code': '261',
+                },
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        if (path.endsWith('/registration/offerings')) {
+          return http.Response(
+            jsonEncode({
+              'period_id': '125',
+              'curriculum_resolved': true,
+              'offerings': [],
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        if (path.endsWith('/registration/results')) {
+          return http.Response(
+            jsonEncode({'semester_code': '261', 'results': []}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('{}', 404);
+      });
 
-    await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
+      await tester.pumpAndSettle();
 
-    expect(find.textContaining('Đợt đăng ký đã đóng'), findsOneWidget);
-    expect(find.textContaining('Không có môn học mở đăng ký cho đợt này.'), findsOneWidget);
-  });
+      expect(find.textContaining('Đợt đăng ký đã đóng'), findsOneWidget);
+      expect(
+        find.textContaining('Không có môn học mở đăng ký cho đợt này.'),
+        findsOneWidget,
+      );
+    },
+  );
 
-  testWidgets('đăng ký thành công -> báo rõ đã ghi ở EMS, CHƯA gửi IMS', (tester) async {
+  testWidgets('đăng ký thành công -> báo rõ đã ghi ở EMS, CHƯA gửi IMS', (
+    tester,
+  ) async {
     var registered = false;
     EmsApiService.client = MockClient((request) async {
       final path = request.url.path;
@@ -161,7 +179,8 @@ void main() {
           headers: {'content-type': 'application/json'},
         );
       }
-      if (request.method == 'POST' && path.endsWith('/student/me/registration')) {
+      if (request.method == 'POST' &&
+          path.endsWith('/student/me/registration')) {
         registered = true;
         return http.Response(
           jsonEncode({
@@ -190,6 +209,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Thông điệp trung thực: ghi ở EMS, CHƯA lên IMS — không giấu học viên.
-    expect(find.textContaining('Chưa được gửi tới Phòng Đào tạo (IMS)'), findsOneWidget);
+    expect(
+      find.textContaining('Chưa được gửi tới Phòng Đào tạo (IMS)'),
+      findsOneWidget,
+    );
   });
 }
