@@ -104,6 +104,10 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('schedule-day-2026-10-03')));
       await tester.pumpAndSettle();
       expect(requested, ['2026-10-04', '2026-10-03']);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(requested, ['2026-10-04', '2026-10-03', '2026-10-03']);
     },
   );
 

@@ -201,6 +201,21 @@ void main() {
     expect(_upcomingSubject, findsOneWidget);
   });
 
+  testWidgets('returning to the app reloads the teacher overview', (
+    tester,
+  ) async {
+    mock();
+    await pumpHome(tester);
+    final path = hits.keys.singleWhere(
+      (p) => p.endsWith('/teacher/me/overview'),
+    );
+    final before = hits[path]!;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(hits[path], before + 1);
+  });
+
   testWidgets('giảng viên thỉnh giảng: không có huy hiệu Cơ hữu', (
     tester,
   ) async {

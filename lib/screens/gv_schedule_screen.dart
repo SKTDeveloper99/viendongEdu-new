@@ -16,7 +16,8 @@ class GvScheduleScreen extends StatefulWidget {
   State<GvScheduleScreen> createState() => _GvScheduleScreenState();
 }
 
-class _GvScheduleScreenState extends State<GvScheduleScreen> {
+class _GvScheduleScreenState extends State<GvScheduleScreen>
+    with WidgetsBindingObserver {
   late final SchoolCalendar _calendar;
   late DateTime _selectedDate;
   late DateTime _currentMonday;
@@ -28,6 +29,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _calendar = widget.calendar ?? SchoolCalendar();
     _selectedDate = _calendar.today;
     _currentMonday = _findMonday(_selectedDate);
@@ -37,8 +39,19 @@ class _GvScheduleScreenState extends State<GvScheduleScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _chipScroll.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        mounted &&
+        ModalRoute.of(context)?.isCurrent == true &&
+        !_loading) {
+      _fetch(_selectedDate);
+    }
   }
 
   void _scrollToSelected() {

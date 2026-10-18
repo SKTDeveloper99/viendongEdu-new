@@ -23,7 +23,8 @@ class GvHomeScreen extends StatefulWidget {
   State<GvHomeScreen> createState() => _GvHomeScreenState();
 }
 
-class _GvHomeScreenState extends State<GvHomeScreen> {
+class _GvHomeScreenState extends State<GvHomeScreen>
+    with WidgetsBindingObserver {
   late final TeacherHomeViewModel _vm;
   late final bool _ownsViewModel;
   int _currentIndex = 0;
@@ -33,6 +34,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _ownsViewModel = widget.viewModel == null;
     _vm =
         widget.viewModel ?? TeacherHomeViewModel(const TeacherHomeRepository());
@@ -44,6 +46,7 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _vm.removeListener(_onChanged);
     _vm.stopClock();
     if (_ownsViewModel) {
@@ -51,6 +54,17 @@ class _GvHomeScreenState extends State<GvHomeScreen> {
       _vm.dispose();
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        mounted &&
+        ModalRoute.of(context)?.isCurrent == true &&
+        !_vm.shownLoading) {
+      _vm.loadOverview();
+      if (!_vm.viewingToday) _vm.reloadSelectedDay();
+    }
   }
 
   // A 401 clears the session and returns to the login screen.
