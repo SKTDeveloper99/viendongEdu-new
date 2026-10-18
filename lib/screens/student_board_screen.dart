@@ -1,4 +1,5 @@
 import '../components/skeleton.dart';
+import '../components/announcement_body.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'stale_note.dart';
 import 'package:flutter/material.dart';
@@ -153,8 +154,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold, height: 1.35)),
                 const SizedBox(height: 14),
-                SelectableText(item.body,
-                    style: const TextStyle(fontSize: 15, height: 1.65)),
+                AnnouncementBody(body: item.body),
                 if (item.images.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   for (final img in item.images) _BoardImage(image: img, width: 1080),
@@ -440,7 +440,7 @@ class _AnnouncementCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  item.body.replaceAll('\n', ' '),
+                  AnnouncementBody.plainText(item.body).replaceAll('\n', ' '),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
