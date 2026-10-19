@@ -61,12 +61,13 @@
       ]
     },
     {
-      "id": "qr-1",
+      "id": "screen-qr-1",
       "kind": "qr",
-      "title": "Săn mã ở băng rôn",
-      "desc": "Tìm mã QR Viễn Đông Infinite gần băng rôn tuyển sinh và quét nó.",
+      "title": "Săn mã trên màn chiếu",
+      "desc": "Quét mã QR Viễn Đông Infinite đang chiếu trên màn hình buổi ra mắt.",
       "hint": "Không quét được? Nhập dòng chữ in dưới mã QR.",
-      "code_sha256": "c3fcda789e2527a5bd6639429e6e19d2059a4e4eb5abf51c9ceb52970ee48087",
+      "code_sha256": "7c9155745df717c3ff0068256c3f25cbd09951c2279087ccecafdf8c0e26c69a",
+      "at_school": false,
       "spot": {
         "x": 0.614,
         "y": 0.43,
@@ -101,12 +102,13 @@
       ]
     },
     {
-      "id": "field-1",
+      "id": "meeting-1",
       "kind": "code",
-      "title": "Mật mã sân bóng",
-      "desc": "Mật mã được đọc ở sân bóng trong các buổi sinh hoạt và sự kiện thể thao.",
-      "hint": "Mật mã gồm chữ in hoa, không dấu.",
-      "code_sha256": "198172f2e4d665ed91037182b6d0b963d754cff7f4fc03ca5a4be6b5e7e1c606",
+      "title": "Mật mã buổi ra mắt",
+      "desc": "Thầy cô sẽ đọc to mật mã trong buổi ra mắt app. Nhập đúng để nhận thưởng.",
+      "hint": "Không phân biệt chữ hoa, chữ thường.",
+      "code_sha256": "b95d464b09278345a0a6e6d698a6a1aa200f7acef354aa96c063d8a350337aeb",
+      "at_school": false,
       "spot": {
         "x": 0.38,
         "y": 0.75,

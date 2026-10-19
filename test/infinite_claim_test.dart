@@ -69,8 +69,8 @@ void main() {
     final repo = _FakeRepo();
     final vm = InfiniteViewModel(repo);
     await vm.load();
-    expect(await vm.claim(_q(vm, 'field-1'), 'WRONG'), contains('chưa đúng'));
-    expect(await vm.claim(_q(vm, 'field-1'), ''), contains('Nhập mã'));
+    expect(await vm.claim(_q(vm, 'meeting-1'), 'WRONG'), contains('chưa đúng'));
+    expect(await vm.claim(_q(vm, 'meeting-1'), ''), contains('Nhập mã'));
     expect(repo.claimedIds, isEmpty);
   });
 

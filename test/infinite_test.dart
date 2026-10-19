@@ -14,9 +14,9 @@ void main() {
       'checkin-1',
       'tiktok-1',
       'fanpage-1',
-      'qr-1',
+      'screen-qr-1',
       'quiz-1',
-      'field-1',
+      'meeting-1',
     ]);
     expect(book.skipped, 0);
     expect(s.radiusM, 150);
