@@ -1,7 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter build:*)",
       "Bash(flutter analyze:*)",
       "WebFetch(domain:noti-backend-eight.vercel.app)"
     ]
