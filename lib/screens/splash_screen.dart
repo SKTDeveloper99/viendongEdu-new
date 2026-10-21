@@ -7,13 +7,22 @@ import 'change_password_screen.dart';
 import '../theme/vd_tokens.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final Future<bool> Function(BuildContext) checkForUpdate;
+  final NotificationService? notifications;
+
+  const SplashScreen({
+    super.key,
+    this.checkForUpdate = AppUpdateGate.check,
+    this.notifications,
+  });
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  NotificationService get _notifications =>
+      widget.notifications ?? NotificationService.instance;
   @override
   void initState() {
     super.initState();
@@ -25,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // Khôi phục dữ liệu cục bộ song song với yêu cầu mạng để khỏi cộng thêm
     // thời gian chờ vào màn mở đầu trên kết nối yếu.
     final restoreFuture = AppSession.instance.tryRestore();
-    if (!await AppUpdateGate.check(context)) return;
+    if (!await widget.checkForUpdate(context)) return;
     if (!mounted) return;
     final restored = await restoreFuture;
     if (!mounted) return;
@@ -38,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen> {
       // NotificationService._postToken). Một sự cố Firebase/mạng ở đây
       // không được chặn việc vào app.
       try {
-        NotificationService.instance.registerToken(
+        _notifications.registerToken(
           identity.notificationId,
           mssv: identity.loginId,
           hoTen: identity.fullName,
@@ -56,27 +65,30 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       final route = AppSession.instance.isGiangVien ? '/gv_home' : '/home';
-      Navigator.pushReplacementNamed(context, route);
+      // The splash route is disposed by this replacement. Keep the navigator
+      // for a notification that arrives after the transition has completed.
+      final navigator = Navigator.of(context);
+      navigator.pushReplacementNamed(route);
 
       // Nếu app được mở bằng cách bấm vào notification (app đã tắt hẳn),
       // vào thẳng màn hình thông báo — sau khi đã vào home để nút back còn hoạt động
       // Chờ tối đa 2s để biết app có được mở từ notification hay không.
       // Có timeout để dù FCM lỗi thì app vẫn vào home bình thường.
-      await NotificationService.instance.initialMessageReady.timeout(
+      await _notifications.initialMessageReady.timeout(
         const Duration(seconds: 2),
         onTimeout: () {},
       );
-      if (!mounted) return;
+      if (!navigator.mounted || !AppSession.instance.isLoggedIn) return;
 
-      final notificationRoute = NotificationService.instance
+      final notificationRoute = _notifications
           .consumePendingInitialMessageRoute();
       if (notificationRoute != null) {
-        Navigator.pushNamed(context, notificationRoute);
+        navigator.pushNamed(notificationRoute);
       }
     } else {
       // Chưa đăng nhập thì bỏ qua notification đang chờ, tránh mở
       // màn hình thông báo khi không có session
-      NotificationService.instance.consumePendingInitialMessageRoute();
+      _notifications.consumePendingInitialMessageRoute();
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
