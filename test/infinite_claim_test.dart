@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/data/infinite_repository.dart';
 import 'package:viendongedu2_flutter/features/infinite/infinite_view_model.dart';
+import 'package:viendongedu2_flutter/features/infinite/pet.dart';
 import 'package:viendongedu2_flutter/features/infinite/quest.dart';
 
 /// Phone storage in memory, a fixed GPS fix and a scripted cloud verdict.
@@ -24,6 +25,8 @@ class _FakeRepo extends InfiniteRepository {
   Future<Set<String>> unlocked() async => {...unlockedIds};
   @override
   Future<Map<String, String?>> equipped() async => {...eq};
+  @override
+  Future<InfinitePet> selectedPet() async => InfinitePet.cat;
   @override
   Future<void> markClaimedIds(
     Iterable<String> ids,

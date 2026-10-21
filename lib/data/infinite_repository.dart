@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/remote/app_remote_config.dart';
+import '../features/infinite/pet.dart';
 import '../features/infinite/quest.dart';
 import '../services/app_session.dart';
 import 'infinite_cloud.dart';
@@ -87,6 +88,18 @@ class InfiniteRepository {
       'frame': p.getString(_k('frame')),
       'title': p.getString(_k('title')),
     };
+  }
+
+  Future<InfinitePet> selectedPet() async {
+    final key = _k('pet');
+    return InfinitePet.fromStored(
+      (await SharedPreferences.getInstance()).getString(key),
+    );
+  }
+
+  Future<void> selectPet(InfinitePet pet) async {
+    final key = _k('pet');
+    await (await SharedPreferences.getInstance()).setString(key, pet.name);
   }
 
   Future<void> _addTo(String name, Iterable<String> ids) async {

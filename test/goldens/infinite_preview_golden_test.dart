@@ -5,11 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/data/infinite_repository.dart';
 import 'package:viendongedu2_flutter/features/infinite/infinite_screen.dart';
+import 'package:viendongedu2_flutter/features/infinite/pet.dart';
 import 'package:viendongedu2_flutter/features/infinite/quest.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
 import 'package:viendongedu2_flutter/theme/vd_theme.dart';
 
 class _PreviewRepository extends InfiniteRepository {
+  @override
+  Future<InfinitePet> selectedPet() async => InfinitePet.cat;
   @override
   Future<QuestBook> loadBook() async => parseQuestBook(defaultQuestsJson)!;
   @override
@@ -142,6 +145,16 @@ void main() {
           home: InfiniteScreen(repository: _PreviewRepository()),
         ),
       );
+      await tester.pumpAndSettle();
+      // Asset decoding runs outside the fake clock. Wait for every visible
+      // image so the first preview cannot silently capture blank artwork.
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(InfiniteScreen));
+        await Future.wait([
+          for (final image in tester.widgetList<Image>(find.byType(Image)))
+            precacheImage(image.image, context),
+        ]);
+      });
       await tester.pumpAndSettle();
       expect(find.text('Đã hoàn thành 1/6 nhiệm vụ'), findsOneWidget);
       expect(find.text('Đã xong'), findsOneWidget);

@@ -44,13 +44,16 @@ class LobbyHero extends StatelessWidget {
           children: [
             Icon(Icons.auto_awesome, size: 16, color: context.vd.primary),
             const SizedBox(width: 8),
-            Text(
-              'SÂN CHƠI SINH VIÊN',
-              style: TextStyle(
-                color: context.vd.primary,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
+            Flexible(
+              child: Text(
+                'SÂN CHƠI SINH VIÊN',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.vd.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
           ],

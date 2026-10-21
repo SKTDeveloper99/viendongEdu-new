@@ -8,6 +8,7 @@ import 'quest.dart';
 import 'widgets/cosmetic_avatar.dart';
 import 'widgets/quest_card.dart';
 import 'widgets/lobby_hero.dart';
+import 'widgets/pet_picker.dart';
 import 'widgets/school_map.dart';
 
 /// Viễn Đông Infinite: quests at school, cosmetics as rewards.
@@ -145,6 +146,7 @@ class _InfiniteScreenState extends State<InfiniteScreen> {
       completed: _vm.playable.where(_vm.isClaimed).length,
       total: _vm.playable.length,
     ),
+    PetPicker(pet: _vm.pet, onSelected: _vm.petReady ? _vm.selectPet : null),
     _heading(context, 'Nhiệm vụ'),
     if (_vm.quests.isEmpty)
       const Padding(

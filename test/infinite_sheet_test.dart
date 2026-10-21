@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/data/infinite_repository.dart';
 import 'package:viendongedu2_flutter/features/infinite/infinite_screen.dart';
+import 'package:viendongedu2_flutter/features/infinite/pet.dart';
 import 'package:viendongedu2_flutter/features/infinite/quest.dart';
 import 'package:viendongedu2_flutter/theme/vd_theme.dart';
 
@@ -17,6 +18,8 @@ class _Repo extends InfiniteRepository {
   Future<Set<String>> unlocked() async => {};
   @override
   Future<Map<String, String?>> equipped() async => {};
+  @override
+  Future<InfinitePet> selectedPet() async => InfinitePet.cat;
   @override
   Future<void> markClaimedIds(Iterable<String> ids, Iterable<String> r) async =>
       claimedIds.addAll(ids);

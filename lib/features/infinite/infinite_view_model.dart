@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/remote/app_remote_config.dart';
 import '../../data/infinite_repository.dart';
+import 'pet.dart';
 import 'quest.dart';
 
 /// State of the Viễn Đông Infinite screen: today's quests, what this student
@@ -24,6 +25,11 @@ class InfiniteViewModel extends ChangeNotifier {
   String? _busyQuest;
   bool _cloudOn = false;
   bool _disposed = false;
+  InfinitePet _pet = InfinitePet.cat;
+  bool _petReady = false;
+
+  InfinitePet get pet => _pet;
+  bool get petReady => _petReady;
 
   QuestBook? get book => _book;
   bool get loaded => _book != null;
@@ -54,8 +60,17 @@ class InfiniteViewModel extends ChangeNotifier {
     final eq = await _repo.equipped();
     _frame = eq['frame'];
     _title = eq['title'];
+    _pet = await _repo.selectedPet();
+    _petReady = true;
     _notify();
     await _mergeCloud();
+  }
+
+  Future<void> selectPet(InfinitePet pet) async {
+    if (!_petReady || _disposed || _pet == pet) return;
+    _pet = pet;
+    _notify();
+    await _repo.selectPet(pet);
   }
 
   Future<void> _reloadBook() async {
