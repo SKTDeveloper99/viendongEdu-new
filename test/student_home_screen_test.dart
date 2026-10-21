@@ -20,7 +20,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:viendongedu2_flutter/components/next_up_card.dart';
+import 'package:viendongedu2_flutter/data/student_home_repository.dart';
 import 'package:viendongedu2_flutter/features/student_home/student_home_screen.dart';
+import 'package:viendongedu2_flutter/features/student_home/student_home_view_model.dart';
 import 'package:viendongedu2_flutter/features/student_home/widgets/class_chip.dart';
 import 'package:viendongedu2_flutter/models/crm_identity.dart';
 import 'package:viendongedu2_flutter/models/crm_student_schedule.dart';
@@ -30,12 +33,15 @@ import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 
 const _json = {'content-type': 'application/json; charset=utf-8'};
 
+// Before the morning class: it appears in both NextUpCard and today's list.
+final _today = DateTime(2026, 10, 22, 7);
+
 Map<String, dynamic> _class(String name, String start, String end) => {
   'subject_code': 'TN101',
   'subject_name': name,
   'semester_code': '262',
   'section_code': '06CDTHUNGHIEM-$start',
-  'day_code': dayCodeForWeekday(DateTime.now().weekday),
+  'day_code': dayCodeForWeekday(_today.weekday),
   'start_time': start,
   'end_time': end,
   'room': 'P.101',
@@ -142,9 +148,15 @@ void main() {
   }
 
   Future<void> pumpHome(WidgetTester tester) async {
+    final vm = StudentHomeViewModel(
+      const StudentHomeRepository(),
+      now: () => _today,
+      tickEvery: null,
+    );
+    addTearDown(vm.dispose);
     await tester.pumpWidget(
       MaterialApp(
-        home: const HomeScreen(),
+        home: HomeScreen(viewModel: vm),
         routes: {'/student_board': (_) => const StudentBoardScreen()},
       ),
     );
@@ -163,6 +175,14 @@ void main() {
     await pumpHome(tester);
 
     expect(find.text('Lịch học hôm nay'), findsOneWidget);
+    expect(find.byType(ClassChip), findsNWidgets(2));
+    expect(
+      find.descendant(
+        of: find.byType(NextUpCard),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.descendant(
         of: find.byType(ClassChip),
@@ -194,6 +214,8 @@ void main() {
     await tester.tap(find.text('Thu gọn'));
     await tester.pump();
     expect(find.text('Mở rộng'), findsOneWidget);
+    expect(find.byType(ClassChip), findsNothing);
+    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget); // NextUpCard
     expect(
       find.textContaining('nhấn để xem chi tiết', findRichText: true),
       findsOneWidget,
@@ -218,7 +240,13 @@ void main() {
     mock(boardFails: true);
     await pumpHome(tester);
 
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.text('Không tải được bảng tin. Chạm để thử lại.'),
       findsOneWidget,
@@ -232,7 +260,13 @@ void main() {
     AppSession.instance.emsDenied = true;
     await pumpHome(tester);
 
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Thông tin mới từ trung tâm'), findsNothing);
   });
 
@@ -261,7 +295,13 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await pumpHome(tester);
 
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.textContaining('Chưa cập nhật được — dữ liệu lúc'),
       findsOneWidget,
