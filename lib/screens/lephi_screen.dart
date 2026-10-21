@@ -177,7 +177,7 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Column(
+                                    Expanded(child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
@@ -204,7 +204,8 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                           ),
                                         ],
                                       ],
-                                    ),
+                                    )),
+                                    const SizedBox(width: 8),
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(

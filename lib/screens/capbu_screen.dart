@@ -240,10 +240,11 @@ class _CapBuCard extends StatelessWidget {
               children: [
                 Icon(Icons.tag, size: 13, color: context.vd.inkFaint),
                 const SizedBox(width: 5),
-                Text('Mã: ${item.ma ?? '–'}',
+                Expanded(child: Text('Mã: ${item.ma ?? '–'}',
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontSize: 12, color: context.vd.inkFaint)),
-                const Spacer(),
+                        fontSize: 12, color: context.vd.inkFaint))),
+                const SizedBox(width: 8),
                 Icon(Icons.calendar_today,
                     size: 12, color: context.vd.inkFaint),
                 const SizedBox(width: 4),

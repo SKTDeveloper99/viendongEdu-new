@@ -133,6 +133,7 @@ class _TuitionScreenState extends State<TuitionScreen> {
                         color: context.vd.primary,
                         onRefresh: _fetch,
                         child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
