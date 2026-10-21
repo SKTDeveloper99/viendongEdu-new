@@ -167,6 +167,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<_Semester>(
                         value: _selected,
+                        isExpanded: true,
                         dropdownColor: context.vd.surface,
                         borderRadius: BorderRadius.circular(14),
                         iconEnabledColor: context.vd.primary,
@@ -365,32 +366,25 @@ class _ExamCardState extends State<_ExamCard> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Row(
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 6,
                             children: [
-                              Icon(Icons.calendar_today,
-                                  size: 13, color: context.vd.primary),
-                              const SizedBox(width: 4),
-                              Text(ngayThi,
-                                  style: TextStyle(
-                                      fontSize: 12, color: context.vd.inkMuted)),
-                              if (gioBatDau.isNotEmpty) ...[
-                                const SizedBox(width: 12),
-                                Icon(Icons.access_time,
-                                    size: 13, color: context.vd.primary),
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.calendar_today, size: 13, color: context.vd.primary),
                                 const SizedBox(width: 4),
-                                Text(gioBatDau,
-                                    style: TextStyle(
-                                        fontSize: 12, color: context.vd.inkMuted)),
-                              ],
-                              if (thoiGian > 0) ...[
-                                const SizedBox(width: 12),
-                                Icon(Icons.timer_outlined,
-                                    size: 13, color: context.vd.primary),
+                                Text(ngayThi, style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+                              ]),
+                              if (gioBatDau.isNotEmpty) Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.access_time, size: 13, color: context.vd.primary),
                                 const SizedBox(width: 4),
-                                Text('$thoiGian phút',
-                                    style: TextStyle(
-                                        fontSize: 12, color: context.vd.inkMuted)),
-                              ],
+                                Text(gioBatDau, style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+                              ]),
+                              if (thoiGian > 0) Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.timer_outlined, size: 13, color: context.vd.primary),
+                                const SizedBox(width: 4),
+                                Text('$thoiGian phút', style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+                              ]),
                             ],
                           ),
                         ],

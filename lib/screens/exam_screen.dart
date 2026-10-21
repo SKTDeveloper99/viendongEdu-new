@@ -194,6 +194,7 @@ class _ExamScreenState extends State<ExamScreen> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedHkma,
+                        isExpanded: true,
                         dropdownColor: context.vd.surface,
                         borderRadius: BorderRadius.circular(14),
                         iconEnabledColor: context.vd.primary,
@@ -206,7 +207,7 @@ class _ExamScreenState extends State<ExamScreen> {
                         ),
                         selectedItemBuilder: (_) => [
                           Center(
-                            child: Text(allLabel,
+                            child: Text(allLabel, overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: context.vd.primary,
                                   fontSize: 13,
@@ -214,7 +215,7 @@ class _ExamScreenState extends State<ExamScreen> {
                                 )),
                           ),
                           ..._semesters.map((s) => Center(
-                                child: Text(s.hkten,
+                                child: Text(s.hkten, overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       color: context.vd.primary,
                                       fontSize: 13,
@@ -281,6 +282,7 @@ class _ExamScreenState extends State<ExamScreen> {
                                 ? _fetchExams()
                                 : _onSemesterChanged(_selectedHkma),
                             child: ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                               itemCount: exams.length,
                               itemBuilder: (context, i) =>
@@ -365,28 +367,25 @@ class _ExamCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   // Ngày + giờ
-                  Row(
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 6,
                     children: [
-                      Icon(Icons.calendar_today,
-                          size: 13, color: context.vd.primary),
-                      const SizedBox(width: 4),
-                      Text(exam.ngayThiFormatted,
-                          style: const TextStyle(
-                              fontSize: 12, color: Color.fromARGB(255, 0, 0, 0))),
-                      const SizedBox(width: 14),
-                      Icon(Icons.access_time,
-                          size: 13, color: context.vd.primary),
-                      const SizedBox(width: 4),
-                      Text(exam.gioBatDau,
-                          style: const TextStyle(
-                              fontSize: 12, color: Color.fromARGB(255, 0, 0, 0))),
-                      const SizedBox(width: 14),
-                      Icon(Icons.timer_outlined,
-                          size: 13, color: context.vd.primary),
-                      const SizedBox(width: 4),
-                      Text('${exam.thoiGian} phút',
-                          style: const TextStyle(
-                              fontSize: 12, color: Color.fromARGB(255, 0, 0, 0))),
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.calendar_today, size: 13, color: context.vd.primary),
+                        const SizedBox(width: 4),
+                        Text(exam.ngayThiFormatted, style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+                      ]),
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.access_time, size: 13, color: context.vd.primary),
+                        const SizedBox(width: 4),
+                        Text(exam.gioBatDau, style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+                      ]),
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.timer_outlined, size: 13, color: context.vd.primary),
+                        const SizedBox(width: 4),
+                        Text('${exam.thoiGian} phút', style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+                      ]),
                     ],
                   ),
                   const SizedBox(height: 4),
