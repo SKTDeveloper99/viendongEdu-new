@@ -54,10 +54,11 @@ class ClassDetailViewModel extends ChangeNotifier {
           );
     } catch (e) {
       if (_disposed) return;
-      if (e is EmsException && e.statusCode == 401)
+      if (e is EmsException && e.statusCode == 401) {
         _authError = e;
-      else
+      } else {
         _error = 'Không thể tải điểm danh';
+      }
     }
     _loading = false;
     notifyListeners();

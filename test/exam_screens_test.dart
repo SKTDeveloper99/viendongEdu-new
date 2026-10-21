@@ -47,8 +47,9 @@ void main() {
         final pending = Completer<http.Response>();
         var calls = 0;
         fakeScreenSession((r) async {
-          if (r.url.path == '/api/teacher/me/semesters')
+          if (r.url.path == '/api/teacher/me/semesters') {
             return jsonResponse(_semesters);
+          }
           expect(r.url.path, path);
           calls++;
           return calls == 1 ? pending.future : jsonResponse({'exams': []});
@@ -79,8 +80,9 @@ void main() {
         (t) async {
           final requested = <String?>[];
           fakeScreenSession((r) async {
-            if (r.url.path == '/api/teacher/me/semesters')
+            if (r.url.path == '/api/teacher/me/semesters') {
               return jsonResponse(_semesters);
+            }
             expect(r.url.path, path);
             requested.add(r.url.queryParameters['semester']);
             return jsonResponse({
