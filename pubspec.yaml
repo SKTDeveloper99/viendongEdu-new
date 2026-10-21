@@ -88,6 +88,7 @@ flutter:
   assets:
     - assets/
     - assets/infinite/
+    - assets/infinite/pets/
   fonts:
     - family: BeVietnamPro
       fonts:
