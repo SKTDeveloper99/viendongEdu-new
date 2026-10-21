@@ -273,7 +273,7 @@ class _CapBuDetailSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-      child: Column(
+      child: SingleChildScrollView(child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -317,7 +317,7 @@ class _CapBuDetailSheet extends StatelessWidget {
             _Row(icon: Icons.notes_outlined, label: 'Ghi chú', value: item.ghiChu!),
           ],
         ],
-      ),
+      )),
     );
   }
 }

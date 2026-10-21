@@ -239,7 +239,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       isScrollControlled: true,
-      builder: (_) => Padding(
+      builder: (_) => SingleChildScrollView(child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -270,7 +270,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             const SizedBox(height: 16),
           ],
         ),
-      ),
+      )),
     );
   }
 }
