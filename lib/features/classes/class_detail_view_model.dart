@@ -14,12 +14,14 @@ class ClassDetailViewModel extends ChangeNotifier {
   List<AttendanceSession> _sessions = [];
   bool _loading = true;
   Object? _authError;
+  String? _error;
   bool _disposed = false;
 
   List<AttendanceSession> get sessions => _sessions;
   bool get loading => _loading;
   bool get unauthorized => _authError != null;
   Object? get authError => _authError;
+  String? get error => _error;
 
   int get present => _sessions.where((s) => s.hiendien == true).length;
   int get absent => _sessions.where((s) => s.hiendien == false).length;
@@ -31,13 +33,13 @@ class ClassDetailViewModel extends ChangeNotifier {
   Future<void> load() async {
     _loading = true;
     _authError = null;
+    _error = null;
     notifyListeners();
     try {
       final marks = await _repository.attendance();
       if (_disposed) return;
-      _sessions = marks
-          .where((m) => m.sectionCode == sectionCode)
-          .map((m) {
+      _sessions =
+          marks.where((m) => m.sectionCode == sectionCode).map((m) {
             final st = m.status;
             return AttendanceSession(
               // date-only để tránh lệch ngày khi parse mốc UTC nửa đêm
@@ -47,12 +49,15 @@ class ClassDetailViewModel extends ChangeNotifier {
                   : (st == 'absent' ? false : null),
               baonghi: st == 'excused',
             );
-          })
-          .toList()
-        ..sort((a, b) => (a.date ?? DateTime(0)).compareTo(b.date ?? DateTime(0)));
+          }).toList()..sort(
+            (a, b) => (a.date ?? DateTime(0)).compareTo(b.date ?? DateTime(0)),
+          );
     } catch (e) {
       if (_disposed) return;
-      if (e is EmsException && e.statusCode == 401) _authError = e;
+      if (e is EmsException && e.statusCode == 401)
+        _authError = e;
+      else
+        _error = 'Không thể tải điểm danh';
     }
     _loading = false;
     notifyListeners();

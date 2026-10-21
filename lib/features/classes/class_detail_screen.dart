@@ -19,8 +19,12 @@ class ClassDetailScreen extends StatefulWidget {
 
   /// Tests may inject a view model; otherwise the screen owns its own.
   final ClassDetailViewModel? viewModel;
-  const ClassDetailScreen(
-      {super.key, required this.item, required this.semTen, this.viewModel});
+  const ClassDetailScreen({
+    super.key,
+    required this.item,
+    required this.semTen,
+    this.viewModel,
+  });
 
   @override
   State<ClassDetailScreen> createState() => _ClassDetailScreenState();
@@ -35,9 +39,12 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
   void initState() {
     super.initState();
     _ownsViewModel = widget.viewModel == null;
-    _vm = widget.viewModel ??
-        ClassDetailViewModel(const ClassesRepository(),
-            sectionCode: widget.item.lmhma);
+    _vm =
+        widget.viewModel ??
+        ClassDetailViewModel(
+          const ClassesRepository(),
+          sectionCode: widget.item.lmhma,
+        );
     _vm.addListener(_onChanged);
     _vm.load();
   }
@@ -63,7 +70,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
   Widget _content() {
     if (_vm.loading) {
       return Center(
-          child: CircularProgressIndicator(color: context.vd.primary));
+        child: CircularProgressIndicator(color: context.vd.primary),
+      );
     }
     final item = widget.item;
     return SingleChildScrollView(
@@ -76,7 +84,12 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
             ClassGradeCard(item: item),
             const SizedBox(height: 16),
           ],
-          if (_vm.sessions.isNotEmpty) ...[
+          if (_vm.error != null) ...[
+            Text(_vm.error!),
+            TextButton(onPressed: _vm.load, child: const Text('Thử lại')),
+          ] else if (_vm.sessions.isEmpty)
+            const Text('Chưa có dữ liệu điểm danh')
+          else ...[
             AttendanceCard(
               total: _vm.sessions.length,
               present: _vm.present,
