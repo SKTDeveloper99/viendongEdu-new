@@ -124,14 +124,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                       ),
                     if (!widget.forced) const SizedBox(width: 8),
-                    Text(
+                    Expanded(child: Text(
                       widget.forced ? 'Vui lòng đổi mật khẩu' : 'Đổi mật khẩu',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: context.vd.onPrimary,
                       ),
-                    ),
+                    )),
                   ],
                 ),
               ),

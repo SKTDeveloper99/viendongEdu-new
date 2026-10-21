@@ -115,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Icon(Icons.error_outline, color: context.vd.accent),
             SizedBox(width: 8),
-            Text('Đăng nhập thất bại', style: TextStyle(fontSize: 16)),
+            const Expanded(child: Text('Đăng nhập thất bại', style: TextStyle(fontSize: 16))),
           ],
         ),
         content: Text(msg),
