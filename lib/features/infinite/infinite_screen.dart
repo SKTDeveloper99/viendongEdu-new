@@ -4,8 +4,10 @@ import '../../data/infinite_repository.dart';
 import '../../services/app_session.dart';
 import '../../theme/vd_tokens.dart';
 import 'infinite_view_model.dart';
+import 'pet.dart';
 import 'quest.dart';
 import 'widgets/cosmetic_avatar.dart';
+import 'widgets/pet_companion.dart';
 import 'widgets/quest_card.dart';
 
 /// Viễn Đông Infinite: quests at school, cosmetics as rewards.
@@ -70,6 +72,25 @@ class _InfiniteScreenState extends State<InfiniteScreen> {
                   ),
                 ),
               ),
+            _heading(context, 'Thú cưng của bạn'),
+            Center(
+              child: Wrap(
+                spacing: 12,
+                children: [
+                  for (final pet in InfinitePet.values)
+                    ChoiceChip(
+                      label: Text(
+                        pet == InfinitePet.cat ? 'Mèo Mướp' : 'Chó Cún',
+                      ),
+                      selected: _vm.pet == pet,
+                      onSelected: _vm.petReady
+                          ? (_) => _vm.selectPet(pet)
+                          : null,
+                    ),
+                ],
+              ),
+            ),
+            PetCompanion(pet: _vm.pet),
             _heading(context, 'Nhiệm vụ'),
             if (_vm.quests.isEmpty)
               const Padding(

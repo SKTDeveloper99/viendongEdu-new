@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../data/infinite_repository.dart';
+import 'pet.dart';
 import 'quest.dart';
 
 /// State of the Viễn Đông Infinite screen: today's quests, what this phone
@@ -20,6 +21,11 @@ class InfiniteViewModel extends ChangeNotifier {
   String? _title;
   String? _busyQuest;
   bool _disposed = false;
+  InfinitePet _pet = InfinitePet.cat;
+  bool _petReady = false;
+
+  InfinitePet get pet => _pet;
+  bool get petReady => _petReady;
 
   List<Quest> get quests =>
       _book?.quests.where((q) => q.activeOn(_now())).toList() ?? const [];
@@ -39,7 +45,16 @@ class InfiniteViewModel extends ChangeNotifier {
     final eq = await _repo.equipped();
     _frame = eq['frame'];
     _title = eq['title'];
+    _pet = await _repo.selectedPet();
+    _petReady = true;
     _notify();
+  }
+
+  Future<void> selectPet(InfinitePet pet) async {
+    if (!_petReady || _pet == pet) return;
+    _pet = pet;
+    _notify();
+    await _repo.selectPet(pet);
   }
 
   Future<void> openLink(Quest q) async {
