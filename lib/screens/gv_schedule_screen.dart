@@ -217,18 +217,19 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                           size: 28,
                         ),
                       ),
-                      Text(
+                      Expanded(child: Text(
                         () {
                           final s = _currentMonday;
                           final e = _currentMonday.add(const Duration(days: 6));
                           return '${s.day}/${s.month} – ${e.day}/${e.month}/${e.year}';
                         }(),
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: context.vd.onPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
-                      ),
+                      )),
                       GestureDetector(
                         onTap: _nextWeek,
                         child: Icon(

@@ -115,9 +115,8 @@ class _ScheduleCardState extends State<ScheduleCard> {
     final subject = d['mhten']?.toString() ?? '';
     final room = d['phongten']?.toString() ?? '';
     final classCode = d['lmhma']?.toString() ?? '';
-    final start = d['thoigianbd']?.toString() ?? '';
-    final endRaw = d['thoigiankt'] as String? ?? '';
-    final end = endRaw.length >= 16 ? endRaw.substring(11, 16) : '';
+    final start = _time(d['thoigianbd']?.toString());
+    final end = _time(d['thoigiankt']?.toString());
     final buoi = _buoiInfo(context, d['buoi']?.toString());
     final baonghiyn = d['baonghiyn'];
     final daBaoNghi = baonghiyn != null && baonghiyn != false && baonghiyn != 0;
@@ -251,13 +250,13 @@ class _ScheduleCardState extends State<ScheduleCard> {
                               color: context.vd.primary,
                             ),
                             const SizedBox(width: 4),
-                            Text(
+                            Expanded(child: Text(
                               room,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: context.vd.inkFaint,
                               ),
-                            ),
+                            )),
                           ],
                         ),
                         const SizedBox(height: 3),

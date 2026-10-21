@@ -288,9 +288,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ? skeletonList(accentColor: context.vd.primary)
                   : _scheduleFailed
                   ? Center(
-                      child: Text(
-                        'Đang đối chiếu',
-                        style: TextStyle(color: context.vd.inkMuted),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Đang đối chiếu',
+                              style: TextStyle(color: context.vd.inkMuted)),
+                          TextButton(
+                            onPressed: _refresh,
+                            child: const Text('Thử lại'),
+                          ),
+                        ],
                       ),
                     )
                   : classes == null
