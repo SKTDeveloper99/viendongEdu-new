@@ -7,12 +7,12 @@ import 'change_password_screen.dart';
 import '../theme/vd_tokens.dart';
 
 class SplashScreen extends StatefulWidget {
-  final Future<bool> Function(BuildContext) checkForUpdate;
+  final Future<bool> Function(BuildContext)? checkForUpdate;
   final NotificationService? notifications;
 
   const SplashScreen({
     super.key,
-    this.checkForUpdate = AppUpdateGate.check,
+    this.checkForUpdate,
     this.notifications,
   });
 
@@ -34,7 +34,11 @@ class _SplashScreenState extends State<SplashScreen> {
     // Khôi phục dữ liệu cục bộ song song với yêu cầu mạng để khỏi cộng thêm
     // thời gian chờ vào màn mở đầu trên kết nối yếu.
     final restoreFuture = AppSession.instance.tryRestore();
-    if (!await widget.checkForUpdate(context)) return;
+    final checkForUpdate = widget.checkForUpdate;
+    final canContinue = checkForUpdate == null
+        ? await AppUpdateGate.check(context)
+        : await checkForUpdate(context);
+    if (!canContinue) return;
     if (!mounted) return;
     final restored = await restoreFuture;
     if (!mounted) return;
@@ -68,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen> {
       // The splash route is disposed by this replacement. Keep the navigator
       // for a notification that arrives after the transition has completed.
       final navigator = Navigator.of(context);
-      navigator.pushReplacementNamed(route);
+      Navigator.pushReplacementNamed(context, route);
 
       // Nếu app được mở bằng cách bấm vào notification (app đã tắt hẳn),
       // vào thẳng màn hình thông báo — sau khi đã vào home để nút back còn hoạt động

@@ -5,7 +5,6 @@ import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
 import '../theme/vd_tokens.dart';
 import '../components/tuition_notes.dart';
-
 // LUẬT TIỀN: hiện NGUYÊN VĂN số máy chủ; null = "Đang đối chiếu", không bao giờ 0.
 String _fmtAmount(int? amount) {
   if (amount == null) return 'Đang đối chiếu';
