@@ -47,6 +47,7 @@ class TeacherHomeViewModel extends ChangeNotifier {
   bool _scheduleFailed = false;
   DateTime? _scheduleStaleAt;
   int _unreadCount = 0;
+  bool _unreadFailed = false;
   CrmTeacherProfile? _profile;
   Object? _authError;
   bool _disposed = false;
@@ -156,6 +157,7 @@ class TeacherHomeViewModel extends ChangeNotifier {
   /// Set when the shown schedule is a stored copy (refresh failed).
   DateTime? get scheduleStaleAt => _scheduleStaleAt;
   int get unreadCount => _unreadCount;
+  bool get unreadFailed => _unreadFailed;
 
   /// CRM profile; only needed for the "Cơ hữu" badge (`teachers.type ==
   /// 'gvch'`, see CLAUDE.md "Known state").
@@ -224,8 +226,14 @@ class TeacherHomeViewModel extends ChangeNotifier {
       final count = await _repository.unreadCount();
       if (_disposed) return;
       _unreadCount = count;
+      _unreadFailed = false;
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      if (_disposed) return;
+      if (e is EmsException && e.statusCode == 401) _authError = e;
+      _unreadFailed = true;
+      notifyListeners();
+    }
   }
 
   Future<void> loadOverview() async {
@@ -237,8 +245,9 @@ class TeacherHomeViewModel extends ChangeNotifier {
       // Một lời gọi CRM duy nhất: hồ sơ + lịch dạy hôm nay + tóm tắt học kỳ
       // (`GET /api/teacher/me/overview`) — thay cho IMS `giangvien/tkbtheongay`.
       final r = await _repository.overview(
-        onStored: (o, _) {
+        onStored: (o, at) {
           if (_disposed) return;
+          _scheduleStaleAt = at;
           _applyOverview(o);
           _scheduleLoading = false;
           notifyListeners();

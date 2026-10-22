@@ -49,6 +49,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // trộn. Khoá: mã lớp môn học + ngày (+ giờ bắt đầu nếu EMS có).
   final Map<String, EmsStudentMark> _emsByKey = {};
   bool _emsLoaded = false;
+  bool _marksFailed = false;
 
   static String _markKey(String sectionCode, String date, [String? hhmm]) =>
       '$sectionCode|$date|${hhmm ?? ''}';
@@ -87,9 +88,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           if (hhmm != null) put(_markKey(code, date, hhmm));
         }
         _emsLoaded = true;
+        _marksFailed = false;
       });
     } catch (_) {
-      // EMS chết thì thẻ hiện "Chưa điểm danh" — không bao giờ rơi về IMS.
+      if (mounted) setState(() => _marksFailed = true);
     }
   }
 
@@ -282,21 +284,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
 
             if (_staleAt != null) StaleNote(_staleAt!),
+            if (_marksFailed) TextButton(
+              onPressed: () => _loadEmsMarks(force: true),
+              child: const Text('Chưa cập nhật được điểm danh. Thử lại'),
+            ),
             // ── Content ──
             Expanded(
               child: _loading
                   ? skeletonList(accentColor: context.vd.primary)
                   : _scheduleFailed
-                  ? Center(
-                      child: Text(
-                        'Đang đối chiếu',
-                        style: TextStyle(color: context.vd.inkMuted),
-                      ),
-                    )
+                  ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const Text('Không tải được lịch học. Vui lòng thử lại.'),
+                      TextButton(onPressed: _refresh, child: const Text('Thử lại')),
+                    ]))
                   : classes == null
                   ? const SizedBox.shrink()
                   : classes.isEmpty && _chuaCoLich.isEmpty
-                  ? Center(child: _emptyDay(context))
+                  ? RefreshIndicator(onRefresh: _refresh, child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [_emptyDay(context)],
+                    ))
                   : RefreshIndicator(
                       color: context.vd.primary,
                       onRefresh: _refresh,

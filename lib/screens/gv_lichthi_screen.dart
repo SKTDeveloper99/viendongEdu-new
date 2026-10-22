@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
@@ -62,7 +63,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingHocKy = false; _error = e.toString(); });
+      setState(() { _loadingHocKy = false; _error = crmErrorMessage(e); });
     }
   }
 
@@ -102,7 +103,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingExams = false; _error = e.toString(); });
+      setState(() { _loadingExams = false; _error = crmErrorMessage(e); });
     }
   }
 

@@ -1,3 +1,4 @@
+import '../../screens/stale_note.dart';
 import 'package:flutter/material.dart';
 
 import '../../components/skeleton.dart';
@@ -60,20 +61,36 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
   Widget _content() {
     if (_vm.loadingSemesters) return skeletonList();
     final error = _vm.error;
-    if (error != null) {
+    if (error != null && _vm.classes.isEmpty) {
       return ClassManagerErrorView(message: error, onRetry: _vm.retry);
     }
     if (_vm.loadingClasses) return skeletonList();
-    if (_vm.classes.isEmpty) return const ClassManagerEmptyView();
-    return ClassList(
-      classes: _vm.classes,
-      staleAt: _vm.staleAt,
-      onOpen: (lop) => showClassDetailSheet(
-        context,
-        repository: _vm.repository,
-        lop: lop,
-        lmhId: _vm.lmhIdOf(lop),
-      ),
+    if (_vm.classes.isEmpty) {
+      return Column(children: [
+        if (_vm.staleAt != null) StaleNote(_vm.staleAt!),
+        TextButton(onPressed: _vm.retry, child: const Text('Thử lại')),
+        const Expanded(child: ClassManagerEmptyView()),
+      ]);
+    }
+    return Column(
+      children: [
+        if (error != null) ...[
+          Text(error),
+          TextButton(onPressed: _vm.retry, child: const Text('Thử lại')),
+        ],
+        Expanded(
+          child: ClassList(
+            classes: _vm.classes,
+            staleAt: _vm.staleAt,
+            onOpen: (lop) => showClassDetailSheet(
+              context,
+              repository: _vm.repository,
+              lop: lop,
+              lmhId: _vm.lmhIdOf(lop),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

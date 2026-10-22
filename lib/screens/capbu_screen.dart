@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_money_capbu.dart';
 import '../services/crm_money_api.dart';
@@ -42,7 +43,7 @@ class _CapBuScreenState extends State<CapBuScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() { _loading = false; _error = crmErrorMessage(e); });
     }
   }
 

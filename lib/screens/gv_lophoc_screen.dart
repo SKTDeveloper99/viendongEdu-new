@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_teacher_profile.dart' show CrmSemester;
 import '../services/crm_teacher_api.dart';
@@ -7,7 +8,6 @@ import '../theme/vd_tokens.dart';
 
 typedef _Semester = CrmSemester;
 
-// Thứ tự ngày trong tuần theo ngayma
 const _dayOrder = {'2': 0, '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6};
 
 int _dayIndex(String ngayma) =>
@@ -53,7 +53,7 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingHocKy = false; _error = e.toString(); });
+      setState(() { _loadingHocKy = false; _error = crmErrorMessage(e); });
     }
   }
 
@@ -109,7 +109,7 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingClasses = false; _error = e.toString(); });
+      setState(() { _loadingClasses = false; _error = crmErrorMessage(e); });
     }
   }
 

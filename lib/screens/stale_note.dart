@@ -16,7 +16,7 @@ class StaleNote extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Text(
-        'Chưa cập nhật được — dữ liệu lúc ${_two(t.hour)}:${_two(t.minute)} ${_two(t.day)}/${_two(t.month)}',
+        'Chưa cập nhật được — dữ liệu lúc ${_two(t.hour)}:${_two(t.minute)} ${_two(t.day)}/${_two(t.month)} (dữ liệu cũ)',
         style: TextStyle(fontSize: fontSize, color: context.vd.inkFaint),
       ),
     );

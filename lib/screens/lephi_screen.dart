@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_money_fees.dart';
 import '../services/crm_money_api.dart';
@@ -56,7 +57,7 @@ class _LePhiScreenState extends State<LePhiScreen> {
       if (await handleCrmAuthError(context, e)) return;
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = crmErrorMessage(e);
       });
     }
   }

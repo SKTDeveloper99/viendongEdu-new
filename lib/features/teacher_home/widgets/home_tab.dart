@@ -35,6 +35,10 @@ class HomeTab extends StatelessWidget {
           unreadCount: vm.unreadCount,
           onBell: onBell,
         ),
+        if (vm.unreadFailed) TextButton(
+          onPressed: vm.loadUnreadCount,
+          child: const Text('Chưa cập nhật được thông báo. Thử lại'),
+        ),
         Expanded(
           child: SingleChildScrollView(
             child: Column(

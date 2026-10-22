@@ -31,11 +31,16 @@ class DashboardTab extends StatelessWidget {
     return Column(
       children: [
         HomeHeader(vm: vm),
+        if (vm.secondaryFailed) TextButton(
+          onPressed: vm.refresh,
+          child: const Text('Chưa cập nhật được thông tin. Thử lại'),
+        ),
         Expanded(
           child: RefreshIndicator(
             color: context.vd.primary,
-            onRefresh: vm.loadTodaySchedule,
+            onRefresh: vm.refresh,
             child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               // The QR button rises homeNavOverhang above the bar.
               padding: const EdgeInsets.only(bottom: homeNavOverhang + 16),
               child: Column(

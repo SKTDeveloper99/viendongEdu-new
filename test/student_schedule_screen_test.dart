@@ -228,8 +228,13 @@ void main() {
   ) async {
     offline = true;
     await pump(t);
-    expect(find.text('Đang đối chiếu'), findsOneWidget);
+    expect(find.text('Không tải được lịch học. Vui lòng thử lại.'), findsOneWidget);
+    expect(find.text('Thử lại'), findsOneWidget);
     expect(find.text('Không có lịch học'), findsNothing);
     expect(find.byType(UnscheduledSubjects), findsNothing);
+    offline = false;
+    await t.tap(find.text('Thử lại'));
+    await t.pumpAndSettle();
+    expect(_subject(_section['subject_name']!), findsOneWidget);
   });
 }

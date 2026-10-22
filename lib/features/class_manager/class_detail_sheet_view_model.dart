@@ -102,7 +102,7 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
         return;
       }
       _loadingStudents = false;
-      _studentsError = e.toString();
+      _studentsError = crmErrorMessage(e);
       _notify();
     }
   }
@@ -130,7 +130,7 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
         return;
       }
       _loadingAttendance = false;
-      _attendanceError = e.toString();
+      _attendanceError = crmErrorMessage(e);
       _notify();
     }
   }
