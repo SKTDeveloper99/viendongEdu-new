@@ -40,7 +40,7 @@ class SessionListCard extends StatelessWidget {
     final (label, color, bg, icon) = s.hiendien == true
         ? ('Có mặt', context.vd.success, context.vd.successSoft, Icons.check_circle_outline)
         : s.hiendien == false
-            ? ('Vắng mặt', context.vd.danger, context.vd.dangerSoft, Icons.cancel_outlined)
+            ? ('Vắng', context.vd.danger, context.vd.dangerSoft, Icons.cancel_outlined)
             : s.baonghi
                 ? ('Báo nghỉ', context.vd.primary, context.vd.accentSoft, Icons.event_busy_outlined)
                 : ('Chưa điểm danh', context.vd.inkFaint, context.vd.surfaceAlt, Icons.radio_button_unchecked);

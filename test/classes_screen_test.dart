@@ -203,7 +203,7 @@ void main() {
       expect(find.text('Buổi 3'), findsOneWidget);
       expect(find.text('02/03/2026'), findsOneWidget);
       expect(find.text('Có mặt'), findsWidgets);
-      expect(find.text('Vắng mặt'), findsWidgets);
+      expect(find.text('Vắng'), findsWidgets);
       expect(find.text('Báo nghỉ'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.arrow_back_ios));

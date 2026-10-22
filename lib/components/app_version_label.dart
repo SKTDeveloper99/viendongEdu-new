@@ -3,10 +3,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../theme/vd_tokens.dart';
 
-/// "Phần mềm Viendongedu phiên bản X.Y.Z (build)" footer line of the profile
+/// "Phần mềm ViendongEdu phiên bản X.Y.Z (build)" footer line of the profile
 /// tabs. The version comes from the installed app (package_info_plus). The
 /// line is one fixed-height row from the first frame: until the version loads
-/// (or if it cannot be read) it shows just "Phần mềm Viendongedu", so nothing
+/// (or if it cannot be read) it shows just "Phần mềm ViendongEdu", so nothing
 /// below it moves.
 class AppVersionLabel extends StatefulWidget {
   /// Returns "X.Y.Z (build)"; tests inject a fake, production reads
@@ -47,7 +47,7 @@ class _AppVersionLabelState extends State<AppVersionLabel> {
   Widget build(BuildContext context) {
     final v = _version;
     return Text(
-      v == null ? 'Phần mềm Viendongedu' : 'Phần mềm Viendongedu phiên bản $v',
+      v == null ? 'Phần mềm ViendongEdu' : 'Phần mềm ViendongEdu phiên bản $v',
       style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
       textAlign: TextAlign.center,
     );

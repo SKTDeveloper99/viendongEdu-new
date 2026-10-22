@@ -247,7 +247,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Chờ giáo viên xác nhận'), findsOneWidget);
+    expect(find.textContaining('Chờ giảng viên xác nhận'), findsOneWidget);
     expect(find.textContaining('Đã vào trường lúc 17:42'), findsOneWidget);
     expect(find.textContaining('trước giờ học'), findsOneWidget);
   });

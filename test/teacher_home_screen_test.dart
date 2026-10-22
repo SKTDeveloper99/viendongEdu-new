@@ -359,7 +359,7 @@ void main() {
     expect(find.text('Thông tin cá nhân'), findsOneWidget);
     await tester.pump();
     expect(
-      find.text('Phần mềm Viendongedu phiên bản 9.9.9 (77)'),
+      find.text('Phần mềm ViendongEdu phiên bản 9.9.9 (77)'),
       findsOneWidget,
     );
     expect(find.text('Thuộc bản quyền Cao đẳng Viễn Đông'), findsOneWidget);

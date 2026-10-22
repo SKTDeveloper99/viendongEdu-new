@@ -39,7 +39,7 @@ class CrmStudentApi {
     final body = await EmsApiService.sendMap('GET', '/student/me');
     final student = body['student'];
     if (student is! Map<String, dynamic>) {
-      throw EmsException('Máy chủ không trả về hồ sơ học viên.');
+      throw EmsException('Máy chủ không trả về hồ sơ sinh viên.');
     }
     final profile = EmsApiService.parse(
       () => CrmStudentProfile.fromJson(student),
