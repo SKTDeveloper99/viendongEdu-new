@@ -20,25 +20,22 @@ import '../models/teacher_care_student.dart';
 class CrmTeacherApi {
   /// `GET /api/teacher/me`.
   static Future<CrmTeacherProfile> me() async {
-    final body =
-        await EmsApiService.send('GET', '/teacher/me') as Map<String, dynamic>;
-    final t = (body['teacher'] as Map?)?.cast<String, dynamic>() ?? const {};
-    return CrmTeacherProfile.fromJson(t);
+    final body = await EmsApiService.sendMap('GET', '/teacher/me');
+    final t = EmsApiService.parse(() => (body['teacher'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{});
+    return EmsApiService.parse(() => CrmTeacherProfile.fromJson(t));
   }
 
   /// `GET /api/teacher/me/overview?semester=`. Một lời gọi cho hồ sơ + lịch
   /// dạy hôm nay + tóm tắt học kỳ — dùng cho `gv_home_screen`.
   static Future<CrmTeacherOverview> overview({String? semester}) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/teacher/me/overview',
-              query: (semester == null || semester.isEmpty)
-                  ? null
-                  : {'semester': semester},
-            )
-            as Map<String, dynamic>;
-    return CrmTeacherOverview.fromJson(body);
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/me/overview',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+    );
+    return EmsApiService.parse(() => CrmTeacherOverview.fromJson(body));
   }
 
   static Future<({CrmTeacherOverview data, DateTime savedAt, bool fresh})>
@@ -48,17 +45,19 @@ class CrmTeacherApi {
   }) async {
     final r = await EmsApiService.sendCached(
       '/teacher/me/overview',
+      validate: (d) =>
+          EmsApiService.parse(() => CrmTeacherOverview.fromJson(d)),
       query: (semester == null || semester.isEmpty)
           ? null
           : {'semester': semester},
       onStored: onStored == null
           ? null
           : (d, at) => onStored(
-              CrmTeacherOverview.fromJson(d as Map<String, dynamic>),
+              EmsApiService.parse(() => CrmTeacherOverview.fromJson(d)),
               at,
             ),
     );
-    final data = CrmTeacherOverview.fromJson(r.data as Map<String, dynamic>);
+    final data = EmsApiService.parse(() => CrmTeacherOverview.fromJson(r.data));
     final cur = data.currentSemester;
     if (cur != null && cur.isNotEmpty) {
       await OfflineSnapshot.save(_currentSemesterKey, cur);
@@ -104,7 +103,7 @@ class CrmTeacherApi {
       return null;
     }
     return (
-      overview: CrmTeacherOverview.fromJson(data),
+      overview: EmsApiService.parse(() => CrmTeacherOverview.fromJson(data)),
       savedAt: cached.savedAt,
     );
   }
@@ -120,24 +119,21 @@ class CrmTeacherApi {
     }
     return body
         .whereType<Map<String, dynamic>>()
-        .map(CrmSemester.fromJson)
+        .map((row) => EmsApiService.parse(() => CrmSemester.fromJson(row)))
         .toList();
   }
 
   /// `GET /api/teacher/me/schedule?date=YYYY-MM-DD`.
   static Future<List<CrmScheduleSlot>> scheduleForDate(String date) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/teacher/me/schedule',
-              query: {'date': date},
-            )
-            as Map<String, dynamic>;
-    final list = body['data'];
-    if (list is! List) return const [];
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/me/schedule',
+      query: {'date': date},
+    );
+    final list = EmsApiService.rows(body['data']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(CrmScheduleSlot.fromJson)
+        .map((row) => EmsApiService.parse(() => CrmScheduleSlot.fromJson(row)))
         .toList();
   }
 
@@ -145,38 +141,32 @@ class CrmTeacherApi {
   static Future<List<CrmScheduleSlot>> scheduleForSemester(
     String semester,
   ) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/teacher/me/schedule/semester',
-              query: {'semester': semester},
-            )
-            as Map<String, dynamic>;
-    final list = body['data'];
-    if (list is! List) return const [];
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/me/schedule/semester',
+      query: {'semester': semester},
+    );
+    final list = EmsApiService.rows(body['data']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(CrmScheduleSlot.fromJson)
+        .map((row) => EmsApiService.parse(() => CrmScheduleSlot.fromJson(row)))
         .toList();
   }
 
   /// `GET /api/teacher/me/classes?semester=`. `semester` bỏ trống dùng mặc
   /// định của server (học kỳ hiện tại); truyền `'all'` để lấy mọi học kỳ.
   static Future<List<CrmTeacherClass>> classes({String? semester}) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/teacher/me/classes',
-              query: (semester == null || semester.isEmpty)
-                  ? null
-                  : {'semester': semester},
-            )
-            as Map<String, dynamic>;
-    final list = body['classes'];
-    if (list is! List) return const [];
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/me/classes',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+    );
+    final list = EmsApiService.rows(body['classes']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(CrmTeacherClass.fromJson)
+        .map((row) => EmsApiService.parse(() => CrmTeacherClass.fromJson(row)))
         .toList();
   }
 
@@ -187,15 +177,22 @@ class CrmTeacherApi {
   }) async {
     List<CrmTeacherClass> parse(dynamic body) {
       final list = body is Map ? body['classes'] : null;
-      if (list is! List) return const [];
+      if (list is! List || list.any((row) => row is! Map<String, dynamic>)) {
+        throw EmsException(
+          'Máy chủ trả về danh sách lớp không đọc được. Vui lòng thử lại.',
+        );
+      }
       return list
           .whereType<Map<String, dynamic>>()
-          .map(CrmTeacherClass.fromJson)
+          .map(
+            (row) => EmsApiService.parse(() => CrmTeacherClass.fromJson(row)),
+          )
           .toList();
     }
 
     final r = await EmsApiService.sendCached(
       '/teacher/me/classes',
+      validate: parse,
       query: (semester == null || semester.isEmpty)
           ? null
           : {'semester': semester},
@@ -206,17 +203,14 @@ class CrmTeacherApi {
 
   /// `GET /api/teacher/me/classes/:sectionId/students`.
   static Future<List<CrmClassStudent>> classStudents(String sectionId) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/teacher/me/classes/$sectionId/students',
-            )
-            as Map<String, dynamic>;
-    final list = body['students'];
-    if (list is! List) return const [];
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/me/classes/$sectionId/students',
+    );
+    final list = EmsApiService.rows(body['students']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(CrmClassStudent.fromJson)
+        .map((row) => EmsApiService.parse(() => CrmClassStudent.fromJson(row)))
         .toList();
   }
 
@@ -231,18 +225,19 @@ class CrmTeacherApi {
   static Future<CrmAttendanceResult> classAttendanceResult(
     String sectionId,
   ) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/teacher/me/classes/$sectionId/attendance',
-            )
-            as Map<String, dynamic>;
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/me/classes/$sectionId/attendance',
+    );
     final list = body['attendance'];
     final rows = list is! List
         ? const <CrmAttendanceRow>[]
         : list
               .whereType<Map<String, dynamic>>()
-              .map(CrmAttendanceRow.fromJson)
+              .map(
+                (row) =>
+                    EmsApiService.parse(() => CrmAttendanceRow.fromJson(row)),
+              )
               .toList();
     return CrmAttendanceResult(
       rows: rows,
@@ -259,20 +254,17 @@ class CrmTeacherApi {
   /// thường (hiện "Thử lại"), không có gì phải sửa ở phía app khi route lên
   /// prod. Xem `docs/ims_to_crm_teacher_map.md`.
   static Future<List<CrmTeacherExam>> exams({String? semester}) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/teacher/me/exams',
-              query: (semester == null || semester.isEmpty)
-                  ? null
-                  : {'semester': semester},
-            )
-            as Map<String, dynamic>;
-    final list = body['exams'];
-    if (list is! List) return const [];
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/me/exams',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+    );
+    final list = EmsApiService.rows(body['exams']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(CrmTeacherExam.fromJson)
+        .map((row) => EmsApiService.parse(() => CrmTeacherExam.fromJson(row)))
         .toList();
   }
 
