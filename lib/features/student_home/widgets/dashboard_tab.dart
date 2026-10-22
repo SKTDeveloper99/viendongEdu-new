@@ -38,8 +38,9 @@ class DashboardTab extends StatelessWidget {
         Expanded(
           child: RefreshIndicator(
             color: context.vd.primary,
-            onRefresh: vm.loadTodaySchedule,
+            onRefresh: vm.refresh,
             child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               // The QR button rises homeNavOverhang above the bar.
               padding: const EdgeInsets.only(bottom: homeNavOverhang + 16),
               child: Column(

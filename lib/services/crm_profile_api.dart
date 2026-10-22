@@ -16,11 +16,14 @@ class CrmProfileApi {
   /// `GET /api/student/me` — điền sẵn form. Không có `cccd`/`cmnd` ở endpoint
   /// này (xem [CrmStudentProfile.fromGetMeJson]).
   static Future<CrmStudentProfile> getStudentMe() async {
+    final token = AppSession.instance.emsToken;
     final body = await EmsApiService.send('GET', '/student/me');
-    if (body is Map<String, dynamic> && body['data_open'] is bool) {
-      AppSession.instance.dataOpen = body['data_open'] as bool;
+    final profile = CrmStudentProfile.fromGetMeJson(body as Map<String, dynamic>);
+    if (token == AppSession.instance.emsToken) {
+      AppSession.instance.applyStudentDataGate(body);
+      AppSession.instance.fullName = profile.fullName;
     }
-    return CrmStudentProfile.fromGetMeJson(body as Map<String, dynamic>);
+    return profile;
   }
 
   /// `GET /api/teacher/me` — điền sẵn form.

@@ -8,8 +8,12 @@ class ClassInfoCard extends StatelessWidget {
   final ClassItem item;
   const ClassInfoCard({super.key, required this.item});
 
-  Widget _divider(BuildContext context) => Divider(
-      height: 1, indent: 48, endIndent: 16, color: context.vd.hairline);
+  String _date(DateTime? d) => d == null
+      ? '–'
+      : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  Widget _divider(BuildContext context) =>
+      Divider(height: 1, indent: 48, endIndent: 16, color: context.vd.hairline);
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +22,11 @@ class ClassInfoCard extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -28,9 +36,21 @@ class ClassInfoCard extends StatelessWidget {
           _divider(context),
           _InfoRow(Icons.book_outlined, 'Mã môn', item.mhma),
           _divider(context),
-          _InfoRow(Icons.school_outlined, 'Tín chỉ', '${item.sotinchi} TC'),
+          _InfoRow(
+            Icons.school_outlined,
+            'Tín chỉ',
+            '${item.sotinchi ?? '?'} TC',
+          ),
           _divider(context),
           _InfoRow(Icons.person_outline, 'Giảng viên', item.gvten),
+          _divider(context),
+          _InfoRow(Icons.date_range, 'Bắt đầu', _date(item.startDate)),
+          _divider(context),
+          _InfoRow(Icons.date_range, 'Kết thúc', _date(item.endDate)),
+          _divider(context),
+          _InfoRow(Icons.event, 'Ngày thi', _date(item.examDate)),
+          _divider(context),
+          _InfoRow(Icons.room_outlined, 'Phòng', item.room ?? '–'),
         ],
       ),
     );
@@ -53,13 +73,16 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 88,
-            child: Text(label,
-                style: TextStyle(fontSize: 13, color: context.vd.inkMuted)),
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),

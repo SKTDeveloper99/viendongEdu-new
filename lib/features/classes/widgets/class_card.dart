@@ -16,7 +16,8 @@ class ClassCard extends StatelessWidget {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (_) => ClassDetailScreen(item: item, semTen: semTen)),
+          builder: (_) => ClassDetailScreen(item: item, semTen: semTen),
+        ),
       ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -25,7 +26,10 @@ class ClassCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+              color: context.vd.shadow,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
           ],
         ),
         child: Row(
@@ -39,8 +43,9 @@ class ClassCard extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
-                borderRadius:
-                    BorderRadius.horizontal(left: Radius.circular(16)),
+                borderRadius: BorderRadius.horizontal(
+                  left: Radius.circular(16),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -52,7 +57,12 @@ class ClassCard extends StatelessWidget {
                   children: [
                     _titleRow(context),
                     const SizedBox(height: 5),
-                    _line(context, Icons.person_outline, item.gvten, ellipsis: false),
+                    _line(
+                      context,
+                      Icons.person_outline,
+                      item.gvten,
+                      ellipsis: false,
+                    ),
                     const SizedBox(height: 4),
                     _line(context, Icons.tag, item.lmhma, ellipsis: true),
                   ],
@@ -74,7 +84,7 @@ class ClassCard extends StatelessWidget {
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
         ),
-        if (item.sotinchi > 0)
+        if (item.sotinchi != null)
           Container(
             margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -83,26 +93,34 @@ class ClassCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '${item.sotinchi} TC',
+              '${item.sotinchi ?? '?'} TC',
               style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: context.vd.primary),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: context.vd.primary,
+              ),
             ),
           ),
       ],
     );
   }
 
-  Widget _line(BuildContext context, IconData icon, String text, {required bool ellipsis}) {
+  Widget _line(
+    BuildContext context,
+    IconData icon,
+    String text, {
+    required bool ellipsis,
+  }) {
     return Row(
       children: [
         Icon(icon, size: 13, color: context.vd.primary),
         const SizedBox(width: 4),
         Expanded(
-          child: Text(text,
-              overflow: ellipsis ? TextOverflow.ellipsis : null,
-              style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+          child: Text(
+            text,
+            overflow: ellipsis ? TextOverflow.ellipsis : null,
+            style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+          ),
         ),
       ],
     );

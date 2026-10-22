@@ -22,6 +22,7 @@ class ClassesViewModel extends ChangeNotifier {
   String? _error;
   Object? _authError;
   bool _disposed = false;
+  int _selection = 0;
 
   List<ClassSemester> get semesters => _semesters;
   List<ClassItem> get classes => _classes;
@@ -65,6 +66,8 @@ class ClassesViewModel extends ChangeNotifier {
       sems.sort((a, b) => b.code.compareTo(a.code));
       if (_disposed) return;
       _semesters = sems;
+      _selected = null;
+      _classes = [];
       _loading = false;
       notifyListeners();
       final def = pickDefaultSemester(
@@ -83,42 +86,50 @@ class ClassesViewModel extends ChangeNotifier {
   }
 
   /// Opens [sem]: fetches its sections and attaches midterm/final/total
-  /// scores. A failure leaves the list empty (no error state), as before.
+  /// scores. A failed request is distinct from a successful empty response.
   Future<void> selectSemester(ClassSemester sem) async {
+    final selection = ++_selection;
     _selected = sem;
     _loadingClasses = true;
     _classes = [];
     _authError = null;
+    _error = null;
     notifyListeners();
     try {
       final data = await _repository.semesterClasses(sem.code);
-      if (_disposed) return;
+      if (_disposed || selection != _selection) return;
       final grades = data.grades;
       // Khớp theo section_code, rồi rơi về subject_code + học kỳ khi một dòng
       // điểm không có section_code — xảy ra với ~2.900 dòng điểm nhập tay
       // không có LMH đứng sau (ADR 004 trong crm-clean).
       _classes = data.sections.map((s) {
         CrmStudentGrade? g = grades.cast<CrmStudentGrade?>().firstWhere(
-          (g) => g?.sectionCode == s.sectionCode,
+          (g) => s.sectionCode.isNotEmpty && g?.sectionCode == s.sectionCode,
           orElse: () => null,
         );
         g ??= grades.cast<CrmStudentGrade?>().firstWhere(
-          (g) => g?.subjectCode == s.subjectCode && g?.semesterCode == sem.code,
+          (g) =>
+              (g?.sectionCode?.isEmpty ?? true) &&
+              s.subjectCode.isNotEmpty &&
+              g?.subjectCode == s.subjectCode &&
+              g?.semesterCode == sem.code,
           orElse: () => null,
         );
         return ClassItem.fromSection(s, grade: g);
       }).toList();
       _loadingClasses = false;
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || selection != _selection) return;
       _loadingClasses = false;
+      _error = e.toString();
       _flagAuth(e);
     }
     notifyListeners();
   }
 
   /// Pull-to-refresh: reloads the selected semester.
-  Future<void> refreshSelected() => selectSemester(_selected!);
+  Future<void> refreshSelected() =>
+      _selected == null ? fetchSemesters() : selectSemester(_selected!);
 
   void _flagAuth(Object e) {
     if (e is EmsException && e.statusCode == 401) _authError = e;

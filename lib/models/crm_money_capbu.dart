@@ -5,13 +5,9 @@
 /// một cột chuỗi-tiền IMS để trống, không phải 0.
 library;
 
-num? _numOrNull(dynamic v) {
-  if (v == null) return null;
-  if (v is num) return v;
-  final s = v.toString().trim();
-  if (s.isEmpty) return null;
-  return num.tryParse(s);
-}
+import 'json_values.dart';
+
+num? _numOrNull(dynamic v) => jsonDouble(v);
 
 String? _strOrNull(dynamic v) {
   final s = v?.toString();
@@ -50,19 +46,19 @@ class CrmCapBuItem {
   });
 
   factory CrmCapBuItem.fromJson(Map<String, dynamic> j) => CrmCapBuItem(
-        id: _strOrNull(j['id']),
-        ma: _strOrNull(j['ma']),
-        ten: _strOrNull(j['ten']),
-        kyHieu: _strOrNull(j['ky_hieu']),
-        ngayCap: DateTime.tryParse(j['ngay_cap']?.toString() ?? '')?.toLocal(),
-        donGia: _numOrNull(j['don_gia']),
-        thanhTien: _numOrNull(j['thanh_tien']),
-        vat: _numOrNull(j['vat']),
-        total: _numOrNull(j['total']),
-        ghiChu: _strOrNull(j['ghi_chu']),
-        hocKyId: _strOrNull(j['hocky_id']),
-        hocKyTen: _strOrNull(j['hocky_ten']),
-      );
+    id: _strOrNull(j['id']),
+    ma: _strOrNull(j['ma']),
+    ten: _strOrNull(j['ten']),
+    kyHieu: _strOrNull(j['ky_hieu']),
+    ngayCap: DateTime.tryParse(j['ngay_cap']?.toString() ?? '')?.toLocal(),
+    donGia: _numOrNull(j['don_gia']),
+    thanhTien: _numOrNull(j['thanh_tien']),
+    vat: _numOrNull(j['vat']),
+    total: _numOrNull(j['total']),
+    ghiChu: _strOrNull(j['ghi_chu']),
+    hocKyId: _strOrNull(j['hocky_id']),
+    hocKyTen: _strOrNull(j['hocky_ten']),
+  );
 }
 
 /// `GET /api/student/me/capbu` → `{mssv, count, items}`.
@@ -74,13 +70,13 @@ class CrmCapBuResponse {
   const CrmCapBuResponse({this.mssv, this.count = 0, this.items = const []});
 
   factory CrmCapBuResponse.fromJson(Map<String, dynamic> j) => CrmCapBuResponse(
-        mssv: _strOrNull(j['mssv']),
-        count: (j['count'] as num?)?.toInt() ?? 0,
-        items: (j['items'] is List)
-            ? (j['items'] as List)
-                .whereType<Map<String, dynamic>>()
-                .map(CrmCapBuItem.fromJson)
-                .toList()
-            : const [],
-      );
+    mssv: _strOrNull(j['mssv']),
+    count: jsonInt(j['count']) ?? 0,
+    items: (j['items'] is List)
+        ? (j['items'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(CrmCapBuItem.fromJson)
+              .toList()
+        : const [],
+  );
 }

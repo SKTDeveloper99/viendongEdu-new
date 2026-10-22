@@ -25,11 +25,15 @@ class ClassItem {
   final String lmhma; // section_code
   final String mhma; // subject_code
   final String mhten; // subject_name
-  final int sotinchi; // credits
+  final int? sotinchi; // credits
   final String gvten; // teacher_name
   final double? tongdiem;
   final double? diemgk; // midterm_score
   final double? diemck; // final_exam_score
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final DateTime? examDate;
+  final String? room;
 
   const ClassItem({
     required this.sectionId,
@@ -41,20 +45,30 @@ class ClassItem {
     this.tongdiem,
     this.diemgk,
     this.diemck,
+    this.startDate,
+    this.endDate,
+    this.examDate,
+    this.room,
   });
 
-  factory ClassItem.fromSection(CrmStudentSection s, {CrmStudentGrade? grade}) =>
-      ClassItem(
-        sectionId: s.sectionId,
-        lmhma: s.sectionCode,
-        mhma: s.subjectCode,
-        mhten: s.subjectName,
-        sotinchi: s.credits,
-        gvten: s.teacherName,
-        tongdiem: grade?.finalScore,
-        diemgk: grade?.midtermScore,
-        diemck: grade?.finalExamScore,
-      );
+  factory ClassItem.fromSection(
+    CrmStudentSection s, {
+    CrmStudentGrade? grade,
+  }) => ClassItem(
+    sectionId: s.sectionId,
+    lmhma: s.sectionCode,
+    mhma: s.subjectCode,
+    mhten: s.subjectName,
+    sotinchi: s.credits,
+    gvten: s.teacherName,
+    tongdiem: grade?.finalScore,
+    diemgk: grade?.midtermScore,
+    diemck: grade?.finalExamScore,
+    startDate: s.ngayBatDau,
+    endDate: s.ngayKetThuc,
+    examDate: s.examDate,
+    room: s.room,
+  );
 
   // CRM không có điểm "chuyên cần" (diemcc) riêng — chỉ midterm/final.
   double? get diemcc => null;
@@ -71,8 +85,11 @@ class AttendanceSession {
   /// true = present/late, false = absent, null = not yet marked.
   final bool? hiendien;
   final bool baonghi;
-  const AttendanceSession(
-      {required this.ngay, required this.hiendien, required this.baonghi});
+  const AttendanceSession({
+    required this.ngay,
+    required this.hiendien,
+    required this.baonghi,
+  });
 
   DateTime? get date => DateTime.tryParse(ngay);
 }

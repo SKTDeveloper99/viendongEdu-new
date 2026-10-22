@@ -22,6 +22,8 @@
 // total anywhere in this endpoint, so the overview tab shows "X/Y môn"
 // (subjects), not tín chỉ, rather than inventing a credit total the server
 // never computed. Documented in docs/ims_to_crm_student_academic_map.md.
+import 'json_values.dart';
+
 import 'crm_student_grades.dart';
 
 class CrmAcademicSummary {
@@ -51,16 +53,15 @@ class CrmAcademicSummary {
 
   factory CrmAcademicSummary.fromJson(Map<String, dynamic> j) =>
       CrmAcademicSummary(
-        total: (j['total'] as num?)?.toInt() ?? 0,
-        scored: (j['scored'] as num?)?.toInt() ?? 0,
-        passed: (j['passed'] as num?)?.toInt() ?? 0,
-        failed: (j['failed'] as num?)?.toInt() ?? 0,
-        averageScore: (j['average_score'] as num?)?.toDouble(),
+        total: jsonInt(j['total']) ?? 0,
+        scored: jsonInt(j['scored']) ?? 0,
+        passed: jsonInt(j['passed']) ?? 0,
+        failed: jsonInt(j['failed']) ?? 0,
+        averageScore: jsonDouble(j['average_score']),
         hasCurriculum: j['has_curriculum'] == true,
-        requiredSubjects: (j['required_subjects'] as num?)?.toInt() ?? 0,
-        requiredPassed: (j['required_passed'] as num?)?.toInt() ?? 0,
-        remainingSubjectsCount:
-            (j['remaining_subjects_count'] as num?)?.toInt() ?? 0,
+        requiredSubjects: jsonInt(j['required_subjects']) ?? 0,
+        requiredPassed: jsonInt(j['required_passed']) ?? 0,
+        remainingSubjectsCount: jsonInt(j['remaining_subjects_count']) ?? 0,
         academicallyClear: j['academically_clear'] == true,
       );
 }
@@ -77,14 +78,12 @@ class CrmGraduationSummary {
   factory CrmGraduationSummary.fromJson(Map<String, dynamic> j) {
     final list = j['remaining_subjects'];
     return CrmGraduationSummary(
-      academic: CrmAcademicSummary.fromJson(
-        (j['academic'] as Map<String, dynamic>?) ?? const {},
-      ),
+      academic: CrmAcademicSummary.fromJson(jsonMap(j['academic']) ?? const {}),
       remainingSubjects: list is List
           ? list
-              .whereType<Map<String, dynamic>>()
-              .map(CrmRemainingSubject.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(CrmRemainingSubject.fromJson)
+                .toList()
           : const [],
     );
   }

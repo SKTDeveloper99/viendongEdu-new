@@ -67,17 +67,20 @@ class _GradesScreenState extends State<GradesScreen>
     if (error != null) {
       return GradesErrorView(message: error, onRetry: _vm.refresh);
     }
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        OverviewTab(stats: _vm.stats, grades: _vm.grades),
-        DetailTab(grades: _vm.grades),
-        SubjectsTab(
-          chuaDiem: _vm.ungraded,
-          chuaHoc: _vm.remaining,
-          hasCurriculum: _vm.stats?.hasCurriculum ?? true,
-        ),
-      ],
+    return RefreshIndicator(
+      onRefresh: _vm.refresh,
+      child: TabBarView(
+        controller: _tabController,
+        children: [
+          OverviewTab(stats: _vm.stats, grades: _vm.grades),
+          DetailTab(grades: _vm.grades),
+          SubjectsTab(
+            chuaDiem: _vm.ungraded,
+            chuaHoc: _vm.remaining,
+            hasCurriculum: _vm.stats?.hasCurriculum ?? false,
+          ),
+        ],
+      ),
     );
   }
 

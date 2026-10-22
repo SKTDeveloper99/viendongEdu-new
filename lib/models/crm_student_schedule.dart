@@ -42,6 +42,8 @@
 // would make a UTC-midnight boundary drift onto the wrong calendar day for
 // any phone west of UTC, even though Vietnam (UTC+7) happens to be safe —
 // the rule has to be explicit, not "works for our timezone".
+import 'json_values.dart';
+
 DateTime? _calendarDate(dynamic v) {
   if (v == null) return null;
   final dt = DateTime.tryParse(v.toString());
@@ -56,11 +58,13 @@ class CrmStudentSection {
   final String sectionCode;
   final String subjectCode;
   final String subjectName;
-  final int credits;
+  final int? credits;
   final String teacherName;
   final DateTime? ngayBatDau;
   final DateTime? ngayKetThuc;
   final int? siSo;
+  final DateTime? examDate;
+  final String? room;
 
   const CrmStudentSection({
     this.semesterCode,
@@ -68,25 +72,29 @@ class CrmStudentSection {
     this.sectionCode = '',
     this.subjectCode = '',
     this.subjectName = '',
-    this.credits = 0,
+    this.credits,
     this.teacherName = '',
     this.ngayBatDau,
     this.ngayKetThuc,
     this.siSo,
+    this.examDate,
+    this.room,
   });
 
   factory CrmStudentSection.fromJson(Map<String, dynamic> j) =>
       CrmStudentSection(
         semesterCode: j['semester_code']?.toString(),
-        sectionId: (j['section_id'] as num?)?.toInt(),
+        sectionId: jsonInt(j['section_id']),
         sectionCode: j['section_code']?.toString() ?? '',
         subjectCode: j['subject_code']?.toString() ?? '',
         subjectName: j['subject_name']?.toString() ?? '',
-        credits: (j['credits'] as num?)?.toInt() ?? 0,
+        credits: jsonInt(j['credits']),
         teacherName: j['teacher_name']?.toString() ?? '',
         ngayBatDau: _calendarDate(j['ngay_bat_dau']),
         ngayKetThuc: _calendarDate(j['ngay_ket_thuc']),
-        siSo: (j['si_so'] as num?)?.toInt(),
+        siSo: jsonInt(j['si_so']),
+        examDate: _calendarDate(j['ngay_thi']),
+        room: j['room']?.toString(),
       );
 }
 
@@ -217,7 +225,7 @@ class CrmScheduleItem {
     periodStartName: j['period_start_name']?.toString(),
     startTime: j['start_time']?.toString(),
     endTime: j['end_time']?.toString(),
-    numPeriods: (j['num_periods'] as num?)?.toInt(),
+    numPeriods: jsonInt(j['num_periods']),
     room: j['room_name']?.toString() ?? '',
     teacherName: j['teacher_name']?.toString() ?? '',
     weeksPattern: j['weeks_pattern']?.toString(),

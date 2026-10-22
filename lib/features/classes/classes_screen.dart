@@ -57,7 +57,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
     if (_vm.loading) return skeletonList(accentColor: accent);
     final error = _vm.error;
     if (error != null) {
-      return ClassesErrorView(message: error, onRetry: _vm.fetchSemesters);
+      return ClassesErrorView(message: error, onRetry: _vm.refreshSelected);
     }
     if (_vm.loadingClasses) return skeletonList(accentColor: accent);
     if (_vm.classes.isEmpty) return const ClassesEmptyView();

@@ -46,7 +46,10 @@ class GradeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: context.vd.shadow, blurRadius: 5, offset: Offset(0, 2)),
+            color: context.vd.shadow,
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
@@ -57,8 +60,9 @@ class GradeCard extends StatelessWidget {
             height: 72,
             decoration: BoxDecoration(
               color: color,
-              borderRadius:
-                  const BorderRadius.horizontal(left: Radius.circular(14)),
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(14),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -68,39 +72,58 @@ class GradeCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.mhten,
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(
+                    item.mhten,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.school_outlined,
-                          size: 12, color: context.vd.primary),
+                      Icon(
+                        Icons.school_outlined,
+                        size: 12,
+                        color: context.vd.primary,
+                      ),
                       const SizedBox(width: 4),
-                      Text('${item.sotinchi} TC',
-                          style: TextStyle(
-                              fontSize: 12, color: context.vd.inkMuted)),
+                      Text(
+                        '${item.sotinchi ?? '?'} TC',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.vd.inkMuted,
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Icon(Icons.tag,
-                          size: 12, color: context.vd.primary),
+                      Icon(Icons.tag, size: 12, color: context.vd.primary),
                       const SizedBox(width: 4),
-                      Text(item.mhma,
-                          style: TextStyle(
-                              fontSize: 12, color: context.vd.inkMuted)),
+                      Text(
+                        item.mhma,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.vd.inkMuted,
+                        ),
+                      ),
                       if (item.solan > 1) ...[
                         const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: context.vd.accentSoft,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text('Lần ${item.solan}',
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: context.vd.primary,
-                                  fontWeight: FontWeight.w600)),
+                          child: Text(
+                            'Lần ${item.solan}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: context.vd.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ],
                     ],
@@ -117,7 +140,9 @@ class GradeCard extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -125,18 +150,20 @@ class GradeCard extends StatelessWidget {
                   child: Text(
                     item.diemchu,
                     style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: color),
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   item.tongdiem.toStringAsFixed(1),
                   style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: color),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
                 // Text(
                 //   '${item.diem4.toStringAsFixed(0)}/4',

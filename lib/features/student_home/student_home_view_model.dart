@@ -162,9 +162,23 @@ class StudentHomeViewModel extends ChangeNotifier {
       if (_disposed) return;
       _classCode = code;
       notifyListeners();
-    } catch (_) {
+    } catch (e) {
+      if (!_disposed && e is EmsException && e.statusCode == 401) {
+        _authError = e;
+        notifyListeners();
+      }
       // Header vẫn hiện tên/MSSV từ phiên; chỉ mã lớp trống.
     }
+  }
+
+  /// Normal home refresh also re-reads owner corrections and the server gate.
+  Future<void> refresh() async {
+    await Future.wait([
+      loadTodaySchedule(),
+      _loadProfile(),
+      loadUnreadCount(),
+      loadBoard(),
+    ]);
   }
 
   // Số chưa đọc = Bảng tin CRM. `mustReadPending` gộp vào vì một thông báo

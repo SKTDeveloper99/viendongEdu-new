@@ -31,162 +31,198 @@ class OverviewTab extends StatelessWidget {
     final tcChuaDiem = ((s?.total ?? 0) - (s?.scored ?? 0)).clamp(0, 1 << 30);
     final tcKhongDat = s?.failed ?? 0;
     final progress = tcTong > 0 ? (tcDat / tcTong).clamp(0.0, 1.0) : 0.0;
-    final noCurriculum = s != null && !s.hasCurriculum; // progress unknown, not 0/0
+    final noCurriculum = s?.hasCurriculum != true; // progress unknown, not 0/0
 
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Hero card ──
-          VdFadeIn(index: 0, child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [context.vd.primary, context.vd.accent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: context.vd.primary.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
+          VdFadeIn(
+            index: 0,
+            child: Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [context.vd.primary, context.vd.accent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('ĐTB Tích lũy',
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.vd.primary.withValues(alpha: 0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ĐTB Tích lũy',
                           style: TextStyle(
-                              color: context.vd.onPrimary.withValues(alpha: 0.7),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 4),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: tbTichLuy.toDouble()),
-                        duration: VdMotion.of(context).countUp,
-                        curve: VdMotion.curve,
-                        builder: (context, v, _) => Text(
-                          v.toStringAsFixed(2),
-                          style: TextStyle(
-                            color: context.vd.onPrimary,
-                            fontSize: 52,
-                            fontWeight: FontWeight.bold,
-                            height: 1,
+                            color: context.vd.onPrimary.withValues(alpha: 0.7),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: context.vd.onPrimary.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(20),
+                        const SizedBox(height: 4),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(
+                            begin: 0,
+                            end: tbTichLuy.toDouble(),
+                          ),
+                          duration: VdMotion.of(context).countUp,
+                          curve: VdMotion.curve,
+                          builder: (context, v, _) => Text(
+                            s?.averageScore == null
+                                ? '—'
+                                : v.toStringAsFixed(2),
+                            style: TextStyle(
+                              color: context.vd.onPrimary,
+                              fontSize: 52,
+                              fontWeight: FontWeight.bold,
+                              height: 1,
+                            ),
+                          ),
                         ),
-                        child: Text(
-                          'Tổng kết: ${tbTichLuy.toStringAsFixed(2)}',
-                          style: TextStyle(
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.vd.onPrimary.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            s?.averageScore == null
+                                ? 'Chưa có điểm tổng kết'
+                                : 'Tổng kết: ${tbTichLuy.toStringAsFixed(2)}',
+                            style: TextStyle(
                               color: context.vd.onPrimary,
                               fontSize: 12,
-                              fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Icon(Icons.school_outlined,
-                              color: context.vd.onPrimary.withValues(alpha: 0.7), size: 14),
-                          const SizedBox(width: 5),
-                          Text(
-                            noCurriculum ? 'Chưa có chương trình đào tạo' : '$tcDat / $tcTong môn đạt',
-                            style: TextStyle(
-                                color: context.vd.onPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Circular progress
-                TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: progress),
-                  duration: VdMotion.of(context).countUp,
-                  curve: VdMotion.curve,
-                  builder: (context, p, _) => SizedBox(
-                    width: 96,
-                    height: 96,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircularArc(
-                          value: p,
-                          size: 96,
-                          trackColor: context.vd.onPrimary.withValues(alpha: 0.2),
-                          progressColor: context.vd.onPrimary,
-                          strokeWidth: 9,
                         ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
+                        const SizedBox(height: 14),
+                        Row(
                           children: [
+                            Icon(
+                              Icons.school_outlined,
+                              color: context.vd.onPrimary.withValues(
+                                alpha: 0.7,
+                              ),
+                              size: 14,
+                            ),
+                            const SizedBox(width: 5),
                             Text(
-                              noCurriculum ? '—' : '${(p * 100).toInt()}%',
+                              noCurriculum
+                                  ? 'Chưa có chương trình đào tạo'
+                                  : '$tcDat / $tcTong môn đạt',
                               style: TextStyle(
                                 color: context.vd.onPrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                height: 1,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text('hoàn thành',
-                                style: TextStyle(
-                                    color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 9)),
                           ],
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  // Circular progress
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0, end: progress),
+                    duration: VdMotion.of(context).countUp,
+                    curve: VdMotion.curve,
+                    builder: (context, p, _) => SizedBox(
+                      width: 96,
+                      height: 96,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircularArc(
+                            value: p,
+                            size: 96,
+                            trackColor: context.vd.onPrimary.withValues(
+                              alpha: 0.2,
+                            ),
+                            progressColor: context.vd.onPrimary,
+                            strokeWidth: 9,
+                          ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                noCurriculum ? '—' : '${(p * 100).toInt()}%',
+                                style: TextStyle(
+                                  color: context.vd.onPrimary,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'hoàn thành',
+                                style: TextStyle(
+                                  color: context.vd.onPrimary.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
           const SizedBox(height: 14),
 
           // ── Mini stat row ──
-          VdFadeIn(index: 1, child: Row(
-            children: [
-              MiniStat(
-                label: 'Môn đã học',
-                value: '${grades.length}',
-                icon: Icons.menu_book_outlined,
-                color: context.vd.info,
-              ),
-              const SizedBox(width: 10),
-              MiniStat(
-                label: 'Không đạt',
-                value: '$tcKhongDat môn',
-                icon: Icons.cancel_outlined,
-                color: context.vd.danger,
-              ),
-              const SizedBox(width: 10),
-              MiniStat(
-                label: 'Chưa có điểm',
-                value: '$tcChuaDiem môn',
-                icon: Icons.hourglass_empty,
-                color: context.vd.primary,
-              ),
-            ],
-          )),
+          VdFadeIn(
+            index: 1,
+            child: Row(
+              children: [
+                MiniStat(
+                  label: 'Môn đã học',
+                  value: '${grades.length}',
+                  icon: Icons.menu_book_outlined,
+                  color: context.vd.info,
+                ),
+                const SizedBox(width: 10),
+                MiniStat(
+                  label: 'Không đạt',
+                  value: '$tcKhongDat môn',
+                  icon: Icons.cancel_outlined,
+                  color: context.vd.danger,
+                ),
+                const SizedBox(width: 10),
+                MiniStat(
+                  label: 'Chưa có điểm',
+                  value: '$tcChuaDiem môn',
+                  icon: Icons.hourglass_empty,
+                  color: context.vd.primary,
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
 
           // ── Grade distribution (donut + legend) ──
@@ -197,4 +233,3 @@ class OverviewTab extends StatelessWidget {
     );
   }
 }
-

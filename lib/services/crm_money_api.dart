@@ -1,5 +1,6 @@
 import 'ems_api_service.dart';
 import 'offline_snapshot.dart';
+import 'app_session.dart';
 import '../models/crm_money_tuition.dart';
 import '../models/crm_money_fees.dart';
 import '../models/crm_money_capbu.dart';
@@ -16,17 +17,28 @@ class CrmMoneyApi {
   /// Mất mạng thì trả bản tốt gần nhất đã lưu trên máy (kèm giờ lưu);
   /// lỗi đăng nhập (401) vẫn ném ra để màn hình đưa về trang đăng nhập.
   static Future<CrmTuitionResponse> getTuition() async {
+    final token = AppSession.instance.emsToken;
     try {
       final body = await EmsApiService.send('GET', '/student/me/tuition');
       final map = body as Map<String, dynamic>;
+      final parsed = CrmTuitionResponse.fromJson(map);
+      if (token != AppSession.instance.emsToken) {
+        throw EmsException('Phiên đăng nhập đã thay đổi.', statusCode: 401);
+      }
       await OfflineSnapshot.save('student_tuition', map);
-      return CrmTuitionResponse.fromJson(map);
-    } catch (e) {
-      if (e is EmsException && e.statusCode == 401) rethrow;
+      return parsed;
+    } on EmsException catch (e) {
+      if (token != AppSession.instance.emsToken) rethrow;
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        await OfflineSnapshot.remove('student_tuition');
+        rethrow;
+      }
+      if (e.statusCode != null && e.statusCode! < 500) rethrow;
       final saved = await OfflineSnapshot.load('student_tuition');
       if (saved == null || saved.data is! Map<String, dynamic>) rethrow;
-      return CrmTuitionResponse.fromJson(saved.data as Map<String, dynamic>)
-          .withOfflineSavedAt(saved.savedAt);
+      return CrmTuitionResponse.fromJson(
+        saved.data as Map<String, dynamic>,
+      ).withOfflineSavedAt(saved.savedAt);
     }
   }
 

@@ -35,16 +35,19 @@ class CrmStudentApi {
   /// `GET /api/student/me` → { student }.
   /// Thay `hocvien/user/info` (`ApiService.getUserInfo`).
   static Future<CrmStudentProfile> me() async {
+    final token = AppSession.instance.emsToken;
     final body =
         await EmsApiService.send('GET', '/student/me') as Map<String, dynamic>;
     final student = body['student'];
     if (student is! Map<String, dynamic>) {
       throw EmsException('Máy chủ không trả về hồ sơ học viên.');
     }
-    if (body['data_open'] is bool) {
-      AppSession.instance.dataOpen = body['data_open'] as bool;
+    final profile = CrmStudentProfile.fromJson(student);
+    if (token == AppSession.instance.emsToken) {
+      AppSession.instance.applyStudentDataGate(body);
+      AppSession.instance.fullName = profile.fullName.isEmpty ? null : profile.fullName;
     }
-    return CrmStudentProfile.fromJson(student);
+    return profile;
   }
 
   /// `GET /api/student/me/grades` → { mssv, summary, grades }.
