@@ -208,6 +208,96 @@ void main() {
     expect(calls, 1);
   });
 
+  test('an untagged response is still available offline', () async {
+    EmsApiService.client = MockClient((_) async => _json({'v': 4}));
+    await EmsApiService.sendCached('/test');
+    EmsApiService.client = MockClient(
+      (_) async => throw TimeoutException('test'),
+    );
+    final result = await EmsApiService.sendCached('/test');
+    expect(result.data, {'v': 4});
+    expect(result.fresh, isFalse);
+  });
+
+  for (final status in [401, 403]) {
+    test('$status invalidates the cached body instead of using it', () async {
+      EmsApiService.client = MockClient((_) async => _json({'v': 4}));
+      await EmsApiService.sendCached('/test');
+      EmsApiService.client = MockClient((_) async => _json({}, status: status));
+      await expectLater(
+        EmsApiService.sendCached('/test'),
+        throwsA(
+          isA<EmsException>().having((e) => e.statusCode, 'status', status),
+        ),
+      );
+      EmsApiService.client = MockClient(
+        (_) async => throw http.ClientException('offline'),
+      );
+      await expectLater(
+        EmsApiService.sendCached('/test'),
+        throwsA(isA<EmsException>()),
+      );
+    });
+  }
+
+  test('invalid typed JSON cannot overwrite the last good snapshot', () async {
+    void validate(dynamic data) {
+      (data['items'] as List).cast<Map<String, dynamic>>().toList();
+    }
+
+    EmsApiService.client = MockClient(
+      (_) async => _json({
+        'items': [
+          {'id': 'TEST26'},
+        ],
+      }),
+    );
+    await EmsApiService.sendCached('/test', validate: validate);
+    EmsApiService.client = MockClient((_) async => _json({'items': 'broken'}));
+    final result = await EmsApiService.sendCached('/test', validate: validate);
+    expect(result.data, {
+      'items': [
+        {'id': 'TEST26'},
+      ],
+    });
+    expect(result.fresh, isFalse);
+  });
+
+  test('corrupt stored data does not prevent a fresh request', () async {
+    await OfflineSnapshot.save('http_cache:/api/test?', {
+      'body': {'items': 'broken'},
+    });
+    EmsApiService.client = MockClient((_) async => _json({'items': []}));
+    var painted = false;
+    final result = await EmsApiService.sendCached(
+      '/test',
+      validate: (data) {
+        data['items'] as List;
+      },
+      onStored: (_, _) => painted = true,
+    );
+    expect(painted, isFalse);
+    expect(result.fresh, isTrue);
+  });
+
+  test('an old request cannot populate another account cache', () async {
+    final response = Completer<http.Response>();
+    EmsApiService.client = MockClient((_) => response.future);
+    final read = EmsApiService.sendCached('/test');
+    // Let the account-scoped disk read finish and the fake request start.
+    await Future<void>.delayed(Duration.zero);
+    AppSession.instance
+      ..emsToken = 'test-new-session'
+      ..mssv = 'TEST260002';
+    response.complete(_json({'items': []}));
+    await expectLater(
+      read,
+      throwsA(isA<EmsException>().having((e) => e.statusCode, 'status', 403)),
+    );
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getKeys().where((k) => k.startsWith('offline_v1_')), isEmpty);
+  });
+
   test('304 returns the stored body as fresh', () async {
     var calls = 0;
     String? inm;

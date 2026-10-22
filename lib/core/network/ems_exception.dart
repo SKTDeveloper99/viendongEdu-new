@@ -39,3 +39,14 @@ class EmsPunchConflict extends EmsException {
 String crmErrorMessage(Object error) => error is EmsException
     ? error.message
     : 'Không đọc được dữ liệu. Vui lòng thử lại.';
+
+/// Normalize typed JSON failures before they reach a screen or draft loader.
+T parseCrmResponse<T>(T Function() decode) {
+  try {
+    return decode();
+  } on EmsException {
+    rethrow;
+  } catch (_) {
+    throw EmsException('Máy chủ trả về dữ liệu không đọc được. Vui lòng thử lại.');
+  }
+}

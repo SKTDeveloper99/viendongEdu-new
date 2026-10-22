@@ -5,6 +5,7 @@ import 'app_session.dart';
 import 'ems_api_service.dart';
 
 bool _handling = false;
+NavigatorState? _handledNavigator;
 
 /// Include silent badge, prefetch and outbox requests in session expiry.
 void installCrmSessionGuard(GlobalKey<NavigatorState> key) {
@@ -19,12 +20,14 @@ void installCrmSessionGuard(GlobalKey<NavigatorState> key) {
 Future<bool> handleCrmAuthError(BuildContext context, Object error) async {
   if (error is! EmsException || error.statusCode != 401) return false;
   final session = AppSession.instance;
-  if (_handling || !session.hasEms || !context.mounted) return true;
+  if (_handling || !context.mounted) return true;
   if (error.requestToken != null && error.requestToken != session.emsToken) {
     return true;
   }
-  _handling = true;
   final navigator = Navigator.of(context, rootNavigator: true);
+  if (!session.hasEms && identical(_handledNavigator, navigator)) return true;
+  _handling = true;
+  _handledNavigator = navigator;
   try {
     // An expired token cannot revoke devices. Local sign-out must not wait
     // for Firebase/APNs or trigger another authenticated request.
