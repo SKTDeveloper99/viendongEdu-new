@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -18,11 +19,15 @@ http.Response _json(Object body, {int status = 200, Map<String, String>? h}) =>
 
 void main() {
   late http.Client original;
+  late Duration Function(int) originalDelay;
+  late Future<void> Function() originalProbe;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
     original = EmsApiService.client;
+    originalDelay = EmsApiService.retryDelay;
+    originalProbe = EmsApiService.probe;
     EmsApiService.retryDelay = (_) => Duration.zero;
     EmsApiService.resetConnectionState();
     final s = AppSession.instance;
@@ -33,7 +38,105 @@ void main() {
 
   tearDown(() {
     EmsApiService.client = original;
+    EmsApiService.retryDelay = originalDelay;
+    EmsApiService.probe = originalProbe;
+    EmsApiService.onUnauthorized = null;
     AppSession.instance.emsToken = null;
+  });
+
+  for (final method in ['GET', 'POST', 'PATCH', 'DELETE']) {
+    for (final failure in ['offline', 'timeout', '500', '401', 'json']) {
+      test('$method $failure is Vietnamese and can be retried', () async {
+        var calls = 0;
+        EmsApiService.client = MockClient((_) async {
+          calls++;
+          if (calls > 1) return _json({'ok': true});
+          switch (failure) {
+            case 'offline':
+              throw http.ClientException('fictional network failure');
+            case 'timeout':
+              throw TimeoutException('fictional timeout');
+            case '500':
+              return _json({
+                'error': 'internal_error',
+                'message': 'SQL failure',
+              }, status: 500);
+            case '401':
+              return http.Response('<html>Unauthorized</html>', 401);
+            default:
+              return http.Response('{broken', 200);
+          }
+        });
+        await expectLater(
+          EmsApiService.sendMap(method, '/test'),
+          throwsA(
+            isA<EmsException>().having(
+              (e) => e.message,
+              'Vietnamese message',
+              matches(RegExp(r'[À-ỹĐđ]')),
+            ),
+          ),
+        );
+        expect(calls, 1); // No implicit write retry.
+        expect(await EmsApiService.sendMap(method, '/test'), {'ok': true});
+        expect(calls, 2);
+      });
+    }
+  }
+
+  testWidgets('a client that never completes is bounded by read timeout', (
+    tester,
+  ) async {
+    EmsApiService.client = MockClient((_) => Completer<http.Response>().future);
+    Object? error;
+    final read = EmsApiService.send('GET', '/test').catchError((Object e) {
+      error = e;
+      return null;
+    });
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 7));
+    await read;
+    expect(error, isA<EmsException>());
+  });
+
+  test('sendMap rejects a JSON array with a Vietnamese error', () async {
+    EmsApiService.client = MockClient((_) async => _json([]));
+    await expectLater(
+      EmsApiService.sendMap('GET', '/test'),
+      throwsA(isA<EmsException>()),
+    );
+  });
+
+  test('machine-only validation codes use Vietnamese fallback', () async {
+    EmsApiService.client = MockClient(
+      (_) async => _json({'error': 'bad_request'}, status: 400),
+    );
+    await expectLater(
+      EmsApiService.send('GET', '/test'),
+      throwsA(
+        isA<EmsException>().having(
+          (e) => e.message,
+          'message',
+          'Không thực hiện được yêu cầu. Vui lòng thử lại.',
+        ),
+      ),
+    );
+  });
+
+  test('only authenticated 401s notify the shell', () async {
+    final errors = <EmsException>[];
+    EmsApiService.onUnauthorized = errors.add;
+    EmsApiService.client = MockClient(
+      (_) async => http.Response('invalid', 401),
+    );
+    for (final auth in [false, true]) {
+      await expectLater(
+        EmsApiService.send('GET', '/test', auth: auth),
+        throwsA(isA<EmsException>()),
+      );
+    }
+    expect(errors, hasLength(1));
+    expect(errors.single.requestToken, 'test-token');
   });
 
   test('two parallel identical GETs make one request', () async {

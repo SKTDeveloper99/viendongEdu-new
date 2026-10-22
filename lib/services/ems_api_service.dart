@@ -33,6 +33,10 @@ class EmsApiService {
   /// TLS — không có chế độ bỏ qua chứng chỉ).
   static http.Client client = http.Client();
 
+  /// Installed by the app shell; includes background/badge requests whose
+  /// callers intentionally ignore ordinary network failures.
+  static void Function(EmsException error)? onUnauthorized;
+
   /// Header cho widget ảnh (Image.network) — ảnh cũng nằm sau Bearer token.
   static Map<String, String> get authHeaders {
     final t = AppSession.instance.emsToken;
@@ -91,7 +95,7 @@ class EmsApiService {
   /// JSON ở cấp cao nhất (vd. `GET /teacher/me/semesters`) — [send] không
   /// còn ép người gọi phải bọc route đó trong một client HTTP riêng chỉ để
   /// đọc mảng.
-  static dynamic _decode(http.Response res) {
+  static dynamic _decode(http.Response res, {String? requestToken}) {
     dynamic body;
     try {
       body = jsonDecode(res.body);
@@ -112,6 +116,15 @@ class EmsApiService {
     final map = body is Map<String, dynamic> ? body : null;
     final rawError = map?['error']?.toString();
     final rawMessage = map?['message']?.toString();
+    if (res.statusCode == 401) {
+      final error = EmsException(
+        'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+        statusCode: 401,
+        requestToken: requestToken,
+      );
+      if (requestToken != null) onUnauthorized?.call(error);
+      throw error;
+    }
 
     // 422 riêng của điểm danh: có học viên đã quẹt cổng mà bị ghi VẮNG không
     // kèm lý do. Không phải lỗi — là câu hỏi. Màn hình hỏi lý do rồi gửi lại,
@@ -146,8 +159,21 @@ class EmsApiService {
       );
     }
 
+    // Infrastructure errors and machine codes are never product copy.
+    if (res.statusCode >= 500) {
+      throw EmsException(
+        'Máy chủ gặp sự cố. Vui lòng thử lại sau giây lát.',
+        code: rawError,
+        statusCode: res.statusCode,
+      );
+    }
+    final message = rawMessage ?? rawError;
+    final vietnamese =
+        message != null &&
+        RegExp(r'[À-ỹĐđ]').hasMatch(message) &&
+        !RegExp(r'[<>\r\n]').hasMatch(message);
     throw EmsException(
-      rawMessage ?? rawError ?? 'Không kết nối được máy chủ thông tin.',
+      vietnamese ? message : 'Không thực hiện được yêu cầu. Vui lòng thử lại.',
       code: rawError,
       statusCode: res.statusCode,
     );
@@ -174,18 +200,23 @@ class EmsApiService {
     bool auth = true,
   }) async {
     final uri = _buildUri(path, query);
+    final token = auth ? AppSession.instance.emsToken : null;
     if (method != 'GET') {
       // Đăng nhập (auth:false) và đăng ký thiết bị nhận thông báo không qua
       // cổng này: chúng tự báo lỗi riêng và không mang dữ liệu học vụ.
       if (auth && !path.contains('/devices')) await _ensureConnectionSure();
-      return _decode(await _once(method, uri, body: body, auth: auth));
+      _checkSession(token, auth: auth);
+      return _decode(
+        await _once(method, uri, body: body, auth: auth),
+        requestToken: token,
+      );
     }
     // Identical in-flight GETs (same token + URL) share one request.
     final key = '${auth ? AppSession.instance.emsToken : ''}|$uri';
     final existing = _inflight[key];
     if (existing != null) return existing;
     final future = () async {
-      return _decode(await _getWithRetry(uri, auth: auth));
+      return _decode(await _getWithRetry(uri, auth: auth), requestToken: token);
     }();
     _inflight[key] = future;
     try {
@@ -298,10 +329,12 @@ class EmsApiService {
   }) async {
     Future<http.Response> attempt() =>
         _once('GET', uri, auth: auth, extraHeaders: extraHeaders);
+    final token = AppSession.instance.emsToken;
     final res = await attempt();
     if (res.statusCode != 503) return res;
     final ra = int.tryParse(res.headers['retry-after'] ?? '') ?? 1;
     await Future<void>.delayed(retryDelay(ra < 0 ? 0 : ra));
+    _checkSession(token, auth: auth);
     return attempt();
   }
 
@@ -352,8 +385,28 @@ class EmsApiService {
     String path, {
     Map<String, dynamic>? body,
     bool auth = true,
+    Map<String, String>? query,
   }) async {
-    return (await send(method, path, body: body, auth: auth))
-        as Map<String, dynamic>;
+    final data = await send(method, path, body: body, auth: auth, query: query);
+    return parse(() => data as Map<String, dynamic>);
+  }
+
+  /// Typed response parsing shares the same Vietnamese failure contract.
+  static T parse<T>(T Function() decode) {
+    try {
+      return decode();
+    } on EmsException {
+      rethrow;
+    } catch (_) {
+      throw EmsException(
+        'Máy chủ trả về dữ liệu không đọc được. Vui lòng thử lại.',
+      );
+    }
+  }
+
+  static void _checkSession(String? token, {bool auth = true}) {
+    if (auth && token != AppSession.instance.emsToken) {
+      throw EmsException('Phiên đăng nhập đã thay đổi.', statusCode: 403);
+    }
   }
 }

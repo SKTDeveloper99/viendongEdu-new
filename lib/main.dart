@@ -1,3 +1,4 @@
+import 'services/crm_session_guard.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -86,6 +87,7 @@ void main() async {
     }
   }
 
+  installCrmSessionGuard(navigatorKey);
   setNotificationNavigatorKey(navigatorKey);
   NotificationService.instance.configureEmsStudentDevice(
     register: AppSession.instance.registerStudentDeviceToken,

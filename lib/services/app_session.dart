@@ -148,14 +148,14 @@ class AppSession {
   }
 
   /// Xóa session khi đăng xuất, hoặc khi EMS trả 401 (phiên hết hạn).
-  Future<void> clear() async {
+  Future<void> clear({bool revokeDevice = true}) async {
     for (final hook in List.of(clearHooks)) {
       hook();
     }
     await OfflineSnapshot.clearCurrentAccount();
     // Xóa FCM token trước khi clear session.
     final id = identity?.notificationId;
-    if (id != null && id.isNotEmpty) {
+    if (revokeDevice && id != null && id.isNotEmpty) {
       await NotificationService.instance.unregisterToken(id);
     }
     emsToken = null;
