@@ -14,10 +14,16 @@ class UnscoredSubjectsTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.hourglass_empty_rounded, size: 64, color: context.vd.inkFaint),
+            Icon(
+              Icons.hourglass_empty_rounded,
+              size: 64,
+              color: context.vd.inkFaint,
+            ),
             SizedBox(height: 12),
-            Text('Không còn môn chưa có điểm',
-                style: TextStyle(color: context.vd.inkMuted)),
+            Text(
+              'Không còn môn chưa có điểm',
+              style: TextStyle(color: context.vd.inkMuted),
+            ),
           ],
         ),
       );
@@ -30,7 +36,10 @@ class UnscoredSubjectsTab extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: context.vd.accentSoft,
                   borderRadius: BorderRadius.circular(20),
@@ -38,9 +47,10 @@ class UnscoredSubjectsTab extends StatelessWidget {
                 child: Text(
                   '${items.length} môn chưa có điểm',
                   style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: context.vd.primary),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.vd.primary,
+                  ),
                 ),
               ),
             ],
@@ -59,9 +69,10 @@ class UnscoredSubjectsTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                        color: context.vd.shadow,
-                        blurRadius: 5,
-                        offset: Offset(0, 2)),
+                      color: context.vd.shadow,
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -72,7 +83,8 @@ class UnscoredSubjectsTab extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: context.vd.inkMuted,
                         borderRadius: BorderRadius.horizontal(
-                            left: Radius.circular(14)),
+                          left: Radius.circular(14),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -82,26 +94,32 @@ class UnscoredSubjectsTab extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.mhten,
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
+                            Text(
+                              item.mhten,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Row(
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
                               children: [
-                                Icon(Icons.school_outlined,
-                                    size: 12, color: context.vd.primary),
-                                const SizedBox(width: 4),
-                                Text('${item.sotinchi} TC',
-                                    style: TextStyle(
-                                        fontSize: 12, color: context.vd.inkMuted)),
-                                const SizedBox(width: 12),
-                                Icon(Icons.tag,
-                                    size: 12, color: context.vd.primary),
-                                const SizedBox(width: 4),
-                                Text(item.mhma,
-                                    style: TextStyle(
-                                        fontSize: 12, color: context.vd.inkMuted)),
+                                Text(
+                                  item.mhma,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.vd.inkMuted,
+                                  ),
+                                ),
+                                Text(
+                                  '${item.sotinchi} TC',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.vd.inkMuted,
+                                  ),
+                                ),
                               ],
                             ),
                           ],
@@ -110,11 +128,14 @@ class UnscoredSubjectsTab extends StatelessWidget {
                     ),
                     Padding(
                       padding: EdgeInsets.only(right: 14),
-                      child: Text('Chưa học',
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: context.vd.inkMuted)),
+                      child: Text(
+                        'Chưa học',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: context.vd.inkMuted,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -126,4 +147,3 @@ class UnscoredSubjectsTab extends StatelessWidget {
     );
   }
 }
-

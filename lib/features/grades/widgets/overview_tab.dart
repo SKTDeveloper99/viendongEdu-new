@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../components/vd_fade_in.dart';
 import '../../../models/crm_student_graduation_summary.dart';
 import '../grade_item.dart';
-import 'circular_arc.dart';
+import 'grade_progress.dart';
 import 'grade_distribution.dart';
 import 'mini_stat.dart';
 import '../../../theme/vd_motion.dart';
@@ -150,54 +150,7 @@ class OverviewTab extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   // Circular progress
-                  TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0, end: progress),
-                    duration: VdMotion.of(context).countUp,
-                    curve: VdMotion.curve,
-                    builder: (context, p, _) => SizedBox(
-                      width: 96 * MediaQuery.textScalerOf(context).scale(1),
-                      height: 96 * MediaQuery.textScalerOf(context).scale(1),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircularArc(
-                            value: p,
-                            size:
-                                96 * MediaQuery.textScalerOf(context).scale(1),
-                            trackColor: context.vd.onPrimary.withValues(
-                              alpha: 0.2,
-                            ),
-                            progressColor: context.vd.onPrimary,
-                            strokeWidth: 9,
-                          ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                noCurriculum
-                                    ? 'Chưa rõ'
-                                    : '${(p * 100).toInt()}%',
-                                style: TextStyle(
-                                  color: context.vd.onPrimary,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'hoàn thành',
-                                style: TextStyle(
-                                  color: context.vd.onPrimary,
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  GradeProgress(progress: progress, noCurriculum: noCurriculum),
                 ],
               ),
             ),
