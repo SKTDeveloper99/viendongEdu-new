@@ -13,7 +13,9 @@ class _Routes extends NavigatorObserver {
   int logins = 0;
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (route.settings.name == '/login') logins++;
+    if (route.settings.name == '/login') {
+      logins++;
+    }
   }
 }
 
@@ -50,12 +52,23 @@ void main() {
         routes: {'/login': (_) => const Scaffold(body: Text('Đăng nhập'))},
       ),
     );
+    await tester.pumpAndSettle();
+    expect(key.currentState?.overlay?.context, isNotNull);
+    expect(AppSession.instance.hasEms, isTrue);
     await OfflineSnapshot.save('test', {'items': []});
     await tester.runAsync(() async {
       await Future.wait([
         for (var i = 0; i < 3; i++)
-          EmsApiService.send('GET', '/test/$i').catchError((_) => null),
+          EmsApiService.send('GET', '/test/$i').catchError((Object error) {
+            expect(error, isA<EmsException>());
+            return null;
+          }),
       ]);
+      await () async {
+        while (AppSession.instance.hasEms) {
+          await Future<void>.delayed(Duration.zero);
+        }
+      }().timeout(const Duration(seconds: 3));
     });
     await tester.pumpAndSettle();
     expect(routes.logins, 1);
