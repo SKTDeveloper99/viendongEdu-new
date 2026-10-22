@@ -37,7 +37,9 @@ class ClassesViewModel extends ChangeNotifier {
   Object? get authError => _authError;
 
   /// Loads the semester list, then opens the newest one. Also "Thử lại".
-  Future<void> fetchSemesters() async {
+  Future<void> fetchSemesters({bool preserveSelection = false}) async {
+    final request = ++_selection;
+    final previousCode = preserveSelection ? _selected?.code : null;
     _loading = true;
     _error = null;
     _authError = null;
@@ -64,20 +66,24 @@ class ClassesViewModel extends ChangeNotifier {
       }
       // Mới nhất trước (mã học kỳ lớn hơn = mới hơn).
       sems.sort((a, b) => b.code.compareTo(a.code));
-      if (_disposed) return;
+      if (_disposed || request != _selection) return;
       _semesters = sems;
       _selected = null;
       _classes = [];
       _loading = false;
+      _loadingClasses = false;
       notifyListeners();
-      final def = pickDefaultSemester(
-        sems,
-        codeOf: (s) => s.code,
-        startOf: (s) => s.start,
-      );
+      final previous = sems.where((s) => s.code == previousCode);
+      final def = previous.isNotEmpty
+          ? previous.first
+          : pickDefaultSemester(
+              sems,
+              codeOf: (s) => s.code,
+              startOf: (s) => s.start,
+            );
       if (def != null) await selectSemester(def);
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || request != _selection) return;
       _loading = false;
       _error = e.toString();
       _flagAuth(e);
@@ -128,8 +134,7 @@ class ClassesViewModel extends ChangeNotifier {
   }
 
   /// Pull-to-refresh: reloads the selected semester.
-  Future<void> refreshSelected() =>
-      _selected == null ? fetchSemesters() : selectSemester(_selected!);
+  Future<void> refreshSelected() => fetchSemesters(preserveSelection: true);
 
   void _flagAuth(Object e) {
     if (e is EmsException && e.statusCode == 401) _authError = e;

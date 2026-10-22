@@ -123,18 +123,18 @@ class GradeDistribution extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
+                          Expanded(child: Text(
                             'Loại ${e.key}',
                             style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600),
-                          ),
-                          const Spacer(),
-                          Text(
+                          )),
+                          const SizedBox(width: 8),
+                          Flexible(child: Text(
                             '${e.value} môn · $pct%',
                             style: TextStyle(
                                 fontSize: 11, color: context.vd.inkMuted),
-                          ),
+                          )),
                         ],
                       ),
                     );

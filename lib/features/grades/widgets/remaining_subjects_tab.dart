@@ -9,10 +9,12 @@ class RemainingSubjectsTab extends StatelessWidget {
   /// False when the server has no confirmed curriculum for the student: an
   /// empty list then means "unknown", not "nothing left".
   final bool hasCurriculum;
+  final bool dataKnown;
   const RemainingSubjectsTab({
     super.key,
     required this.items,
     this.hasCurriculum = true,
+    this.dataKnown = true,
   });
 
   @override
@@ -29,9 +31,11 @@ class RemainingSubjectsTab extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              hasCurriculum
-                  ? 'Không còn môn chưa học'
-                  : 'Chưa có chương trình đào tạo cho hệ của bạn',
+              !hasCurriculum
+                  ? 'Chưa có chương trình đào tạo cho hệ của bạn'
+                  : !dataKnown
+                  ? 'Chưa có dữ liệu môn học còn lại'
+                  : 'Không còn môn chưa học',
               style: TextStyle(color: context.vd.inkMuted),
             ),
           ],

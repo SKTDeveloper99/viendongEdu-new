@@ -21,6 +21,7 @@ class ClassSemester {
 // screen and are not modelled. Score breakdown (diemgk/diemck/tongdiem) is
 // filled in from /me/grades, matched by section_code.
 class ClassItem {
+  final String? semesterCode;
   final int? sectionId;
   final String lmhma; // section_code
   final String mhma; // subject_code
@@ -36,6 +37,7 @@ class ClassItem {
   final String? room;
 
   const ClassItem({
+    this.semesterCode,
     required this.sectionId,
     required this.lmhma,
     required this.mhma,
@@ -55,6 +57,7 @@ class ClassItem {
     CrmStudentSection s, {
     CrmStudentGrade? grade,
   }) => ClassItem(
+    semesterCode: s.semesterCode,
     sectionId: s.sectionId,
     lmhma: s.sectionCode,
     mhma: s.subjectCode,

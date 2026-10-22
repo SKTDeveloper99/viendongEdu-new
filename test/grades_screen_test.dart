@@ -109,6 +109,46 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets(
+    'true zero average remains zero; absent remaining list is unknown',
+    (tester) async {
+      EmsApiService.client = _server(
+        grades: {'mssv': 'TEST260001', 'summary': {}, 'grades': []},
+        summary: {
+          'academic': {
+            'average_score': '0.0',
+            'has_curriculum': true,
+            'required_subjects': '5',
+            'required_passed': '0',
+          },
+        },
+      );
+      await pump(tester);
+      expect(find.text('0.00'), findsOneWidget);
+      expect(find.text('0 / 5 môn đạt'), findsOneWidget);
+      expect(find.text('0 môn'), findsNothing); // Missing counts are not zero.
+      await tester.tap(find.text('Môn học'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chưa học'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chưa có dữ liệu môn học còn lại'), findsOneWidget);
+      expect(find.text('Không còn môn chưa học'), findsNothing);
+    },
+  );
+
+  testWidgets('unknown curriculum copy fits a narrow phone', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    EmsApiService.client = _server(
+      summary: {'academic': {}, 'remaining_subjects': []},
+    );
+    await pump(tester);
+    expect(find.text('Chưa có chương trình đào tạo'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('overview tab shows server totals, distribution and mini stats', (
     tester,
   ) async {
@@ -198,7 +238,8 @@ void main() {
     );
     await pump(tester);
 
-    expect(find.text('0.00'), findsNWidgets(1));
+    expect(find.text('0.00'), findsNothing);
+    expect(find.text('Chưa có điểm tổng kết'), findsOneWidget);
     // No has_curriculum from the server = curriculum unknown, not "0 / 0".
     expect(find.text('Chưa có chương trình đào tạo'), findsOneWidget);
     expect(find.text('Phân bổ điểm chữ'), findsNothing);
@@ -212,7 +253,10 @@ void main() {
     expect(find.text('Không còn môn chưa có điểm'), findsOneWidget);
     await tester.tap(find.text('Chưa học'));
     await tester.pumpAndSettle();
-    expect(find.text('Chưa có chương trình đào tạo cho hệ của bạn'), findsOneWidget);
+    expect(
+      find.text('Chưa có chương trình đào tạo cho hệ của bạn'),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -251,7 +295,10 @@ void main() {
       await tester.tap(find.text('Chưa học').first); // the filter chip
       await tester.pumpAndSettle();
       expect(find.text('Không còn môn chưa học'), findsNothing);
-      expect(find.text('Chưa có chương trình đào tạo cho hệ của bạn'), findsOneWidget);
+      expect(
+        find.text('Chưa có chương trình đào tạo cho hệ của bạn'),
+        findsOneWidget,
+      );
     },
   );
 

@@ -169,7 +169,7 @@ void main() {
     expect(find.text('1 lớp học'), findsOneWidget);
     expect(find.text('Môn thử nghiệm C'), findsOneWidget);
     expect(find.text('Môn thử nghiệm A'), findsNothing);
-    expect(find.text('0 TC'), findsNothing); // credits 0 → no chip
+    expect(find.text('0 TC'), findsOneWidget); // explicit zero is known
   });
 
   testWidgets(
@@ -256,7 +256,7 @@ void main() {
     await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
 
-    expect(sectionsCalls, before + 1);
+    expect(sectionsCalls, before + 2); // refresh semester choices and rows
     expect(find.text('2 lớp học'), findsOneWidget);
   });
 }

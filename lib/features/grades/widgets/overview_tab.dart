@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../components/vd_fade_in.dart';
 import '../../../models/crm_student_graduation_summary.dart';
 import '../grade_item.dart';
-import 'circular_arc.dart';
+import 'curriculum_progress.dart';
 import 'grade_distribution.dart';
 import 'mini_stat.dart';
 import '../../../theme/vd_motion.dart';
@@ -25,12 +25,18 @@ class OverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = stats;
-    final tcDat = s?.requiredPassed ?? 0;
-    final tcTong = s?.requiredSubjects ?? 0;
+    final tcDat = s?.requiredPassed;
+    final tcTong = s?.requiredSubjects;
     final tbTichLuy = s?.averageScore ?? 0;
-    final tcChuaDiem = ((s?.total ?? 0) - (s?.scored ?? 0)).clamp(0, 1 << 30);
-    final tcKhongDat = s?.failed ?? 0;
-    final progress = tcTong > 0 ? (tcDat / tcTong).clamp(0.0, 1.0) : 0.0;
+    final tcChuaDiem = s?.total == null || s?.scored == null
+        ? null
+        : (s!.total! - s.scored!).clamp(0, 1 << 30);
+    final tcKhongDat = s?.failed;
+    final progressKnown =
+        s?.hasCurriculum == true && tcDat != null && tcTong != null;
+    final progress = progressKnown && tcTong > 0
+        ? (tcDat / tcTong).clamp(0.0, 1.0)
+        : 0.0;
     final noCurriculum = s?.hasCurriculum != true; // progress unknown, not 0/0
 
     return SingleChildScrollView(
@@ -125,14 +131,16 @@ class OverviewTab extends StatelessWidget {
                               size: 14,
                             ),
                             const SizedBox(width: 5),
-                            Text(
-                              noCurriculum
-                                  ? 'Chưa có chương trình đào tạo'
-                                  : '$tcDat / $tcTong môn đạt',
-                              style: TextStyle(
-                                color: context.vd.onPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                noCurriculum
+                                    ? 'Chưa có chương trình đào tạo'
+                                    : '${tcDat ?? '—'} / ${tcTong ?? '—'} môn đạt',
+                                style: TextStyle(
+                                  color: context.vd.onPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
@@ -141,54 +149,7 @@ class OverviewTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // Circular progress
-                  TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0, end: progress),
-                    duration: VdMotion.of(context).countUp,
-                    curve: VdMotion.curve,
-                    builder: (context, p, _) => SizedBox(
-                      width: 96,
-                      height: 96,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircularArc(
-                            value: p,
-                            size: 96,
-                            trackColor: context.vd.onPrimary.withValues(
-                              alpha: 0.2,
-                            ),
-                            progressColor: context.vd.onPrimary,
-                            strokeWidth: 9,
-                          ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                noCurriculum ? '—' : '${(p * 100).toInt()}%',
-                                style: TextStyle(
-                                  color: context.vd.onPrimary,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'hoàn thành',
-                                style: TextStyle(
-                                  color: context.vd.onPrimary.withValues(
-                                    alpha: 0.7,
-                                  ),
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  CurriculumProgress(progress: progress, known: progressKnown),
                 ],
               ),
             ),
@@ -209,14 +170,14 @@ class OverviewTab extends StatelessWidget {
                 const SizedBox(width: 10),
                 MiniStat(
                   label: 'Không đạt',
-                  value: '$tcKhongDat môn',
+                  value: tcKhongDat == null ? '—' : '$tcKhongDat môn',
                   icon: Icons.cancel_outlined,
                   color: context.vd.danger,
                 ),
                 const SizedBox(width: 10),
                 MiniStat(
                   label: 'Chưa có điểm',
-                  value: '$tcChuaDiem môn',
+                  value: tcChuaDiem == null ? '—' : '$tcChuaDiem môn',
                   icon: Icons.hourglass_empty,
                   color: context.vd.primary,
                 ),

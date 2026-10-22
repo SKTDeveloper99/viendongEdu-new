@@ -78,6 +78,7 @@ class _GradesScreenState extends State<GradesScreen>
             chuaDiem: _vm.ungraded,
             chuaHoc: _vm.remaining,
             hasCurriculum: _vm.stats?.hasCurriculum ?? false,
+            remainingKnown: _vm.remainingKnown,
           ),
         ],
       ),
