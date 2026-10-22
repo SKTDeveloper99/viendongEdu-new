@@ -27,6 +27,7 @@ import '../models/crm_student_schedule.dart';
 import '../models/crm_student_exams.dart';
 import 'ems_api_service.dart';
 import 'offline_snapshot.dart';
+import 'app_session.dart';
 
 class CrmStudentApi {
   CrmStudentApi._();
@@ -39,6 +40,9 @@ class CrmStudentApi {
     final student = body['student'];
     if (student is! Map<String, dynamic>) {
       throw EmsException('Máy chủ không trả về hồ sơ học viên.');
+    }
+    if (body['data_open'] is bool) {
+      AppSession.instance.dataOpen = body['data_open'] as bool;
     }
     return CrmStudentProfile.fromJson(student);
   }
