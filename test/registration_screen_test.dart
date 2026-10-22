@@ -110,6 +110,29 @@ void main() {
     },
   );
 
+  testWidgets('403 dang_ky_chua_mo renders the existing closed state', (
+    tester,
+  ) async {
+    EmsApiService.client = MockClient(
+      (request) async => http.Response(
+        jsonEncode({
+          'error': 'dang_ky_chua_mo',
+          'message': 'Đợt đăng ký chưa mở hoặc đã kết thúc.',
+        }),
+        403,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
+    await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
+    await tester.pumpAndSettle();
+    expect(find.text('Đăng ký môn học'), findsOneWidget);
+    expect(
+      find.textContaining('Đợt đăng ký chưa mở hoặc đã kết thúc'),
+      findsOneWidget,
+    );
+    expect(find.text('Thử lại'), findsOneWidget);
+  });
+
   testWidgets('đăng ký thành công -> báo rõ đã ghi ở EMS, CHƯA gửi IMS', (
     tester,
   ) async {

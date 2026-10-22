@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/lantern_gate.dart';
+import '../../../services/app_session.dart';
 
 import '../student_home_view_model.dart';
 import '../../../components/next_up_card.dart';
@@ -27,7 +28,10 @@ class DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Lantern gate: MSSV below the release prefix sees no schedule data.
-    final dataOpen = studentDataOpen(vm.mssv == '–' ? null : vm.mssv);
+    final dataOpen = studentDataOpen(
+      vm.mssv == '–' ? null : vm.mssv,
+      serverDataOpen: AppSession.instance.dataOpen,
+    );
     return Column(
       children: [
         HomeHeader(vm: vm),

@@ -28,7 +28,10 @@ class MenuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = MockData.menuItems;
-    final dataOpen = studentDataOpen(AppSession.instance.mssv);
+    final dataOpen = studentDataOpen(
+      AppSession.instance.mssv,
+      serverDataOpen: AppSession.instance.dataOpen,
+    );
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
