@@ -25,12 +25,8 @@ class VdTheme {
 
   /// Soft card shadow — barely-there, warm.
   static List<BoxShadow> cardShadowOf(VdTokens t) => [
-        BoxShadow(
-          color: t.shadow,
-          blurRadius: 12,
-          offset: const Offset(0, 4),
-        ),
-      ];
+    BoxShadow(color: t.shadow, blurRadius: 12, offset: const Offset(0, 4)),
+  ];
 
   static ThemeData light() => _build(VdTokens.light, Brightness.light);
 
@@ -73,6 +69,20 @@ class VdTheme {
       extensions: <ThemeExtension<dynamic>>[t],
     );
     return base.copyWith(
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      visualDensity: VisualDensity.standard,
+      iconButtonTheme: const IconButtonThemeData(
+        style: ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(48, 48))),
+      ),
+      filledButtonTheme: const FilledButtonThemeData(
+        style: ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(48, 48))),
+      ),
+      textButtonTheme: const TextButtonThemeData(
+        style: ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(48, 48))),
+      ),
+      elevatedButtonTheme: const ElevatedButtonThemeData(
+        style: ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(48, 48))),
+      ),
       textTheme: base.textTheme.apply(
         fontFamily: fontFamily,
         bodyColor: t.ink,
@@ -89,8 +99,9 @@ class VdTheme {
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
           systemNavigationBarColor: t.surface,
-          systemNavigationBarIconBrightness:
-              brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+          systemNavigationBarIconBrightness: brightness == Brightness.dark
+              ? Brightness.light
+              : Brightness.dark,
           systemNavigationBarDividerColor: Colors.transparent,
         ),
       ),
@@ -251,5 +262,6 @@ class _SwooshPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SwooshPainter old) => old.color != color || old.from != from;
+  bool shouldRepaint(covariant _SwooshPainter old) =>
+      old.color != color || old.from != from;
 }
