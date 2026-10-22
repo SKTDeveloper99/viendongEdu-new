@@ -12,7 +12,18 @@ void main() {
       }
 
       for (final surface in [t.bg, t.surface, t.surfaceAlt]) {
-        for (final ink in [t.ink, t.inkMuted, t.inkFaint]) {
+        for (final ink in [
+          t.ink,
+          t.inkMuted,
+          t.inkFaint,
+          t.primary,
+          t.accent,
+          t.success,
+          t.warning,
+          t.danger,
+          t.info,
+          t.evening,
+        ]) {
           expect(
             ratio(ink, surface),
             greaterThanOrEqualTo(4.5),
@@ -23,6 +34,17 @@ void main() {
       for (final pair in [
         (t.onPrimary, t.primary),
         (t.onPrimary, t.accent),
+        (t.onPrimary, t.success),
+        (t.onPrimary, t.warning),
+        (t.onPrimary, t.danger),
+        (
+          t.onHeader,
+          Color.alphaBlend(t.onHeader.withValues(alpha: .2), t.headerTop),
+        ),
+        (
+          t.onHeader,
+          Color.alphaBlend(t.onHeader.withValues(alpha: .2), t.headerBottom),
+        ),
         (t.onHeader, t.headerTop),
         (t.onHeader, t.headerBottom),
         (t.primary, t.accentSoft),

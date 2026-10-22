@@ -40,7 +40,7 @@ class QrTab extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'MSSV: ${vm.mssv}',
-                  style: TextStyle(fontSize: 14, color: context.vd.onHeader.withValues(alpha: 0.7)),
+                  style: TextStyle(fontSize: 14, color: context.vd.onHeader),
                 ),
               ],
             ),

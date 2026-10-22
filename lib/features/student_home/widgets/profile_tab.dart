@@ -66,7 +66,7 @@ class ProfileTab extends StatelessWidget {
                         vm.mssv,
                         style: TextStyle(
                           fontSize: 14,
-                          color: context.vd.onHeader.withValues(alpha: 0.7),
+                          color: context.vd.onHeader,
                         ),
                       ),
                     ],
