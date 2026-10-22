@@ -15,56 +15,59 @@ void showStudentDetailSheet(
   final s = student;
   showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
-    builder: (_) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            s.fullName,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            s.mssv + (s.classCode == null ? '' : ' • ${s.classCode}'),
-            style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
-          ),
-          const Divider(height: 24),
-          _DetailRow(
-            icon: Icons.sensor_door_outlined,
-            label: 'Quẹt cổng',
-            value: !s.scanned
-                ? 'Chưa quẹt hôm nay (không phải vắng)'
-                : s.scannedAt == null
-                ? 'Đã quẹt (không có giờ)'
-                : schoolHhmmss(s.scannedAt!),
-            color: s.scanned ? context.vd.success : context.vd.inkMuted,
-          ),
-          const SizedBox(height: 10),
-          _DetailRow(
-            icon: Icons.how_to_reg_outlined,
-            label: 'Điểm danh',
-            value: markLabel(mark),
-            color: mark == 'present'
-                ? context.vd.success
-                : mark == 'absent'
-                ? context.vd.danger
-                : context.vd.inkMuted,
-          ),
-          if (scanSyncedAt != null) ...[
+    builder: (_) => SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              s.fullName,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              s.mssv + (s.classCode == null ? '' : ' • ${s.classCode}'),
+              style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
+            ),
+            const Divider(height: 24),
+            _DetailRow(
+              icon: Icons.sensor_door_outlined,
+              label: 'Quẹt cổng',
+              value: !s.scanned
+                  ? 'Chưa quẹt hôm nay (không phải vắng)'
+                  : s.scannedAt == null
+                  ? 'Đã quẹt (không có giờ)'
+                  : schoolHhmmss(s.scannedAt!),
+              color: s.scanned ? context.vd.success : context.vd.inkMuted,
+            ),
             const SizedBox(height: 10),
             _DetailRow(
-              icon: Icons.sync,
-              label: 'Lấy quẹt cổng lúc',
-              value: schoolHhmmss(scanSyncedAt),
-              color: context.vd.inkMuted,
+              icon: Icons.how_to_reg_outlined,
+              label: 'Điểm danh',
+              value: markLabel(mark),
+              color: mark == 'present'
+                  ? context.vd.success
+                  : mark == 'absent'
+                  ? context.vd.danger
+                  : context.vd.inkMuted,
             ),
+            if (scanSyncedAt != null) ...[
+              const SizedBox(height: 10),
+              _DetailRow(
+                icon: Icons.sync,
+                label: 'Lấy quẹt cổng lúc',
+                value: schoolHhmmss(scanSyncedAt),
+                color: context.vd.inkMuted,
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     ),
   );
@@ -84,12 +87,22 @@ class _DetailRow extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon, size: 18, color: color),
-      const SizedBox(width: 10),
-      Text(label, style: TextStyle(fontSize: 13, color: context.vd.inkMuted)),
-      const Spacer(),
+      Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 4),
       Text(
         value,
         style: TextStyle(

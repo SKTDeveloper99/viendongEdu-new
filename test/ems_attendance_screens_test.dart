@@ -554,14 +554,17 @@ void main() {
 
   // 18/09 Dũng: xếp tên A–Z để dò tay. Theo TÊN (chữ cuối), bỏ dấu.
   testWidgets('A–Z sorts by given name without diacritics', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     EmsApiService.client = _teacherMock(
       rosterSize: 4,
       posts: [],
       students: () => [
-        {'mssv': '2600000001', 'full_name': 'Nguyễn Thị Lan Phương'},
-        {'mssv': '2600000002', 'full_name': 'Huỳnh Thị Mỹ Lộc'},
-        {'mssv': '2600000003', 'full_name': 'Ngô Anh Thư'},
-        {'mssv': '2600000004', 'full_name': 'Lê Ngọc Ánh'},
+        {'mssv': 'TEST260001', 'full_name': 'Thử Nghiệm Phương'},
+        {'mssv': 'TEST260002', 'full_name': 'Thử Nghiệm Lộc'},
+        {'mssv': 'TEST260003', 'full_name': 'Thử Nghiệm Thư'},
+        {'mssv': 'TEST260004', 'full_name': 'Thử Nghiệm Ánh'},
       ],
       onPost: (_) => http.Response('{}', 500),
     );
@@ -578,10 +581,10 @@ void main() {
             (w) =>
                 w is Text &&
                 const [
-                  'Nguyễn Thị Lan Phương',
-                  'Huỳnh Thị Mỹ Lộc',
-                  'Ngô Anh Thư',
-                  'Lê Ngọc Ánh',
+                  'Thử Nghiệm Phương',
+                  'Thử Nghiệm Lộc',
+                  'Thử Nghiệm Thư',
+                  'Thử Nghiệm Ánh',
                 ].contains(w.data),
           ),
         )
@@ -589,26 +592,26 @@ void main() {
         .toList();
 
     expect(order(), [
-      'Nguyễn Thị Lan Phương',
-      'Huỳnh Thị Mỹ Lộc',
-      'Ngô Anh Thư',
-      'Lê Ngọc Ánh',
+      'Thử Nghiệm Phương',
+      'Thử Nghiệm Lộc',
+      'Thử Nghiệm Thư',
+      'Thử Nghiệm Ánh',
     ], reason: 'mặc định giữ thứ tự IMS');
 
     await tester.tap(find.byIcon(Icons.sort_by_alpha));
     await tester.pump();
     expect(order(), [
-      'Lê Ngọc Ánh', // anh
-      'Huỳnh Thị Mỹ Lộc', // loc
-      'Nguyễn Thị Lan Phương', // phuong
-      'Ngô Anh Thư', // thu
+      'Thử Nghiệm Ánh', // anh
+      'Thử Nghiệm Lộc', // loc
+      'Thử Nghiệm Phương', // phuong
+      'Thử Nghiệm Thư', // thu
     ]);
 
     await tester.tap(find.byIcon(Icons.sort_by_alpha));
     await tester.pump();
     expect(
       order().first,
-      'Nguyễn Thị Lan Phương',
+      'Thử Nghiệm Phương',
       reason: 'tắt = về thứ tự IMS',
     );
   });
