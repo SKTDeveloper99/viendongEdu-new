@@ -12,6 +12,10 @@ class ClassInfoTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sotinchi = lop.credits ?? 0;
+    // IMS leaves start == end on classes that run all term: those dates and
+    // the exam date beside them are placeholders, so unknown (N/A).
+    final placeholder = (lop.ngayBatDau ?? '').isNotEmpty &&
+        fmtDate(lop.ngayBatDau) == fmtDate(lop.ngayKetThuc);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
@@ -48,7 +52,9 @@ class ClassInfoTab extends StatelessWidget {
           _DetailRow(
             icon: Icons.date_range_outlined,
             label: 'Thời gian',
-            value: '${fmtDate(lop.ngayBatDau)} – ${fmtDate(lop.ngayKetThuc)}',
+            value: placeholder
+                ? 'N/A'
+                : '${fmtDate(lop.ngayBatDau)} – ${fmtDate(lop.ngayKetThuc)}',
           ),
           const SizedBox(height: 12),
         ],
@@ -56,7 +62,7 @@ class ClassInfoTab extends StatelessWidget {
           _DetailRow(
             icon: Icons.event_note_outlined,
             label: 'Ngày thi',
-            value: fmtDate(lop.ngayThi),
+            value: placeholder ? 'N/A' : fmtDate(lop.ngayThi),
           ),
         // Tỷ lệ điểm chuyên cần/giữa kỳ/cuối kỳ (bản IMS cũ có donut
         // theo % trọng số) KHÔNG có tương đương trong CRM

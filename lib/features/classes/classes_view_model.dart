@@ -106,7 +106,11 @@ class ClassesViewModel extends ChangeNotifier {
           (g) => g?.subjectCode == s.subjectCode && g?.semesterCode == sem.code,
           orElse: () => null,
         );
-        return ClassItem.fromSection(s, grade: g);
+        return ClassItem.fromSection(
+          s,
+          grade: g,
+          timetableEnd: data.timetableEnd[s.sectionCode],
+        );
       }).toList();
       _loadingClasses = false;
     } catch (e) {

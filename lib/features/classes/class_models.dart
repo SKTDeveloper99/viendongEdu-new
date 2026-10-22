@@ -47,7 +47,12 @@ class ClassItem {
     this.ngayKetThuc,
   });
 
-  factory ClassItem.fromSection(CrmStudentSection s, {CrmStudentGrade? grade}) =>
+  /// [timetableEnd] (official timetable) wins over the section's own dates.
+  factory ClassItem.fromSection(
+    CrmStudentSection s, {
+    CrmStudentGrade? grade,
+    DateTime? timetableEnd,
+  }) =>
       ClassItem(
         sectionId: s.sectionId,
         lmhma: s.sectionCode,
@@ -58,9 +63,14 @@ class ClassItem {
         tongdiem: grade?.finalScore,
         diemgk: grade?.midtermScore,
         diemck: grade?.finalExamScore,
-        ngayBatDau: s.ngayBatDau,
-        ngayKetThuc: s.ngayKetThuc,
+        // IMS leaves start == end (e.g. 31/08 – 31/08) on classes that run
+        // all term: that placeholder is unknown, not a one-day course.
+        ngayBatDau: _placeholder(s) ? null : s.ngayBatDau,
+        ngayKetThuc: timetableEnd ?? (_placeholder(s) ? null : s.ngayKetThuc),
       );
+
+  static bool _placeholder(CrmStudentSection s) =>
+      s.ngayBatDau != null && s.ngayBatDau == s.ngayKetThuc;
 
   /// Course dates as dd/MM/yyyy, or N/A when the server does not know them.
   String get batDauText => fmtCalendarDay(ngayBatDau);

@@ -28,8 +28,9 @@ class ClassChip extends StatelessWidget {
     final classCode = data.sectionCode;
     final room = data.room.trim();
     final teacher = data.teacherName;
-    final start = data.startTime ?? '';
-    final end = data.endTime ?? '';
+    String hhmm(String? t) => (t ?? '').length > 5 ? t!.substring(0, 5) : t ?? '';
+    final start = hhmm(data.startTime);
+    final end = hhmm(data.endTime);
     final buoi = buoiInfo(start, context.vd);
 
     return Container(
