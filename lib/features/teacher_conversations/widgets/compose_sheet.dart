@@ -47,7 +47,7 @@ class _ComposeSheetState extends State<ComposeSheet> {
   }
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) => SingleChildScrollView(
     padding: EdgeInsets.fromLTRB(
       16,
       16,

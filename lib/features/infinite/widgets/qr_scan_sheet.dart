@@ -32,7 +32,7 @@ class _QrScanSheetState extends State<QrScanSheet> {
   @override
   Widget build(BuildContext context) {
     final vd = context.vd;
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         16,
         16,
