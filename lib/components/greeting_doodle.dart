@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import '../core/greeting.dart';
 import '../theme/vd_motion.dart';
 
+typedef _DoodlePass = ({List<PathMetric> metrics, double length});
+
 /// Chalk-style doodle for the home header: sunrise, sun + cloud, moon + stars
 /// or a sleepy moon by device time. It draws itself in once like a pen
 /// tracing each stroke (VdMotion.doodle; instant under reduced motion), and a
@@ -102,19 +104,27 @@ class DoodlePainter extends CustomPainter {
     required this.color,
   });
 
-  static final Map<DoodleScene, List<List<Path>>> _cache = {};
+  static final Map<DoodleScene, List<_DoodlePass>> _cache = {};
 
-  /// Pass 0 and pass 1 of every stroke, in drawing order.
-  static List<List<Path>> _passes(DoodleScene scene) => _cache.putIfAbsent(
-    scene,
-    () => [
-      for (final seed in [scene.index * 31 + 7, scene.index * 31 + 19])
-        [
-          for (final s in _strokes(scene))
-            _sketch(s, math.Random(seed + s.length)),
-        ],
-    ],
-  );
+  /// Geometry and lengths are fixed per scene; measure once, not each frame.
+  static List<_DoodlePass> _passes(DoodleScene scene) =>
+      _cache.putIfAbsent(scene, () {
+        final strokes = _strokes(scene);
+        return [
+          for (final seed in [scene.index * 31 + 7, scene.index * 31 + 19])
+            _measure([
+              for (final s in strokes) _sketch(s, math.Random(seed + s.length)),
+            ]),
+        ];
+      });
+
+  static _DoodlePass _measure(List<Path> paths) {
+    final metrics = [for (final path in paths) ...path.computeMetrics()];
+    return (
+      metrics: metrics,
+      length: metrics.fold<double>(0, (a, m) => a + m.length),
+    );
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -130,10 +140,8 @@ class DoodlePainter extends CustomPainter {
         ..strokeWidth = p == 0 ? 2.6 : 1.6
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
-      final metrics = [for (final path in passes[p]) ...path.computeMetrics()];
-      final total = metrics.fold<double>(0, (a, m) => a + m.length);
-      var left = total * progress.clamp(0.0, 1.0);
-      for (final PathMetric m in metrics) {
+      var left = passes[p].length * progress.clamp(0.0, 1.0);
+      for (final m in passes[p].metrics) {
         if (left <= 0) break;
         canvas.drawPath(m.extractPath(0, math.min(left, m.length)), paint);
         left -= m.length;

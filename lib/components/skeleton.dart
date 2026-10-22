@@ -77,27 +77,27 @@ class SkeletonCard extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: const Offset(0, 3)),
         ],
         border: Border(left: BorderSide(color: (accentColor ?? context.vd.primary).withValues(alpha: 0.3), width: 5)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
+      child: const Padding(
+        padding: EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(child: Skeleton(height: 15, radius: 6)),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Skeleton(width: 48, height: 22, radius: 11),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Skeleton(height: 12, radius: 6),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Skeleton(width: 180, height: 12, radius: 6),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Skeleton(width: 130, height: 12, radius: 6),
           ],
         ),
@@ -120,32 +120,32 @@ class SkeletonChip extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: const Offset(0, 3)),
         ],
         border: Border(
             left: BorderSide(color: context.vd.hairline, width: 5)),
       ),
       child: Row(
         children: [
-          Column(
+          const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Skeleton(width: 36, height: 16, radius: 6),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Skeleton(width: 36, height: 13, radius: 6),
             ],
           ),
           const SizedBox(width: 14),
           Container(width: 1, height: 44, color: context.vd.hairline),
           const SizedBox(width: 14),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Skeleton(height: 15, radius: 6),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Skeleton(width: 160, height: 12, radius: 6),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Skeleton(width: 220, height: 12, radius: 6),
               ],
             ),

@@ -40,6 +40,9 @@ class AnnouncementBody extends StatefulWidget {
 
 class _AnnouncementBodyState extends State<AnnouncementBody> {
   final _recognizers = <TapGestureRecognizer>[];
+  TextSpan? _span;
+  String? _spanBody;
+  Brightness? _spanBrightness;
 
   Brightness get _brightness => Theme.of(context).brightness;
 
@@ -148,10 +151,16 @@ class _AnnouncementBodyState extends State<AnnouncementBody> {
 
   @override
   Widget build(BuildContext context) {
-    _clearRecognizers();
-    const style = TextStyle(fontSize: 15, height: 1.65);
-    return SelectableText.rich(
-      TextSpan(children: _spans(widget.body, style, 0)),
-    );
+    final brightness = _brightness;
+    if (_span == null ||
+        _spanBody != widget.body ||
+        _spanBrightness != brightness) {
+      _clearRecognizers();
+      const style = TextStyle(fontSize: 15, height: 1.65);
+      _span = TextSpan(children: _spans(widget.body, style, 0));
+      _spanBody = widget.body;
+      _spanBrightness = brightness;
+    }
+    return SelectableText.rich(_span!);
   }
 }
