@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,21 +26,16 @@ class AppUpdateGate {
   /// Trả về true nếu được phép chạy tiếp. Khi bị chặn, hàm này hiện hộp thoại
   /// không đóng được và không bao giờ trả về.
   static Future<bool> check(BuildContext context) async {
-    Map<String, dynamic>? body;
-    try {
-      final res = await http
-          .get(Uri.parse('${EmsApiService.baseUrl}/app/min-version'))
-          .timeout(_timeout);
-      if (res.statusCode == 200) {
-        body = jsonDecode(res.body) as Map<String, dynamic>;
-      }
-    } catch (_) {
-      return true; // không liên lạc được → không chặn
-    }
+    final body = await minimumVersion();
     if (body == null) return true;
 
     final min = body['min_version']?.toString() ?? '';
-    final info = await PackageInfo.fromPlatform();
+    PackageInfo info;
+    try {
+      info = await PackageInfo.fromPlatform().timeout(_timeout);
+    } catch (_) {
+      return true;
+    }
     if (!isOutdated(info.version, min)) return true;
 
     if (!context.mounted) return false;
@@ -74,6 +68,21 @@ class AppUpdateGate {
       ),
     );
     return false;
+  }
+
+  /// Optional startup metadata: a bounded, fail-open read using the same
+  /// injectable client as other app traffic (no authentication or retries).
+  static Future<Map<String, dynamic>?> minimumVersion() async {
+    try {
+      final response = await EmsApiService.client
+          .get(Uri.parse('${EmsApiService.baseUrl}/app/min-version'))
+          .timeout(_timeout);
+      if (response.statusCode != 200) return null;
+      final body = jsonDecode(response.body);
+      return body is Map<String, dynamic> ? body : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// So sánh `a.b.c` theo từng số. Chuỗi lạ → không chặn (false).

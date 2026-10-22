@@ -102,14 +102,14 @@ class InfiniteCloud {
   }) async {
     final ref = await _ref(who);
     if (ref == null) return CloudVerdict.off;
-    final write = ref.collection('claims').doc(q.id).set({
+    try {
+      final write = ref.collection('claims').doc(q.id).set({
       'at': FieldValue.serverTimestamp(),
       if (q.needsCode) 'code': normalizeCode(code),
       'lat': ?lat,
       'lng': ?lng,
       'acc': ?accuracyM,
-    });
-    try {
+      });
       await write.timeout(_writeTimeout);
       return CloudVerdict.saved;
     } on TimeoutException {
@@ -122,6 +122,7 @@ class InfiniteCloud {
             .collection('claims')
             .doc(q.id)
             .get()
+            .timeout(_writeTimeout)
             .then((d) => d.exists, onError: (_) => false);
         return existing ? CloudVerdict.saved : CloudVerdict.refused;
       }
@@ -137,6 +138,7 @@ class InfiniteCloud {
   Future<void> equip(String who, String? frame, String? title) async {
     final ref = await _ref(who);
     if (ref == null) return;
+    try {
     unawaited(
       ref
           .set({
@@ -144,7 +146,11 @@ class InfiniteCloud {
             'title': title,
             'at': FieldValue.serverTimestamp(),
           })
+          .timeout(_writeTimeout)
           .catchError((Object e) => debugPrint('[Infinite] equip sync: $e')),
     );
+    } catch (_) {
+      // Optional cloud mirroring must never discard the local equipment.
+    }
   }
 }
