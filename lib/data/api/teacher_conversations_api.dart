@@ -17,31 +17,39 @@ abstract final class TeacherConversationsApi {
     int limit = 100,
     void Function(List<TeacherConversation> rows, DateTime savedAt)? onStored,
   }) async {
+    List<TeacherConversation> parse(dynamic body) {
+      final rows = body is Map ? body['conversations'] : null;
+      if (rows is! List || rows.any((row) => row is! Map<String, dynamic>)) {
+        throw EmsException(
+          'Máy chủ trả về cuộc trao đổi không đọc được. Vui lòng thử lại.',
+        );
+      }
+      return TeacherConversation.listFrom(body);
+    }
+
     final r = await EmsApiService.sendCached(
       _base,
+      validate: parse,
       query: {'status': status, 'limit': '$limit'},
-      onStored: onStored == null
-          ? null
-          : (d, at) => onStored(TeacherConversation.listFrom(d), at),
+      onStored: onStored == null ? null : (d, at) => onStored(parse(d), at),
     );
-    return (
-      data: TeacherConversation.listFrom(r.data),
-      savedAt: r.savedAt,
-      fresh: r.fresh,
-    );
+    return (data: parse(r.data), savedAt: r.savedAt, fresh: r.fresh);
   }
 
   /// `GET /unread-count` -> `{count}`: threads awaiting the teacher's reply.
   /// For the future home-tile badge.
   static Future<int> unreadCount() async {
     final body = await EmsApiService.sendMap('GET', '$_base/unread-count');
-    return (body['count'] as num?)?.toInt() ?? 0;
+    return EmsApiService.parse(() => (body['count'] as num?)?.toInt() ?? 0);
   }
 
-  static Future<TeacherThread> thread(String id) async =>
-      TeacherThread.fromJson(
-        await EmsApiService.sendMap('GET', '$_base/${Uri.encodeComponent(id)}'),
-      );
+  static Future<TeacherThread> thread(String id) async {
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '$_base/${Uri.encodeComponent(id)}',
+    );
+    return EmsApiService.parse(() => TeacherThread.fromJson(body));
+  }
 
   /// `POST /:id/messages {body}` -> `{message}`.
   static Future<TeacherMessage?> send(String id, String message) async {
@@ -51,7 +59,9 @@ abstract final class TeacherConversationsApi {
       body: {'body': message.trim()},
     );
     final m = body['message'];
-    return m is Map<String, dynamic> ? TeacherMessage.fromJson(m) : null;
+    return m is Map<String, dynamic>
+        ? EmsApiService.parse(() => TeacherMessage.fromJson(m))
+        : null;
   }
 
   /// `PATCH /:id` — resolves and closes the thread.

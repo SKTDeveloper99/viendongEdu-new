@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 import '../services/crm_session_guard.dart';
 import '../data/api/board_api.dart';
@@ -83,7 +84,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      await handleCrmAuthError(context, e);
+      if (await handleCrmAuthError(context, e)) return;
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(crmErrorMessage(e))));
     }
   }
 
@@ -98,7 +103,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      await handleCrmAuthError(context, e);
+      if (await handleCrmAuthError(context, e)) return;
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(crmErrorMessage(e))));
     }
   }
 

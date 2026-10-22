@@ -8,12 +8,14 @@ abstract final class BoardApi {
   // 401), gọi AppSession.clear() rồi điều hướng về '/login'.
 
   static Future<List<AnnouncementItem>> board({int limit = 50}) async {
-    final body = await EmsApiService.sendMap('GET', '/v1/student/board?limit=$limit');
-    final items = body['items'];
-    if (items is! List) return <AnnouncementItem>[];
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/v1/student/board?limit=$limit',
+    );
+    final items = EmsApiService.rows(body['items']);
     return items
         .whereType<Map<String, dynamic>>()
-        .map(AnnouncementItem.fromJson)
+        .map((row) => EmsApiService.parse(() => AnnouncementItem.fromJson(row)))
         .toList();
   }
 
@@ -25,15 +27,22 @@ abstract final class BoardApi {
   }) async {
     List<AnnouncementItem> parse(dynamic body) {
       final items = body is Map ? body['items'] : null;
-      if (items is! List) return <AnnouncementItem>[];
+      if (items is! List || items.any((row) => row is! Map<String, dynamic>)) {
+        throw EmsException(
+          'Máy chủ trả về bảng tin không đọc được. Vui lòng thử lại.',
+        );
+      }
       return items
           .whereType<Map<String, dynamic>>()
-          .map(AnnouncementItem.fromJson)
+          .map(
+            (row) => EmsApiService.parse(() => AnnouncementItem.fromJson(row)),
+          )
           .toList();
     }
 
     final r = await EmsApiService.sendCached(
       '/v1/student/board',
+      validate: parse,
       query: {'limit': '$limit'},
       onStored: onStored == null ? null : (d, at) => onStored(parse(d), at),
     );
@@ -41,11 +50,14 @@ abstract final class BoardApi {
   }
 
   static Future<BoardUnread> unreadCount() async {
-    final body = await EmsApiService.sendMap('GET', '/v1/student/board/unread-count');
-    return BoardUnread(
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/v1/student/board/unread-count',
+    );
+    return EmsApiService.parse(() => BoardUnread(
       unread: (body['unread'] as num?)?.toInt() ?? 0,
       mustReadPending: (body['must_read_pending'] as num?)?.toInt() ?? 0,
-    );
+    ));
   }
 
   /// Gắn installation Firebase hiện tại với chính học viên đã đăng nhập EMS.
