@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/core/lantern_gate.dart';
+import 'package:viendongedu2_flutter/core/remote/app_remote_config.dart';
 import 'package:viendongedu2_flutter/features/infinite/quest.dart';
 
 void main() {
@@ -128,6 +129,8 @@ void main() {
     expect(studentDataOpen('K19A001', minPrefix: 25), isFalse);
     expect(studentDataOpen(null, minPrefix: 25), isTrue);
     expect(studentDataOpen('2416160001', minPrefix: 0), isTrue);
+    expect(studentDataOpen('K19A001', minPrefix: 0), isTrue);
+    expect(AppRemoteConfig.defaultMinPrefix, 0, reason: 'open by default');
     expect(
       studentDataOpen('2416160001', minPrefix: 25, serverDataOpen: true),
       isTrue,

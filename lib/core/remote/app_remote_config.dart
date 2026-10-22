@@ -12,7 +12,7 @@ class AppRemoteConfig {
   /// Keeping both lets old phones and new phones play side by side.
   static const questsKey = 'infinite_quests';
   static const bookKey = 'infinite_book_v2';
-  static const defaultMinPrefix = 25;
+  static const defaultMinPrefix = 0;
 
   /// Bumps whenever a new config is activated, so open screens can reload.
   static final changes = ValueNotifier<int>(0);
@@ -42,7 +42,10 @@ class AppRemoteConfig {
       );
       // Real-time updates: a console publish reaches open apps in seconds.
       _live ??= rc.onConfigUpdated.listen((u) async {
-        if (!u.updatedKeys.contains(bookKey)) return;
+        if (!u.updatedKeys.contains(bookKey) &&
+            !u.updatedKeys.contains(minPrefixKey)) {
+          return;
+        }
         await rc.activate();
         changes.value++;
       }, onError: (Object e) => debugPrint('[RemoteConfig] live: $e'));
@@ -62,8 +65,7 @@ class AppRemoteConfig {
 
   static int get minPrefix {
     try {
-      final v = FirebaseRemoteConfig.instance.getInt(minPrefixKey);
-      return v == 0 ? defaultMinPrefix : v;
+      return FirebaseRemoteConfig.instance.getInt(minPrefixKey);
     } catch (_) {
       return defaultMinPrefix;
     }

@@ -9,7 +9,7 @@
     },
     "lantern_min_prefix": {
       "defaultValue": {
-        "value": "25"
+        "value": "0"
       },
       "description": "Students with MSSV prefix below this see 'Không có dữ liệu' on data screens. 0 = open to all.",
       "valueType": "NUMBER"
