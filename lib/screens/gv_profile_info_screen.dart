@@ -112,7 +112,7 @@ class GvProfileInfoScreen extends StatelessWidget {
                         value: (phone?.isNotEmpty ?? false) ? phone! : '–'),
                     _InfoRow(
                         icon: Icons.email_outlined,
-                        label: 'Email',
+                        label: 'Thư điện tử',
                         value: (email?.isNotEmpty ?? false) ? email! : '–'),
                   ]),
                 ],

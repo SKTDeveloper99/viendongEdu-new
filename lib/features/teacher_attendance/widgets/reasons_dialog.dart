@@ -5,13 +5,13 @@ import '../attendance_format.dart';
 import '../../../theme/vd_tokens.dart';
 
 const punchIntro =
-    'Những học viên này đã quẹt thẻ vào trường hôm nay. '
+    'Những sinh viên này đã quẹt thẻ vào trường hôm nay. '
     'Thầy/cô vẫn có quyền ghi VẮNG — chỉ cần cho biết vì sao, '
     'và lý do sẽ được lưu lại.';
 
 const otherIntro =
-    'Thầy/cô chọn "Khác" cho những học viên này. Ghi rõ lý do '
-    '(đi trễ, có phép, ốm…) — phòng đào tạo sẽ xem trước khi chuyển IMS.';
+    'Thầy/cô chọn "Khác" cho những sinh viên này. Ghi rõ lý do '
+    '(đi muộn, có phép, ốm…) — Phòng Đào tạo sẽ xem trước khi chuyển IMS.';
 
 /// Bắt buộc nêu lý do cho từng học viên đã quẹt cổng mà bị ghi vắng.
 /// Trả về map mssv -> lý do, hoặc null nếu thầy/cô bấm Huỷ.
@@ -119,7 +119,7 @@ class _ReasonsDialogState extends State<ReasonsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Huỷ'),
+          child: const Text('Hủy'),
         ),
         FilledButton(
           onPressed: _complete

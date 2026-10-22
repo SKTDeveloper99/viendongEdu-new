@@ -30,7 +30,7 @@
       "id": "tiktok-1",
       "kind": "link",
       "title": "Ghé TikTok của trường",
-      "desc": "Mở TikTok của trường, xem một video, rồi nhận thưởng — làm ở đâu cũng được.",
+      "desc": "Mở TikTok của trường, xem một đoạn phim, rồi nhận thưởng — làm ở đâu cũng được.",
       "url": "https://www.tiktok.com/@caodangviendong",
       "at_school": false,
       "spot": {
@@ -46,8 +46,8 @@
     {
       "id": "fanpage-1",
       "kind": "link",
-      "title": "Ghé Fanpage của trường",
-      "desc": "Mở Fanpage của trường, đọc bài mới nhất, rồi nhận thưởng — làm ở đâu cũng được.",
+      "title": "Ghé trang Facebook của trường",
+      "desc": "Mở trang Facebook của trường, đọc bài mới nhất, rồi nhận thưởng — làm ở đâu cũng được.",
       "url": "https://www.facebook.com/Tuyensinhcaodangviendong/",
       "at_school": false,
       "spot": {

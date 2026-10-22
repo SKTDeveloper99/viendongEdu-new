@@ -416,10 +416,10 @@ class _ExamCardState extends State<_ExamCard> {
                           label: 'Hình thức', value: hinhThuc),
                     if (cb1.isNotEmpty)
                       _DetailRow(icon: Icons.person_outline,
-                          label: 'CB coi thi 1', value: cb1),
+                          label: 'Cán bộ coi thi 1', value: cb1),
                     if (cb2.isNotEmpty)
                       _DetailRow(icon: Icons.person_outline,
-                          label: 'CB coi thi 2', value: cb2),
+                          label: 'Cán bộ coi thi 2', value: cb2),
                     if (ghiChu.isNotEmpty)
                       _DetailRow(icon: Icons.notes,
                           label: 'Ghi chú', value: ghiChu),

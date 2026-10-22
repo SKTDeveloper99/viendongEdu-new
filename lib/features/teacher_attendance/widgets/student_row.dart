@@ -41,7 +41,7 @@ class StudentRow extends StatelessWidget {
             children: [
               Expanded(child: _identity(context, s)),
               _Pill(
-                label: 'Có',
+                label: 'Có mặt',
                 selected: mark == 'present',
                 color: context.vd.success,
                 onTap: () => _select('present'),

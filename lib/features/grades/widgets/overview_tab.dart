@@ -62,7 +62,7 @@ class OverviewTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('ĐTB Tích lũy',
+                      Text('ĐTB tích lũy',
                           style: TextStyle(
                               color: context.vd.onPrimary.withValues(alpha: 0.7),
                               fontSize: 13,

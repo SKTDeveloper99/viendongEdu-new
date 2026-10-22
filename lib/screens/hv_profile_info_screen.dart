@@ -160,7 +160,7 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                             const SizedBox(height: 12),
                             _Section(title: 'Liên hệ', children: [
                               _InfoRow(icon: Icons.phone_outlined, label: 'Số điện thoại', value: sdt),
-                              _InfoRow(icon: Icons.email_outlined, label: 'Email', value: email),
+                              _InfoRow(icon: Icons.email_outlined, label: 'Thư điện tử', value: email),
                             ]),
                             const SizedBox(height: 12),
                             _Section(title: 'Học vụ', children: [

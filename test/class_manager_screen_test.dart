@@ -257,13 +257,13 @@ void main() {
     expect(find.text('07:00 – 09:30'), findsNWidgets(2));
     // s1 has EMS marks: present + late = 2 of 3.
     expect(find.text('2 / 3 có mặt (EMS)'), findsOneWidget);
-    expect(find.text('Đã ĐD'), findsOneWidget);
+    expect(find.text('Đã điểm danh'), findsOneWidget);
     // s2 has no EMS marks: CRM fallback wording.
     expect(
       find.text('2 / 3 có mặt trên CRM — chưa xác nhận trên EMS'),
       findsOneWidget,
     );
-    expect(find.text('Chưa ĐD'), findsOneWidget);
+    expect(find.text('Chưa điểm danh'), findsOneWidget);
 
     await tester.tap(find.text('Tổng hợp'));
     await tester.pumpAndSettle();
@@ -287,10 +287,10 @@ void main() {
     expect(find.text('Có mặt'), findsNWidgets(3)); // pill + 2 rows
     expect(find.text('Vắng'), findsNWidgets(2)); // pill + 1 row
     expect(
-      find.text('Chưa ĐD'),
+      find.text('Chưa điểm danh'),
       findsNWidgets(2),
     ); // pill (0) + s2 badge underneath
-    expect(find.text('Chưa điểm danh'), findsNothing);
+
     expect(find.text('An Thử Nghiệm'), findsWidgets);
   });
 
@@ -306,7 +306,7 @@ void main() {
     await tester.tap(find.textContaining('chưa xác nhận trên EMS'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Chưa điểm danh'), findsNWidgets(3));
+    expect(find.text('Chưa điểm danh'), findsNWidgets(5));
   });
 
   testWidgets('session marks error shows retry', (tester) async {

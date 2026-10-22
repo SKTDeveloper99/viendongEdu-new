@@ -13,11 +13,11 @@ void main() {
       MaterialApp(home: AppVersionLabel(loadVersion: () => c.future)),
     );
     final h0 = tester.getSize(find.byType(AppVersionLabel)).height;
-    expect(find.text('Phần mềm Viendongedu'), findsOneWidget);
+    expect(find.text('Phần mềm ViendongEdu'), findsOneWidget);
     c.complete('6.1.0 (91)');
     await tester.pump();
     expect(
-      find.text('Phần mềm Viendongedu phiên bản 6.1.0 (91)'),
+      find.text('Phần mềm ViendongEdu phiên bản 6.1.0 (91)'),
       findsOneWidget,
     );
     expect(tester.getSize(find.byType(AppVersionLabel)).height, h0);
@@ -32,6 +32,6 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('Phần mềm Viendongedu'), findsOneWidget);
+    expect(find.text('Phần mềm ViendongEdu'), findsOneWidget);
   });
 }

@@ -13,14 +13,14 @@ Future<bool> showUnmarkedConfirmDialog(
   final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text('Còn ${undecided.length} học viên chưa điểm danh'),
+      title: Text('Còn ${undecided.length} sinh viên chưa điểm danh'),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Những học viên này sẽ KHÔNG được ghi có mặt hay vắng — '
+              'Những sinh viên này sẽ KHÔNG được ghi có mặt hay vắng — '
               'buổi học của họ để trống. Nếu họ vắng, hãy quay lại và chọn '
               '"Vắng" cho từng người.',
               style: TextStyle(fontSize: 13, color: context.vd.ink),
@@ -38,7 +38,7 @@ Future<bool> showUnmarkedConfirmDialog(
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
-                  '… và ${undecided.length - 12} học viên nữa',
+                  '… và ${undecided.length - 12} sinh viên nữa',
                   style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
                 ),
               ),

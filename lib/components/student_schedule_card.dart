@@ -209,7 +209,7 @@ class _StatusBadge extends StatelessWidget {
         icon: Icons.check_circle_outline,
       ),
       'absent' => (
-        label: 'Vắng mặt',
+        label: 'Vắng',
         color: context.vd.danger,
         bg: context.vd.dangerSoft,
         icon: Icons.cancel_outlined,

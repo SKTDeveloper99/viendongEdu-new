@@ -141,7 +141,7 @@ void main() {
       expect(find.textContaining('Tự gửi đã dừng'), findsNothing);
       expect(find.textContaining('CHƯA GỬI • kết nối lại'), findsOneWidget);
       expect(
-        find.textContaining('Có 1 • Vắng 1 • Khác 0 • Chưa điểm danh 0'),
+        find.textContaining('Có mặt 1 • Vắng 1 • Khác 0 • Chưa điểm danh 0'),
         findsOneWidget,
       );
       expect(posts, isEmpty, reason: 'no automatic resend');
@@ -189,7 +189,7 @@ void main() {
         onPost: (_) => _ok(1),
       );
       await _open(tester);
-      await tester.tap(find.text('Có').first);
+      await tester.tap(find.text('Có mặt').first);
       await tester.pump();
       await tester.tap(find.text('Lưu điểm danh'));
       await tester.pumpAndSettle();
@@ -197,7 +197,7 @@ void main() {
       expect(
         find.textContaining(
           'CHƯA GỬI. Đã giữ trên máy, sẽ tự gửi khi có mạng. '
-          'Máy chủ chưa xác nhận đủ 1 học viên',
+          'Máy chủ chưa xác nhận đủ 1 sinh viên',
         ),
         findsOneWidget,
       );
@@ -223,7 +223,7 @@ void main() {
         },
       );
       await _open(tester);
-      await tester.tap(find.text('Có').first);
+      await tester.tap(find.text('Có mặt').first);
       await tester.pump();
       // Every mark change persists the draft at once (invariant 2).
       await tester.runAsync(() async {
@@ -255,7 +255,7 @@ void main() {
     await tester.tap(find.text('Lưu điểm danh'));
     await tester.pumpAndSettle();
     // Owner 2026-10-17: a session with Vắng asks the teacher to check once.
-    expect(find.text('Kính nhờ Thầy/Cô kiểm tra lại'), findsOneWidget);
+    expect(find.text('Kính nhờ thầy/cô kiểm tra lại'), findsOneWidget);
     await tester.tap(find.text('Đã kiểm tra, lưu'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
@@ -289,7 +289,7 @@ void main() {
         onPost: (_) => answer(),
       );
       await _open(tester);
-      await tester.tap(find.text('Có').first);
+      await tester.tap(find.text('Có mặt').first);
       await tester.pump();
       await tester.tap(find.text('Lưu điểm danh'));
       await tester.pumpAndSettle();
@@ -329,7 +329,7 @@ void main() {
         onPost: (_) => throw http.ClientException('offline'),
       );
       await _open(tester);
-      await tester.tap(find.text('Có').first);
+      await tester.tap(find.text('Có mặt').first);
       await tester.pump();
       await tester.tap(find.text('Lưu điểm danh'));
       await tester.pumpAndSettle();

@@ -97,7 +97,7 @@ class AttendanceCard extends StatelessWidget {
       children: [
         _LegendRow(context.vd.success, 'Có mặt', present, total),
         const SizedBox(height: 10),
-        _LegendRow(context.vd.danger, 'Vắng mặt', absent, total),
+        _LegendRow(context.vd.danger, 'Vắng', absent, total),
         const SizedBox(height: 10),
         _LegendRow(context.vd.inkFaint, 'Chưa điểm danh', pending, total),
         const Divider(height: 20),

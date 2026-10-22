@@ -127,7 +127,7 @@ class _EmsAttendanceStudentScreenState
         children: [
           _stat('Có mặt', _present, context.vd.success),
           _stat('Vắng', _absent, context.vd.danger),
-          _stat('Chờ GV', _pending, context.vd.primary),
+          _stat('Chờ xác nhận', _pending, context.vd.primary),
         ],
       ),
     );
@@ -156,7 +156,7 @@ class _EmsAttendanceStudentScreenState
       'late' => ('Đi muộn', context.vd.warning),
       'absent' => ('Vắng', context.vd.danger),
       'excused' => ('Vắng có phép', context.vd.info),
-      _ => ('Chờ giáo viên xác nhận', context.vd.inkFaint),
+      _ => ('Chờ giảng viên xác nhận', context.vd.inkFaint),
     };
     return Container(
       padding: const EdgeInsets.all(12),

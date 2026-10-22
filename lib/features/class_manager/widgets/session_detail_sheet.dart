@@ -106,7 +106,7 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
                     color: context.vd.danger,
                   ),
                   _StatPill(
-                    label: 'Chưa ĐD',
+                    label: 'Chưa điểm danh',
                     value: _vm.unmarkedCount,
                     color: context.vd.info,
                   ),
@@ -133,7 +133,7 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
     final students = _vm.students;
     if (students.isEmpty) {
       return Center(
-        child: Text('Không có học viên', style: TextStyle(color: context.vd.inkMuted)),
+        child: Text('Không có sinh viên', style: TextStyle(color: context.vd.inkMuted)),
       );
     }
     return SessionStudentList(vm: _vm);

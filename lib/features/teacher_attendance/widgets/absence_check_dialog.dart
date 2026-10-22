@@ -11,13 +11,13 @@ Future<bool> showAbsenceCheckDialog(
   required int other,
 }) async {
   final counts = [
-    if (absent > 0) '$absent học viên Vắng',
-    if (other > 0) '$other học viên Khác',
+    if (absent > 0) '$absent sinh viên vắng',
+    if (other > 0) '$other sinh viên ở mục "Khác"',
   ].join(' và ');
   final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Kính nhờ Thầy/Cô kiểm tra lại'),
+      title: const Text('Kính nhờ thầy/cô kiểm tra lại'),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,19 +29,19 @@ Future<bool> showAbsenceCheckDialog(
             ),
             const SizedBox(height: 10),
             Text(
-              '• Với học viên Vắng: Thầy/Cô vui lòng xác nhận lại em đó thật '
+              '• Với sinh viên vắng: thầy/cô vui lòng xác nhận lại em đó thật '
               'sự không có mặt trong lớp vào giờ học này.',
               style: TextStyle(fontSize: 13, color: context.vd.ink),
             ),
             const SizedBox(height: 6),
             Text(
-              '• Mục Khác: xin Thầy/Cô chỉ dùng cho những trường hợp thật sự '
+              '• Mục Khác: xin thầy/cô chỉ dùng cho những trường hợp thật sự '
               'đặc biệt.',
               style: TextStyle(fontSize: 13, color: context.vd.ink),
             ),
             const SizedBox(height: 10),
             Text(
-              'Nhà trường trân trọng cảm ơn Thầy/Cô.',
+              'Nhà trường trân trọng cảm ơn thầy/cô.',
               style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
             ),
           ],

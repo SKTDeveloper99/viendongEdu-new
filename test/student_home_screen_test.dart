@@ -220,7 +220,7 @@ void main() {
       find.textContaining('nhấn để xem chi tiết', findRichText: true),
       findsOneWidget,
     );
-    for (final label in ['Lịch học', 'Điểm', 'Học phí', 'Bảng tin']) {
+    for (final label in ['Lịch học', 'Bảng điểm', 'Học phí', 'Bảng tin']) {
       expect(find.text(label), findsWidgets);
     }
   });
@@ -229,7 +229,7 @@ void main() {
     mock();
     await pumpHome(tester);
 
-    expect(find.text('Thông tin mới từ trung tâm'), findsOneWidget);
+    expect(find.text('Thông tin mới từ nhà trường'), findsOneWidget);
     expect(find.text('Thông báo thử nghiệm A'), findsOneWidget);
     expect(find.text('1 chưa đọc'), findsOneWidget);
   });
@@ -267,7 +267,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Thông tin mới từ trung tâm'), findsNothing);
+    expect(find.text('Thông tin mới từ nhà trường'), findsNothing);
   });
 
   testWidgets('lịch lỗi và chưa có bản lưu: hiện nút thử lại', (tester) async {
@@ -328,7 +328,7 @@ void main() {
     expect(find.text('Đăng xuất'), findsOneWidget);
     await tester.pump();
     expect(
-      find.text('Phần mềm Viendongedu phiên bản 9.9.9 (77)'),
+      find.text('Phần mềm ViendongEdu phiên bản 9.9.9 (77)'),
       findsOneWidget,
     );
   });

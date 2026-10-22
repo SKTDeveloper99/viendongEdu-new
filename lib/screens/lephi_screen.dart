@@ -5,7 +5,7 @@ import '../services/crm_session_guard.dart';
 import '../theme/vd_tokens.dart';
 
 String _fmtAmount(int? amount) {
-  if (amount == null) return 'chưa có luật';
+  if (amount == null) return 'Chưa có quy định tính phí';
   final s = amount.abs().toString();
   final buf = StringBuffer();
   for (var i = 0; i < s.length; i++) {
@@ -234,7 +234,7 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                       SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          'Dữ liệu có phiếu phát sinh bất thường — số liệu cần rà soát.',
+                                          'Có phiếu thu cần rà soát. Vui lòng liên hệ Phòng Kế toán để kiểm tra số liệu.',
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       ),

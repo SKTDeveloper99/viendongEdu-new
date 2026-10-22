@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String get _idLabel =>
-      _role == CrmRole.student ? 'Mã số sinh viên (MSSV)' : 'Mã giáo viên';
+      _role == CrmRole.student ? 'Mã số sinh viên (MSSV)' : 'Mã giảng viên';
 
   Future<void> _login() async {
     final loginId = _idCtrl.text.trim();
@@ -305,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () =>
                       Navigator.pushNamed(context, '/ems_attendance_gv'),
                   icon: const Icon(Icons.fact_check_outlined, size: 18),
-                  label: const Text('DEBUG · Điểm danh giáo viên'),
+                  label: const Text('Chạy thử · Điểm danh giảng viên'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: context.vd.primary,
                     minimumSize: const Size.fromHeight(46),

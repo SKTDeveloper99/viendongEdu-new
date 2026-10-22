@@ -44,7 +44,7 @@ class RosterBottomBar extends StatelessWidget {
               child: Text(
                 '${queued ? 'CHƯA GỬI • kết nối lại rồi bấm Lưu\n' : ''}'
                 '${needsReasonCount != null ? 'CHƯA LƯU • $needsReasonCount SV quẹt cổng bị ghi vắng, cần lý do\n' : ''}'
-                'Có $presentCount • Vắng $absentCount • '
+                'Có mặt $presentCount • Vắng $absentCount • '
                 'Khác ${lateCount + excusedCount} • Chưa điểm danh $unmarkedCount',
                 style: TextStyle(
                   fontSize: 12,

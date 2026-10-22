@@ -144,7 +144,7 @@ class RosterViewModel extends ChangeNotifier {
         return mssv.isEmpty || name.isEmpty || !seenMssv.add(mssv);
       })) {
         throw EmsException(
-          'Danh sách EMS thiếu tên/mã học viên hoặc có mã bị trùng. '
+          'Danh sách EMS thiếu tên/mã sinh viên hoặc có mã bị trùng. '
           'Chưa mở danh sách; vui lòng tải lại lịch.',
         );
       }
@@ -338,7 +338,7 @@ class RosterViewModel extends ChangeNotifier {
     _notify();
     unawaited(_persistDraft());
     ui.toast(
-      'CHƯA LƯU — ${c.students.length} học viên đã quẹt cổng nhưng ghi vắng. '
+      'CHƯA LƯU — ${c.students.length} sinh viên đã quẹt cổng nhưng ghi vắng. '
       'Bấm Lưu để nêu lý do.',
     );
   }

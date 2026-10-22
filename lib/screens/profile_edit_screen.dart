@@ -223,13 +223,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                 controller: _emailCtrl,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: const InputDecoration(
-                                  labelText: 'Email',
+                                  labelText: 'Thư điện tử',
                                   border: OutlineInputBorder(),
                                 ),
                                 validator: (v) {
                                   final s = (v ?? '').trim();
                                   if (s.isEmpty) return null;
-                                  if (!_emailRe.hasMatch(s)) return 'Email không đúng định dạng.';
+                                  if (!_emailRe.hasMatch(s)) return 'Vui lòng nhập địa chỉ thư điện tử đúng định dạng.';
                                   return null;
                                 },
                               ),
@@ -245,7 +245,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                   final s = (v ?? '').trim();
                                   if (s.isEmpty) return null;
                                   if (!_phoneRe.hasMatch(s)) {
-                                    return 'Số điện thoại không đúng định dạng (vd. 0912345678).';
+                                    return 'Vui lòng nhập số điện thoại bắt đầu bằng 0 hoặc +84, theo sau là 9 hoặc 10 chữ số.';
                                   }
                                   return null;
                                 },
@@ -263,7 +263,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                     final s = (v ?? '').trim();
                                     if (s.isEmpty) return null;
                                     if (!_cccdRe.hasMatch(s)) {
-                                      return 'CMND/CCCD phải có 9 hoặc 12 chữ số.';
+                                      return 'Vui lòng nhập CMND/CCCD gồm 9 hoặc 12 chữ số.';
                                     }
                                     return null;
                                   },

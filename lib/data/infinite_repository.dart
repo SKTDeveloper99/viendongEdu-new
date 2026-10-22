@@ -122,7 +122,7 @@ class InfiniteRepository {
   Future<Fix> currentFix() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        return const Fix.failed('Hãy bật Định vị (GPS) trên điện thoại.');
+        return const Fix.failed('Hãy bật định vị (GPS) trên điện thoại.');
       }
       var perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {

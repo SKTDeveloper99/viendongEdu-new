@@ -95,7 +95,7 @@ class _EmsAttendanceTeacherScreenState
       return const AttendanceMessage(
         icon: Icons.event_busy,
         title: 'Hôm nay bạn không có buổi học',
-        detail: 'Buổi học lấy theo thời khoá biểu. Kéo xuống để tải lại.',
+        detail: 'Buổi học lấy theo thời khóa biểu. Kéo xuống để tải lại.',
       );
     }
     return RefreshIndicator(

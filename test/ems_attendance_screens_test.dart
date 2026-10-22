@@ -247,7 +247,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Chờ giáo viên xác nhận'), findsOneWidget);
+    expect(find.textContaining('Chờ giảng viên xác nhận'), findsOneWidget);
     expect(find.textContaining('Đã vào trường lúc 17:42'), findsOneWidget);
     expect(find.textContaining('trước giờ học'), findsOneWidget);
   });
@@ -366,12 +366,12 @@ void main() {
     );
     await _openClass(tester);
     // Tick only the first student present.
-    await tester.tap(find.text('Có').first);
+    await tester.tap(find.text('Có mặt').first);
     await tester.pump();
     await tester.tap(find.text('Lưu điểm danh'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Còn 1 học viên chưa điểm danh'), findsOneWidget);
+    expect(find.text('Còn 1 sinh viên chưa điểm danh'), findsOneWidget);
     expect(find.textContaining('Học viên 2600000002'), findsWidgets);
     expect(posts, isEmpty, reason: 'nothing sent before the teacher answers');
 
@@ -458,7 +458,7 @@ void main() {
     await _openClass(tester);
     // Scanned student marked absent, the other present → no undecided.
     await tester.tap(find.text('Vắng').first);
-    await tester.tap(find.text('Có').last);
+    await tester.tap(find.text('Có mặt').last);
     await tester.pump();
     await tester.tap(find.text('Lưu điểm danh'));
     await tester.pumpAndSettle();
@@ -471,7 +471,7 @@ void main() {
     expect(find.text('Cần nêu lý do'), findsOneWidget);
 
     // Teacher closes the dialog. The 20 s queue must NOT resend the same body.
-    await tester.tap(find.text('Huỷ'));
+    await tester.tap(find.text('Hủy'));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 65));
     await tester.pumpAndSettle();
@@ -534,18 +534,18 @@ void main() {
     // Tổng không đổi; chỉ nút nói "xong".
     expect(find.text('Đã quẹt 1 • Chưa quẹt 2 • Sĩ số 3'), findsOneWidget);
     expect(find.text('Đã quẹt → có mặt (xong)'), findsOneWidget);
-    expect(find.textContaining('Có 1 • '), findsOneWidget);
+    expect(find.textContaining('Có mặt 1 • '), findsOneWidget);
 
     await tester.tap(find.text('Tất cả có mặt'));
     await tester.pump();
-    expect(find.textContaining('Có 3 • '), findsOneWidget);
+    expect(find.textContaining('Có mặt 3 • '), findsOneWidget);
     expect(find.text('Bỏ chọn tất cả'), findsOneWidget);
 
     await tester.tap(find.text('Bỏ chọn tất cả'));
     await tester.pump();
     // An (quẹt) có mặt, Cường giữ dấu VẮNG máy chủ đã lưu, Bích về chưa điểm danh.
     expect(
-      find.textContaining('Có 1 • Vắng 1 • Khác 0 • Chưa điểm danh 1'),
+      find.textContaining('Có mặt 1 • Vắng 1 • Khác 0 • Chưa điểm danh 1'),
       findsOneWidget,
     );
     expect(find.text('Tất cả có mặt'), findsOneWidget);

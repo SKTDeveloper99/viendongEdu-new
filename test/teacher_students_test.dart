@@ -305,7 +305,7 @@ void main() {
     expect(find.text('1.500.000 đ'), findsOneWidget);
     expect(find.text('7.5'), findsOneWidget);
     expect(find.text('Chưa có điểm'), findsOneWidget);
-    expect(find.text('Chờ giáo viên xác nhận'), findsOneWidget);
+    expect(find.text('Chờ giảng viên xác nhận'), findsOneWidget);
     expect(find.text('3 buổi'), findsOneWidget);
     expect(find.text('0 buổi'), findsOneWidget); // Vắng
     expect(find.text('Cần chú ý'), findsNothing);

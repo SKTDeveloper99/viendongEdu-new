@@ -159,7 +159,7 @@ class SessionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    marked ? 'Đã ĐD' : 'Chưa ĐD',
+                    marked ? 'Đã điểm danh' : 'Chưa điểm danh',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

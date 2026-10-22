@@ -56,12 +56,12 @@ Future<({EmsSaveResult result, EmsRoster confirmed})> sendAndVerify(
   final stillThere = removeList.where((m) => byMssv[m] != null).toList();
   if (stillThere.isNotEmpty) {
     throw EmsException(
-      'Máy chủ chưa bỏ điểm danh ${stillThere.length} học viên; ứng dụng sẽ gửi lại.',
+      'Máy chủ chưa bỏ điểm danh ${stillThere.length} sinh viên; ứng dụng sẽ gửi lại.',
     );
   }
   if (missing.isNotEmpty) {
     throw EmsException(
-      'Máy chủ chưa xác nhận đủ ${missing.length} học viên; ứng dụng sẽ gửi lại.',
+      'Máy chủ chưa xác nhận đủ ${missing.length} sinh viên; ứng dụng sẽ gửi lại.',
     );
   }
   return (result: res, confirmed: confirmed);

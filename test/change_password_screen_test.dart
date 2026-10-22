@@ -173,7 +173,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(called, isFalse);
-    expect(find.text('Mật khẩu xác nhận không khớp'), findsOneWidget);
+    expect(find.text('Vui lòng nhập lại mật khẩu xác nhận cho khớp'), findsOneWidget);
   });
 }
 

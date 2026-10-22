@@ -19,7 +19,7 @@ class ClassStudentsTab extends StatelessWidget {
     final students = vm.students;
     if (students.isEmpty) {
       return Center(
-        child: Text('Không có học viên', style: TextStyle(color: context.vd.inkMuted)),
+        child: Text('Không có sinh viên', style: TextStyle(color: context.vd.inkMuted)),
       );
     }
     return Column(

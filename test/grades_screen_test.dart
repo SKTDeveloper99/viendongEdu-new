@@ -116,7 +116,7 @@ void main() {
     await pump(tester);
 
     expect(find.text('Bảng điểm'), findsOneWidget);
-    expect(find.text('ĐTB Tích lũy'), findsOneWidget);
+    expect(find.text('ĐTB tích lũy'), findsOneWidget);
     expect(find.text('6.00'), findsOneWidget);
     expect(find.text('Tổng kết: 6.00'), findsOneWidget);
     expect(find.text('2 / 5 môn đạt'), findsOneWidget);

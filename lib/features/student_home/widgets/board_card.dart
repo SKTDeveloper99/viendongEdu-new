@@ -4,7 +4,7 @@ import '../../../components/vd_pressable.dart';
 import '../student_home_view_model.dart';
 import '../../../theme/vd_tokens.dart';
 
-/// "Thông tin mới từ trung tâm" — latest board item, or the retry card.
+/// "Thông tin mới từ nhà trường" — latest board item, or the retry card.
 class BoardCard extends StatelessWidget {
   final StudentHomeViewModel vm;
   const BoardCard({super.key, required this.vm});
@@ -57,7 +57,7 @@ class BoardCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            'Thông tin mới từ trung tâm',
+                            'Thông tin mới từ nhà trường',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,

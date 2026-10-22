@@ -167,7 +167,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 onToggle: () =>
                                     setState(() => _showOld = !_showOld),
                                 validator: (v) => (v == null || v.isEmpty)
-                                    ? 'Vui lòng nhập mật khẩu hiện tại'
+                                    ? 'Vui lòng nhập mật khẩu hiện tại.'
                                     : null,
                               ),
                               const SizedBox(height: 16),
@@ -198,10 +198,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 ),
                                 validator: (v) {
                                   if (v == null || v.isEmpty) {
-                                    return 'Vui lòng xác nhận mật khẩu mới';
+                                    return 'Vui lòng xác nhận mật khẩu mới.';
                                   }
                                   if (v != _newCtrl.text) {
-                                    return 'Mật khẩu xác nhận không khớp';
+                                    return 'Vui lòng nhập lại mật khẩu xác nhận cho khớp';
                                   }
                                   return null;
                                 },

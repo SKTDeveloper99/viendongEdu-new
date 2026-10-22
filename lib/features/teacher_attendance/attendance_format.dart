@@ -19,7 +19,7 @@ String schoolHhmmss(DateTime d) {
 String markLabel(String? mark) => switch (mark) {
   'present' => 'Có mặt',
   'absent' => 'Vắng',
-  'late' => 'Đi trễ',
+  'late' => 'Đi muộn',
   'excused' => 'Vắng có phép',
   _ => 'Chưa điểm danh',
 };

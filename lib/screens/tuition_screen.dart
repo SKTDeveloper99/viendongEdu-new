@@ -240,7 +240,7 @@ class _SummarySection extends StatelessWidget {
               if (unknown) ...[
                 const SizedBox(height: 6),
                 Text(
-                  s?.moneyUnknownReason ?? 'Chưa có luật tính học phí cho lớp này.',
+                  s?.moneyUnknownReason ?? 'Chưa có quy định tính học phí cho lớp này. Vui lòng liên hệ Phòng Kế toán.',
                   style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 12),
                 ),
               ],
@@ -294,7 +294,7 @@ class _SummarySection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Khoản thu khác (KHÔNG phải học phí)',
+                Text('Khoản thu khác (không phải học phí)',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.vd.inkFaint)),
                 const SizedBox(height: 6),
                 if ((s.otherReceipts.mienGiamKhenThuong ?? 0) != 0)

@@ -63,7 +63,7 @@ class AttendanceCard extends StatelessWidget {
           valueColor: s.absent! > 0 ? context.vd.danger : null,
         ),
         if (s.unrecorded! > 0)
-          CareLine('Chờ giáo viên xác nhận', '${s.unrecorded} buổi'),
+          CareLine('Chờ giảng viên xác nhận', '${s.unrecorded} buổi'),
         if (s.conflicts! > 0) CareLine(unknownText, '${s.conflicts} buổi'),
         if (s.unrecorded! > 0)
           Padding(

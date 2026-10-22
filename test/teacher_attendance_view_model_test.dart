@@ -386,7 +386,7 @@ void main() {
       expect(repo.draft?.queued, isTrue);
       expect(
         ui.toasts.single,
-        contains('Máy chủ chưa bỏ điểm danh 1 học viên'),
+        contains('Máy chủ chưa bỏ điểm danh 1 sinh viên'),
       );
       expect(ui.toasts.single, startsWith('CHƯA GỬI. Đã giữ trên máy'));
     });
@@ -411,7 +411,7 @@ void main() {
       expect(vm.queued, isFalse);
       expect(vm.needsReason?.single.mssv, _a);
       expect(repo.draft?.queued, isFalse);
-      expect(ui.toasts.single, startsWith('CHƯA LƯU — 1 học viên'));
+      expect(ui.toasts.single, startsWith('CHƯA LƯU — 1 sinh viên'));
     });
 
     test('second conflict after reasons holds; asked once', () async {
@@ -487,7 +487,7 @@ void main() {
       await vm.load();
 
       expect(vm.students, isEmpty);
-      expect(vm.error, contains('thiếu tên/mã học viên hoặc có mã bị trùng'));
+      expect(vm.error, contains('thiếu tên/mã sinh viên hoặc có mã bị trùng'));
       vm.dispose();
     }
   });

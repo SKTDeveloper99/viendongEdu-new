@@ -634,7 +634,7 @@ class _AnswerDialogState extends State<_AnswerDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Huỷ'),
+        child: const Text('Hủy'),
       ),
       FilledButton(
         onPressed: _controller.text.trim().isEmpty

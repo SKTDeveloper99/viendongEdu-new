@@ -70,7 +70,7 @@ class _QrScanSheetState extends State<QrScanSheet> {
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Text(
-                        'Không mở được camera. Nhập dòng chữ dưới mã QR.',
+                        'Không mở được máy ảnh. Nhập dòng chữ dưới mã QR.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: vd.inkMuted),
                       ),
@@ -97,7 +97,7 @@ class _QrScanSheetState extends State<QrScanSheet> {
                   textCapitalization: TextCapitalization.characters,
                   onSubmitted: _finish,
                   decoration: const InputDecoration(
-                    labelText: 'Mã in dưới QR',
+                    labelText: 'Mã in dưới mã QR',
                     isDense: true,
                     border: OutlineInputBorder(),
                   ),
