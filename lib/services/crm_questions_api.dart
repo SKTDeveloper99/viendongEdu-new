@@ -8,8 +8,7 @@ class CrmQuestionsApi {
 
   static Future<List<QuestionThread>> list() async {
     final body = await EmsApiService.sendMap('GET', '/student/conversations');
-    final rows = _threads(body);
-    return rows;
+    return _threads(body);
   }
 
   static Future<({List<QuestionThread> threads, DateTime savedAt})?>

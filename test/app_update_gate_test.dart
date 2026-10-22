@@ -11,23 +11,38 @@ void main() {
   setUp(() => original = EmsApiService.client);
   tearDown(() => EmsApiService.client = original);
 
-  for (final failure in ['offline', 'timeout', '500', '401', 'malformed', 'shape']) {
+  for (final failure in [
+    'offline',
+    'timeout',
+    '500',
+    '401',
+    'malformed',
+    'shape',
+  ]) {
     test('optional version lookup fails open for $failure', () async {
       EmsApiService.client = MockClient((_) async {
         switch (failure) {
-          case 'offline': throw http.ClientException('test-offline');
-          case 'timeout': throw TimeoutException('test-timeout');
-          case '500': return http.Response('server_error', 500);
-          case '401': return http.Response('unauthorized', 401);
-          case 'shape': return http.Response('[]', 200);
-          default: return http.Response('{broken', 200);
+          case 'offline':
+            throw http.ClientException('test-offline');
+          case 'timeout':
+            throw TimeoutException('test-timeout');
+          case '500':
+            return http.Response('server_error', 500);
+          case '401':
+            return http.Response('unauthorized', 401);
+          case 'shape':
+            return http.Response('[]', 200);
+          default:
+            return http.Response('{broken', 200);
         }
       });
       expect(await AppUpdateGate.minimumVersion(), isNull);
     });
   }
 
-  testWidgets('a hanging version lookup gives up after two seconds', (tester) async {
+  testWidgets('a hanging version lookup gives up after two seconds', (
+    tester,
+  ) async {
     EmsApiService.client = MockClient((_) => Completer<http.Response>().future);
     var finished = false;
     Map<String, dynamic>? result;

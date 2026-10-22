@@ -99,6 +99,49 @@ void main() {
     expect(error, isA<EmsException>());
   });
 
+  for (final method in ['POST', 'PATCH', 'DELETE']) {
+    testWidgets('$method stops waiting after fifteen seconds', (tester) async {
+      EmsApiService.client = MockClient(
+        (_) => Completer<http.Response>().future,
+      );
+      Object? error;
+      final request = EmsApiService.send(method, '/test').catchError((
+        Object e,
+      ) {
+        error = e;
+        return null;
+      });
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 15));
+      await request;
+      expect(error, isA<EmsException>());
+    });
+  }
+
+  testWidgets('a hanging connection probe stops before any write is sent', (
+    tester,
+  ) async {
+    final methods = <String>[];
+    EmsApiService.probe = EmsApiService.defaultProbe;
+    EmsApiService.client = MockClient((req) {
+      methods.add(req.method);
+      return Completer<http.Response>().future;
+    });
+    Object? error;
+    final request = EmsApiService.send('POST', '/test').catchError((Object e) {
+      error = e;
+      return null;
+    });
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    await request;
+    expect(methods, ['GET']);
+    expect(
+      error,
+      isA<EmsException>().having((e) => e.code, 'code', 'network_unsure'),
+    );
+  });
+
   test('sendMap rejects a JSON array with a Vietnamese error', () async {
     EmsApiService.client = MockClient((_) async => _json([]));
     await expectLater(
