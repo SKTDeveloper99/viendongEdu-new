@@ -1,6 +1,7 @@
 import '../components/skeleton.dart';
 import 'stale_note.dart';
 import 'package:flutter/material.dart';
+import '../components/vd_date_picker.dart';
 import '../models/crm_student_schedule.dart';
 import '../services/app_session.dart';
 import '../services/crm_student_api.dart';
@@ -222,19 +223,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      locale: const Locale('vi', 'VN'),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: context.vd.primary)),
-        child: child!,
-      ),
-    );
+    final picked = await showVdDatePicker(context, _selectedDate);
     if (picked != null) {
       setState(() {
         _selectedDate = picked;

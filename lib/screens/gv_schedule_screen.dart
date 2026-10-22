@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../components/vd_date_picker.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
@@ -129,21 +130,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      locale: const Locale('vi', 'VN'),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: Theme.of(
-            ctx,
-          ).colorScheme.copyWith(primary: context.vd.primary),
-        ),
-        child: child!,
-      ),
-    );
+    final picked = await showVdDatePicker(context, _selectedDate);
     if (picked != null) {
       setState(() => _currentMonday = _findMonday(picked));
       _selectDate(picked);
