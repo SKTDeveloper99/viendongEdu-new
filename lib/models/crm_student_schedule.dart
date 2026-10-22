@@ -197,6 +197,16 @@ class CrmScheduleItem {
   /// `_calendarDate`) chứ không phải một thời điểm. KHÔNG giải mã
   /// `weeksPattern` (xem ghi chú đầu file) — nếu lớp học cách tuần, kết quả
   /// có thể hiện dư.
+  /// True when [weeksPattern] has a break between its first and last active
+  /// week ('-' or ' ' marks a week off, as the server's planned-sessions
+  /// expansion reads it). The phone does not know the term start, so it cannot
+  /// tell WHICH week is off: [occursOn] still shows the class and the card
+  /// says it may not meet, rather than guessing.
+  bool get skipsWeeks {
+    final m = (weeksPattern ?? '').replaceAll(RegExp(r'^[- ]+|[- ]+$'), '');
+    return m.contains('-') || m.contains(' ');
+  }
+
   bool occursOn(DateTime date) {
     if (dayCode != null && dayCode != dayCodeForWeekday(date.weekday)) {
       return false;

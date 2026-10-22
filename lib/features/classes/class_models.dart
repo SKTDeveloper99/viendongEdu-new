@@ -30,6 +30,8 @@ class ClassItem {
   final double? tongdiem;
   final double? diemgk; // midterm_score
   final double? diemck; // final_exam_score
+  final DateTime? ngayBatDau; // section start_date (calendar date)
+  final DateTime? ngayKetThuc; // section end_date (calendar date)
 
   const ClassItem({
     required this.sectionId,
@@ -41,6 +43,8 @@ class ClassItem {
     this.tongdiem,
     this.diemgk,
     this.diemck,
+    this.ngayBatDau,
+    this.ngayKetThuc,
   });
 
   factory ClassItem.fromSection(CrmStudentSection s, {CrmStudentGrade? grade}) =>
@@ -54,7 +58,13 @@ class ClassItem {
         tongdiem: grade?.finalScore,
         diemgk: grade?.midtermScore,
         diemck: grade?.finalExamScore,
+        ngayBatDau: s.ngayBatDau,
+        ngayKetThuc: s.ngayKetThuc,
       );
+
+  /// Course dates as dd/MM/yyyy, or N/A when the server does not know them.
+  String get batDauText => fmtCalendarDay(ngayBatDau);
+  String get ketThucText => fmtCalendarDay(ngayKetThuc);
 
   // CRM không có điểm "chuyên cần" (diemcc) riêng — chỉ midterm/final.
   double? get diemcc => null;
@@ -62,6 +72,13 @@ class ClassItem {
   bool get hasGrades =>
       tongdiem != null || diemcc != null || diemgk != null || diemck != null;
 }
+
+/// dd/MM/yyyy of a calendar date (UTC midnight, see crm_student_schedule),
+/// or N/A when unknown.
+String fmtCalendarDay(DateTime? d) => d == null
+    ? 'N/A'
+    : '${d.day.toString().padLeft(2, '0')}/'
+          '${d.month.toString().padLeft(2, '0')}/${d.year}';
 
 /// One attendance session of a class, as shown on the detail page.
 class AttendanceSession {

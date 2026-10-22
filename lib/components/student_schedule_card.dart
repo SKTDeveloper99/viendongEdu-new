@@ -183,6 +183,18 @@ class StudentScheduleCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (data.skipsWeeks) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Lớp có tuần nghỉ — có thể không học tuần này, '
+                        'kiểm tra lại với lớp',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: context.vd.inkMuted,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

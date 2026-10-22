@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../class_models.dart';
 import '../../../theme/vd_tokens.dart';
 
-/// Class code, subject code, credits and teacher.
+/// Class code, subject code, credits, teacher and course dates.
 class ClassInfoCard extends StatelessWidget {
   final ClassItem item;
   const ClassInfoCard({super.key, required this.item});
@@ -31,6 +31,10 @@ class ClassInfoCard extends StatelessWidget {
           _InfoRow(Icons.school_outlined, 'Tín chỉ', '${item.sotinchi} TC'),
           _divider(context),
           _InfoRow(Icons.person_outline, 'Giảng viên', item.gvten),
+          _divider(context),
+          _InfoRow(Icons.play_circle_outline, 'Bắt đầu', item.batDauText),
+          _divider(context),
+          _InfoRow(Icons.event_available_outlined, 'Kết thúc', item.ketThucText),
         ],
       ),
     );
