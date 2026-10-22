@@ -11,6 +11,7 @@
 import '../components/skeleton.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
+import '../services/crm_session_guard.dart';
 import '../data/api/attendance_api.dart';
 import '../theme/vd_tokens.dart';
 
@@ -51,10 +52,11 @@ class _EmsAttendanceStudentScreenState
       });
     } on EmsException catch (e) {
       if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!background) {
         setState(() {
           _marks = const [];
-          _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
+          _error = e.message;
           _loading = false;
         });
       }

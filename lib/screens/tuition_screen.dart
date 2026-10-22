@@ -15,14 +15,13 @@ String _fmtAmount(int? amount) {
     if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
     buf.write(s[i]);
   }
-  return '${buf.toString()} đ';
+  return '${amount < 0 ? '-' : ''}${buf.toString()} đ';
 }
 
 String _fmtDate(DateTime? d) => d == null
     ? '–'
     : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-// ── Screen ──────────────────────────────────────────────
 // Thay ApiService.getTuition (IMS hocvien/hocphi) bằng CrmMoneyApi.getTuition
 // (GET /api/student/me/tuition) + CrmMoneyApi.getCongNo (GET
 // /api/student/me/cong-no). KHÔNG tự cộng/trừ soTien trên app nữa — đó
@@ -133,6 +132,7 @@ class _TuitionScreenState extends State<TuitionScreen> {
                         color: context.vd.primary,
                         onRefresh: _fetch,
                         child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,7 +230,7 @@ class _SummarySection extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                _fmtAmount(s?.owedTotal),
+                _fmtAmount(unknown ? null : s.owedTotal),
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,

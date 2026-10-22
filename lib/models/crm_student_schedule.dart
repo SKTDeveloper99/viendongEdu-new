@@ -220,7 +220,7 @@ class CrmScheduleItem {
   /// `weeksPattern` (xem ghi chú đầu file) — nếu lớp học cách tuần, kết quả
   /// có thể hiện dư.
   bool occursOn(DateTime date) {
-    if (dayCode != null && dayCode != dayCodeForWeekday(date.weekday)) {
+    if (dayCode == null || dayCode != dayCodeForWeekday(date.weekday)) {
       return false;
     }
     final d = DateTime.utc(date.year, date.month, date.day);

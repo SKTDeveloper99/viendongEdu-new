@@ -33,6 +33,33 @@ Finder _subject(String name) => find.descendant(
 );
 
 void main() {
+  testWidgets(
+    'permission denial is explicit and retry can load an empty timetable',
+    (t) async {
+      var denied = true;
+      EmsApiService.client = MockClient(
+        (_) async => http.Response(
+          jsonEncode(
+            denied
+                ? {'error': 'Không có quyền xem lịch học.'}
+                : {'schedule': [], 'marks': []},
+          ),
+          denied ? 403 : 200,
+          headers: {'content-type': 'application/json'},
+        ),
+      );
+      await t.pumpWidget(
+        MaterialApp(home: ScheduleScreen(now: () => DateTime(2026, 10, 23))),
+      );
+      await t.pumpAndSettle();
+      expect(find.text('Không có quyền xem lịch học.'), findsOneWidget);
+      expect(find.text('Đang đối chiếu'), findsNothing);
+      denied = false;
+      await t.tap(find.text('Thử lại'));
+      await t.pumpAndSettle();
+      expect(find.text('Không có lịch học'), findsOneWidget);
+    },
+  );
   late Map<String, dynamic> body;
   late bool offline;
   late int calls;
@@ -228,7 +255,8 @@ void main() {
   ) async {
     offline = true;
     await pump(t);
-    expect(find.text('Đang đối chiếu'), findsOneWidget);
+    expect(find.textContaining('Không có kết nối Internet'), findsOneWidget);
+    expect(find.text('Thử lại'), findsOneWidget);
     expect(find.text('Không có lịch học'), findsNothing);
     expect(find.byType(UnscheduledSubjects), findsNothing);
   });

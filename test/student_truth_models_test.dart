@@ -12,6 +12,15 @@ import 'package:viendongedu2_flutter/models/crm_student_schedule.dart';
 import 'package:viendongedu2_flutter/models/json_values.dart';
 
 void main() {
+  test('a missing weekday does not manufacture a daily timetable meeting', () {
+    final item = CrmScheduleItem.fromJson({'subject_name': 'Môn thử nghiệm'});
+    expect(item.occursOn(DateTime(2026, 10, 23)), isFalse);
+    expect(item.occursOn(DateTime(2026, 10, 24)), isFalse);
+    expect(
+      CrmStudentSection.fromJson({'ngay_thi': '2026-02-31'}).examDate,
+      isNull,
+    );
+  });
   test(
     'PostgreSQL numeric strings and true zeros survive all student models',
     () {
@@ -100,6 +109,11 @@ void main() {
     expect(jsonInt(2.9), isNull);
     expect(jsonInt('-125000.0'), -125000);
     expect(jsonInt('9007199254740993'), 9007199254740993);
+    expect(
+      CrmCapBuItem.fromJson({'total': '9007199254740993'}).total,
+      9007199254740993,
+    );
+    expect(CrmCapBuItem.fromJson({'total': 125000}).total, isA<int>());
   });
 
   test(

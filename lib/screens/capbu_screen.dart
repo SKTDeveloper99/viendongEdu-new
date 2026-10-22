@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../components/refreshable_empty.dart';
 import '../models/crm_money_capbu.dart';
 import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
@@ -131,7 +132,8 @@ class _CapBuScreenState extends State<CapBuScreen> {
                         ),
                       )
                     : _items.isEmpty
-                        ? Center(
+                        ? RefreshableEmpty(
+                            onRefresh: _fetch,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [

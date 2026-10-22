@@ -1,13 +1,15 @@
 /// PostgreSQL numeric columns may arrive as numbers or decimal strings.
 /// Invalid and non-finite values stay unknown, never zero.
-double? jsonDouble(dynamic value) {
+num? jsonNumber(dynamic value) {
   final number = value is num
-      ? value.toDouble()
+      ? value
       : value is String
-      ? double.tryParse(value.trim())
+      ? num.tryParse(value.trim())
       : null;
   return number != null && number.isFinite ? number : null;
 }
+
+double? jsonDouble(dynamic value) => jsonNumber(value)?.toDouble();
 
 int? jsonInt(dynamic value) {
   if (value is int) return value;

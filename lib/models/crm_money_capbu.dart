@@ -7,7 +7,7 @@ library;
 
 import 'json_values.dart';
 
-num? _numOrNull(dynamic v) => jsonDouble(v);
+num? _numOrNull(dynamic v) => jsonNumber(v);
 
 String? _strOrNull(dynamic v) {
   final s = v?.toString();

@@ -218,7 +218,13 @@ void main() {
     mock(boardFails: true);
     await pumpHome(tester);
 
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.text('Không tải được bảng tin. Chạm để thử lại.'),
       findsOneWidget,
@@ -232,7 +238,13 @@ void main() {
     AppSession.instance.emsDenied = true;
     await pumpHome(tester);
 
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Thông tin mới từ trung tâm'), findsNothing);
   });
 
@@ -261,7 +273,13 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await pumpHome(tester);
 
-    expect(find.text('Môn thử nghiệm sáng'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ClassChip),
+        matching: find.text('Môn thử nghiệm sáng'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.textContaining('Chưa cập nhật được — dữ liệu lúc'),
       findsOneWidget,

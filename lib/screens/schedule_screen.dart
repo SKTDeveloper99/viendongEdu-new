@@ -5,6 +5,7 @@ import '../models/crm_student_schedule.dart';
 import '../services/app_session.dart';
 import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
+import '../services/crm_session_guard.dart';
 import '../data/api/attendance_api.dart';
 import '../theme/vd_tokens.dart';
 import '../components/student_schedule_header.dart';
@@ -37,6 +38,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<CrmScheduleItem>? _fullSchedule;
   List<CrmUnscheduledSection> _chuaCoLich = const [];
   bool _scheduleFailed = false;
+  String? _scheduleError;
   final Map<String, List<CrmScheduleItem>> _cache = {};
   bool _loading = false;
   DateTime? _staleAt;
@@ -49,12 +51,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // trộn. Khoá: mã lớp môn học + ngày (+ giờ bắt đầu nếu EMS có).
   final Map<String, EmsStudentMark> _emsByKey = {};
   bool _emsLoaded = false;
+  bool _marksLoading = true;
+  bool _marksFailed = false;
+  bool _marksDenied = false;
 
   static String _markKey(String sectionCode, String date, [String? hhmm]) =>
       '$sectionCode|$date|${hhmm ?? ''}';
 
   Future<void> _loadEmsMarks({bool force = false}) async {
     if (_emsLoaded && !force) return;
+    if (mounted) setState(() => _marksLoading = true);
     // 2026-09-11: a student (2652092061) was marked VẮNG on EMS but saw "Chưa
     // điểm danh". The mirror at login had timed out on the phone (IMS edge
     // 302-ing) while the server finished it later, so this screen opened with
@@ -87,9 +93,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           if (hhmm != null) put(_markKey(code, date, hhmm));
         }
         _emsLoaded = true;
+        _marksLoading = false;
+        _marksFailed = false;
+        _marksDenied = false;
       });
-    } catch (_) {
-      // EMS chết thì thẻ hiện "Chưa điểm danh" — không bao giờ rơi về IMS.
+    } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
+      setState(() {
+        _emsByKey.clear();
+        _emsLoaded = false;
+        _marksLoading = false;
+        _marksFailed = true;
+        _marksDenied = e is EmsException && e.statusCode == 403;
+      });
     }
   }
 
@@ -103,6 +120,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   String _statusFor(CrmScheduleItem data, String date) {
+    if (_marksLoading) return 'loading';
+    if (_marksDenied) return 'denied';
+    if (_marksFailed) return 'unavailable';
     final code = data.sectionCode;
     final start = (data.startTime ?? '').trim();
     final hhmm = start.length >= 5 ? start.substring(0, 5) : null;
@@ -177,6 +197,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     setState(() {
       _loading = true;
       _scheduleFailed = false;
+      _scheduleError = null;
     });
     try {
       if (_fullSchedule == null) {
@@ -190,10 +211,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       setState(() {
         _cache[key] = _fullSchedule!.where((s) => s.occursOn(date)).toList();
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       setState(() {
         _scheduleFailed = true;
+        _scheduleError = e is EmsException
+            ? e.message
+            : 'Không tải được lịch học. Vui lòng thử lại.';
         _chuaCoLich = const [];
       });
     } finally {
@@ -288,15 +313,34 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ? skeletonList(accentColor: context.vd.primary)
                   : _scheduleFailed
                   ? Center(
-                      child: Text(
-                        'Đang đối chiếu',
-                        style: TextStyle(color: context.vd.inkMuted),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _scheduleError!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: context.vd.inkMuted),
+                          ),
+                          TextButton(
+                            onPressed: _refresh,
+                            child: const Text('Thử lại'),
+                          ),
+                        ],
                       ),
                     )
                   : classes == null
                   ? const SizedBox.shrink()
                   : classes.isEmpty && _chuaCoLich.isEmpty
-                  ? Center(child: _emptyDay(context))
+                  ? RefreshIndicator(
+                      onRefresh: _refresh,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          const SizedBox(height: 80),
+                          _emptyDay(context),
+                        ],
+                      ),
+                    )
                   : RefreshIndicator(
                       color: context.vd.primary,
                       onRefresh: _refresh,
