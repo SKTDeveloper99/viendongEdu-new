@@ -164,11 +164,15 @@ class _InfiniteScreenState extends State<InfiniteScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _vm.owned.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount:
+              ((MediaQuery.sizeOf(context).width - 32) /
+                      (96 * MediaQuery.textScalerOf(context).scale(1)))
+                  .floor()
+                  .clamp(1, 3),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
-          mainAxisExtent: 176,
+          mainAxisExtent: 176 * MediaQuery.textScalerOf(context).scale(1),
         ),
         itemBuilder: (context, index) {
           final c = _vm.owned[index];
