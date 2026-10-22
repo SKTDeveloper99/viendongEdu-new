@@ -65,6 +65,38 @@ void main() {
     });
   });
 
+  test(
+    'GET /me stores server data_open; absent field leaves fallback unset',
+    () async {
+      AppSession.instance.dataOpen = null;
+      EmsApiService.client = MockClient(
+        (request) async => http.Response(
+          jsonEncode({
+            'data_open': false,
+            'student': {'mssv': 'TEST2600001'},
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        ),
+      );
+      await CrmStudentApi.me();
+      expect(AppSession.instance.dataOpen, isFalse);
+
+      AppSession.instance.dataOpen = null;
+      EmsApiService.client = MockClient(
+        (request) async => http.Response(
+          jsonEncode({
+            'student': {'mssv': 'TEST2600001'},
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        ),
+      );
+      await CrmStudentApi.me();
+      expect(AppSession.instance.dataOpen, isNull);
+    },
+  );
+
   group('CrmStudentGrade / CrmStudentGradesView', () {
     test(
       'tính đạt/rớt đúng luật server (final_score >= 5 hoặc override_pass)',

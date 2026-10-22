@@ -1,5 +1,6 @@
 import 'ems_api_service.dart';
 import '../models/crm_profile_models.dart';
+import 'app_session.dart';
 
 /// Sửa hồ sơ cá nhân — thay cho `ApiService.updateUserInfo` (IMS
 /// `user/info/update`). Xem `docs/api/mobile-ims-replacement-S5.md` §2.
@@ -16,6 +17,9 @@ class CrmProfileApi {
   /// này (xem [CrmStudentProfile.fromGetMeJson]).
   static Future<CrmStudentProfile> getStudentMe() async {
     final body = await EmsApiService.send('GET', '/student/me');
+    if (body is Map<String, dynamic> && body['data_open'] is bool) {
+      AppSession.instance.dataOpen = body['data_open'] as bool;
+    }
     return CrmStudentProfile.fromGetMeJson(body as Map<String, dynamic>);
   }
 
@@ -39,8 +43,9 @@ class CrmProfileApi {
       if (sdt != null && sdt.isNotEmpty) 'sdt': sdt,
       if (cmnd != null && cmnd.isNotEmpty) 'cmnd': cmnd,
     };
-    final res = await EmsApiService.send('PATCH', '/student/me/profile', body: body)
-        as Map<String, dynamic>;
+    final res =
+        await EmsApiService.send('PATCH', '/student/me/profile', body: body)
+            as Map<String, dynamic>;
     return CrmStudentProfile.fromPatchJson(res);
   }
 
@@ -53,8 +58,9 @@ class CrmProfileApi {
       if (email != null && email.isNotEmpty) 'email': email,
       if (sdt != null && sdt.isNotEmpty) 'sdt': sdt,
     };
-    final res = await EmsApiService.send('PATCH', '/teacher/me/profile', body: body)
-        as Map<String, dynamic>;
+    final res =
+        await EmsApiService.send('PATCH', '/teacher/me/profile', body: body)
+            as Map<String, dynamic>;
     return CrmTeacherProfile.fromPatchJson(res);
   }
 }

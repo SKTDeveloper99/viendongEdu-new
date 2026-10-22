@@ -128,6 +128,18 @@ void main() {
     expect(studentDataOpen('K19A001', minPrefix: 25), isFalse);
     expect(studentDataOpen(null, minPrefix: 25), isTrue);
     expect(studentDataOpen('2416160001', minPrefix: 0), isTrue);
+    expect(
+      studentDataOpen('2416160001', minPrefix: 25, serverDataOpen: true),
+      isTrue,
+    );
+    expect(
+      studentDataOpen('2616160001', minPrefix: 25, serverDataOpen: false),
+      isFalse,
+    );
+    expect(
+      studentDataOpen('2416160001', minPrefix: 25, serverDataOpen: null),
+      isFalse,
+    );
   });
 
   test('a quest with its own place is checked there, not at school', () {

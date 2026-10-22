@@ -17,11 +17,12 @@ const dataRoutes = {
 };
 
 const noDataText =
-    'Không có dữ liệu — bản thử nghiệm hiện chỉ mở cho sinh viên khóa 25 trở về sau.';
+    'Không có dữ liệu — lớp của bạn sẽ được mở trong đợt tiếp theo.';
 
 /// True when [mssv] may see student data. Unknown MSSV (teacher, signed out)
 /// is not gated here; the student screens are reached only by students.
-bool studentDataOpen(String? mssv, {int? minPrefix}) {
+bool studentDataOpen(String? mssv, {int? minPrefix, bool? serverDataOpen}) {
+  if (serverDataOpen != null) return serverDataOpen;
   final m = mssv?.trim() ?? '';
   if (m.isEmpty) return true;
   final p = m.length >= 2 ? int.tryParse(m.substring(0, 2)) : null;

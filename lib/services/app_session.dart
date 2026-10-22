@@ -34,6 +34,10 @@ class AppSession {
   String? fullName;
   bool mustChangePassword = false;
 
+  /// Server-authoritative student data gate from GET /student/me; null means
+  /// an older server has not supplied the field and the prefix rule applies.
+  bool? dataOpen;
+
   /// EMS đã từ chối có chủ đích (tài khoản bị khoá / chưa được tạo).
   bool emsDenied = false;
 
@@ -71,6 +75,7 @@ class AppSession {
     teacherCode = id.teacherCode;
     fullName = id.fullName;
     mustChangePassword = id.mustChangePassword;
+    dataOpen = null;
     emsDenied = false;
   }
 
@@ -131,6 +136,7 @@ class AppSession {
       teacherCode = null;
       fullName = null;
       mustChangePassword = false;
+      dataOpen = null;
       return false;
     }
     role = id.role;
@@ -139,6 +145,7 @@ class AppSession {
     teacherCode = id.teacherCode;
     fullName = id.fullName;
     mustChangePassword = id.mustChangePassword;
+    dataOpen = null;
     try {
       await EmsAttendanceCache.migrateLegacyForRestoredAccount();
     } catch (_) {
@@ -166,6 +173,7 @@ class AppSession {
     teacherCode = null;
     fullName = null;
     mustChangePassword = false;
+    dataOpen = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('ems_token');
     await prefs.remove('crm_identity');
