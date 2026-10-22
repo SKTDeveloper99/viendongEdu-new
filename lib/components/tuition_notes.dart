@@ -73,7 +73,7 @@ class TuitionOfflineNote extends StatelessWidget {
         Icon(Icons.cloud_off_outlined, size: 18, color: context.vd.inkFaint),
         const SizedBox(width: 6),
         Expanded(
-          child: Text('Không có kết nối — đang xem bản lưu lúc $t.',
+          child: Text('Chưa cập nhật được — dữ liệu cũ, bản lưu lúc $t.',
               style: TextStyle(fontSize: 12, color: context.vd.inkFaint)),
         ),
       ],

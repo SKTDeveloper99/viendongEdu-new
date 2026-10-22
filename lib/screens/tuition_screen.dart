@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import '../components/skeleton.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_money_tuition.dart';
@@ -22,12 +23,7 @@ String _fmtDate(DateTime? d) => d == null
     ? '–'
     : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-// ── Screen ──────────────────────────────────────────────
-// Thay ApiService.getTuition (IMS hocvien/hocphi) bằng CrmMoneyApi.getTuition
-// (GET /api/student/me/tuition) + CrmMoneyApi.getCongNo (GET
-// /api/student/me/cong-no). KHÔNG tự cộng/trừ soTien trên app nữa — đó
-// chính là lỗi "type-blind" mà CRM đã sửa một lần (BUG 2, xem S4 doc); màn
-// hình chỉ ĐỌC summary đã áp luật thu sẵn từ máy chủ.
+// Tuition and the separate debt ledger are server-authoritative reads.
 class TuitionScreen extends StatefulWidget {
   const TuitionScreen({super.key});
   @override
@@ -37,6 +33,7 @@ class TuitionScreen extends StatefulWidget {
 class _TuitionScreenState extends State<TuitionScreen> {
   CrmTuitionResponse? _tuition;
   CrmCongNo? _congNo;
+  String? _congNoError;
   bool _loading = true;
   String? _error;
 
@@ -49,20 +46,32 @@ class _TuitionScreenState extends State<TuitionScreen> {
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final results = await Future.wait([
-        CrmMoneyApi.getTuition(),
-        CrmMoneyApi.getCongNo(),
+      final results = await Future.wait<Object>([
+        CrmMoneyApi.getTuition().then<Object>(
+          (value) => value,
+          onError: (Object e) => e,
+        ),
+        CrmMoneyApi.getCongNo().then<Object>(
+          (value) => value,
+          onError: (Object e) => e,
+        ),
       ]);
+      if (!mounted) return;
+      for (final result in results) {
+        if (await handleCrmAuthError(context, result)) return;
+      }
+      if (results[0] is! CrmTuitionResponse) throw results[0];
       if (!mounted) return;
       setState(() {
         _tuition = results[0] as CrmTuitionResponse;
-        _congNo = results[1] as CrmCongNo;
+        _congNo = results[1] is CrmCongNo ? results[1] as CrmCongNo : null;
+        _congNoError = _congNo == null ? crmErrorMessage(results[1]) : null;
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() { _loading = false; _error = crmErrorMessage(e); });
     }
   }
 
@@ -75,7 +84,6 @@ class _TuitionScreenState extends State<TuitionScreen> {
       backgroundColor: context.vd.bg,
       body: SafeArea(top: false, child: Column(
         children: [
-          // ── Header ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
@@ -138,14 +146,15 @@ class _TuitionScreenState extends State<TuitionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TuitionNotices(response: _tuition), // M-53 + bản lưu
-                  // ── Summary (từ summary đã áp luật, không tự tính) ──
+                  if (_congNoError != null) ...[
+                    Text('Chưa tải được sổ công nợ. $_congNoError'),
+                    TextButton(onPressed: _fetch, child: const Text('Thử lại')),
+                  ],
                   _SummarySection(summary: summary),
                   const SizedBox(height: 12),
-                  // M-52: bảng kê đã là sổ IMS — không hiện số thứ hai.
                   if (_congNo != null && summary?.source != 'bang_ke') _CongNoCard(congNo: _congNo!),
                   const SizedBox(height: 20),
 
-                  // ── Section label ──
                   const Text(
                     'Lịch sử giao dịch',
                     style: TextStyle(
@@ -153,7 +162,6 @@ class _TuitionScreenState extends State<TuitionScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // ── Transaction list ──
                   if (payments.isEmpty)
                     Center(
                       child: Padding(
@@ -190,8 +198,6 @@ class _BackButton extends StatelessWidget {
         child: Icon(Icons.arrow_back_ios, color: context.vd.onPrimary, size: 20),
       );
 }
-
-// ── Summary Section ─────────────────────────────────────
 class _SummarySection extends StatelessWidget {
   final CrmTuitionSummary? summary;
 
@@ -256,7 +262,6 @@ class _SummarySection extends StatelessWidget {
 
         const SizedBox(height: 12),
 
-        // ── 2 stat cards — đọc thẳng từ summary, không tự cộng ──
         if (!unknown) Row(
           children: [
             Expanded(
@@ -314,7 +319,6 @@ class _SummarySection extends StatelessWidget {
     );
   }
 }
-
 class _MiniCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -376,8 +380,6 @@ class _MiniCard extends StatelessWidget {
     );
   }
 }
-
-// ── Sổ công nợ IMS — nguồn RIÊNG, không gộp với summary phía trên ──
 class _CongNoCard extends StatelessWidget {
   final CrmCongNo congNo;
   const _CongNoCard({required this.congNo});
@@ -413,8 +415,6 @@ class _CongNoCard extends StatelessWidget {
     );
   }
 }
-
-// ── Transaction Card ────────────────────────────────────
 class _TransactionCard extends StatelessWidget {
   final CrmTuitionPayment item;
   const _TransactionCard({required this.item});
