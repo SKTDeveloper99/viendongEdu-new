@@ -63,10 +63,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     try {
       if (_isTeacher) {
         final p = await CrmProfileApi.getTeacherMe();
+        if (!mounted) return;
         _emailCtrl.text = p.email ?? '';
         _phoneCtrl.text = p.phone ?? '';
       } else {
         final p = await CrmProfileApi.getStudentMe();
+        if (!mounted) return;
         _emailCtrl.text = p.email ?? '';
         _phoneCtrl.text = p.phone ?? '';
         // cmnd/cccd không có ở GET /api/student/me hiện tại — để trống,
@@ -78,6 +80,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
+      if (!mounted) return;
       setState(() { _loading = false; _error = e.toString(); });
     }
   }

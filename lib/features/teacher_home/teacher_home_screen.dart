@@ -89,7 +89,7 @@ class _GvHomeScreenState extends State<GvHomeScreen>
 
   Future<void> _openBell() async {
     await Navigator.pushNamed(context, '/notifications');
-    _vm.loadUnreadCount();
+    if (mounted) _vm.loadUnreadCount();
   }
 
   Future<void> _openProfileInfo() async {
@@ -107,7 +107,7 @@ class _GvHomeScreenState extends State<GvHomeScreen>
     );
     // Sửa hồ sơ (ProfileEditScreen) trả về true khi có thay đổi đã lưu — tải
     // lại overview để phần "Liên hệ" khớp dữ liệu mới.
-    if (result == true) _vm.loadOverview();
+    if (mounted && result == true) _vm.loadOverview();
   }
 
   Widget _tab() => switch (_currentIndex) {

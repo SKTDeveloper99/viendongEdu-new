@@ -62,7 +62,7 @@ class _ConversationThreadScreenState extends State<ConversationThreadScreen> {
       return false;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
+      if (mounted && _scroll.hasClients) {
         _scroll.jumpTo(_scroll.position.maxScrollExtent);
       }
     });
@@ -89,7 +89,7 @@ class _ConversationThreadScreenState extends State<ConversationThreadScreen> {
         ],
       ),
     );
-    if (ok != true) return;
+    if (!mounted || ok != true) return;
     final error = await _vm.resolve();
     if (!mounted) return;
     _toast(error ?? 'Đã đánh dấu đã giải quyết');

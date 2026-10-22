@@ -28,7 +28,8 @@ class _MessageComposerState extends State<MessageComposer> {
 
   Future<void> _send() async {
     if (widget.sending || _text.text.trim().isEmpty) return;
-    if (await widget.onSend(_text.text)) _text.clear();
+    final sent = await widget.onSend(_text.text);
+    if (mounted && sent) _text.clear();
   }
 
   @override

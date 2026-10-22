@@ -59,7 +59,7 @@ class _StudentQuestionsScreenState extends State<StudentQuestionsScreen> {
           context,
           MaterialPageRoute(builder: (_) => const _NewQuestionScreen()),
         );
-        if (created == true) _load();
+        if (mounted && created == true) _load();
       },
       icon: const Icon(Icons.edit_outlined),
       label: const Text('Đặt câu hỏi'),

@@ -44,7 +44,7 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
 
   Future<void> _openEdit() async {
     final result = await Navigator.pushNamed(context, '/profile_edit');
-    if (result == true) _fetch();
+    if (mounted && result == true) _fetch();
   }
 
   @override
