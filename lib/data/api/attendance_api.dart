@@ -49,14 +49,11 @@ abstract final class AttendanceApi {
       'GET',
       '/attendance/session-marks?session_key=${Uri.encodeQueryComponent(sessionKey)}',
     );
-    final list = body['marks'];
     final out = <String, String>{};
-    if (list is List) {
-      for (final m in list.whereType<Map<String, dynamic>>()) {
-        final mssv = m['mssv']?.toString();
-        final st = m['status']?.toString();
-        if (mssv != null && st != null) out[mssv] = st;
-      }
+    for (final m in EmsApiService.rows(body['marks'])) {
+      final mssv = m['mssv']?.toString();
+      final st = m['status']?.toString();
+      if (mssv != null && st != null) out[mssv] = st;
     }
     return out;
   }

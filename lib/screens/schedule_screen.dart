@@ -50,6 +50,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final Map<String, EmsStudentMark> _emsByKey = {};
   bool _emsLoaded = false;
   bool _marksFailed = false;
+  DateTime? _marksSavedAt;
 
   static String _markKey(String sectionCode, String date, [String? hhmm]) =>
       '$sectionCode|$date|${hhmm ?? ''}';
@@ -89,6 +90,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         }
         _emsLoaded = true;
         _marksFailed = false;
+        _marksSavedAt = DateTime.now();
       });
     } catch (_) {
       if (mounted) setState(() => _marksFailed = true);
@@ -284,6 +286,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
 
             if (_staleAt != null) StaleNote(_staleAt!),
+            if (_marksFailed && _marksSavedAt != null) StaleNote(_marksSavedAt!),
             if (_marksFailed) TextButton(
               onPressed: () => _loadEmsMarks(force: true),
               child: const Text('Chưa cập nhật được điểm danh. Thử lại'),

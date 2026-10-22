@@ -229,16 +229,9 @@ class CrmTeacherApi {
       'GET',
       '/teacher/me/classes/$sectionId/attendance',
     );
-    final list = body['attendance'];
-    final rows = list is! List
-        ? const <CrmAttendanceRow>[]
-        : list
-              .whereType<Map<String, dynamic>>()
-              .map(
-                (row) =>
-                    EmsApiService.parse(() => CrmAttendanceRow.fromJson(row)),
-              )
-              .toList();
+    final rows = EmsApiService.rows(body['attendance'])
+        .map((row) => EmsApiService.parse(() => CrmAttendanceRow.fromJson(row)))
+        .toList();
     return CrmAttendanceResult(
       rows: rows,
       plan: CrmClassPlan.tryParse(body['plan']),

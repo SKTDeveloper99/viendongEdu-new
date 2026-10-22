@@ -265,12 +265,21 @@ void main() {
 
   for (final status in [500, 503]) {
     test('a $status roster read opens the exact saved roster as old', () async {
-      final repo = _FakeRepo(rosters: const [],
-        rosterError: EmsException('Máy chủ gặp sự cố.', statusCode: status))
-        ..draft = EmsAttendanceDraft(
-          marks: const {_a: 'present'}, notes: const {}, queued: false,
-          students: [_s(_a)], session: _session,
-        );
+      final repo =
+          _FakeRepo(
+              rosters: const [],
+              rosterError: EmsException(
+                'Máy chủ gặp sự cố.',
+                statusCode: status,
+              ),
+            )
+            ..draft = EmsAttendanceDraft(
+              marks: const {_a: 'present'},
+              notes: const {},
+              queued: false,
+              students: [_s(_a)],
+              session: _session,
+            );
       final vm = RosterViewModel(repo, _session);
       await vm.load();
       expect(vm.students, hasLength(1));

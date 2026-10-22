@@ -65,7 +65,7 @@ class HomeTab extends StatelessWidget {
                   loading: vm.shownLoading,
                   failed: vm.shownFailed,
                   expanded: scheduleExpanded,
-                  staleAt: vm.scheduleStaleAt,
+                  staleAt: vm.viewingToday ? vm.scheduleStaleAt : null,
                   onToggle: onToggleExpanded,
                   onRetry: vm.viewingToday
                       ? vm.loadOverview
