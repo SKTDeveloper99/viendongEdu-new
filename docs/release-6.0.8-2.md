@@ -1,4 +1,4 @@
-# 6.0.9 (102) — iOS build 102, Android versionCode 102
+# 6.0.8 (2) iOS, 6.0.8 (102) Android
 
 Branch `release/6.0.9-102`, from `release/6.0.8-1` (6.0.8 (1), versionCode 100).
 101 is taken by tdat535's 6.0.8.
