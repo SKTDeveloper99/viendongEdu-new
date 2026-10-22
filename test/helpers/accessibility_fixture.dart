@@ -158,7 +158,7 @@ http.Response accessibilityResponse(http.Request req) {
   if (p.endsWith('/teacher/me') || p.endsWith('/student/me')) {
     return _ok({
       'student': {
-        'mssv': '26TEST0001',
+        'mssv': 'TEST260001',
         'full_name': 'THUNGHIEM',
         'class_code': 'TEST26',
       },
@@ -185,6 +185,7 @@ http.Response accessibilityResponse(http.Request req) {
   }
   if (p.endsWith('/teacher/me/overview')) {
     return _ok({
+      'current_semester': '261',
       'teacher': {
         'teacher_id': 'T-TEST-1',
         'teacher_code': 'TESTGV01',
@@ -223,6 +224,63 @@ http.Response accessibilityResponse(http.Request req) {
       'classes': [
         _cmClass('sec-a', 'TN261A', 'TN101', 'Môn thử nghiệm A', 3, 3, '261'),
         _cmClass('sec-b', 'TN261B', 'TN102', 'Môn thử nghiệm B', 2, 2, '261'),
+      ],
+    });
+  }
+  if (p.contains('/teacher/me/classes/') && p.endsWith('/students')) {
+    return _ok({
+      'students': [
+        {
+          'enrollment_id': 'TEST26',
+          'mssv': 'TEST260001',
+          'full_name': 'Sinh viên thử nghiệm',
+          'class_code': 'TEST26',
+        },
+      ],
+    });
+  }
+  if (p.contains('/teacher/me/classes/') && p.endsWith('/attendance')) {
+    return _ok({
+      'attendance': [
+        {
+          'session_id': 'TEST26',
+          'date': '2026-10-22',
+          'start_time': '07:30',
+          'end_time': '09:30',
+          'mssv': 'TEST260001',
+          'full_name': 'Sinh viên thử nghiệm',
+          'status': 'present',
+        },
+      ],
+    });
+  }
+  if (p.endsWith('/student/me/attendance-ems')) {
+    return _ok({
+      'marks': [
+        for (final status in ['present', 'absent', 'late', 'excused'])
+          {
+            'session_key': 'TEST26-$status',
+            'section_code': 'TEST26',
+            'subject_name': 'Môn thử nghiệm',
+            'session_date': '2026-10-22',
+            'start_time': '07:30',
+            'end_time': '09:30',
+            'status': status,
+          },
+      ],
+    });
+  }
+  if (p.endsWith('/student-cases/my-open')) {
+    return _ok({
+      'cases': [
+        {
+          'id': 'TEST26',
+          'student_mssv': 'TEST260001',
+          'student_name': 'Sinh viên thử nghiệm',
+          'title': 'Cần phản hồi thử nghiệm',
+          'description': 'Nội dung thử nghiệm',
+          'priority': 'urgent',
+        },
       ],
     });
   }
@@ -428,7 +486,7 @@ http.Response accessibilityResponse(http.Request req) {
   }
   if (p.endsWith('/notifications')) {
     return _ok({
-      'items': [
+      'data': [
         {
           'id': 'TEST26',
           'title': 'Thông báo thử nghiệm',
