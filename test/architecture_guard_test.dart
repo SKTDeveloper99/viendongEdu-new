@@ -26,7 +26,7 @@ const Map<String, int> _allowlist = {
 /// count; the counts may only SHRINK, and an entry must be deleted at 0.
 const Map<String, int> _colorLiteralAllowlist = {};
 
-final RegExp _colorLiteral = RegExp(r'Color\(0x|Colors\.(?!transparent\b)');
+final RegExp _colorLiteral = RegExp(r'Color\(\s*0x|Colors\.(?!transparent\b)');
 
 List<File> _dartFiles(String dir) {
   final root = Directory(dir);

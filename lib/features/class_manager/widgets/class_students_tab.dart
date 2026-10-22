@@ -59,9 +59,7 @@ class ClassStudentsTab extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(
-                        0xFFE65100,
-                      ).withValues(alpha: 0.1),
+                      backgroundColor: context.vd.accentSoft,
                       child: Text(
                         '${i + 1}',
                         style: TextStyle(
