@@ -213,9 +213,10 @@ void main() {
       // Sorted by date; s2 (03-09) is in the future and never asked.
       expect(vm.sessions.map((s) => s.sessionId), ['s1', 's2']);
       expect(repo.requestedKeys, ['900:07-00:2026-03-02']);
-      expect(vm.totals.map((t) => '${t.mssv} ${t.present}/${t.total}'), [
+      // s1 from EMS (present + late), s2 not due yet.
+      expect(vm.totals.map((t) => '${t.mssv} ${t.countText}'), [
         'TEST260001 1/1',
-        'TEST260002 1/2',
+        'TEST260002 1/1',
       ]);
       final s1 = vm.summaryOf(vm.sessions[0]);
       expect(s1.marked, isTrue);
@@ -278,6 +279,47 @@ void main() {
         expect(vm.totals, hasLength(1));
       },
     );
+
+    test('Tổng hợp: unmarked is unknown (N/A), never an absence', () async {
+      final repo = _FakeRepo()
+        ..attendanceFn = ((_) async => [
+          _row('s1', '2026-03-02', 'TEST260001', 'unmarked'),
+          _row('s1', '2026-03-02', 'TEST260002', 'unmarked'),
+          _row('s1', '2026-03-02', 'TEST260003', 'unmarked'),
+          _row('s2', '2026-03-09', 'TEST260001', 'unmarked'),
+          _row('s2', '2026-03-09', 'TEST260002', 'unmarked'),
+          _row('s2', '2026-03-09', 'TEST260003', 'present'),
+        ])
+        ..marksFn = (key) async => key.endsWith('2026-03-02')
+            ? {'TEST260001': 'absent', 'TEST260002': 'excused'}
+            : {};
+      final vm = ClassDetailSheetViewModel(
+        repo,
+        lop: _lop('sec-a', 'TN261A', enrolled: 3),
+        lmhId: '900',
+        now: () => DateTime.utc(2026, 3, 20),
+      );
+      await vm.loadAttendance();
+
+      // s1 from EMS; s2 has no EMS marks, so only CRM's explicit 'present'.
+      expect(vm.totals.map((t) => '${t.mssv} ${t.countText}'), [
+        'TEST260001 0/1',
+        'TEST260002 1/1',
+        'TEST260003 1/1',
+      ]);
+    });
+
+    test('Tổng hợp: a student with no mark at all shows N/A', () {
+      final totals = ClassDetailSheetViewModel.aggregateByStudent([
+        _row('s1', '2026-03-02', 'TEST260001', 'unmarked'),
+        _row('s2', '2026-03-09', 'TEST260001', 'late'),
+        _row('s1', '2026-03-02', 'TEST260002', 'unmarked'),
+      ], today: '2026-03-20');
+      expect(totals.map((t) => '${t.mssv} ${t.countText}'), [
+        'TEST260001 1/1',
+        'TEST260002 N/A',
+      ]);
+    });
 
     test('no plan (old server): no header, rows as before', () async {
       final vm = ClassDetailSheetViewModel(

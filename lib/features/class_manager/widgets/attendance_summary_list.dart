@@ -4,7 +4,7 @@ import '../class_manager_models.dart';
 import 'attendance_session_list.dart';
 import '../../../theme/vd_tokens.dart';
 
-/// "Tổng hợp" list: present / total per student (CRM rows).
+/// "Tổng hợp" list: attended / marked sessions per student, N/A when none.
 class AttendanceSummaryList extends StatelessWidget {
   final List<StudentAttendanceTotal> totals;
   const AttendanceSummaryList({super.key, required this.totals});
@@ -13,7 +13,10 @@ class AttendanceSummaryList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (totals.isEmpty) {
       return Center(
-        child: Text('Chưa có dữ liệu', style: TextStyle(color: context.vd.inkMuted)),
+        child: Text(
+          'Chưa có dữ liệu',
+          style: TextStyle(color: context.vd.inkMuted),
+        ),
       );
     }
     return ListView.separated(
@@ -55,7 +58,10 @@ class AttendanceSummaryList extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       t.mssv,
-                      style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.vd.inkMuted,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     ClipRRect(
@@ -64,7 +70,9 @@ class AttendanceSummaryList extends StatelessWidget {
                         value: pct,
                         minHeight: 4,
                         backgroundColor: context.vd.surfaceAlt,
-                        color: attendanceBarColor(pct, context.vd),
+                        color: t.total > 0
+                            ? attendanceBarColor(pct, context.vd)
+                            : context.vd.surfaceAlt,
                       ),
                     ),
                   ],
@@ -72,11 +80,11 @@ class AttendanceSummaryList extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                '${t.present}/${t.total}',
+                t.countText,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: context.vd.primary,
+                  color: t.total > 0 ? context.vd.primary : context.vd.inkMuted,
                 ),
               ),
             ],

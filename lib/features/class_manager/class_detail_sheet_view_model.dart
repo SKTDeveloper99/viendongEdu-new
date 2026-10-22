@@ -40,6 +40,9 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
   /// session_key -> (present, total EMS rows).
   final Map<String, EmsSessionCount> _emsCounts = {};
 
+  /// CRM session id -> EMS marks (mssv -> status) of that session.
+  final Map<String, Map<String, String>> _emsMarks = {};
+
   Object? _authError;
   bool _disposed = false;
 
@@ -118,7 +121,8 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
       _plan = result.plan;
       _attendanceRows = rows;
       _sessions = groupBySession(rows);
-      _totals = aggregateByStudent(rows);
+      _emsMarks.clear();
+      _totals = aggregateByStudent(rows, today: _todayHcm());
       _loadingAttendance = false;
       _notify();
       await _loadEmsCounts();
@@ -161,9 +165,22 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
     return list;
   }
 
+  /// Present-like on EMS and CRM alike: the "Buổi học" tab counts the same.
+  static bool isPresentLike(String? st) =>
+      st == 'present' || st == 'late' || st == 'excused';
+
+  static bool _isMarked(String? st) => isPresentLike(st) || st == 'absent';
+
+  /// "Tổng hợp": per student, attended / sessions with a known mark. A
+  /// session counts only once it is due and only where the student has a
+  /// mark — EMS marks first ([emsMarks], by CRM session id), else an explicit
+  /// CRM status. Unmarked sessions are unknown, never absences, so a student
+  /// with no mark at all shows N/A instead of 0/n.
   static List<StudentAttendanceTotal> aggregateByStudent(
-    List<CrmAttendanceRow> rows,
-  ) {
+    List<CrmAttendanceRow> rows, {
+    required String today,
+    Map<String, Map<String, String>> emsMarks = const {},
+  }) {
     final Map<String, StudentAttendanceTotal> byMssv = {};
     for (final r in rows) {
       final mssv = r.mssv;
@@ -172,8 +189,16 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
         mssv,
         () => StudentAttendanceTotal(mssv: mssv, fullName: r.fullName ?? ''),
       );
+      if (r.isPlanned) continue;
+      final ngay = r.date ?? '';
+      if (ngay.length < 10 || ngay.substring(0, 10).compareTo(today) > 0) {
+        continue;
+      }
+      final ems = emsMarks[r.sessionId];
+      final st = ems != null && ems.isNotEmpty ? ems[mssv] : r.status;
+      if (!_isMarked(st)) continue;
       agg.total++;
-      if (r.status == 'present') agg.present++;
+      if (isPresentLike(st)) agg.present++;
     }
     final list = byMssv.values.toList()
       ..sort((a, b) => a.fullName.compareTo(b.fullName));
@@ -209,9 +234,8 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
         if (key == null) return;
         try {
           final marks = await _repository.sessionMarks(key);
-          final present = marks.values
-              .where((v) => v == 'present' || v == 'late' || v == 'excused')
-              .length;
+          _emsMarks[b.sessionId] = marks;
+          final present = marks.values.where(isPresentLike).length;
           _emsCounts[key] = EmsSessionCount(
             present: present,
             total: marks.length,
@@ -220,6 +244,12 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
           // Offline / EMS error: keep as is, the row says "chưa có trên EMS".
         }
       }),
+    );
+    if (_disposed) return;
+    _totals = aggregateByStudent(
+      _attendanceRows,
+      today: today,
+      emsMarks: _emsMarks,
     );
     _notify();
   }

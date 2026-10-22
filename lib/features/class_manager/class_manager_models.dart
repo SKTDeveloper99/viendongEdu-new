@@ -45,9 +45,14 @@ class SessionGroup {
 class StudentAttendanceTotal {
   final String mssv;
   final String fullName;
+
+  /// Due sessions with a known mark (EMS, else CRM); unmarked ones excluded.
   int total = 0;
   int present = 0;
   StudentAttendanceTotal({required this.mssv, required this.fullName});
+
+  /// "3/5", or "N/A" when no due session has a mark for this student.
+  String get countText => total > 0 ? '$present/$total' : 'N/A';
 }
 
 /// EMS marks of one session: present-like count and total marked rows.
