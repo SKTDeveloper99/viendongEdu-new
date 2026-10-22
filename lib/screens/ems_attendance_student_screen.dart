@@ -105,13 +105,13 @@ class _EmsAttendanceStudentScreenState
     return RefreshIndicator(
       color: context.vd.primary,
       onRefresh: _load,
-      child: ListView(
+      child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        children: [
-          _summary(),
-          const SizedBox(height: 12),
-          for (final m in _marks) ...[_row(m), const SizedBox(height: 6)],
-        ],
+        itemCount: _marks.length + 1,
+        itemBuilder: (context, index) => Padding(
+          padding: EdgeInsets.only(bottom: index == 0 ? 12 : 6),
+          child: index == 0 ? _summary() : _row(_marks[index - 1]),
+        ),
       ),
     );
   }

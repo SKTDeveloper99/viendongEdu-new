@@ -145,11 +145,14 @@ class _LePhiScreenState extends State<LePhiScreen> {
                         : RefreshIndicator(
                             onRefresh: _fetch,
                             color: context.vd.primary,
-                            child: ListView(
+                            child: ListView.builder(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding:
                                 const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                            children: [
+                            itemCount: items.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index > 0) return _LePhiCard(item: items[index - 1]);
+                              return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                               // Tổng — LUẬT TIỀN: hiện đúng số máy chủ trả,
                               // không cộng lệ phí + miễn giảm + hoàn phí lại
                               // với nhau (ba khoản khác luật nhau).
@@ -242,8 +245,8 @@ class _LePhiScreenState extends State<LePhiScreen> {
                                   ),
                                 ),
 
-                              ...items.map((t) => _LePhiCard(item: t)),
-                            ],
+                            ]);
+                            },
                           ),
                         ),
           ),

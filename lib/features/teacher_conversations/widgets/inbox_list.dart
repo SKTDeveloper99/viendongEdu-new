@@ -23,37 +23,41 @@ class InboxList extends StatelessWidget {
   Widget build(BuildContext context) {
     final vd = context.vd;
     final rows = tab.rows;
+    final leading = <Widget>[
+      if (tab.staleAt != null) StaleNote(tab.staleAt!),
+      if (tab.error != null)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(tab.error!, style: TextStyle(color: vd.danger)),
+        ),
+      if (tab.loading && rows.isEmpty)
+        for (var i = 0; i < 4; i++)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 10),
+            child: Skeleton(height: 72, radius: 12),
+          ),
+      if (!tab.loading && rows.isEmpty && tab.error == null)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 64),
+          child: Center(
+            child: Text(
+              'Chưa có tin nhắn',
+              style: TextStyle(color: vd.inkMuted),
+            ),
+          ),
+        ),
+    ];
     return RefreshIndicator(
       onRefresh: onRefresh,
-      child: ListView(
+      child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-        children: [
-          if (tab.staleAt != null) StaleNote(tab.staleAt!),
-          if (tab.error != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(tab.error!, style: TextStyle(color: vd.danger)),
-            ),
-          if (tab.loading && rows.isEmpty)
-            for (var i = 0; i < 4; i++)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 10),
-                child: Skeleton(height: 72, radius: 12),
-              ),
-          if (!tab.loading && rows.isEmpty && tab.error == null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 64),
-              child: Center(
-                child: Text(
-                  'Chưa có tin nhắn',
-                  style: TextStyle(color: vd.inkMuted),
-                ),
-              ),
-            ),
-          for (final c in rows)
-            ConversationRow(conversation: c, onTap: () => onOpen(c)),
-        ],
+        itemCount: leading.length + rows.length,
+        itemBuilder: (context, index) {
+          if (index < leading.length) return leading[index];
+          final c = rows[index - leading.length];
+          return ConversationRow(conversation: c, onTap: () => onOpen(c));
+        },
       ),
     );
   }

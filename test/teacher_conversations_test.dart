@@ -9,6 +9,8 @@ import 'package:viendongedu2_flutter/data/teacher_conversations_repository.dart'
 import 'package:viendongedu2_flutter/features/teacher_conversations/conversation_inbox_screen.dart';
 import 'package:viendongedu2_flutter/features/teacher_conversations/conversation_thread_screen.dart';
 import 'package:viendongedu2_flutter/features/teacher_conversations/new_conversation_screen.dart';
+import 'package:viendongedu2_flutter/features/teacher_conversations/widgets/conversation_row.dart';
+import 'package:viendongedu2_flutter/features/teacher_conversations/widgets/message_bubble.dart';
 import 'package:viendongedu2_flutter/models/teacher_conversation_models.dart';
 import 'package:viendongedu2_flutter/services/conversation_push_route.dart';
 
@@ -21,6 +23,7 @@ class FakeRepo implements TeacherConversationsRepository {
   List<PickerClass> classes = const [];
   final sent = <String>[];
   final resolved = <String>[];
+  int threadCalls = 0;
 
   @override
   Future<CachedConversations> list(
@@ -33,7 +36,10 @@ class FakeRepo implements TeacherConversationsRepository {
   );
 
   @override
-  Future<TeacherThread> thread(String id) async => threadData!;
+  Future<TeacherThread> thread(String id) async {
+    threadCalls++;
+    return threadData!;
+  }
 
   @override
   Future<TeacherMessage?> send(String id, String body) async {
@@ -95,6 +101,67 @@ TeacherThread _thread({String status = 'open'}) => TeacherThread(
 Widget _app(Widget home) => MaterialApp(home: home);
 
 void main() {
+  testWidgets('large inbox builds visible rows and reaches the final thread', (
+    tester,
+  ) async {
+    final repo = FakeRepo()
+      ..lists = {
+        'open': List.generate(
+          1000,
+          (i) => _conv('$i', 'THUNGHIEM $i', 'TEST26$i'),
+        ),
+      };
+    await tester.pumpWidget(_app(TeacherConversationsScreen(repository: repo)));
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationRow).evaluate().length, lessThan(30));
+    expect(find.text('Hỏi về điểm 999'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('Hỏi về điểm 999'),
+      2000,
+      scrollable: find.byType(Scrollable).last,
+      maxScrolls: 100,
+    );
+    expect(find.text('Hỏi về điểm 999'), findsOneWidget);
+  });
+
+  testWidgets('long thread is lazy, loads once, and reveals a sent message', (
+    tester,
+  ) async {
+    final repo = FakeRepo()
+      ..threadData = TeacherThread(
+        _conv('7', 'THUNGHIEM', 'TEST260001'),
+        List.generate(
+          1000,
+          (i) => TeacherMessage(
+            id: '$i',
+            body: 'TEST26 message $i${'\nline' * (i % 5)}',
+            fromStudent: i.isEven,
+          ),
+        ),
+      );
+    Widget app(Brightness brightness) => MaterialApp(
+      theme: ThemeData(brightness: brightness),
+      home: ConversationThreadScreen(conversationId: '7', repository: repo),
+    );
+    await tester.pumpWidget(app(Brightness.light));
+    await tester.pumpAndSettle();
+    expect(find.byType(MessageBubble).evaluate().length, lessThan(30));
+    expect(find.textContaining('TEST26 message 999'), findsNothing);
+    await tester.pumpWidget(app(Brightness.dark));
+    await tester.pumpAndSettle();
+    expect(repo.threadCalls, 1);
+    await tester.enterText(find.byType(TextField), 'TEST26 final reply');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pumpAndSettle();
+    expect(repo.threadCalls, 1);
+    expect(find.text('TEST26 final reply'), findsOneWidget);
+    expect(
+      tester.getRect(find.text('TEST26 final reply')).bottom,
+      lessThanOrEqualTo(tester.getRect(find.byType(ListView)).bottom),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('inbox renders rows, unread dot and tabs', (tester) async {
     final repo = FakeRepo()
       ..lists = {

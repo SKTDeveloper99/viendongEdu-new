@@ -132,20 +132,21 @@ class _TuitionScreenState extends State<TuitionScreen> {
                     : RefreshIndicator(
                         color: context.vd.primary,
                         onRefresh: _fetch,
-                        child: SingleChildScrollView(
+                        child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Column(
+              itemCount: payments.length + 1,
+              itemBuilder: (context, index) {
+                if (index > 0) return _TransactionCard(item: payments[index - 1]);
+                return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TuitionNotices(response: _tuition), // M-53 + bản lưu
-                  // ── Summary (từ summary đã áp luật, không tự tính) ──
                   _SummarySection(summary: summary),
                   const SizedBox(height: 12),
                   // M-52: bảng kê đã là sổ IMS — không hiện số thứ hai.
                   if (_congNo != null && summary?.source != 'bang_ke') _CongNoCard(congNo: _congNo!),
                   const SizedBox(height: 20),
 
-                  // ── Section label ──
                   const Text(
                     'Lịch sử giao dịch',
                     style: TextStyle(
@@ -153,7 +154,6 @@ class _TuitionScreenState extends State<TuitionScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // ── Transaction list ──
                   if (payments.isEmpty)
                     Center(
                       child: Padding(
@@ -168,11 +168,10 @@ class _TuitionScreenState extends State<TuitionScreen> {
                           ],
                         ),
                       ),
-                    )
-                  else
-                    ...payments.map((t) => _TransactionCard(item: t)),
+                    ),
                 ],
-              ),
+              );
+              },
             ),
           ),
         ),

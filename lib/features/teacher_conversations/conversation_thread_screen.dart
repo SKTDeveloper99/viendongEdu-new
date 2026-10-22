@@ -61,12 +61,19 @@ class _ConversationThreadScreenState extends State<ConversationThreadScreen> {
       _toast(error);
       return false;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _scroll.hasClients) {
-        _scroll.jumpTo(_scroll.position.maxScrollExtent);
-      }
-    });
+    _scrollToEnd();
     return true;
+  }
+
+  void _scrollToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final end = _scroll.position.maxScrollExtent;
+      if ((_scroll.offset - end).abs() < 0.5) return;
+      _scroll.jumpTo(end);
+      // Lazy rows refine the estimated extent as they are laid out.
+      _scrollToEnd();
+    });
   }
 
   Future<void> _resolve() async {
@@ -117,10 +124,12 @@ class _ConversationThreadScreenState extends State<ConversationThreadScreen> {
         ),
       );
     }
-    return ListView(
+    final messages = _vm.messages;
+    return ListView.builder(
       controller: _scroll,
       padding: const EdgeInsets.all(16),
-      children: [for (final m in _vm.messages) MessageBubble(message: m)],
+      itemCount: messages.length,
+      itemBuilder: (context, index) => MessageBubble(message: messages[index]),
     );
   }
 
