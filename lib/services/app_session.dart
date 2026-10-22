@@ -166,9 +166,13 @@ class AppSession {
     teacherCode = null;
     fullName = null;
     mustChangePassword = false;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('ems_token');
-    await prefs.remove('crm_identity');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('ems_token');
+      await prefs.remove('crm_identity');
+    } catch (_) {
+      // Local storage failure must not block an expired session's navigation.
+    }
   }
 
   /// Tàn dư tương thích cho các màn hình sóng 2 chưa được sửa
