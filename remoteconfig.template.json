@@ -9,9 +9,9 @@
     },
     "lantern_min_prefix": {
       "defaultValue": {
-        "value": "0"
+        "value": "1"
       },
-      "description": "Students with MSSV prefix below this see 'Không có dữ liệu' on data screens. 0 = open to all.",
+      "description": "Students with MSSV prefix below this see 'Không có dữ liệu' on data screens. 0 = open to all on 6.0.9+; use 1 while 6.0.8 phones remain (they read 0 as 25).",
       "valueType": "NUMBER"
     },
     "infinite_book_v2": {
