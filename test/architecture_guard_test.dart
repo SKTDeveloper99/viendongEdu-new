@@ -18,13 +18,6 @@ const _maxWidgetLines = 200;
 const Map<String, int> _allowlist = {
   'lib/screens/teacher_my_day_screen.dart': 668,
   'lib/screens/registration_screen.dart': 653,
-  'lib/screens/student_questions_screen.dart': 583,
-  'lib/screens/student_board_screen.dart': 490,
-  'lib/screens/tuition_screen.dart': 482,
-  'lib/screens/gv_lichthi_screen.dart': 468,
-  'lib/services/notification_service.dart': 453,
-  'lib/screens/gv_lophoc_screen.dart': 451,
-  'lib/screens/exam_screen.dart': 412,
 };
 
 /// Rule (d): colours come from `context.vd` (lib/theme/vd_tokens.dart). No
