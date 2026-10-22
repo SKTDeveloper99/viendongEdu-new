@@ -12,6 +12,7 @@ class NewConversationViewModel extends ChangeNotifier {
   NewConversationViewModel(this._repo);
 
   List<PickerClass> _classes = const [];
+  List<PickerClass> _groups = const [];
   String _query = '';
   bool _loading = true;
   String? _error;
@@ -24,11 +25,14 @@ class NewConversationViewModel extends ChangeNotifier {
   String get query => _query;
 
   Future<void> load() async {
+    if (_disposed) return;
     _loading = true;
     _error = null;
     _notify();
     try {
       _classes = await _repo.currentSemesterClasses();
+      if (_disposed) return;
+      _groups = _filterGroups();
     } catch (e) {
       if (isAuthError(e)) _authError = e;
       _error = e is EmsException
@@ -40,14 +44,18 @@ class NewConversationViewModel extends ChangeNotifier {
   }
 
   void setQuery(String value) {
+    if (_disposed || _query == value) return;
     _query = value;
+    _groups = _filterGroups();
     _notify();
   }
 
   /// Classes with their students after dedupe (a student in two classes
   /// appears once, under the first) and the search filter. Empty groups are
   /// dropped.
-  List<PickerClass> get groups {
+  List<PickerClass> get groups => _groups;
+
+  List<PickerClass> _filterGroups() {
     final q = _query.trim().toLowerCase();
     final seen = <String>{};
     final out = <PickerClass>[];

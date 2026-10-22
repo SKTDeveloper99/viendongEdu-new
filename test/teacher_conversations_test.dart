@@ -2,6 +2,8 @@
 // fake repository (no network). Fictional people only (THUNGHIEM / TEST26…).
 //
 //   flutter test test/teacher_conversations_test.dart
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/core/network/ems_exception.dart';
@@ -9,6 +11,7 @@ import 'package:viendongedu2_flutter/data/teacher_conversations_repository.dart'
 import 'package:viendongedu2_flutter/features/teacher_conversations/conversation_inbox_screen.dart';
 import 'package:viendongedu2_flutter/features/teacher_conversations/conversation_thread_screen.dart';
 import 'package:viendongedu2_flutter/features/teacher_conversations/new_conversation_screen.dart';
+import 'package:viendongedu2_flutter/features/teacher_conversations/new_conversation_view_model.dart';
 import 'package:viendongedu2_flutter/features/teacher_conversations/widgets/conversation_row.dart';
 import 'package:viendongedu2_flutter/features/teacher_conversations/widgets/message_bubble.dart';
 import 'package:viendongedu2_flutter/models/teacher_conversation_models.dart';
@@ -24,6 +27,7 @@ class FakeRepo implements TeacherConversationsRepository {
   final sent = <String>[];
   final resolved = <String>[];
   int threadCalls = 0;
+  int classesCalls = 0;
 
   @override
   Future<CachedConversations> list(
@@ -67,9 +71,29 @@ class FakeRepo implements TeacherConversationsRepository {
 
   @override
   Future<List<PickerClass>> currentSemesterClasses() async {
+    classesCalls++;
     if (classesError != null) throw classesError!;
     return classes;
   }
+}
+
+class _CountingStudents extends ListBase<PickerStudent> {
+  final List<PickerStudent> items;
+  int reads = 0;
+  _CountingStudents(this.items);
+  @override
+  int get length => items.length;
+  @override
+  set length(int value) => throw UnsupportedError('read only');
+  @override
+  PickerStudent operator [](int index) {
+    reads++;
+    return items[index];
+  }
+
+  @override
+  void operator []=(int index, PickerStudent value) =>
+      throw UnsupportedError('read only');
 }
 
 TeacherConversation _conv(
@@ -101,6 +125,83 @@ TeacherThread _thread({String status = 'open'}) => TeacherThread(
 Widget _app(Widget home) => MaterialApp(home: home);
 
 void main() {
+  test('picker filters only when data or query changes', () async {
+    final students = _CountingStudents(const [
+      PickerStudent('TEST260001', 'THUNGHIEM One'),
+      PickerStudent('TEST260002', 'THUNGHIEM Two'),
+    ]);
+    final repo = FakeRepo()..classes = [PickerClass('a', 'TEST26 A', students)];
+    final vm = NewConversationViewModel(repo);
+    addTearDown(vm.dispose);
+    await vm.load();
+    final reads = students.reads;
+    expect(reads, greaterThan(0));
+    for (var i = 0; i < 10; i++) {
+      expect(vm.groups.single.students.length, 2);
+    }
+    expect(students.reads, reads);
+    vm.setQuery('test260002');
+    expect(vm.groups.single.students.single.mssv, 'TEST260002');
+    final filteredReads = students.reads;
+    vm.setQuery('test260002');
+    expect(students.reads, filteredReads);
+    repo.classes = const [
+      PickerClass('b', 'TEST26 B', [
+        PickerStudent('TEST260002', 'THUNGHIEM Updated'),
+      ]),
+    ];
+    await vm.load();
+    expect(vm.groups.single.label, 'TEST26 B');
+    expect(vm.groups.single.students.single.name, 'THUNGHIEM Updated');
+    vm.setQuery('missing');
+    expect(vm.groups, isEmpty);
+    vm.setQuery('');
+    expect(vm.groups.single.students.length, 1);
+  });
+
+  testWidgets(
+    'large picker builds visible students and reaches another class',
+    (tester) async {
+      final repo = FakeRepo()
+        ..classes = [
+          PickerClass(
+            'a',
+            'TEST26 A',
+            List.generate(
+              1000,
+              (i) => PickerStudent('TEST26$i', 'THUNGHIEM $i'),
+            ),
+          ),
+          const PickerClass('b', 'TEST26 B', [
+            PickerStudent('TEST26LAST', 'THUNGHIEM Last'),
+          ]),
+        ];
+      await tester.pumpWidget(_app(NewConversationScreen(repository: repo)));
+      await tester.pumpAndSettle();
+      expect(find.byType(ListTile).evaluate().length, lessThan(30));
+      expect(find.text('THUNGHIEM 999'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('THUNGHIEM Last'),
+        1500,
+        scrollable: find.descendant(
+          of: find.byType(CustomScrollView),
+          matching: find.byType(Scrollable),
+        ),
+        maxScrolls: 100,
+      );
+      expect(find.text('THUNGHIEM Last'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'TEST26999');
+      await tester.pumpAndSettle();
+      expect(find.text('THUNGHIEM 999'), findsOneWidget);
+      expect(find.text('TEST26 B'), findsNothing);
+      expect(repo.classesCalls, 1);
+      await tester.tap(find.text('THUNGHIEM 999'));
+      await tester.pumpAndSettle();
+      expect(find.text('THUNGHIEM 999 · TEST26999'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('large inbox builds visible rows and reaches the final thread', (
     tester,
   ) async {

@@ -95,24 +95,31 @@ class _NewConversationScreenState extends State<NewConversationScreen> {
         ),
       );
     }
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 24),
-      children: [
+    return CustomScrollView(
+      slivers: [
         for (final g in groups) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Text(
-              g.label,
-              style: TextStyle(fontWeight: FontWeight.w800, color: vd.ink),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text(
+                g.label,
+                style: TextStyle(fontWeight: FontWeight.w800, color: vd.ink),
+              ),
             ),
           ),
-          for (final s in g.students)
-            ListTile(
-              title: Text(s.name),
-              subtitle: Text(s.mssv),
-              onTap: () => _compose(s),
-            ),
+          SliverList.builder(
+            itemCount: g.students.length,
+            itemBuilder: (context, index) {
+              final s = g.students[index];
+              return ListTile(
+                title: Text(s.name),
+                subtitle: Text(s.mssv),
+                onTap: () => _compose(s),
+              );
+            },
+          ),
         ],
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
     );
   }
