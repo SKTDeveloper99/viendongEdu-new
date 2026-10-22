@@ -69,6 +69,7 @@ class EmsApiService {
   static Map<String, String> _headers({bool auth = true}) {
     final h = <String, String>{
       'Content-Type': 'application/json',
+      'X-Student-Data-Capabilities': 'unknown-v1',
       'X-Request-Id': _requestId(),
     };
     final v = _appVersion;

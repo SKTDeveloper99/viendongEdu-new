@@ -26,6 +26,31 @@ import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 void main() {
   tearDown(() => EmsApiService.client = http.Client());
 
+  test(
+    'nullable-data capability is advertised but a quarantined response still fails without signing out',
+    () async {
+      final previous = AppSession.instance.emsToken;
+      AppSession.instance.emsToken = 'TEST-SOURCE-CAP';
+      try {
+        EmsApiService.client = MockClient((request) async {
+          final capability = request.headers.entries.singleWhere(
+            (entry) => entry.key.toLowerCase() == 'x-student-data-capabilities',
+          );
+          expect(capability.value, 'unknown-v1');
+          return http.Response(
+            jsonEncode({'error': 'Dữ liệu đang được đối chiếu.'}),
+            409,
+            headers: {'content-type': 'application/json'},
+          );
+        });
+        await expectLater(CrmStudentApi.me(), throwsA(isA<EmsException>()));
+        expect(AppSession.instance.emsToken, 'TEST-SOURCE-CAP');
+      } finally {
+        AppSession.instance.emsToken = previous;
+      }
+    },
+  );
+
   group('CrmStudentProfile.fromJson', () {
     test('đọc đủ trường từ GET /api/student/me', () {
       final profile = CrmStudentProfile.fromJson({
