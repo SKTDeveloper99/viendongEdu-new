@@ -1,12 +1,12 @@
 # 6.0.8 (2) iOS, 6.0.8 (102) Android
 
-Branch `release/6.0.9-102`, from `release/6.0.8-1` (6.0.8 (1), versionCode 100).
+Branch `release/6.0.8-2`, from `release/6.0.8-1` (6.0.8 (1), versionCode 100).
 101 is taken by tdat535's 6.0.8.
 
 ## What's new (store text)
 
 - Sinh viên mọi khóa xem được lịch học, lịch thi, điểm, học phí và điểm danh.
-- Lớp học hiện ngày bắt đầu và ngày kết thúc môn.
+- Lớp học hiện ngày kết thúc môn theo thời khóa biểu chính thức.
 - Lịch học báo khi lớp có tuần nghỉ.
 - Thông tin chưa có hiện "N/A" thay vì số 0.
 - Giảng viên: bảng Tổng hợp điểm danh đếm đúng buổi đã điểm danh trên EMS.
@@ -21,7 +21,11 @@ Branch `release/6.0.9-102`, from `release/6.0.8-1` (6.0.8 (1), versionCode 100).
 3. Grades overview: no summary / no average shows N/A, not 0.00. Registration
    "Sĩ số" shows N/A when unknown.
 4. Student class card and detail show Bắt đầu / Kết thúc (N/A when unknown).
-5. Timetable flags a class whose weeks pattern has a break ("có thể không học
+5. Live test 2026-10-22 (teacher 0700006, student 2405012004): IMS keeps
+   placeholder dates (31/08 – 31/08, exam 07/09) on classes running to 12/11.
+   Students read Kết thúc from the official timetable (tkb.ngayketthuc);
+   teachers see N/A for the placeholders. Home class times drop seconds.
+6. Timetable flags a class whose weeks pattern has a break ("có thể không học
    tuần này"); the phone has no term start, so it does not guess which week.
 
 ## Live switch (no release needed)
