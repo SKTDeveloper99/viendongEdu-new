@@ -316,7 +316,7 @@ void main() {
         tester,
         () => _json({'error': 'Lỗi máy chủ'}, 500),
         'CHƯA GỬI. Đã giữ trên máy, sẽ tự gửi khi có mạng. '
-        'Lỗi máy chủ',
+        'Máy chủ gặp sự cố. Vui lòng thử lại sau giây lát.',
       );
       expect(d?.queued, isTrue);
     });

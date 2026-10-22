@@ -22,11 +22,10 @@ abstract final class AttendanceApi {
     // và ngày 14/09 nó đã sinh ra 21 dấu điểm danh cho lớp chưa khai giảng.
     // Hiện danh sách trống — hôm nay không có buổi học là hôm nay không có.
     if (body['from_schedule'] == false) return <EmsSession>[];
-    final list = body['sessions'];
-    if (list is! List) return <EmsSession>[];
+    final list = EmsApiService.rows(body['sessions']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(EmsSession.fromJson)
+        .map((row) => EmsApiService.parse(() => EmsSession.fromJson(row)))
         .toList();
   }
 
@@ -38,7 +37,7 @@ abstract final class AttendanceApi {
         '&end_time=${Uri.encodeQueryComponent(s.endTime ?? '')}'
         '${s.scheduleSessionId == null || s.scheduleSessionId!.isEmpty ? '' : '&session_id=${Uri.encodeQueryComponent(s.scheduleSessionId!)}'}';
     final body = await EmsApiService.sendMap('GET', '/attendance/roster$q');
-    return EmsRoster.fromJson(body);
+    return EmsApiService.parse(() => EmsRoster.fromJson(body));
   }
 
   /// Trạng thái EMS của MỘT buổi, theo `session_key` (`<lmhid>:<HH-MM>:<yyyy-MM-dd>`).
@@ -97,7 +96,7 @@ abstract final class AttendanceApi {
         if (remove.isNotEmpty) 'remove': remove,
       },
     );
-    return EmsSaveResult.fromJson(body);
+    return EmsApiService.parse(() => EmsSaveResult.fromJson(body));
   }
 
   /// Học viên xem điểm danh EMS của chính mình.
@@ -106,11 +105,10 @@ abstract final class AttendanceApi {
       'GET',
       '/student/me/attendance-ems?limit=$limit',
     );
-    final list = body['marks'] ?? body['history'] ?? body['items'];
-    if (list is! List) return <EmsStudentMark>[];
+    final list = EmsApiService.rows(body['marks'] ?? body['history'] ?? body['items']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(EmsStudentMark.fromJson)
+        .map((row) => EmsApiService.parse(() => EmsStudentMark.fromJson(row)))
         .toList();
   }
 }

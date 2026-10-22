@@ -8,13 +8,15 @@ class OfflineRosterState {
   final String banner;
 }
 
-/// Only a transport failure may use a non-empty draft for this exact session.
+/// Transport/server failures may use a non-empty draft for this exact session.
 OfflineRosterState? offlineRosterFromFailure(
   EmsException error,
   EmsAttendanceDraft? draft,
   EmsSession session,
 ) {
-  if (error.statusCode != null ||
+  final status = error.statusCode;
+  final transient = status == null || status >= 500 || error.code == 'invalid_response';
+  if (!transient ||
       draft == null ||
       draft.students.isEmpty ||
       draft.session?.sessionKey != session.sessionKey) {
@@ -27,7 +29,7 @@ OfflineRosterState? offlineRosterFromFailure(
             '${savedAt.minute.toString().padLeft(2, '0')}';
   return OfflineRosterState(
     draft,
-    'Đang ngoại tuyến – danh sách lưu lúc $time. '
+    'Đang ngoại tuyến – danh sách lưu lúc $time (dữ liệu cũ). '
     'Điểm danh sẽ tự gửi khi có mạng.',
   );
 }

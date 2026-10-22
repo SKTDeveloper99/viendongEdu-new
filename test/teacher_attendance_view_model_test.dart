@@ -189,7 +189,7 @@ void main() {
       expect(vm.marks, {_a: 'present'});
       expect(
         vm.offlineBanner,
-        'Đang ngoại tuyến – danh sách lưu lúc 07:05. '
+        'Đang ngoại tuyến – danh sách lưu lúc 07:05 (dữ liệu cũ). '
         'Điểm danh sẽ tự gửi khi có mạng.',
       );
     },
@@ -262,6 +262,22 @@ void main() {
     expect(vm.offlineBanner, isNull);
     expect(vm.error, contains('Không có kết nối'));
   });
+
+  for (final status in [500, 503]) {
+    test('a $status roster read opens the exact saved roster as old', () async {
+      final repo = _FakeRepo(rosters: const [],
+        rosterError: EmsException('Máy chủ gặp sự cố.', statusCode: status))
+        ..draft = EmsAttendanceDraft(
+          marks: const {_a: 'present'}, notes: const {}, queued: false,
+          students: [_s(_a)], session: _session,
+        );
+      final vm = RosterViewModel(repo, _session);
+      await vm.load();
+      expect(vm.students, hasLength(1));
+      expect(vm.offlineBanner, contains('dữ liệu cũ'));
+      expect(vm.loading, isFalse);
+    });
+  }
 
   for (final status in [400, 401, 403, 404, 408, 409, 422, 429]) {
     test('a $status roster answer never falls back to a saved draft', () async {
