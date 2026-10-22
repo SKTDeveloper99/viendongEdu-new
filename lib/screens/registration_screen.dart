@@ -500,7 +500,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             ),
             if (mon.maxSize != null)
               _infoRow(Icons.groups_outlined,
-                  'Sĩ số: ${mon.registeredCount ?? 0}/${mon.maxSize}'),
+                  'Sĩ số: ${mon.registeredCount ?? 'N/A'}/${mon.maxSize ?? 'N/A'}'),
             // Chỉ có ý nghĩa khi đang "Xem tất cả lớp" (chế độ mặc định đã
             // tự lọc theo chương trình rồi, mọi thẻ đều trong chương trình).
             if (_allSections && mon.inMyCurriculum == false)

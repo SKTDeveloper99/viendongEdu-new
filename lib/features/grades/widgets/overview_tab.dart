@@ -27,7 +27,7 @@ class OverviewTab extends StatelessWidget {
     final s = stats;
     final tcDat = s?.requiredPassed ?? 0;
     final tcTong = s?.requiredSubjects ?? 0;
-    final tbTichLuy = s?.averageScore ?? 0;
+    final tbTichLuy = s?.averageScore, tbText = tbTichLuy?.toStringAsFixed(2) ?? 'N/A';
     final tcChuaDiem = ((s?.total ?? 0) - (s?.scored ?? 0)).clamp(0, 1 << 30);
     final tcKhongDat = s?.failed ?? 0;
     final progress = tcTong > 0 ? (tcDat / tcTong).clamp(0.0, 1.0) : 0.0;
@@ -69,11 +69,11 @@ class OverviewTab extends StatelessWidget {
                               fontWeight: FontWeight.w500)),
                       const SizedBox(height: 4),
                       TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: tbTichLuy.toDouble()),
+                        tween: Tween<double>(begin: 0, end: tbTichLuy ?? 0),
                         duration: VdMotion.of(context).countUp,
                         curve: VdMotion.curve,
                         builder: (context, v, _) => Text(
-                          v.toStringAsFixed(2),
+                          tbTichLuy == null ? tbText : v.toStringAsFixed(2),
                           style: TextStyle(
                             color: context.vd.onPrimary,
                             fontSize: 52,
@@ -91,7 +91,7 @@ class OverviewTab extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'Tổng kết: ${tbTichLuy.toStringAsFixed(2)}',
+                          'Tổng kết: $tbText',
                           style: TextStyle(
                               color: context.vd.onPrimary,
                               fontSize: 12,
@@ -105,7 +105,7 @@ class OverviewTab extends StatelessWidget {
                               color: context.vd.onPrimary.withValues(alpha: 0.7), size: 14),
                           const SizedBox(width: 5),
                           Text(
-                            noCurriculum ? 'Chưa có chương trình đào tạo' : '$tcDat / $tcTong môn đạt',
+                            s == null ? 'N/A môn đạt' : noCurriculum ? 'Chưa có chương trình đào tạo' : '$tcDat / $tcTong môn đạt',
                             style: TextStyle(
                                 color: context.vd.onPrimary,
                                 fontSize: 13,
@@ -174,14 +174,14 @@ class OverviewTab extends StatelessWidget {
               const SizedBox(width: 10),
               MiniStat(
                 label: 'Không đạt',
-                value: '$tcKhongDat môn',
+                value: s == null ? 'N/A' : '$tcKhongDat môn',
                 icon: Icons.cancel_outlined,
                 color: context.vd.danger,
               ),
               const SizedBox(width: 10),
               MiniStat(
                 label: 'Chưa có điểm',
-                value: '$tcChuaDiem môn',
+                value: s == null ? 'N/A' : '$tcChuaDiem môn',
                 icon: Icons.hourglass_empty,
                 color: context.vd.primary,
               ),

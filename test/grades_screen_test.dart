@@ -198,7 +198,7 @@ void main() {
     );
     await pump(tester);
 
-    expect(find.text('0.00'), findsNWidgets(1));
+    expect(find.text('N/A'), findsNWidgets(1)); // no average: N/A, not 0.00
     // No has_curriculum from the server = curriculum unknown, not "0 / 0".
     expect(find.text('Chưa có chương trình đào tạo'), findsOneWidget);
     expect(find.text('Phân bổ điểm chữ'), findsNothing);
