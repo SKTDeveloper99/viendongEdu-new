@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../components/refreshable_empty.dart';
 import '../models/crm_money_fees.dart';
 import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
@@ -12,7 +13,7 @@ String _fmtAmount(int? amount) {
     if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
     buf.write(s[i]);
   }
-  return '${buf.toString()} đ';
+  return '${amount < 0 ? '-' : ''}${buf.toString()} đ';
 }
 
 String _fmtDate(DateTime? d) => d == null
@@ -130,7 +131,8 @@ class _LePhiScreenState extends State<LePhiScreen> {
                         ),
                       )
                     : items.isEmpty
-                        ? Center(
+                        ? RefreshableEmpty(
+                            onRefresh: _fetch,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [

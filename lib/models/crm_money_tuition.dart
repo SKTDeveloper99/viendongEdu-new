@@ -6,13 +6,9 @@
 /// null cho một khoản, hiển thị đúng như vậy — không được hiện 0.
 library;
 
-int? _numOrNull(dynamic v) {
-  if (v == null) return null;
-  if (v is num) return v.toInt();
-  final s = v.toString().trim();
-  if (s.isEmpty) return null;
-  return int.tryParse(s) ?? double.tryParse(s)?.toInt();
-}
+import 'json_values.dart';
+
+int? _numOrNull(dynamic v) => jsonInt(v);
 
 String? _strOrNull(dynamic v) {
   final s = v?.toString();
@@ -110,8 +106,7 @@ class CrmTuitionSummary {
         paid: _numOrNull(j?['paid']),
         balance: _numOrNull(j?['balance']),
         paymentStatus: _strOrNull(j?['payment_status']),
-        otherReceipts:
-            CrmOtherReceipts.fromJson(j?['other_receipts'] as Map<String, dynamic>?),
+        otherReceipts: CrmOtherReceipts.fromJson(jsonMap(j?['other_receipts'])),
         // Mặc định true: chỉ khi máy chủ NÓI RÕ money_known=false mới coi là
         // chưa có luật — tránh một field vắng bị hiểu nhầm thành "chưa biết".
         moneyKnown: j?['money_known'] != false,
@@ -138,17 +133,21 @@ class CrmTuitionResponse {
   });
 
   CrmTuitionResponse withOfflineSavedAt(DateTime at) => CrmTuitionResponse(
-        mssv: mssv, summary: summary, payments: payments, offlineSavedAt: at);
+    mssv: mssv,
+    summary: summary,
+    payments: payments,
+    offlineSavedAt: at,
+  );
 
   factory CrmTuitionResponse.fromJson(Map<String, dynamic> j) =>
       CrmTuitionResponse(
         mssv: _strOrNull(j['mssv']),
-        summary: CrmTuitionSummary.fromJson(j['summary'] as Map<String, dynamic>?),
+        summary: CrmTuitionSummary.fromJson(jsonMap(j['summary'])),
         payments: (j['payments'] is List)
             ? (j['payments'] as List)
-                .whereType<Map<String, dynamic>>()
-                .map(CrmTuitionPayment.fromJson)
-                .toList()
+                  .whereType<Map<String, dynamic>>()
+                  .map(CrmTuitionPayment.fromJson)
+                  .toList()
             : const [],
       );
 }
@@ -178,12 +177,12 @@ class CrmCongNo {
   });
 
   factory CrmCongNo.fromJson(Map<String, dynamic> j) => CrmCongNo(
-        mssv: _strOrNull(j['mssv']),
-        phaiNop: _numOrNull(j['phai_nop']),
-        daNop: _numOrNull(j['da_nop']),
-        congNo: _numOrNull(j['cong_no']),
-        computable: j['computable'] != false,
-        hasMoneyRows: j['has_money_rows'] == true,
-        note: _strOrNull(j['note']),
-      );
+    mssv: _strOrNull(j['mssv']),
+    phaiNop: _numOrNull(j['phai_nop']),
+    daNop: _numOrNull(j['da_nop']),
+    congNo: _numOrNull(j['cong_no']),
+    computable: j['computable'] != false,
+    hasMoneyRows: j['has_money_rows'] == true,
+    note: _strOrNull(j['note']),
+  );
 }

@@ -38,6 +38,12 @@ class AppSession {
   /// an older server has not supplied the field and the prefix rule applies.
   bool? dataOpen;
 
+  /// Each successful profile response replaces the gate, including an older
+  /// response without the field. Malformed fields use the legacy fallback.
+  void applyStudentDataGate(Map<String, dynamic> body) {
+    dataOpen = body['data_open'] is bool ? body['data_open'] as bool : null;
+  }
+
   /// EMS đã từ chối có chủ đích (tài khoản bị khoá / chưa được tạo).
   bool emsDenied = false;
 

@@ -170,7 +170,7 @@ void main() {
       },
     );
 
-    test('a failing class load leaves an empty list, no error state', () async {
+    test('a failing class load is distinct from no enrolments', () async {
       final vm = ClassesViewModel(
         _FakeRepo(
           all: () async => [_s('252', 'B1', 'TN2')],
@@ -178,7 +178,7 @@ void main() {
         ),
       );
       await vm.fetchSemesters();
-      expect(vm.error, isNull);
+      expect(vm.error, 'boom');
       expect(vm.loadingClasses, isFalse);
       expect(vm.classes, isEmpty);
       expect(vm.unauthorized, isFalse);

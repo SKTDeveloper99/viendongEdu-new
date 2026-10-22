@@ -315,7 +315,15 @@ class EmsApiService {
   }) async {
     final uri = _buildUri(path, query);
     final resource = 'http_cache:${uri.path}?${uri.query}';
+    final token = AppSession.instance.emsToken;
     final stored = await OfflineSnapshot.load(resource);
+    void ensureSameSession() {
+      if (token != AppSession.instance.emsToken) {
+        throw EmsException('Phiên đăng nhập đã thay đổi.', statusCode: 401);
+      }
+    }
+
+    ensureSameSession();
     final blob = stored?.data;
     final etag = blob is Map ? blob['etag']?.toString() : null;
     final hasBody = blob is Map && blob.containsKey('body');
@@ -328,19 +336,31 @@ class EmsApiService {
             : null,
       );
       if (res.statusCode == 304 && hasBody) {
+        ensureSameSession();
         final now = DateTime.now();
         await OfflineSnapshot.save(resource, blob);
         return (data: blob['body'], savedAt: now, fresh: true);
       }
       final data = _decode(res);
+      ensureSameSession();
       final newTag = res.headers['etag'];
       if (newTag != null && newTag.isNotEmpty) {
         await OfflineSnapshot.save(resource, {'etag': newTag, 'body': data});
+      } else {
+        // Replace an old ETag body even when the fresh response has no ETag
+        // (including a masked/empty response). Offline reads keep this copy.
+        await OfflineSnapshot.save(resource, {'body': data});
       }
       return (data: data, savedAt: DateTime.now(), fresh: true);
     } on EmsException catch (e) {
+      ensureSameSession();
       // 401/403 mean the session/permission changed: never mask with old data.
-      if (e.statusCode == 401 || e.statusCode == 403 || !hasBody) rethrow;
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        await OfflineSnapshot.remove(resource);
+        rethrow;
+      }
+      if (e.statusCode != null && e.statusCode! < 500) rethrow;
+      if (!hasBody) rethrow;
       return (data: blob['body'], savedAt: stored!.savedAt, fresh: false);
     }
   }

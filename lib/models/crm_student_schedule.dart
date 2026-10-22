@@ -42,8 +42,24 @@
 // would make a UTC-midnight boundary drift onto the wrong calendar day for
 // any phone west of UTC, even though Vietnam (UTC+7) happens to be safe —
 // the rule has to be explicit, not "works for our timezone".
+import 'json_values.dart';
+
 DateTime? _calendarDate(dynamic v) {
   if (v == null) return null;
+  // Correction overlays use date-only strings. Parsing those as device-local
+  // midnight and then converting to UTC moved them back a day in UTC+ zones.
+  final dateOnly = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})$',
+  ).firstMatch(v.toString());
+  if (dateOnly != null) {
+    final year = int.parse(dateOnly.group(1)!);
+    final month = int.parse(dateOnly.group(2)!);
+    final day = int.parse(dateOnly.group(3)!);
+    final date = DateTime.utc(year, month, day);
+    return date.year == year && date.month == month && date.day == day
+        ? date
+        : null;
+  }
   final dt = DateTime.tryParse(v.toString());
   if (dt == null) return null;
   final u = dt.toUtc();
@@ -56,11 +72,13 @@ class CrmStudentSection {
   final String sectionCode;
   final String subjectCode;
   final String subjectName;
-  final int credits;
+  final int? credits;
   final String teacherName;
   final DateTime? ngayBatDau;
   final DateTime? ngayKetThuc;
   final int? siSo;
+  final DateTime? examDate;
+  final String? room;
 
   const CrmStudentSection({
     this.semesterCode,
@@ -68,25 +86,29 @@ class CrmStudentSection {
     this.sectionCode = '',
     this.subjectCode = '',
     this.subjectName = '',
-    this.credits = 0,
+    this.credits,
     this.teacherName = '',
     this.ngayBatDau,
     this.ngayKetThuc,
     this.siSo,
+    this.examDate,
+    this.room,
   });
 
   factory CrmStudentSection.fromJson(Map<String, dynamic> j) =>
       CrmStudentSection(
         semesterCode: j['semester_code']?.toString(),
-        sectionId: (j['section_id'] as num?)?.toInt(),
+        sectionId: jsonInt(j['section_id']),
         sectionCode: j['section_code']?.toString() ?? '',
         subjectCode: j['subject_code']?.toString() ?? '',
         subjectName: j['subject_name']?.toString() ?? '',
-        credits: (j['credits'] as num?)?.toInt() ?? 0,
+        credits: jsonInt(j['credits']),
         teacherName: j['teacher_name']?.toString() ?? '',
         ngayBatDau: _calendarDate(j['ngay_bat_dau']),
         ngayKetThuc: _calendarDate(j['ngay_ket_thuc']),
-        siSo: (j['si_so'] as num?)?.toInt(),
+        siSo: jsonInt(j['si_so']),
+        examDate: _calendarDate(j['ngay_thi']),
+        room: j['room']?.toString(),
       );
 }
 
@@ -208,7 +230,7 @@ class CrmScheduleItem {
   }
 
   bool occursOn(DateTime date) {
-    if (dayCode != null && dayCode != dayCodeForWeekday(date.weekday)) {
+    if (dayCode == null || dayCode != dayCodeForWeekday(date.weekday)) {
       return false;
     }
     final d = DateTime.utc(date.year, date.month, date.day);
@@ -227,7 +249,7 @@ class CrmScheduleItem {
     periodStartName: j['period_start_name']?.toString(),
     startTime: j['start_time']?.toString(),
     endTime: j['end_time']?.toString(),
-    numPeriods: (j['num_periods'] as num?)?.toInt(),
+    numPeriods: jsonInt(j['num_periods']),
     room: j['room_name']?.toString() ?? '',
     teacherName: j['teacher_name']?.toString() ?? '',
     weeksPattern: j['weeks_pattern']?.toString(),

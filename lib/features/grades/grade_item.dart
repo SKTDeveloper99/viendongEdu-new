@@ -11,7 +11,7 @@ class GradeItem {
 
   String get mhma => grade.subjectCode;
   String get mhten => grade.subjectName;
-  int get sotinchi => grade.credits;
+  int? get sotinchi => grade.credits;
   double get tongdiem => grade.finalScore ?? 0;
   // '' (chưa có điểm, hoặc điểm ngoài [0,10] — không băng được) → "—", KHÔNG
   // BAO GIỜ hiện như một điểm rớt.
@@ -25,7 +25,7 @@ class GradeItem {
 class RemainingSubjectItem {
   final String code;
   final String name;
-  final int credits;
+  final int? credits;
   final int status;
   const RemainingSubjectItem({
     required this.code,

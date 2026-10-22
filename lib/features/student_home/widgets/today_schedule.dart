@@ -44,8 +44,14 @@ class TodaySchedule extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: OutlinedButton.icon(
               onPressed: vm.loadTodaySchedule,
-              icon: const Icon(Icons.wifi_off),
-              label: const Text('Không có kết nối. Thử tải lịch lại'),
+              icon: Icon(
+                vm.scheduleDenied ? Icons.lock_outline : Icons.wifi_off,
+              ),
+              label: Text(
+                vm.scheduleDenied
+                    ? 'Không có quyền xem lịch học.'
+                    : 'Không có kết nối. Thử tải lịch lại',
+              ),
             ),
           ),
         Padding(

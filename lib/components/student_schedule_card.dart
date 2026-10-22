@@ -214,6 +214,24 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cfg = switch (status) {
+      'loading' => (
+        label: 'Đang tải',
+        color: context.vd.inkMuted,
+        bg: context.vd.surfaceAlt,
+        icon: Icons.hourglass_empty,
+      ),
+      'denied' => (
+        label: 'Không có quyền',
+        color: context.vd.inkMuted,
+        bg: context.vd.surfaceAlt,
+        icon: Icons.lock_outline,
+      ),
+      'unavailable' => (
+        label: 'Chưa tải được',
+        color: context.vd.inkMuted,
+        bg: context.vd.surfaceAlt,
+        icon: Icons.cloud_off,
+      ),
       'present' => (
         label: 'Có mặt',
         color: context.vd.success,

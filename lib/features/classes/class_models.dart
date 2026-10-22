@@ -21,19 +21,23 @@ class ClassSemester {
 // screen and are not modelled. Score breakdown (diemgk/diemck/tongdiem) is
 // filled in from /me/grades, matched by section_code.
 class ClassItem {
+  final String? semesterCode;
   final int? sectionId;
   final String lmhma; // section_code
   final String mhma; // subject_code
   final String mhten; // subject_name
-  final int sotinchi; // credits
+  final int? sotinchi; // credits
   final String gvten; // teacher_name
   final double? tongdiem;
   final double? diemgk; // midterm_score
   final double? diemck; // final_exam_score
-  final DateTime? ngayBatDau; // section start_date (calendar date)
-  final DateTime? ngayKetThuc; // section end_date (calendar date)
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final DateTime? examDate;
+  final String? room;
 
   const ClassItem({
+    this.semesterCode,
     required this.sectionId,
     required this.lmhma,
     required this.mhma,
@@ -43,38 +47,43 @@ class ClassItem {
     this.tongdiem,
     this.diemgk,
     this.diemck,
-    this.ngayBatDau,
-    this.ngayKetThuc,
-  });
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? ngayBatDau,
+    DateTime? ngayKetThuc,
+    this.examDate,
+    this.room,
+  }) : startDate = startDate ?? ngayBatDau,
+       endDate = endDate ?? ngayKetThuc;
 
-  /// [timetableEnd] (official timetable) wins over the section's own dates.
+  DateTime? get ngayBatDau => startDate;
+  DateTime? get ngayKetThuc => endDate;
+  String get batDauText => fmtCalendarDay(startDate);
+  String get ketThucText => fmtCalendarDay(endDate);
+
   factory ClassItem.fromSection(
     CrmStudentSection s, {
     CrmStudentGrade? grade,
     DateTime? timetableEnd,
-  }) =>
-      ClassItem(
-        sectionId: s.sectionId,
-        lmhma: s.sectionCode,
-        mhma: s.subjectCode,
-        mhten: s.subjectName,
-        sotinchi: s.credits,
-        gvten: s.teacherName,
-        tongdiem: grade?.finalScore,
-        diemgk: grade?.midtermScore,
-        diemck: grade?.finalExamScore,
-        // IMS leaves start == end (e.g. 31/08 – 31/08) on classes that run
-        // all term: that placeholder is unknown, not a one-day course.
-        ngayBatDau: _placeholder(s) ? null : s.ngayBatDau,
-        ngayKetThuc: timetableEnd ?? (_placeholder(s) ? null : s.ngayKetThuc),
-      );
+  }) => ClassItem(
+    semesterCode: s.semesterCode,
+    sectionId: s.sectionId,
+    lmhma: s.sectionCode,
+    mhma: s.subjectCode,
+    mhten: s.subjectName,
+    sotinchi: s.credits,
+    gvten: s.teacherName,
+    tongdiem: grade?.finalScore,
+    diemgk: grade?.midtermScore,
+    diemck: grade?.finalExamScore,
+    startDate: _placeholder(s) ? null : s.ngayBatDau,
+    endDate: timetableEnd ?? (_placeholder(s) ? null : s.ngayKetThuc),
+    examDate: s.examDate,
+    room: s.room,
+  );
 
   static bool _placeholder(CrmStudentSection s) =>
       s.ngayBatDau != null && s.ngayBatDau == s.ngayKetThuc;
-
-  /// Course dates as dd/MM/yyyy, or N/A when the server does not know them.
-  String get batDauText => fmtCalendarDay(ngayBatDau);
-  String get ketThucText => fmtCalendarDay(ngayKetThuc);
 
   // CRM không có điểm "chuyên cần" (diemcc) riêng — chỉ midterm/final.
   double? get diemcc => null;
@@ -83,8 +92,7 @@ class ClassItem {
       tongdiem != null || diemcc != null || diemgk != null || diemck != null;
 }
 
-/// dd/MM/yyyy of a calendar date (UTC midnight, see crm_student_schedule),
-/// or N/A when unknown.
+/// A calendar date, with an explicit unknown state.
 String fmtCalendarDay(DateTime? d) => d == null
     ? 'N/A'
     : '${d.day.toString().padLeft(2, '0')}/'
@@ -98,8 +106,11 @@ class AttendanceSession {
   /// true = present/late, false = absent, null = not yet marked.
   final bool? hiendien;
   final bool baonghi;
-  const AttendanceSession(
-      {required this.ngay, required this.hiendien, required this.baonghi});
+  const AttendanceSession({
+    required this.ngay,
+    required this.hiendien,
+    required this.baonghi,
+  });
 
   DateTime? get date => DateTime.tryParse(ngay);
 }

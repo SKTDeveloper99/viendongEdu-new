@@ -12,11 +12,13 @@
 //        sample — kept nullable, shown only when present.
 //     3. Data freshness is the nightly ims_snapshot mirror (worst case ~24h
 //        stale) — same as every other IMS-backed CRM read.
+import 'json_values.dart';
+
 class CrmStudentExam {
   final String examId;
   final DateTime? examDate;
   final String startTime;
-  final int durationMinutes;
+  final int? durationMinutes;
   final String examType;
   final String? examFormat;
   final String? examGroup;
@@ -33,7 +35,7 @@ class CrmStudentExam {
     required this.examId,
     this.examDate,
     this.startTime = '',
-    this.durationMinutes = 0,
+    this.durationMinutes,
     this.examType = '',
     this.examFormat,
     this.examGroup,
@@ -58,7 +60,7 @@ class CrmStudentExam {
     examId: j['exam_id']?.toString() ?? '',
     examDate: DateTime.tryParse(j['exam_date']?.toString() ?? ''),
     startTime: j['start_time']?.toString() ?? '',
-    durationMinutes: int.tryParse('${j['duration_minutes'] ?? 0}') ?? 0,
+    durationMinutes: jsonInt(j['duration_minutes']),
     examType: j['exam_type']?.toString() ?? '',
     examFormat: j['exam_format']?.toString(),
     examGroup: j['exam_group']?.toString(),
@@ -67,7 +69,7 @@ class CrmStudentExam {
     classCode: j['class_code']?.toString(),
     subjectCode: j['subject_code']?.toString() ?? '',
     subjectName: j['subject_name']?.toString() ?? '',
-    credits: int.tryParse('${j['credits'] ?? ''}'),
+    credits: jsonInt(j['credits']),
     semesterCode: j['semester_code']?.toString() ?? '',
     semesterName: j['semester_name']?.toString(),
   );
@@ -77,7 +79,10 @@ class CrmStudentExamsView {
   final String semesterCode;
   final List<CrmStudentExam> exams;
 
-  const CrmStudentExamsView({required this.semesterCode, this.exams = const []});
+  const CrmStudentExamsView({
+    required this.semesterCode,
+    this.exams = const [],
+  });
 
   factory CrmStudentExamsView.fromJson(Map<String, dynamic> j) {
     final list = j['exams'];
@@ -85,9 +90,9 @@ class CrmStudentExamsView {
       semesterCode: j['semester_code']?.toString() ?? '',
       exams: list is List
           ? list
-              .whereType<Map<String, dynamic>>()
-              .map(CrmStudentExam.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(CrmStudentExam.fromJson)
+                .toList()
           : const [],
     );
   }

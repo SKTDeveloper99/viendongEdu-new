@@ -9,11 +9,13 @@ class SubjectsTab extends StatefulWidget {
   final List<GradeItem> chuaDiem;
   final List<RemainingSubjectItem> chuaHoc;
   final bool hasCurriculum;
+  final bool remainingKnown;
   const SubjectsTab({
     super.key,
     required this.chuaDiem,
     required this.chuaHoc,
     this.hasCurriculum = true,
+    this.remainingKnown = true,
   });
 
   @override
@@ -59,6 +61,7 @@ class _SubjectsTabState extends State<SubjectsTab> {
               : RemainingSubjectsTab(
                   items: widget.chuaHoc,
                   hasCurriculum: widget.hasCurriculum,
+                  dataKnown: widget.remainingKnown,
                 ),
         ),
       ],
@@ -71,7 +74,13 @@ class SubjectFilterChip extends StatelessWidget {
   final int count;
   final bool selected;
   final VoidCallback onTap;
-  const SubjectFilterChip({super.key, required this.label, required this.count, required this.selected, required this.onTap});
+  const SubjectFilterChip({
+    super.key,
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +112,9 @@ class SubjectFilterChip extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: selected ? context.vd.onPrimary.withValues(alpha: 0.25) : context.vd.surfaceAlt,
+                  color: selected
+                      ? context.vd.onPrimary.withValues(alpha: 0.25)
+                      : context.vd.surfaceAlt,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -111,7 +122,9 @@ class SubjectFilterChip extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: selected ? context.vd.onPrimary : context.vd.inkMuted,
+                    color: selected
+                        ? context.vd.onPrimary
+                        : context.vd.inkMuted,
                   ),
                 ),
               ),
@@ -122,4 +135,3 @@ class SubjectFilterChip extends StatelessWidget {
     );
   }
 }
-

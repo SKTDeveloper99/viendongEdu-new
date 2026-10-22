@@ -23,11 +23,14 @@ class GradesViewModel extends ChangeNotifier {
   String? _error;
   Object? _authError;
   bool _disposed = false;
+  bool _remainingKnown = false;
+  int _request = 0;
 
   CrmAcademicSummary? get stats => _stats;
   List<GradeItem> get grades => _grades;
   List<GradeItem> get ungraded => _chuaHoc;
   List<RemainingSubjectItem> get remaining => _chuaDat;
+  bool get remainingKnown => _remainingKnown;
   bool get loading => _loading;
   String? get error => _error;
 
@@ -38,33 +41,37 @@ class GradesViewModel extends ChangeNotifier {
 
   /// (Re)loads everything. Also the "Thử lại" action.
   Future<void> refresh() async {
+    final request = ++_request;
     _loading = true;
     _error = null;
     _authError = null;
     notifyListeners();
     try {
       final data = await _repository.load();
-      if (_disposed) return;
+      if (_disposed || request != _request) return;
       final allGrades = withRetakeNumbers(data.grades.grades);
       _grades = allGrades.where((g) => !g.chuaHoc).toList()
         ..sort((a, b) => b.tongdiem.compareTo(a.tongdiem));
       _chuaHoc = allGrades.where((g) => g.chuaHoc).toList();
       _chuaDat = data.summary.remainingSubjects
-          .map((r) => RemainingSubjectItem(
-                code: r.subjectCode,
-                name: r.subjectName,
-                credits: r.credits,
-                status: switch (r.completionStatus) {
-                  'pending' => 1,
-                  'failed' => 2,
-                  _ => 0,
-                },
-              ))
+          .map(
+            (r) => RemainingSubjectItem(
+              code: r.subjectCode,
+              name: r.subjectName,
+              credits: r.credits,
+              status: switch (r.completionStatus) {
+                'pending' => 1,
+                'failed' => 2,
+                _ => 0,
+              },
+            ),
+          )
           .toList();
       _stats = data.summary.academic;
+      _remainingKnown = data.summary.remainingSubjectsKnown;
       _loading = false;
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || request != _request) return;
       _loading = false;
       _error = e.toString();
       if (e is EmsException && e.statusCode == 401) _authError = e;

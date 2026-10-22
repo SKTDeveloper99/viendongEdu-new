@@ -5,13 +5,9 @@
 /// cũ (`monhocid`) mà app cũ dùng.
 library;
 
-int? _numOrNull(dynamic v) {
-  if (v == null) return null;
-  if (v is num) return v.toInt();
-  final s = v.toString().trim();
-  if (s.isEmpty) return null;
-  return int.tryParse(s);
-}
+import 'json_values.dart';
+
+int? _numOrNull(dynamic v) => jsonInt(v);
 
 String? _strOrNull(dynamic v) {
   final s = v?.toString();
@@ -111,7 +107,9 @@ class CrmRegistrationOffering {
         facilityName: _strOrNull(j['facility_name']),
         maxSize: _numOrNull(j['max_size']),
         registeredCount: _numOrNull(j['registered_count']),
-        inMyCurriculum: j['in_my_curriculum'] as bool?,
+        inMyCurriculum: j['in_my_curriculum'] is bool
+            ? j['in_my_curriculum'] as bool
+            : null,
       );
 }
 
@@ -146,9 +144,9 @@ class CrmRegistrationOfferingsPage {
       curriculumResolved: j['curriculum_resolved'] != false,
       offerings: (list is List)
           ? list
-              .whereType<Map<String, dynamic>>()
-              .map(CrmRegistrationOffering.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(CrmRegistrationOffering.fromJson)
+                .toList()
           : const [],
     );
   }
@@ -191,8 +189,7 @@ class CrmRegistrationResult {
 
   /// Nhãn tiếng Việt cho hai nguồn — trung thực, không giấu học viên việc
   /// đăng ký EMS chưa lên IMS.
-  String get sourceLabel =>
-      isEmsRequest ? 'Đã gửi (EMS)' : 'Đã xếp lớp';
+  String get sourceLabel => isEmsRequest ? 'Đã gửi (EMS)' : 'Đã xếp lớp';
 
   factory CrmRegistrationResult.fromJson(Map<String, dynamic> j) =>
       CrmRegistrationResult(
@@ -205,8 +202,9 @@ class CrmRegistrationResult {
         credits: _numOrNull(j['credits']),
         status: _strOrNull(j['status']),
         offeringId: _strOrNull(j['offering_id']),
-        submittedAt:
-            DateTime.tryParse(j['submitted_at']?.toString() ?? '')?.toLocal(),
+        submittedAt: DateTime.tryParse(
+          j['submitted_at']?.toString() ?? '',
+        )?.toLocal(),
         source: _strOrNull(j['source']) ?? 'ims_roster',
         syncedToIms: j['synced_to_ims'] == true,
       );
@@ -243,8 +241,9 @@ class CrmRegistrationRequestResult {
         semesterCode: _strOrNull(j['semester_code']),
         offeringId: _strOrNull(j['offering_id']),
         status: _strOrNull(j['status']),
-        submittedAt:
-            DateTime.tryParse(j['submitted_at']?.toString() ?? '')?.toLocal(),
+        submittedAt: DateTime.tryParse(
+          j['submitted_at']?.toString() ?? '',
+        )?.toLocal(),
       );
 }
 

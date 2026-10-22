@@ -28,7 +28,9 @@
 //     block (see lib/models/crm_student_graduation_summary.dart) — no
 //     client-side credit or average arithmetic any more.
 
-double? _numOrNull(dynamic v) => v == null ? null : (v as num).toDouble();
+import 'json_values.dart';
+
+double? _numOrNull(dynamic v) => jsonDouble(v);
 
 /// 10-scale → letter grade, ported EXACTLY from crm-clean's
 /// `lib/grades/diem4.js` (`toDiem4`) — Viễn Đông's real ladder (Thông tư
@@ -85,6 +87,7 @@ class CrmStudentGrade {
   final double? midtermScore;
   final double? finalExamScore;
   final double? finalScore;
+
   /// Server-side 4.0-scale conversion — not present in today's /me/grades
   /// rows (fallback: `letterGradeForScore(finalScore)`), but preferred over
   /// it whenever the server does send it.
@@ -96,7 +99,7 @@ class CrmStudentGrade {
   final int? subjectId;
   final String subjectCode;
   final String subjectName;
-  final int credits;
+  final int? credits;
   final int? sectionId;
   final String? sectionCode;
   final String teacherName;
@@ -116,7 +119,7 @@ class CrmStudentGrade {
     this.subjectId,
     this.subjectCode = '',
     this.subjectName = '',
-    this.credits = 0,
+    this.credits,
     this.sectionId,
     this.sectionCode,
     this.teacherName = '',
@@ -128,17 +131,19 @@ class CrmStudentGrade {
   /// Cùng luật với server (summarizeGrades ở
   /// lib/portals-student-portal-service.js): đạt khi final_score >= 5 hoặc
   /// được override_pass.
-  bool get isPassed =>
-      overridePass || (finalScore != null && finalScore! >= 5);
+  bool get isPassed => overridePass || (finalScore != null && finalScore! >= 5);
 
   /// Viễn Đông's real 8-band ladder (see `letterGradeForScore` at the top of
   /// this file) — prefers the server's own `diem4` when a row carries one.
   /// `null`/out-of-range/ungraded → '' (caller shows "—", never a fail).
   String get gradeLetter =>
-      (diem4 != null ? letterGradeForDiem4(diem4) : letterGradeForScore(finalScore)) ?? '';
+      (diem4 != null
+          ? letterGradeForDiem4(diem4)
+          : letterGradeForScore(finalScore)) ??
+      '';
 
   factory CrmStudentGrade.fromJson(Map<String, dynamic> j) => CrmStudentGrade(
-    gradeId: (j['grade_id'] as num?)?.toInt(),
+    gradeId: jsonInt(j['grade_id']),
     semesterCode: j['semester_code']?.toString(),
     classCode: j['class_code']?.toString(),
     midtermScore: _numOrNull(j['midterm_score']),
@@ -149,11 +154,11 @@ class CrmStudentGrade {
     overridePass: j['override_pass'] == true,
     overrideNote: j['override_note']?.toString(),
     recordedAt: DateTime.tryParse(j['recorded_at']?.toString() ?? ''),
-    subjectId: (j['subject_id'] as num?)?.toInt(),
+    subjectId: jsonInt(j['subject_id']),
     subjectCode: j['subject_code']?.toString() ?? '',
     subjectName: j['subject_name']?.toString() ?? '',
-    credits: (j['credits'] as num?)?.toInt() ?? 0,
-    sectionId: (j['section_id'] as num?)?.toInt(),
+    credits: jsonInt(j['credits']),
+    sectionId: jsonInt(j['section_id']),
     sectionCode: j['section_code']?.toString(),
     teacherName: j['teacher_name']?.toString() ?? '',
   );
@@ -176,10 +181,10 @@ class CrmStudentGradesSummary {
 
   factory CrmStudentGradesSummary.fromJson(Map<String, dynamic> j) =>
       CrmStudentGradesSummary(
-        total: (j['total'] as num?)?.toInt() ?? 0,
-        scored: (j['scored'] as num?)?.toInt() ?? 0,
-        passed: (j['passed'] as num?)?.toInt() ?? 0,
-        failed: (j['failed'] as num?)?.toInt() ?? 0,
+        total: jsonInt(j['total']) ?? 0,
+        scored: jsonInt(j['scored']) ?? 0,
+        passed: jsonInt(j['passed']) ?? 0,
+        failed: jsonInt(j['failed']) ?? 0,
         averageScore: _numOrNull(j['average_score']),
       );
 }
@@ -200,13 +205,13 @@ class CrmStudentGradesView {
     return CrmStudentGradesView(
       mssv: j['mssv']?.toString() ?? '',
       summary: CrmStudentGradesSummary.fromJson(
-        (j['summary'] as Map<String, dynamic>?) ?? const {},
+        jsonMap(j['summary']) ?? const {},
       ),
       grades: list is List
           ? list
-              .whereType<Map<String, dynamic>>()
-              .map(CrmStudentGrade.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(CrmStudentGrade.fromJson)
+                .toList()
           : const [],
     );
   }
@@ -223,7 +228,7 @@ class CrmRemainingSubject {
   final int? subjectId;
   final String subjectCode;
   final String subjectName;
-  final int credits;
+  final int? credits;
   final String completionStatus;
   final double? finalScore;
 
@@ -233,7 +238,7 @@ class CrmRemainingSubject {
     this.subjectId,
     this.subjectCode = '',
     this.subjectName = '',
-    this.credits = 0,
+    this.credits,
     this.completionStatus = 'not_taken',
     this.finalScore,
   });
@@ -248,12 +253,12 @@ class CrmRemainingSubject {
 
   factory CrmRemainingSubject.fromJson(Map<String, dynamic> j) =>
       CrmRemainingSubject(
-        curriculumId: (j['curriculum_id'] as num?)?.toInt(),
+        curriculumId: jsonInt(j['curriculum_id']),
         semesterCode: j['semester_code']?.toString(),
-        subjectId: (j['subject_id'] as num?)?.toInt(),
+        subjectId: jsonInt(j['subject_id']),
         subjectCode: j['subject_code']?.toString() ?? '',
         subjectName: j['subject_name']?.toString() ?? '',
-        credits: (j['credits'] as num?)?.toInt() ?? 0,
+        credits: jsonInt(j['credits']),
         completionStatus: j['completion_status']?.toString() ?? 'not_taken',
         finalScore: _numOrNull(j['final_score']),
       );
@@ -281,12 +286,12 @@ class CrmRemainingSubjectsView {
       hasCurriculum: j['has_curriculum'] == true,
       subjects: list is List
           ? list
-              .whereType<Map<String, dynamic>>()
-              .map(CrmRemainingSubject.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(CrmRemainingSubject.fromJson)
+                .toList()
           : const [],
-      allRequiredCount: (j['all_required_count'] as num?)?.toInt() ?? 0,
-      passedCount: (j['passed_count'] as num?)?.toInt() ?? 0,
+      allRequiredCount: jsonInt(j['all_required_count']) ?? 0,
+      passedCount: jsonInt(j['passed_count']) ?? 0,
     );
   }
 }

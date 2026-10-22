@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'announcement_palette.dart';
 
 /// Semantic colour tokens for the whole app. Every colour used in widgets
 /// must come from here (`context.vd.X`); see the guard in
@@ -58,6 +59,12 @@ class VdTokens extends ThemeExtension<VdTokens> {
   final Color evening;
   final Color shadow;
   final Color scrim;
+
+  Color? announcementColor(String name) =>
+      announcementColorFor(name, dark: bg.computeLuminance() < 0.5);
+
+  Color get announcementHighlight =>
+      announcementHighlightFor(dark: bg.computeLuminance() < 0.5);
 
   static const light = VdTokens(
     bg: Color(0xFFFAF7F2),

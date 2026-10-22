@@ -22,19 +22,21 @@
 // total anywhere in this endpoint, so the overview tab shows "X/Y môn"
 // (subjects), not tín chỉ, rather than inventing a credit total the server
 // never computed. Documented in docs/ims_to_crm_student_academic_map.md.
+import 'json_values.dart';
+
 import 'crm_student_grades.dart';
 
 class CrmAcademicSummary {
-  final int total;
-  final int scored;
-  final int passed;
-  final int failed;
+  final int? total;
+  final int? scored;
+  final int? passed;
+  final int? failed;
   final double? averageScore;
   final bool hasCurriculum;
-  final int requiredSubjects;
-  final int requiredPassed;
-  final int remainingSubjectsCount;
-  final bool academicallyClear;
+  final int? requiredSubjects;
+  final int? requiredPassed;
+  final int? remainingSubjectsCount;
+  final bool? academicallyClear;
 
   const CrmAcademicSummary({
     this.total = 0,
@@ -51,40 +53,43 @@ class CrmAcademicSummary {
 
   factory CrmAcademicSummary.fromJson(Map<String, dynamic> j) =>
       CrmAcademicSummary(
-        total: (j['total'] as num?)?.toInt() ?? 0,
-        scored: (j['scored'] as num?)?.toInt() ?? 0,
-        passed: (j['passed'] as num?)?.toInt() ?? 0,
-        failed: (j['failed'] as num?)?.toInt() ?? 0,
-        averageScore: (j['average_score'] as num?)?.toDouble(),
+        total: jsonInt(j['total']),
+        scored: jsonInt(j['scored']),
+        passed: jsonInt(j['passed']),
+        failed: jsonInt(j['failed']),
+        averageScore: jsonDouble(j['average_score']),
         hasCurriculum: j['has_curriculum'] == true,
-        requiredSubjects: (j['required_subjects'] as num?)?.toInt() ?? 0,
-        requiredPassed: (j['required_passed'] as num?)?.toInt() ?? 0,
-        remainingSubjectsCount:
-            (j['remaining_subjects_count'] as num?)?.toInt() ?? 0,
-        academicallyClear: j['academically_clear'] == true,
+        requiredSubjects: jsonInt(j['required_subjects']),
+        requiredPassed: jsonInt(j['required_passed']),
+        remainingSubjectsCount: jsonInt(j['remaining_subjects_count']),
+        academicallyClear: j['academically_clear'] is bool
+            ? j['academically_clear'] as bool
+            : null,
       );
 }
 
 class CrmGraduationSummary {
   final CrmAcademicSummary academic;
   final List<CrmRemainingSubject> remainingSubjects;
+  final bool remainingSubjectsKnown;
 
   const CrmGraduationSummary({
     required this.academic,
     this.remainingSubjects = const [],
+    this.remainingSubjectsKnown = true,
   });
 
   factory CrmGraduationSummary.fromJson(Map<String, dynamic> j) {
     final list = j['remaining_subjects'];
     return CrmGraduationSummary(
-      academic: CrmAcademicSummary.fromJson(
-        (j['academic'] as Map<String, dynamic>?) ?? const {},
-      ),
+      academic: CrmAcademicSummary.fromJson(jsonMap(j['academic']) ?? const {}),
+      remainingSubjectsKnown:
+          list is List && list.every((row) => row is Map<String, dynamic>),
       remainingSubjects: list is List
           ? list
-              .whereType<Map<String, dynamic>>()
-              .map(CrmRemainingSubject.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(CrmRemainingSubject.fromJson)
+                .toList()
           : const [],
     );
   }

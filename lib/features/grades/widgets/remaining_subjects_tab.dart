@@ -9,7 +9,13 @@ class RemainingSubjectsTab extends StatelessWidget {
   /// False when the server has no confirmed curriculum for the student: an
   /// empty list then means "unknown", not "nothing left".
   final bool hasCurriculum;
-  const RemainingSubjectsTab({super.key, required this.items, this.hasCurriculum = true});
+  final bool dataKnown;
+  const RemainingSubjectsTab({
+    super.key,
+    required this.items,
+    this.hasCurriculum = true,
+    this.dataKnown = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,12 +24,20 @@ class RemainingSubjectsTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.hourglass_empty_rounded, size: 64, color: context.vd.inkFaint),
+            Icon(
+              Icons.hourglass_empty_rounded,
+              size: 64,
+              color: context.vd.inkFaint,
+            ),
             SizedBox(height: 12),
-            Text(hasCurriculum
-                    ? 'Không còn môn chưa học'
-                    : 'Chưa có chương trình đào tạo cho hệ của bạn',
-                style: TextStyle(color: context.vd.inkMuted)),
+            Text(
+              !hasCurriculum
+                  ? 'Chưa có chương trình đào tạo cho hệ của bạn'
+                  : !dataKnown
+                  ? 'Chưa có dữ liệu môn học còn lại'
+                  : 'Không còn môn chưa học',
+              style: TextStyle(color: context.vd.inkMuted),
+            ),
           ],
         ),
       );
@@ -37,7 +51,9 @@ class RemainingSubjectsTab extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: context.vd.accentSoft,
                   borderRadius: BorderRadius.circular(20),
@@ -45,9 +61,10 @@ class RemainingSubjectsTab extends StatelessWidget {
                 child: Text(
                   '${items.length} môn chưa học',
                   style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: context.vd.primary),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.vd.primary,
+                  ),
                 ),
               ),
             ],
@@ -77,9 +94,10 @@ class RemainingSubjectsTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                        color: context.vd.shadow,
-                        blurRadius: 5,
-                        offset: Offset(0, 2)),
+                      color: context.vd.shadow,
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -90,7 +108,8 @@ class RemainingSubjectsTab extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: statusColor,
                         borderRadius: const BorderRadius.horizontal(
-                            left: Radius.circular(14)),
+                          left: Radius.circular(14),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -100,26 +119,43 @@ class RemainingSubjectsTab extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(mhten,
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
+                            Text(
+                              mhten,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.school_outlined,
-                                    size: 12, color: context.vd.primary),
+                                Icon(
+                                  Icons.school_outlined,
+                                  size: 12,
+                                  color: context.vd.primary,
+                                ),
                                 const SizedBox(width: 4),
-                                Text('$sotinchi TC',
-                                    style: TextStyle(
-                                        fontSize: 12, color: context.vd.inkMuted)),
+                                Text(
+                                  "${sotinchi ?? '?'} TC",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.vd.inkMuted,
+                                  ),
+                                ),
                                 const SizedBox(width: 12),
-                                Icon(Icons.tag,
-                                    size: 12, color: context.vd.primary),
+                                Icon(
+                                  Icons.tag,
+                                  size: 12,
+                                  color: context.vd.primary,
+                                ),
                                 const SizedBox(width: 4),
-                                Text(mhma,
-                                    style: TextStyle(
-                                        fontSize: 12, color: context.vd.inkMuted)),
+                                Text(
+                                  mhma,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.vd.inkMuted,
+                                  ),
+                                ),
                               ],
                             ),
                           ],
@@ -130,7 +166,9 @@ class RemainingSubjectsTab extends StatelessWidget {
                       padding: const EdgeInsets.only(right: 14),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
@@ -138,9 +176,10 @@ class RemainingSubjectsTab extends StatelessWidget {
                         child: Text(
                           statusLabel,
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: statusColor),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: statusColor,
+                          ),
                         ),
                       ),
                     ),

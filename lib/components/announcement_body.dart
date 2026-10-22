@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../theme/vd_tokens.dart';
 
 /// A small text format shared with CRM's announcement preview. Never HTML.
 /// Existing plain messages also gain tappable HTTP(S) links. Same grammar as
@@ -38,28 +39,7 @@ class AnnouncementBody extends StatefulWidget {
 
 class _AnnouncementBodyState extends State<AnnouncementBody> {
   final _recognizers = <TapGestureRecognizer>[];
-  static const _named = {
-    'red': (Color(0xFFDC2626), Color(0xFFF87171)),
-    'blue': (Color(0xFF2563EB), Color(0xFF60A5FA)),
-    'green': (Color(0xFF16A34A), Color(0xFF4ADE80)),
-    'orange': (Color(0xFFEA580C), Color(0xFFFB923C)),
-    'purple': (Color(0xFF9333EA), Color(0xFFC084FC)),
-    'pink': (Color(0xFFDB2777), Color(0xFFF472B6)),
-    'gray': (Color(0xFF6B7280), Color(0xFF9CA3AF)),
-  };
-
-  bool get _dark => Theme.of(context).brightness == Brightness.dark;
-
-  /// Unknown colour names keep their text uncoloured.
-  Color? _color(String name) {
-    final v = name.trim().toLowerCase();
-    final pair = _named[v];
-    if (pair != null) return _dark ? pair.$2 : pair.$1;
-    final hex = RegExp(r'^#([0-9a-f]{3}|[0-9a-f]{6})$').firstMatch(v)?[1];
-    if (hex == null) return null;
-    final full = hex.length == 3 ? hex.split('').map((c) => '$c$c').join() : hex;
-    return Color(0xFF000000 | int.parse(full, radix: 16));
-  }
+  Color? _color(String name) => context.vd.announcementColor(name);
 
   void _clearRecognizers() {
     for (final recognizer in _recognizers) {
@@ -106,7 +86,7 @@ class _AnnouncementBodyState extends State<AnnouncementBody> {
       text: label,
       recognizer: recognizer,
       style: style.copyWith(
-        color: _dark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+        color: context.vd.announcementColor('blue'),
         decoration: TextDecoration.underline,
       ),
     );
@@ -121,24 +101,35 @@ class _AnnouncementBodyState extends State<AnnouncementBody> {
       spans.add(TextSpan(text: text.substring(last, m.start), style: style));
       if (m[1] != null || m[3] != null) {
         final color = _color(m[1] ?? m[3]!);
-        spans.addAll(inner(m[2] ?? m[4]!,
-            color == null ? style : style.copyWith(color: color)));
+        spans.addAll(
+          inner(
+            m[2] ?? m[4]!,
+            color == null ? style : style.copyWith(color: color),
+          ),
+        );
       } else if (m[5] != null) {
         spans.add(_link(m[6]!, AnnouncementBody.plainText(m[5]!), style));
       } else if (m[7] != null) {
         spans.addAll(inner(m[7]!, style.copyWith(fontWeight: FontWeight.bold)));
       } else if (m[8] != null) {
-        spans.addAll(inner(m[8]!,
-            style.copyWith(decoration: TextDecoration.underline)));
+        spans.addAll(
+          inner(m[8]!, style.copyWith(decoration: TextDecoration.underline)),
+        );
       } else if (m[9] != null) {
-        spans.addAll(inner(m[9]!,
-            style.copyWith(decoration: TextDecoration.lineThrough)));
+        spans.addAll(
+          inner(m[9]!, style.copyWith(decoration: TextDecoration.lineThrough)),
+        );
       } else if (m[10] != null) {
-        spans.addAll(inner(m[10]!, style.copyWith(
-            backgroundColor:
-                _dark ? const Color(0x66CA8A04) : const Color(0xFFFEF08A))));
+        spans.addAll(
+          inner(
+            m[10]!,
+            style.copyWith(backgroundColor: context.vd.announcementHighlight),
+          ),
+        );
       } else if (m[11] != null) {
-        spans.addAll(inner(m[11]!, style.copyWith(fontStyle: FontStyle.italic)));
+        spans.addAll(
+          inner(m[11]!, style.copyWith(fontStyle: FontStyle.italic)),
+        );
       } else {
         final raw = m[0]!;
         final url = raw.replaceFirst(RegExp(r'[.,;!?)\]]+$'), '');

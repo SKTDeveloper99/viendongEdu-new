@@ -1,10 +1,9 @@
 import 'remote/app_remote_config.dart';
 
-/// Lantern + Infinite release (owner 2026-10-14): the app can show student
-/// data only to MSSV prefixes ≥ [AppRemoteConfig.minPrefix]. Owner 2026-10-22:
-/// open by default (0 = everyone); the server's `data_open` decides first,
-/// and the server fences what each student actually receives. Raise
-/// `lantern_min_prefix` in Remote Config to close again.
+/// Lantern + Infinite release (owner 2026-10-14): the test app shows student
+/// data only to MSSV prefixes ≥ [AppRemoteConfig.minPrefix] (25). Everyone
+/// else sees "Không có dữ liệu" on the data screens; the board, questions and
+/// the game stay on. Lower `lantern_min_prefix` in Remote Config to reopen.
 const dataRoutes = {
   '/schedule',
   '/exam',

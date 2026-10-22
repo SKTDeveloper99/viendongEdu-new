@@ -40,6 +40,7 @@ class StudentHomeViewModel extends ChangeNotifier {
   DateTime? _scheduleStaleAt;
   bool _scheduleLoading = true;
   bool _scheduleFailed = false;
+  bool _scheduleDenied = false;
   int _unreadCount = 0;
   String? _classCode;
   AnnouncementItem? _latestBoardItem;
@@ -56,6 +57,7 @@ class StudentHomeViewModel extends ChangeNotifier {
   DateTime? get scheduleStaleAt => _scheduleStaleAt;
   bool get scheduleLoading => _scheduleLoading;
   bool get scheduleFailed => _scheduleFailed;
+  bool get scheduleDenied => _scheduleDenied;
   int get unreadCount => _unreadCount;
   AnnouncementItem? get latestBoardItem => _latestBoardItem;
   int get boardUnread => _boardUnread;
@@ -140,6 +142,7 @@ class StudentHomeViewModel extends ChangeNotifier {
       _scheduleStaleAt = r.fresh ? null : r.savedAt;
       _todayClasses = todays;
       _scheduleFailed = false;
+      _scheduleDenied = false;
       _scheduleLoading = false;
       notifyListeners();
     } catch (e) {
@@ -151,6 +154,7 @@ class StudentHomeViewModel extends ChangeNotifier {
       }
       _todayClasses = [];
       _scheduleFailed = true;
+      _scheduleDenied = e is EmsException && e.statusCode == 403;
       _scheduleLoading = false;
       notifyListeners();
     }
@@ -162,9 +166,23 @@ class StudentHomeViewModel extends ChangeNotifier {
       if (_disposed) return;
       _classCode = code;
       notifyListeners();
-    } catch (_) {
+    } catch (e) {
+      if (!_disposed && e is EmsException && e.statusCode == 401) {
+        _authError = e;
+        notifyListeners();
+      }
       // Header vẫn hiện tên/MSSV từ phiên; chỉ mã lớp trống.
     }
+  }
+
+  /// Normal home refresh also re-reads owner corrections and the server gate.
+  Future<void> refresh() async {
+    await Future.wait([
+      loadTodaySchedule(),
+      _loadProfile(),
+      loadUnreadCount(),
+      loadBoard(),
+    ]);
   }
 
   // Số chưa đọc = Bảng tin CRM. `mustReadPending` gộp vào vì một thông báo

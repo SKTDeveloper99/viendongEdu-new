@@ -57,10 +57,18 @@ class _ClassesScreenState extends State<ClassesScreen> {
     if (_vm.loading) return skeletonList(accentColor: accent);
     final error = _vm.error;
     if (error != null) {
-      return ClassesErrorView(message: error, onRetry: _vm.fetchSemesters);
+      return ClassesErrorView(message: error, onRetry: _vm.refreshSelected);
     }
     if (_vm.loadingClasses) return skeletonList(accentColor: accent);
-    if (_vm.classes.isEmpty) return const ClassesEmptyView();
+    if (_vm.classes.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _vm.refreshSelected,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [SizedBox(height: 80), ClassesEmptyView()],
+        ),
+      );
+    }
     return ClassList(
       classes: _vm.classes,
       semTen: _vm.selected?.ten ?? '',

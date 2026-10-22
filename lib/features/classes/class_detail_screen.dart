@@ -8,6 +8,7 @@ import 'widgets/attendance_card.dart';
 import 'widgets/class_detail_header.dart';
 import 'widgets/class_grade_card.dart';
 import 'widgets/class_info_card.dart';
+import 'widgets/classes_state_views.dart';
 import 'widgets/session_list_card.dart';
 import '../../theme/vd_tokens.dart';
 
@@ -19,8 +20,12 @@ class ClassDetailScreen extends StatefulWidget {
 
   /// Tests may inject a view model; otherwise the screen owns its own.
   final ClassDetailViewModel? viewModel;
-  const ClassDetailScreen(
-      {super.key, required this.item, required this.semTen, this.viewModel});
+  const ClassDetailScreen({
+    super.key,
+    required this.item,
+    required this.semTen,
+    this.viewModel,
+  });
 
   @override
   State<ClassDetailScreen> createState() => _ClassDetailScreenState();
@@ -35,9 +40,13 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
   void initState() {
     super.initState();
     _ownsViewModel = widget.viewModel == null;
-    _vm = widget.viewModel ??
-        ClassDetailViewModel(const ClassesRepository(),
-            sectionCode: widget.item.lmhma);
+    _vm =
+        widget.viewModel ??
+        ClassDetailViewModel(
+          const ClassesRepository(),
+          sectionCode: widget.item.lmhma,
+          item: widget.item,
+        );
     _vm.addListener(_onChanged);
     _vm.load();
   }
@@ -63,10 +72,15 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
   Widget _content() {
     if (_vm.loading) {
       return Center(
-          child: CircularProgressIndicator(color: context.vd.primary));
+        child: CircularProgressIndicator(color: context.vd.primary),
+      );
     }
-    final item = widget.item;
+    if (_vm.error != null) {
+      return ClassesErrorView(message: _vm.error!, onRetry: _vm.refresh);
+    }
+    final item = _vm.item ?? widget.item;
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
@@ -76,6 +90,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
             ClassGradeCard(item: item),
             const SizedBox(height: 16),
           ],
+          if (_vm.sessions.isEmpty) const Text('Chưa có dữ liệu điểm danh'),
           if (_vm.sessions.isNotEmpty) ...[
             AttendanceCard(
               total: _vm.sessions.length,
@@ -103,7 +118,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
             Expanded(
               child: ListenableBuilder(
                 listenable: _vm,
-                builder: (context, _) => _content(),
+                builder: (context, _) =>
+                    RefreshIndicator(onRefresh: _vm.refresh, child: _content()),
               ),
             ),
           ],

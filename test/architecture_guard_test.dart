@@ -24,7 +24,6 @@ const Map<String, int> _allowlist = {
   'lib/screens/gv_lichthi_screen.dart': 468,
   'lib/services/notification_service.dart': 453,
   'lib/screens/gv_lophoc_screen.dart': 451,
-  'lib/screens/exam_screen.dart': 412,
 };
 
 /// Rule (d): colours come from `context.vd` (lib/theme/vd_tokens.dart). No

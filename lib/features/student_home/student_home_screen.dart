@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _vm.loadBoard();
+    if (state == AppLifecycleState.resumed) _vm.refresh();
   }
 
   // A 401 clears the session and returns to the login screen; a pending
