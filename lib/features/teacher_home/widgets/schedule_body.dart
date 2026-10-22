@@ -41,7 +41,7 @@ class ScheduleBody extends StatelessWidget {
   Widget _body(BuildContext context) {
     final n = classes.length;
     final summaryText = failed
-        ? 'Chưa tải được lịch dạy từ máy chủ'
+        ? 'Chưa tải được lịch dạy. Vui lòng tải lại lịch.'
         : n == 0
         ? (isToday
               ? 'Hôm nay bạn không có lịch dạy nào 🎉'

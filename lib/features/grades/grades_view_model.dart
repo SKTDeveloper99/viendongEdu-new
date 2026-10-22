@@ -1,3 +1,4 @@
+import '../../utils/user_error_text.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../data/grades_repository.dart';
@@ -66,7 +67,7 @@ class GradesViewModel extends ChangeNotifier {
     } catch (e) {
       if (_disposed) return;
       _loading = false;
-      _error = e.toString();
+      _error = userErrorText(e);
       if (e is EmsException && e.statusCode == 401) _authError = e;
     }
     notifyListeners();

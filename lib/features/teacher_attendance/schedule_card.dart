@@ -1,3 +1,4 @@
+import '../../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/teacher_attendance_repository.dart';
@@ -74,7 +75,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
       final start = _time(widget.data['thoigianbd']?.toString());
       final end = _time(widget.data['thoigiankt']?.toString());
       if (sectionCode.isEmpty || start.isEmpty || end.isEmpty) {
-        showErrorSnack(context, 'Không xác định được buổi học đã chọn.');
+        showErrorSnack(context, 'Không xác định được buổi học đã chọn. Vui lòng tải lại lịch.');
         return;
       }
       final repository = widget.repository;
@@ -90,7 +91,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
       if (session == null) {
         showErrorSnack(
           context,
-          'Không tìm thấy duy nhất buổi học đã chọn trên EMS. Chưa mở danh sách điểm danh.',
+          'Không xác định được duy nhất buổi học đã chọn trên EMS. Vui lòng tải lại lịch trước khi điểm danh.',
         );
         return;
       }
@@ -103,7 +104,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
       );
     } catch (e) {
       if (!mounted) return;
-      showErrorSnack(context, e.toString());
+      showErrorSnack(context, userErrorText(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

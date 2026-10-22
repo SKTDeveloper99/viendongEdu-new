@@ -1,5 +1,5 @@
+import '../../utils/user_error_text.dart';
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 
 import '../../data/teacher_attendance_repository.dart';
@@ -118,7 +118,7 @@ class RosterViewModel extends ChangeNotifier {
         return;
       }
       _students = const [];
-      _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
+      _error = userErrorText(e);
       _loading = false;
       _notify();
       return;
@@ -179,7 +179,7 @@ class RosterViewModel extends ChangeNotifier {
     } on EmsException catch (e) {
       if (_disposed) return;
       _students = const [];
-      _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
+      _error = userErrorText(e);
       _loading = false;
       _notify();
     }
@@ -266,7 +266,7 @@ class RosterViewModel extends ChangeNotifier {
 
   Future<void> save(RosterPrompts ui) async {
     if (_marks.isEmpty && _toRemove.isEmpty) {
-      ui.toast('Chưa chọn gì để lưu.');
+      ui.toast('Chưa chọn sinh viên để điểm danh. Vui lòng chọn trước khi lưu.');
       return;
     }
     // 17/09 (Huy, lớp 43461): 12 học viên chưa chạm tới, bấm Lưu vẫn xanh.
@@ -305,7 +305,7 @@ class RosterViewModel extends ChangeNotifier {
         } on EmsPunchConflict catch (c2) {
           _holdForReason(ui, c2);
         } on EmsException catch (e) {
-          ui.toast(e.message);
+          ui.toast(userErrorText(e));
         }
       } else {
         // Thầy/cô đóng hộp thoại: KHÔNG được để hàng đợi tự gửi lại y hệt
@@ -318,10 +318,10 @@ class RosterViewModel extends ChangeNotifier {
         _queued = false;
         _notify();
         await _persistDraft();
-        ui.toast('Máy chủ từ chối: ${e.message}');
+        ui.toast('Máy chủ từ chối: ${userErrorText(e)}');
       } else {
         ui.toast(
-          'CHƯA GỬI. Đã giữ trên máy, sẽ tự gửi khi có mạng. ${e.message}',
+          'CHƯA GỬI. Đã giữ trên máy, sẽ tự gửi khi có mạng. ${userErrorText(e)}',
         );
       }
     } finally {

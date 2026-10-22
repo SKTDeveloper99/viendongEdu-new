@@ -116,7 +116,7 @@ class CrmTeacherApi {
   static Future<List<CrmSemester>> semesters() async {
     final body = await EmsApiService.send('GET', '/teacher/me/semesters');
     if (body is! List) {
-      throw EmsException('Máy chủ trả về dữ liệu không đọc được.');
+      throw EmsException('Máy chủ trả về dữ liệu không đọc được. Vui lòng thử lại.');
     }
     return body
         .whereType<Map<String, dynamic>>()

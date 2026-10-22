@@ -1,3 +1,4 @@
+import '../../utils/user_error_text.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../data/teacher_attendance_repository.dart';
@@ -38,7 +39,7 @@ class SessionListViewModel extends ChangeNotifier {
     } on EmsException catch (e) {
       if (_disposed) return;
       _sessions = const [];
-      _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
+      _error = userErrorText(e);
       _loading = false;
       _notify();
     }

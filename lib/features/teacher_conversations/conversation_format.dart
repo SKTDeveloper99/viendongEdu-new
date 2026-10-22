@@ -1,12 +1,8 @@
 import '../../core/network/ems_exception.dart';
+import '../../utils/user_error_text.dart';
 
-/// The text to show for a failed call. Server refusals (403/404/422...) carry
-/// their own message and are shown as-is; only real network failures (no
-/// status code) get the network wording, which [EmsException] already holds.
-String conversationErrorText(Object error) {
-  if (error is EmsException) return error.message;
-  return 'Đã xảy ra lỗi. Vui lòng thử lại.';
-}
+/// Show Vietnamese server guidance or a safe Vietnamese fallback.
+String conversationErrorText(Object error) => userErrorText(error);
 
 bool isAuthError(Object error) =>
     error is EmsException && error.statusCode == 401;

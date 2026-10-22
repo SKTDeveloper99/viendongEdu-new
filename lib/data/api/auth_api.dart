@@ -17,7 +17,7 @@ abstract final class AuthApi {
     );
     final identity = CrmIdentity.fromStudentLogin(body);
     if (identity.token.isEmpty) {
-      throw EmsException('Máy chủ không cấp được phiên đăng nhập.');
+      throw EmsException('Máy chủ không cấp được phiên đăng nhập. Vui lòng thử đăng nhập lại.');
     }
     return identity;
   }
@@ -43,7 +43,7 @@ abstract final class AuthApi {
     );
     final identity = CrmIdentity.fromTeacherLogin(body);
     if (identity.token.isEmpty) {
-      throw EmsException('Máy chủ không cấp được phiên đăng nhập.');
+      throw EmsException('Máy chủ không cấp được phiên đăng nhập. Vui lòng thử đăng nhập lại.');
     }
     return identity;
   }

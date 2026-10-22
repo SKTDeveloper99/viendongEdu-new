@@ -1,10 +1,10 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_teacher_profile.dart' show CrmSemester;
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
 import '../theme/vd_tokens.dart';
-
 typedef _Semester = CrmSemester;
 
 // Thứ tự ngày trong tuần theo ngayma
@@ -53,7 +53,7 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingHocKy = false; _error = e.toString(); });
+      setState(() { _loadingHocKy = false; _error = userErrorText(e); });
     }
   }
 
@@ -109,7 +109,7 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingClasses = false; _error = e.toString(); });
+      setState(() { _loadingClasses = false; _error = userErrorText(e); });
     }
   }
 

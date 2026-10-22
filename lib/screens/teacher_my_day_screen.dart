@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
 import '../data/api/attendance_api.dart';
@@ -5,7 +6,6 @@ import '../data/api/student_cases_api.dart';
 import '../theme/vd_tokens.dart';
 import '../core/school_calendar.dart';
 import '../components/teacher_day_summary_number.dart';
-
 typedef TeacherSessionsLoader =
     Future<List<EmsSession>> Function({String? date});
 
@@ -66,7 +66,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
       setState(() {
         _sessions = const [];
         _sessionsError =
-            'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
+            userErrorText(e);
       });
     } catch (_) {
       if (!mounted) return;
@@ -90,7 +90,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
       setState(() {
         _cases = const [];
         _casesError =
-            'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
+            userErrorText(e);
       });
     } catch (_) {
       if (!mounted) return;
@@ -128,7 +128,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
     } on EmsException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: context.vd.danger),
+        SnackBar(content: Text(userErrorText(e)), backgroundColor: context.vd.danger),
       );
     } finally {
       if (mounted) setState(() => _answering.remove(item.id));
@@ -419,7 +419,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
     'in_progress' => 'Đang xử lý',
     'waiting_for_school' => 'Chờ nhà trường',
     'pending_approval' => 'Chờ duyệt',
-    _ => status,
+    _ => 'Chưa xác định',
   };
 }
 

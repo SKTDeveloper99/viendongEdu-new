@@ -208,7 +208,7 @@ void main() {
 
       expect(vm.students, isEmpty);
       expect(vm.offlineBanner, isNull);
-      expect(vm.error, contains('Không có kết nối'));
+      expect(vm.error, 'Chưa xác nhận được kết quả. Vui lòng kiểm tra lại trước khi thử lại.');
     },
   );
 
@@ -260,7 +260,7 @@ void main() {
 
     expect(vm.students, isEmpty);
     expect(vm.offlineBanner, isNull);
-    expect(vm.error, contains('Không có kết nối'));
+    expect(vm.error, 'Chưa xác nhận được kết quả. Vui lòng kiểm tra lại trước khi thử lại.');
   });
 
   for (final status in [400, 401, 403, 404, 408, 409, 422, 429]) {

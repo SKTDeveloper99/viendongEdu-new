@@ -1,9 +1,9 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
 import '../theme/vd_tokens.dart';
-
 class _Semester {
   final int id;
   final String ma;
@@ -62,7 +62,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingHocKy = false; _error = e.toString(); });
+      setState(() { _loadingHocKy = false; _error = userErrorText(e); });
     }
   }
 
@@ -102,7 +102,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingExams = false; _error = e.toString(); });
+      setState(() { _loadingExams = false; _error = userErrorText(e); });
     }
   }
 

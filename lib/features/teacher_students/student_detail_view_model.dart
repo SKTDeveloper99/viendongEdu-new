@@ -44,7 +44,7 @@ class StudentDetailViewModel extends ChangeNotifier {
     try {
       final fresh = await _repository.student(_mssv);
       if (_disposed) return;
-      if (fresh.mssv != _mssv) throw EmsException('Invalid student');
+      if (fresh.mssv != _mssv) throw EmsException('Hồ sơ sinh viên không khớp. Vui lòng tải lại danh sách.');
       // Empty teacher-section permissions are authoritative too.
       _student = fresh;
       _savedAt = DateTime.now();

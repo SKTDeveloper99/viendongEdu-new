@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_student_profile.dart';
 import '../services/crm_student_api.dart';
@@ -33,7 +34,7 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
       setState(() { _profile = data; _loading = false; });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() { _loading = false; _error = userErrorText(e); });
     }
   }
 

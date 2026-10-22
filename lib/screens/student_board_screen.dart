@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 import '../components/skeleton.dart';
 import '../components/announcement_body.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -74,7 +75,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     } on EmsException catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.message;
+        _error = userErrorText(e);
         _loading = false;
       });
     } finally {
@@ -109,7 +110,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
       if (!mounted) return;
       setState(() => item.acknowledgedAt = before);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(userErrorText(e))));
     }
   }
 

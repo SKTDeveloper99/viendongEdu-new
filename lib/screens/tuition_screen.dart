@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 import '../components/skeleton.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_money_tuition.dart';
@@ -5,7 +6,6 @@ import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
 import '../theme/vd_tokens.dart';
 import '../components/tuition_notes.dart';
-
 // LUẬT TIỀN: hiện NGUYÊN VĂN số máy chủ; null = "Đang đối chiếu", không bao giờ 0.
 String _fmtAmount(int? amount) {
   if (amount == null) return 'Đang đối chiếu';
@@ -62,7 +62,7 @@ class _TuitionScreenState extends State<TuitionScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() { _loading = false; _error = userErrorText(e); });
     }
   }
 

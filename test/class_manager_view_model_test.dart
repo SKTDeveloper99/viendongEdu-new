@@ -139,7 +139,7 @@ void main() {
       final vm = ClassManagerViewModel(repo);
       await vm.fetchSemesters();
 
-      expect(vm.error, 'boom');
+      expect(vm.error, 'Chưa xác nhận được kết quả. Vui lòng kiểm tra lại trước khi thử lại.');
       expect(vm.loadingSemesters, isFalse);
       expect(vm.unauthorized, isFalse);
 
@@ -159,7 +159,7 @@ void main() {
       await vm.fetchSemesters();
       repo.scheduleFn = (_) async => throw 'net';
       await vm.selectSemester(vm.semesters.last);
-      expect(vm.error, 'net');
+      expect(vm.error, 'Chưa xác nhận được kết quả. Vui lòng kiểm tra lại trước khi thử lại.');
       expect(vm.loadingClasses, isFalse);
       expect(vm.selected!.ma, '252');
     });
@@ -327,7 +327,7 @@ void main() {
 
         repo.attendanceFn = (_) async => throw 'boom';
         await vm.loadAttendance();
-        expect(vm.attendanceError, 'boom');
+        expect(vm.attendanceError, 'Chưa xác nhận được kết quả. Vui lòng kiểm tra lại trước khi thử lại.');
 
         repo.attendanceFn = (_) async =>
             throw EmsException('no', statusCode: 401);
@@ -344,7 +344,7 @@ void main() {
         lmhId: '900',
       );
       await vm.loadStudents();
-      expect(vm.studentsError, 'boom');
+      expect(vm.studentsError, 'Chưa xác nhận được kết quả. Vui lòng kiểm tra lại trước khi thử lại.');
       expect(vm.loadingStudents, isFalse);
     });
   });
@@ -386,7 +386,7 @@ void main() {
       final repo = _FakeRepo()..marksFn = (_) async => throw 'boom';
       final vm = make(repo);
       await vm.load();
-      expect(vm.error, 'boom');
+      expect(vm.error, 'Chưa xác nhận được kết quả. Vui lòng kiểm tra lại trước khi thử lại.');
 
       repo.marksFn = (_) async => {'TEST260001': 'present'};
       await vm.load();

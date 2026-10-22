@@ -20,7 +20,7 @@ class TeacherStudentsApi {
   static void _checkAccount(String? token, String? teacherId) {
     if (token != AppSession.instance.emsToken ||
         teacherId != AppSession.instance.teacherId) {
-      throw EmsException('Phiên đăng nhập đã thay đổi.', statusCode: 403);
+      throw EmsException('Phiên đăng nhập đã thay đổi. Vui lòng đăng nhập lại.', statusCode: 403);
     }
   }
 

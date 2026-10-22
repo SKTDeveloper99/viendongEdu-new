@@ -1,3 +1,4 @@
+import '../../utils/user_error_text.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../data/class_manager_repository.dart';
@@ -102,7 +103,7 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
         return;
       }
       _loadingStudents = false;
-      _studentsError = e.toString();
+      _studentsError = userErrorText(e);
       _notify();
     }
   }
@@ -130,7 +131,7 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
         return;
       }
       _loadingAttendance = false;
-      _attendanceError = e.toString();
+      _attendanceError = userErrorText(e);
       _notify();
     }
   }

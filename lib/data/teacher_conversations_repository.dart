@@ -46,7 +46,7 @@ class TeacherConversationsRepository {
     final overview = await CrmTeacherApi.overview();
     final semester = overview.currentSemester;
     if (semester == null || semester.isEmpty) {
-      throw EmsException('Chưa xác định được học kỳ hiện tại.');
+      throw EmsException('Chưa xác định được học kỳ hiện tại. Vui lòng tải lại danh sách.');
     }
     final sections = (await CrmTeacherApi.classes(
       semester: semester,

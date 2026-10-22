@@ -68,7 +68,7 @@ class TeacherStudentsViewModel extends ChangeNotifier {
       final r = await _repository.students();
       if (_disposed) return;
       if (_accessDenied && !r.fresh) {
-        throw EmsException('Access denied', statusCode: 403);
+        throw EmsException('Bạn không có quyền xem danh sách này. Vui lòng liên hệ nhà trường để được hỗ trợ.', statusCode: 403);
       }
       _students = r.data;
       _classes = groupByClass(r.data);

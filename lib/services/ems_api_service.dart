@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../utils/user_error_text.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
@@ -102,7 +103,7 @@ class EmsApiService {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (body == null) {
         throw EmsException(
-          'Máy chủ trả về dữ liệu không đọc được.',
+          'Máy chủ trả về dữ liệu không đọc được. Vui lòng thử lại.',
           statusCode: res.statusCode,
         );
       }
@@ -119,7 +120,10 @@ class EmsApiService {
     if (map?['code'] == 'punch_conflict_needs_reason') {
       final raw = map?['students'];
       throw EmsPunchConflict(
-        rawError ?? 'Cần nêu lý do.',
+        vietnameseErrorMessage(
+          rawMessage ?? rawError ?? 'Vui lòng nêu lý do ghi vắng cho sinh viên đã quẹt cổng.',
+          statusCode: res.statusCode,
+        ),
         students: (raw is List)
             ? raw
                   .whereType<Map<String, dynamic>>()
@@ -147,7 +151,7 @@ class EmsApiService {
     }
 
     throw EmsException(
-      rawMessage ?? rawError ?? 'Không kết nối được máy chủ thông tin.',
+      vietnameseErrorMessage(rawMessage ?? rawError, statusCode: res.statusCode),
       code: rawError,
       statusCode: res.statusCode,
     );

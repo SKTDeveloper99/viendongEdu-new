@@ -1,3 +1,4 @@
+import '../../utils/user_error_text.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../core/default_semester.dart';
@@ -76,7 +77,7 @@ class ClassesViewModel extends ChangeNotifier {
     } catch (e) {
       if (_disposed) return;
       _loading = false;
-      _error = e.toString();
+      _error = userErrorText(e);
       _flagAuth(e);
       notifyListeners();
     }

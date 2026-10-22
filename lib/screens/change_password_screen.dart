@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_identity.dart';
 import '../services/app_session.dart';
@@ -78,7 +79,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       }
     } on EmsException catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _error = userErrorText(e));
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = 'Không kết nối được máy chủ. Vui lòng thử lại.');
@@ -201,7 +202,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                     return 'Vui lòng xác nhận mật khẩu mới.';
                                   }
                                   if (v != _newCtrl.text) {
-                                    return 'Vui lòng nhập lại mật khẩu xác nhận cho khớp';
+                                    return 'Vui lòng nhập lại mật khẩu xác nhận cho khớp.';
                                   }
                                   return null;
                                 },

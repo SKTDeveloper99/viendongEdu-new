@@ -1,5 +1,5 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
-
 import '../services/crm_questions_api.dart';
 import '../services/crm_session_guard.dart';
 import '../services/ems_api_service.dart';
@@ -423,7 +423,7 @@ class _NewQuestionScreenState extends State<_NewQuestionScreen> {
       if (await handleCrmAuthError(context, e)) return;
       setState(
         () => _error = e is EmsException && e.statusCode != null
-            ? e.message
+            ? userErrorText(e)
             : 'Chưa xác nhận đã gửi. Kiểm tra danh sách trước khi thử lại; bản nháp vẫn còn.',
       );
     } finally {

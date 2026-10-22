@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 import '../services/crm_teacher_api.dart';
 import '../services/crm_session_guard.dart';
@@ -97,7 +98,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = userErrorText(e);
       });
     }
   }

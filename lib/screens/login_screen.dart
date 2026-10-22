@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kDebugMode, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -98,9 +99,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final route = identity.isTeacher ? '/gv_home' : '/home';
       Navigator.pushReplacementNamed(context, route);
     } on EmsException catch (e) {
-      _showError(e.message);
+      _showError(userErrorText(e));
     } catch (e) {
-      _showError('Đã có lỗi xảy ra. Thử lại sau.');
+      _showError('Chưa đăng nhập được. Vui lòng thử lại sau giây lát.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -238,6 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelStyle: TextStyle(color: context.vd.accent),
                     prefixIcon: Icon(Icons.lock, color: context.vd.accent),
                     suffixIcon: IconButton(
+                      tooltip: _obscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
                       icon: Icon(
                         _obscure ? Icons.visibility_off : Icons.visibility,
                         color: context.vd.accent,

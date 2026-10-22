@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_identity.dart';
 import '../services/app_session.dart';
@@ -78,7 +79,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() { _loading = false; _error = userErrorText(e); });
     }
   }
 
@@ -124,7 +125,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       setState(() => _saving = false);
       // Hiện nguyên văn thông điệp lỗi validate/máy chủ.
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString()),
+        content: Text(userErrorText(e)),
         backgroundColor: context.vd.danger,
         behavior: SnackBarBehavior.floating,
       ));

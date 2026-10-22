@@ -1,9 +1,9 @@
+import '../utils/user_error_text.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_registration_models.dart';
 import '../services/crm_registration_api.dart';
 import '../services/crm_session_guard.dart';
 import '../theme/vd_tokens.dart';
-
 String _fmtDate(DateTime? d) => d == null
     ? '–'
     : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
@@ -62,7 +62,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loadingPeriods = false; _error = e.toString(); });
+      setState(() { _loadingPeriods = false; _error = userErrorText(e); });
     }
   }
 
@@ -104,7 +104,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loadingData = false; _error = e.toString(); });
+      setState(() { _loadingData = false; _error = userErrorText(e); });
     }
   }
 
@@ -169,7 +169,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       // Hiện nguyên văn lỗi máy chủ (đợt đóng / lớp đầy / đã đăng ký).
-      _showSnack(e.toString(), isError: true);
+      _showSnack(userErrorText(e), isError: true);
     } finally {
       if (mounted) setState(() => _processing.remove(offering.offeringId));
     }

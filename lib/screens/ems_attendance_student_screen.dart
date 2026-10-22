@@ -1,3 +1,4 @@
+import '../utils/user_error_text.dart';
 // lib/screens/ems_attendance_student_screen.dart
 //
 // Điểm danh EMS của chính học viên — nguồn dữ liệu điểm danh chính thức.
@@ -54,7 +55,7 @@ class _EmsAttendanceStudentScreenState
       if (!background) {
         setState(() {
           _marks = const [];
-          _error = 'Không có kết nối. Kiểm tra mạng và thử lại. ${e.message}';
+          _error = userErrorText(e);
           _loading = false;
         });
       }

@@ -1,9 +1,9 @@
+import '../utils/user_error_text.dart';
 import '../components/skeleton.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_student_exams.dart';
 import '../services/crm_student_api.dart';
 import '../theme/vd_tokens.dart';
-
 // ── Model ────────────────────────────────────────────────
 //
 // Wraps CrmStudentExam (GET /api/student/me/exams — see
@@ -95,7 +95,7 @@ class _ExamScreenState extends State<ExamScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() { _loading = false; _error = userErrorText(e); });
     }
   }
 

@@ -66,7 +66,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _error = 'Không thể tải thông báo'; _loading = false; });
+      setState(() { _error = 'Không thể tải thông báo. Vui lòng kiểm tra mạng và thử lại.'; _loading = false; });
     }
   }
 

@@ -1,3 +1,4 @@
+import '../../utils/user_error_text.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../data/class_manager_repository.dart';
@@ -56,7 +57,7 @@ class SessionDetailViewModel extends ChangeNotifier {
     } catch (e) {
       if (_disposed) return;
       _loading = false;
-      _error = e.toString();
+      _error = userErrorText(e);
       notifyListeners();
     }
   }
