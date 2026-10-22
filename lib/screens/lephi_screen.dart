@@ -67,188 +67,224 @@ class _LePhiScreenState extends State<LePhiScreen> {
     final totals = _data?.totals;
     return Scaffold(
       backgroundColor: context.vd.bg,
-      body: SafeArea(top: false, child: Column(
-        children: [
-          // ── Header ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [context.vd.primary, context.vd.accent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            // ── Header ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [context.vd.primary, context.vd.accent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
               ),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(24)),
-            ),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Icon(Icons.arrow_back_ios,
-                      color: context.vd.onPrimary, size: 20),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Lệ phí',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: context.vd.onPrimary,
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Quay lại',
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios,
+                      color: context.vd.onPrimary,
+                      size: 20,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Lệ phí',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: context.vd.onPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // ── Content ──
-          Expanded(
-            child: _loading
-                ? Center(
-                    child: CircularProgressIndicator(color: context.vd.primary))
-                : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline,
-                                size: 48, color: context.vd.inkFaint),
-                            const SizedBox(height: 12),
-                            Text(_error!,
-                                style: TextStyle(color: context.vd.inkFaint),
-                                textAlign: TextAlign.center),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _fetch,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: context.vd.primary),
-                              child: Text('Thử lại',
-                                  style: TextStyle(color: context.vd.onPrimary)),
+            // ── Content ──
+            Expanded(
+              child: _loading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: context.vd.primary,
+                      ),
+                    )
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: context.vd.inkFaint,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            style: TextStyle(color: context.vd.inkFaint),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _fetch,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.vd.primary,
                             ),
-                          ],
-                        ),
-                      )
-                    : items.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.receipt_long_outlined,
-                                    size: 64, color: context.vd.inkFaint),
-                                SizedBox(height: 12),
-                                Text('Không có lệ phí',
-                                    style: TextStyle(color: context.vd.inkFaint)),
+                            child: Text(
+                              'Thử lại',
+                              style: TextStyle(color: context.vd.onPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : items.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.receipt_long_outlined,
+                            size: 64,
+                            color: context.vd.inkFaint,
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'Không có lệ phí',
+                            style: TextStyle(color: context.vd.inkFaint),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetch,
+                      color: context.vd.primary,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        children: [
+                          // Tổng — LUẬT TIỀN: hiện đúng số máy chủ trả,
+                          // không cộng lệ phí + miễn giảm + hoàn phí lại
+                          // với nhau (ba khoản khác luật nhau).
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [context.vd.primary, context.vd.accent],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: context.vd.shadow,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 4),
+                                ),
                               ],
                             ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _fetch,
-                            color: context.vd.primary,
-                            child: ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding:
-                                const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                            children: [
-                              // Tổng — LUẬT TIỀN: hiện đúng số máy chủ trả,
-                              // không cộng lệ phí + miễn giảm + hoàn phí lại
-                              // với nhau (ba khoản khác luật nhau).
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                margin: const EdgeInsets.only(bottom: 16),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      context.vd.primary,
-                                      context.vd.accent
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: context.vd.shadow,
-                                        blurRadius: 8,
-                                        offset: Offset(0, 4)),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text('Lệ phí khác',
-                                            style: TextStyle(
-                                                color: context.vd.onPrimary.withValues(alpha: 0.7),
-                                                fontSize: 13)),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _fmtAmount(totals?.lePhiKhac),
-                                          style: TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold,
-                                            color: context.vd.onPrimary,
-                                          ),
-                                        ),
-                                        if ((totals?.mienGiamKhenThuong ?? 0) != 0) ...[
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            'Miễn giảm/khen thưởng: ${_fmtAmount(totals?.mienGiamKhenThuong)}',
-                                            style: TextStyle(
-                                                color: context.vd.onPrimary.withValues(alpha: 0.7),
-                                                fontSize: 12),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: context.vd.surface
-                                            .withValues(alpha: 0.2),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(Icons.receipt_long,
-                                          color: context.vd.onPrimary, size: 24),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              if (totals?.paidSideContaminated == true)
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: context.vd.accentSoft,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Icon(Icons.warning_amber_rounded,
-                                          color: context.vd.primary, size: 18),
-                                      SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Dữ liệu có phiếu phát sinh bất thường — số liệu cần rà soát.',
-                                          style: TextStyle(fontSize: 12),
+                                      Text(
+                                        'Lệ phí khác',
+                                        style: TextStyle(
+                                          color: context.vd.onPrimary,
+                                          fontSize: 13,
                                         ),
                                       ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _fmtAmount(totals?.lePhiKhac),
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: context.vd.onPrimary,
+                                        ),
+                                      ),
+                                      if ((totals?.mienGiamKhenThuong ?? 0) !=
+                                          0) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'Miễn giảm/khen thưởng: ${_fmtAmount(totals?.mienGiamKhenThuong)}',
+                                          style: TextStyle(
+                                            color: context.vd.onPrimary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
-
-                              ...items.map((t) => _LePhiCard(item: t)),
-                            ],
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: context.vd.surface.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.receipt_long,
+                                    color: context.vd.onPrimary,
+                                    size: 24,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-          ),
-        ],
-      )),
+
+                          if (totals?.paidSideContaminated == true)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: context.vd.accentSoft,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: context.vd.primary,
+                                    size: 18,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Dữ liệu có phiếu phát sinh bất thường — số liệu cần rà soát.',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                          ...items.map((t) => _LePhiCard(item: t)),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -268,7 +304,10 @@ class _LePhiCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: Row(
@@ -280,8 +319,11 @@ class _LePhiCard extends StatelessWidget {
               color: context.vd.accentSoft,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.receipt_long,
-                color: context.vd.primary, size: 20),
+            child: Icon(
+              Icons.receipt_long,
+              color: context.vd.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -291,7 +333,9 @@ class _LePhiCard extends StatelessWidget {
                 Text(
                   item.loaiPhieuThu ?? '–',
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(

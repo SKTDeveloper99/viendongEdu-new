@@ -50,7 +50,11 @@ class TodaySchedule extends StatelessWidget {
           ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-          child: Row(
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,11 +87,12 @@ class TodaySchedule extends StatelessWidget {
                   ),
                 ],
               ),
-              const Spacer(),
-              const SizedBox(width: 8),
-              GestureDetector(
+              InkWell(
                 onTap: () => onToggleExpanded(),
                 child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  alignment: Alignment.center,
+                  width: 120 * MediaQuery.textScalerOf(context).scale(1),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 4,

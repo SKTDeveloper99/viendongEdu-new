@@ -7,7 +7,9 @@ import 'change_password_screen.dart';
 import '../theme/vd_tokens.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({super.key, this.checkUpdate = AppUpdateGate.check});
+
+  final Future<bool> Function(BuildContext) checkUpdate;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -25,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // Khôi phục dữ liệu cục bộ song song với yêu cầu mạng để khỏi cộng thêm
     // thời gian chờ vào màn mở đầu trên kết nối yếu.
     final restoreFuture = AppSession.instance.tryRestore();
-    if (!await AppUpdateGate.check(context)) return;
+    if (!await widget.checkUpdate(context)) return;
     if (!mounted) return;
     final restored = await restoreFuture;
     if (!mounted) return;

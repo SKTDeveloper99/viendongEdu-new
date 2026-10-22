@@ -59,7 +59,7 @@ class SessionCard extends StatelessWidget {
     final b = session;
     final marked = summary.marked;
     final planned = summary.planned;
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Opacity(
         opacity: planned ? 0.6 : 1,

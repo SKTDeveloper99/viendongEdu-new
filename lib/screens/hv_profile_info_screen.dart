@@ -26,14 +26,23 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
 
   // GET /api/student/me — thay `user/info` (`ApiService.getUserInfo`, IMS).
   Future<void> _fetch() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final data = await CrmStudentApi.me();
       if (!mounted) return;
-      setState(() { _profile = data; _loading = false; });
+      setState(() {
+        _profile = data;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -70,7 +79,9 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
     // old IMS hierarchy had) — same gap, documented rather than guessed.
     const chuyenNganhTen = '—';
     final nganhTen = p?.nganhName?.isNotEmpty == true ? p!.nganhName! : '–';
-    final heDaoTaoTen = p?.programName?.isNotEmpty == true ? p!.programName! : '–';
+    final heDaoTaoTen = p?.programName?.isNotEmpty == true
+        ? p!.programName!
+        : '–';
 
     return Scaffold(
       backgroundColor: context.vd.bg,
@@ -88,14 +99,20 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
               ),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(Icons.arrow_back_ios,
-                        color: context.vd.onPrimary, size: 20),
+                  IconButton(
+                    tooltip: 'Quay lại',
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios,
+                      color: context.vd.onPrimary,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -110,7 +127,10 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                   ),
                   IconButton(
                     onPressed: _openEdit,
-                    icon: Icon(Icons.edit_outlined, color: context.vd.onPrimary),
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      color: context.vd.onPrimary,
+                    ),
                     tooltip: 'Sửa hồ sơ',
                   ),
                 ],
@@ -121,58 +141,122 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
             Expanded(
               child: _loading
                   ? Center(
-                      child: CircularProgressIndicator(color: context.vd.primary))
+                      child: CircularProgressIndicator(
+                        color: context.vd.primary,
+                      ),
+                    )
                   : _error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: context.vd.inkFaint,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            style: TextStyle(color: context.vd.inkFaint),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _fetch,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.vd.primary,
+                            ),
+                            child: Text(
+                              'Thử lại',
+                              style: TextStyle(color: context.vd.onPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetch,
+                      color: context.vd.primary,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                        children: [
+                          _Section(
+                            title: 'Thông tin cơ bản',
                             children: [
-                              Icon(Icons.error_outline,
-                                  size: 48, color: context.vd.inkFaint),
-                              const SizedBox(height: 12),
-                              Text(_error!,
-                                  style: TextStyle(color: context.vd.inkFaint),
-                                  textAlign: TextAlign.center),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _fetch,
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: context.vd.primary),
-                                child: Text('Thử lại',
-                                    style: TextStyle(color: context.vd.onPrimary)),
+                              _InfoRow(
+                                icon: Icons.person_outline,
+                                label: 'Họ tên',
+                                value: fullName,
+                              ),
+                              _InfoRow(
+                                icon: Icons.badge_outlined,
+                                label: 'MSSV',
+                                value: mssv,
+                              ),
+                              _InfoRow(
+                                icon: Icons.cake_outlined,
+                                label: 'Ngày sinh',
+                                value: ngaysinh,
+                              ),
+                              _InfoRow(
+                                icon: Icons.credit_card_outlined,
+                                label: 'CCCD',
+                                value: cmnd,
                               ),
                             ],
                           ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _fetch,
-                          color: context.vd.primary,
-                          child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                          children: [
-                            _Section(title: 'Thông tin cơ bản', children: [
-                              _InfoRow(icon: Icons.person_outline, label: 'Họ tên', value: fullName),
-                              _InfoRow(icon: Icons.badge_outlined, label: 'MSSV', value: mssv),
-                              _InfoRow(icon: Icons.cake_outlined, label: 'Ngày sinh', value: ngaysinh),
-                              _InfoRow(icon: Icons.credit_card_outlined, label: 'CCCD', value: cmnd),
-                            ]),
-                            const SizedBox(height: 12),
-                            _Section(title: 'Liên hệ', children: [
-                              _InfoRow(icon: Icons.phone_outlined, label: 'Số điện thoại', value: sdt),
-                              _InfoRow(icon: Icons.email_outlined, label: 'Email', value: email),
-                            ]),
-                            const SizedBox(height: 12),
-                            _Section(title: 'Học vụ', children: [
-                              _InfoRow(icon: Icons.group_outlined, label: 'Lớp', value: malop),
-                              _InfoRow(icon: Icons.school_outlined, label: 'Khóa học', value: khoahoc),
-                              _InfoRow(icon: Icons.menu_book_outlined, label: 'Chuyên ngành', value: chuyenNganhTen),
-                              _InfoRow(icon: Icons.account_balance_outlined, label: 'Ngành', value: nganhTen),
-                              _InfoRow(icon: Icons.workspace_premium_outlined, label: 'Hệ đào tạo', value: heDaoTaoTen),
-                            ]),
-                          ],
-                        ),
-                        ),
+                          const SizedBox(height: 12),
+                          _Section(
+                            title: 'Liên hệ',
+                            children: [
+                              _InfoRow(
+                                icon: Icons.phone_outlined,
+                                label: 'Số điện thoại',
+                                value: sdt,
+                              ),
+                              _InfoRow(
+                                icon: Icons.email_outlined,
+                                label: 'Email',
+                                value: email,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _Section(
+                            title: 'Học vụ',
+                            children: [
+                              _InfoRow(
+                                icon: Icons.group_outlined,
+                                label: 'Lớp',
+                                value: malop,
+                              ),
+                              _InfoRow(
+                                icon: Icons.school_outlined,
+                                label: 'Khóa học',
+                                value: khoahoc,
+                              ),
+                              _InfoRow(
+                                icon: Icons.menu_book_outlined,
+                                label: 'Chuyên ngành',
+                                value: chuyenNganhTen,
+                              ),
+                              _InfoRow(
+                                icon: Icons.account_balance_outlined,
+                                label: 'Ngành',
+                                value: nganhTen,
+                              ),
+                              _InfoRow(
+                                icon: Icons.workspace_premium_outlined,
+                                label: 'Hệ đào tạo',
+                                value: heDaoTaoTen,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
             ),
           ],
         ),
@@ -193,11 +277,14 @@ class _Section extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(title,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: context.vd.primary)),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.vd.primary,
+            ),
+          ),
         ),
         Container(
           decoration: BoxDecoration(
@@ -205,7 +292,10 @@ class _Section extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                  color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+                color: context.vd.shadow,
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
             ],
           ),
           child: Column(
@@ -227,7 +317,11 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -239,14 +333,17 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 110,
-            child: Text(label,
-                style: TextStyle(fontSize: 13, color: context.vd.inkFaint)),
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: context.vd.inkFaint),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.end),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.end,
+            ),
           ),
         ],
       ),

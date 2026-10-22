@@ -42,11 +42,10 @@ class MapPin extends StatelessWidget {
     return Semantics(
       button: true,
       label: '$label: ${quest.title}${claimed ? ', đã xong' : ''}',
-      child: GestureDetector(
+      child: InkWell(
         onTap: onTap,
-        behavior: HitTestBehavior.opaque,
         child: SizedBox(
-          width: 44,
+          width: 48,
           height: 58,
           child: Stack(
             alignment: Alignment.topCenter,

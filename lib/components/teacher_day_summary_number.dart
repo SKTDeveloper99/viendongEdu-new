@@ -27,10 +27,7 @@ class TeacherDaySummaryNumber extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: context.vd.onPrimary.withValues(alpha: 0.7),
-            fontSize: 10,
-          ),
+          style: TextStyle(color: context.vd.onPrimary, fontSize: 10),
         ),
       ],
     ),

@@ -37,23 +37,28 @@ class StudentRow extends StatelessWidget {
         onTap: onOpenDetail,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _identity(context, s)),
+              _identity(context, s),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
               _Pill(
                 label: 'Có',
                 selected: mark == 'present',
                 color: context.vd.success,
                 onTap: () => _select('present'),
               ),
-              const SizedBox(width: 6),
               _Pill(
                 label: 'Vắng',
                 selected: mark == 'absent',
                 color: context.vd.danger,
                 onTap: () => _select('absent'),
               ),
-              const SizedBox(width: 6),
               // Ba lựa chọn (chủ trường 2026-10-14, A-25): "Khác" gom đi trễ,
               // có phép, ốm… và bắt buộc lý do khi lưu. Dấu "Đi trễ" cũ vẫn
               // hiện là Khác.
@@ -73,6 +78,8 @@ class StudentRow extends StatelessWidget {
                   ),
                 ],
               ),
+                ],
+              ),
             ],
           ),
         ),
@@ -88,7 +95,9 @@ class StudentRow extends StatelessWidget {
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
       const SizedBox(height: 2),
-      Row(
+      Wrap(
+        spacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
             s.mssv,
@@ -142,10 +151,14 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         duration: VdMotion.of(context).quick,
         curve: VdMotion.curve,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -165,7 +178,7 @@ class _Pill extends StatelessWidget {
           ),
           child: Text(label),
         ),
-      ),
+      )),
     );
   }
 }

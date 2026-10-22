@@ -88,7 +88,10 @@ class HomeHeaderBar extends StatelessWidget {
             Wrap(
               spacing: 6,
               runSpacing: 6,
-              children: [for (final c in chips) _chip(t, c)],
+              children: [
+                for (final c in chips)
+                  if (c != '–' && c.isNotEmpty) _chip(t, c),
+              ],
             ),
           ],
         ),

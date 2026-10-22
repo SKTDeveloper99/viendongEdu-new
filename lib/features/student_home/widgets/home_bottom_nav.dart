@@ -27,7 +27,7 @@ class HomeBottomNav extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             Container(
-              height: 64,
+              constraints: const BoxConstraints(minHeight: 64),
               decoration: BoxDecoration(
                 color: context.vd.surface,
                 border: Border(top: BorderSide(color: context.vd.hairline)),
@@ -35,18 +35,22 @@ class HomeBottomNav extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  VdNavItem(
-                    icon: Icons.dashboard_rounded,
-                    label: 'Trang chủ',
-                    selected: currentIndex == 0,
-                    onTap: () => onSelect(0),
+                  Expanded(
+                    child: VdNavItem(
+                      icon: Icons.dashboard_rounded,
+                      label: 'Trang chủ',
+                      selected: currentIndex == 0,
+                      onTap: () => onSelect(0),
+                    ),
                   ),
                   const SizedBox(width: 72),
-                  VdNavItem(
-                    icon: Icons.person_rounded,
-                    label: 'Cá nhân',
-                    selected: currentIndex == 2,
-                    onTap: () => onSelect(2),
+                  Expanded(
+                    child: VdNavItem(
+                      icon: Icons.person_rounded,
+                      label: 'Cá nhân',
+                      selected: currentIndex == 2,
+                      onTap: () => onSelect(2),
+                    ),
                   ),
                 ],
               ),
@@ -56,40 +60,48 @@ class HomeBottomNav extends StatelessWidget {
               left: 0,
               right: 0,
               child: Center(
-                child: GestureDetector(
-                  onTap: () => onSelect(1),
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: currentIndex == 1
-                          ? LinearGradient(
-                              colors: [context.vd.surface, context.vd.surface],
-                            )
-                          : LinearGradient(
-                              colors: [
-                                context.vd.headerTop,
-                                context.vd.headerBottom,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: context.vd.primary, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.vd.shadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.qr_code_rounded,
-                      size: 34,
-                      color: currentIndex == 1
-                          ? context.vd.primary
-                          : context.vd.onHeader,
+                child: Semantics(
+                  label: 'Mã QR cá nhân',
+                  button: true,
+                  selected: currentIndex == 1,
+                  child: InkWell(
+                    onTap: () => onSelect(1),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        gradient: currentIndex == 1
+                            ? LinearGradient(
+                                colors: [
+                                  context.vd.surface,
+                                  context.vd.surface,
+                                ],
+                              )
+                            : LinearGradient(
+                                colors: [
+                                  context.vd.headerTop,
+                                  context.vd.headerBottom,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: context.vd.primary, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.vd.shadow,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.qr_code_rounded,
+                        size: 34,
+                        color: currentIndex == 1
+                            ? context.vd.primary
+                            : context.vd.onHeader,
+                      ),
                     ),
                   ),
                 ),

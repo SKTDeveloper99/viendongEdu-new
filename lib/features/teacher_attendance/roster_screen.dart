@@ -106,12 +106,7 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
             IconButton(
               tooltip: _vm.sortAz ? 'Thứ tự danh sách lớp' : 'Xếp tên A–Z',
               onPressed: _vm.toggleSort,
-              icon: Icon(
-                Icons.sort_by_alpha,
-                color: _vm.sortAz
-                    ? context.vd.onPrimary
-                    : context.vd.onPrimary.withValues(alpha: 0.7),
-              ),
+              icon: Icon(Icons.sort_by_alpha, color: context.vd.onPrimary),
             ),
           ],
         ),

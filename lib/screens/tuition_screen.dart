@@ -47,7 +47,10 @@ class _TuitionScreenState extends State<TuitionScreen> {
   }
 
   Future<void> _fetch() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final results = await Future.wait([
         CrmMoneyApi.getTuition(),
@@ -62,7 +65,10 @@ class _TuitionScreenState extends State<TuitionScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -73,111 +79,137 @@ class _TuitionScreenState extends State<TuitionScreen> {
 
     return Scaffold(
       backgroundColor: context.vd.bg,
-      body: SafeArea(top: false, child: Column(
-        children: [
-          // ── Header ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [context.vd.primary, context.vd.accent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(24)),
-            ),
-            child: Row(
-              children: [
-                _BackButton(),
-                SizedBox(width: 8),
-                Text(
-                  'Học phí',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: context.vd.onPrimary,
-                  ),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            // ── Header ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [context.vd.primary, context.vd.accent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: _loading
-                ? skeletonList(accentColor: context.vd.primary)
-                : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline,
-                                size: 48, color: context.vd.inkFaint),
-                            const SizedBox(height: 12),
-                            Text(_error!,
-                                style: TextStyle(color: context.vd.inkFaint),
-                                textAlign: TextAlign.center),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _fetch,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: context.vd.primary),
-                              child: Text('Thử lại',
-                                  style: TextStyle(color: context.vd.onPrimary)),
-                            ),
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        color: context.vd.primary,
-                        onRefresh: _fetch,
-                        child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
+              ),
+              child: Row(
                 children: [
-                  TuitionNotices(response: _tuition), // M-53 + bản lưu
-                  // ── Summary (từ summary đã áp luật, không tự tính) ──
-                  _SummarySection(summary: summary),
-                  const SizedBox(height: 12),
-                  // M-52: bảng kê đã là sổ IMS — không hiện số thứ hai.
-                  if (_congNo != null && summary?.source != 'bang_ke') _CongNoCard(congNo: _congNo!),
-                  const SizedBox(height: 20),
-
-                  // ── Section label ──
-                  const Text(
-                    'Lịch sử giao dịch',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // ── Transaction list ──
-                  if (payments.isEmpty)
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 40),
-                        child: Column(
-                          children: [
-                            Icon(Icons.receipt_long_outlined,
-                                size: 64, color: context.vd.inkFaint),
-                            SizedBox(height: 12),
-                            Text('Không có giao dịch',
-                                style: TextStyle(color: context.vd.inkFaint)),
-                          ],
-                        ),
+                  _BackButton(),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Học phí',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: context.vd.onPrimary,
                       ),
-                    )
-                  else
-                    ...payments.map((t) => _TransactionCard(item: t)),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
+
+            Expanded(
+              child: _loading
+                  ? skeletonList(accentColor: context.vd.primary)
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: context.vd.inkFaint,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            style: TextStyle(color: context.vd.inkFaint),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _fetch,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.vd.primary,
+                            ),
+                            child: Text(
+                              'Thử lại',
+                              style: TextStyle(color: context.vd.onPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      color: context.vd.primary,
+                      onRefresh: _fetch,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TuitionNotices(
+                              response: _tuition,
+                            ), // M-53 + bản lưu
+                            // ── Summary (từ summary đã áp luật, không tự tính) ──
+                            _SummarySection(summary: summary),
+                            const SizedBox(height: 12),
+                            // M-52: bảng kê đã là sổ IMS — không hiện số thứ hai.
+                            if (_congNo != null && summary?.source != 'bang_ke')
+                              _CongNoCard(congNo: _congNo!),
+                            const SizedBox(height: 20),
+
+                            // ── Section label ──
+                            const Text(
+                              'Lịch sử giao dịch',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // ── Transaction list ──
+                            if (payments.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.only(top: 40),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.receipt_long_outlined,
+                                        size: 64,
+                                        color: context.vd.inkFaint,
+                                      ),
+                                      SizedBox(height: 12),
+                                      Text(
+                                        'Không có giao dịch',
+                                        style: TextStyle(
+                                          color: context.vd.inkFaint,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              ...payments.map((t) => _TransactionCard(item: t)),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+          ],
         ),
-        ],
-      )),
+      ),
     );
   }
 }
@@ -185,10 +217,11 @@ class _TuitionScreenState extends State<TuitionScreen> {
 class _BackButton extends StatelessWidget {
   const _BackButton();
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: Icon(Icons.arrow_back_ios, color: context.vd.onPrimary, size: 20),
-      );
+  Widget build(BuildContext context) => IconButton(
+    tooltip: 'Quay lại',
+    onPressed: () => Navigator.pop(context),
+    icon: Icon(Icons.arrow_back_ios, color: context.vd.onPrimary, size: 20),
+  );
 }
 
 // ── Summary Section ─────────────────────────────────────
@@ -216,9 +249,10 @@ class _SummarySection extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                  color: context.vd.shadow,
-                  blurRadius: 8,
-                  offset: Offset(0, 4)),
+                color: context.vd.shadow,
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
@@ -226,7 +260,7 @@ class _SummarySection extends StatelessWidget {
             children: [
               Text(
                 'Tổng học phí phải đóng',
-                style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 13),
+                style: TextStyle(color: context.vd.onPrimary, fontSize: 13),
               ),
               const SizedBox(height: 8),
               Text(
@@ -240,15 +274,16 @@ class _SummarySection extends StatelessWidget {
               if (unknown) ...[
                 const SizedBox(height: 6),
                 Text(
-                  s?.moneyUnknownReason ?? 'Chưa có luật tính học phí cho lớp này.',
-                  style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 12),
+                  s?.moneyUnknownReason ??
+                      'Chưa có luật tính học phí cho lớp này.',
+                  style: TextStyle(color: context.vd.onPrimary, fontSize: 12),
                 ),
               ],
               const SizedBox(height: 4),
               if (s?.paymentStatus != null)
                 Text(
                   s!.paymentStatus!,
-                  style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 12),
+                  style: TextStyle(color: context.vd.onPrimary, fontSize: 12),
                 ),
             ],
           ),
@@ -257,27 +292,28 @@ class _SummarySection extends StatelessWidget {
         const SizedBox(height: 12),
 
         // ── 2 stat cards — đọc thẳng từ summary, không tự cộng ──
-        if (!unknown) Row(
-          children: [
-            Expanded(
-              child: _MiniCard(
-                icon: Icons.check_circle_outline,
-                label: 'Đã đóng',
-                text: _fmtAmount(s.paid),
-                color: context.vd.success,
+        if (!unknown)
+          Row(
+            children: [
+              Expanded(
+                child: _MiniCard(
+                  icon: Icons.check_circle_outline,
+                  label: 'Đã đóng',
+                  text: _fmtAmount(s.paid),
+                  color: context.vd.success,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _MiniCard(
-                icon: Icons.account_balance_wallet_outlined,
-                label: 'Còn lại',
-                text: _fmtAmount(s.balance),
-                color: context.vd.danger,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _MiniCard(
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'Còn lại',
+                  text: _fmtAmount(s.balance),
+                  color: context.vd.danger,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
         if (s != null && (s.otherReceipts.total ?? 0) != 0) ...[
           const SizedBox(height: 12),
@@ -288,24 +324,40 @@ class _SummarySection extends StatelessWidget {
               color: context.vd.surface,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+                BoxShadow(
+                  color: context.vd.shadow,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Khoản thu khác (KHÔNG phải học phí)',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.vd.inkFaint)),
+                Text(
+                  'Khoản thu khác (KHÔNG phải học phí)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: context.vd.inkFaint,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 if ((s.otherReceipts.mienGiamKhenThuong ?? 0) != 0)
-                  Text('Miễn giảm/khen thưởng: ${_fmtAmount(s.otherReceipts.mienGiamKhenThuong)}',
-                      style: const TextStyle(fontSize: 12)),
+                  Text(
+                    'Miễn giảm/khen thưởng: ${_fmtAmount(s.otherReceipts.mienGiamKhenThuong)}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 if ((s.otherReceipts.lePhiKhac ?? 0) != 0)
-                  Text('Lệ phí khác: ${_fmtAmount(s.otherReceipts.lePhiKhac)}',
-                      style: const TextStyle(fontSize: 12)),
+                  Text(
+                    'Lệ phí khác: ${_fmtAmount(s.otherReceipts.lePhiKhac)}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 if ((s.otherReceipts.hoanPhi ?? 0) != 0)
-                  Text('Hoàn phí: ${_fmtAmount(s.otherReceipts.hoanPhi)}',
-                      style: const TextStyle(fontSize: 12)),
+                  Text(
+                    'Hoàn phí: ${_fmtAmount(s.otherReceipts.hoanPhi)}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
               ],
             ),
           ),
@@ -337,7 +389,10 @@ class _MiniCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: Row(
@@ -355,9 +410,10 @@ class _MiniCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 12, color: context.vd.inkFaint)),
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   text,
@@ -391,22 +447,43 @@ class _CongNoCard extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Sổ công nợ (IMS)',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.vd.inkFaint)),
+          Text(
+            'Sổ công nợ (IMS)',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: context.vd.inkFaint,
+            ),
+          ),
           const SizedBox(height: 6),
           if (!congNo.computable || congNo.note != null)
-            Text(congNo.note ?? 'Chưa có nghĩa vụ học phí được ghi nhận.',
-                style: TextStyle(fontSize: 12, color: context.vd.inkFaint))
+            Text(
+              congNo.note ?? 'Chưa có nghĩa vụ học phí được ghi nhận.',
+              style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+            )
           else ...[
-            Text('Phải nộp: ${_fmtAmount(congNo.phaiNop)}', style: const TextStyle(fontSize: 12)),
-            Text('Đã nộp: ${_fmtAmount(congNo.daNop)}', style: const TextStyle(fontSize: 12)),
-            Text('Công nợ: ${_fmtAmount(congNo.congNo)}', style: const TextStyle(fontSize: 12)),
+            Text(
+              'Phải nộp: ${_fmtAmount(congNo.phaiNop)}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            Text(
+              'Đã nộp: ${_fmtAmount(congNo.daNop)}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            Text(
+              'Công nợ: ${_fmtAmount(congNo.congNo)}',
+              style: const TextStyle(fontSize: 12),
+            ),
           ],
         ],
       ),
@@ -425,7 +502,9 @@ class _TransactionCard extends StatelessWidget {
     final isPaid = (t.soTien ?? 0) > 0;
     final color = isPaid ? context.vd.success : context.vd.danger;
     final bgColor = isPaid ? context.vd.successSoft : context.vd.dangerSoft;
-    final icon = isPaid ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
+    final icon = isPaid
+        ? Icons.arrow_upward_rounded
+        : Icons.arrow_downward_rounded;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -433,7 +512,11 @@ class _TransactionCard extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: Padding(
@@ -455,24 +538,38 @@ class _TransactionCard extends StatelessWidget {
                     (t.loaiPhieuThu ?? '').trim().isEmpty
                         ? '–'
                         : t.loaiPhieuThu!.trim(),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 3),
-                  Text(_fmtDate(t.ngayNop),
-                      style: TextStyle(fontSize: 12, color: context.vd.inkFaint)),
+                  Text(
+                    _fmtDate(t.ngayNop),
+                    style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+                  ),
                   if ((t.ghiChu ?? '').isNotEmpty) ...[
                     const SizedBox(height: 2),
-                    Text(t.ghiChu!,
-                        style: TextStyle(fontSize: 11, color: context.vd.inkFaint),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      t.ghiChu!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.vd.inkFaint,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ],
               ),
             ),
             Text(
               _fmtAmount(t.soTien),
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ],
         ),

@@ -122,7 +122,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
     final baonghiyn = d['baonghiyn'];
     final daBaoNghi = baonghiyn != null && baonghiyn != false && baonghiyn != 0;
 
-    return GestureDetector(
+    return InkWell(
       onTap: () => setState(() => _expanded = !_expanded),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

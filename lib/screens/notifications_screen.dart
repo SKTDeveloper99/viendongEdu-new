@@ -27,12 +27,14 @@ class _Noti {
   bool get isRead => status == 'read';
 
   factory _Noti.fromJson(Map<String, dynamic> j) => _Noti(
-        id: j['id'] as String? ?? '',
-        title: j['title'] as String? ?? '',
-        body: j['body'] as String? ?? '',
-        status: j['status'] as String? ?? 'unread',
-        sentAt: j['sentAt'] != null ? DateTime.tryParse(j['sentAt'] as String) : null,
-      );
+    id: j['id'] as String? ?? '',
+    title: j['title'] as String? ?? '',
+    body: j['body'] as String? ?? '',
+    status: j['status'] as String? ?? 'unread',
+    sentAt: j['sentAt'] != null
+        ? DateTime.tryParse(j['sentAt'] as String)
+        : null,
+  );
 }
 
 class NotificationsScreen extends StatefulWidget {
@@ -54,7 +56,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _fetch() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final raw = await TeacherNotificationsApi.teacherNotifications();
       if (!mounted) return;
@@ -62,11 +67,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .whereType<Map<String, dynamic>>()
           .map(_Noti.fromJson)
           .toList();
-      setState(() { _items = list; _loading = false; });
+      setState(() {
+        _items = list;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _error = 'Không thể tải thông báo'; _loading = false; });
+      setState(() {
+        _error = 'Không thể tải thông báo';
+        _loading = false;
+      });
     }
   }
 
@@ -76,9 +87,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (!mounted) return;
       setState(() {
         _items = _items
-            .map((n) => n.id == notifyID
-                ? _Noti(id: n.id, title: n.title, body: n.body, status: 'read', sentAt: n.sentAt)
-                : n)
+            .map(
+              (n) => n.id == notifyID
+                  ? _Noti(
+                      id: n.id,
+                      title: n.title,
+                      body: n.body,
+                      status: 'read',
+                      sentAt: n.sentAt,
+                    )
+                  : n,
+            )
             .toList();
       });
     } catch (e) {
@@ -93,7 +112,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (!mounted) return;
       setState(() {
         _items = _items
-            .map((n) => _Noti(id: n.id, title: n.title, body: n.body, status: 'read', sentAt: n.sentAt))
+            .map(
+              (n) => _Noti(
+                id: n.id,
+                title: n.title,
+                body: n.body,
+                status: 'read',
+                sentAt: n.sentAt,
+              ),
+            )
             .toList();
       });
     } catch (e) {
@@ -136,10 +163,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             child: Row(
               children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Icon(Icons.arrow_back_ios_new,
-                      color: context.vd.onPrimary, size: 22),
+                IconButton(
+                  tooltip: 'Quay lại',
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(
+                    Icons.arrow_back_ios_new,
+                    color: context.vd.onPrimary,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -157,13 +188,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     onPressed: _markAllRead,
                     style: TextButton.styleFrom(
                       foregroundColor: context.vd.onPrimary,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      backgroundColor: context.vd.onPrimary.withValues(alpha: 0.2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      backgroundColor: context.vd.onPrimary.withValues(
+                        alpha: 0.2,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                     ),
-                    child: const Text('Đọc tất cả',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      'Đọc tất cả',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -173,60 +215,77 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Expanded(
             child: _loading
                 ? Center(
-                    child: CircularProgressIndicator(color: context.vd.primary))
+                    child: CircularProgressIndicator(color: context.vd.primary),
+                  )
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: context.vd.inkFaint, size: 48),
-                            const SizedBox(height: 12),
-                            Text(_error!,
-                                style: TextStyle(color: context.vd.inkFaint)),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: _fetch,
-                              child: Text('Thử lại',
-                                  style: TextStyle(color: context.vd.primary)),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: context.vd.inkFaint,
+                          size: 48,
                         ),
-                      )
-                    : _items.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.notifications_none,
-                                    color: context.vd.inkFaint, size: 56),
-                                SizedBox(height: 12),
-                                Text('Chưa có thông báo nào',
-                                    style: TextStyle(
-                                        color: context.vd.inkFaint, fontSize: 15)),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            color: context.vd.primary,
-                            onRefresh: _fetch,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 10, horizontal: 12),
-                              itemCount: _items.length,
-                              itemBuilder: (context, i) {
-                                final n = _items[i];
-                                return _NotiCard(
-                                  noti: n,
-                                  formatDate: _formatDate,
-                                  onTap: () {
-                                    if (!n.isRead) _markRead(n.id);
-                                    _showDetail(n);
-                                  },
-                                );
-                              },
-                            ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _error!,
+                          style: TextStyle(color: context.vd.inkFaint),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _fetch,
+                          child: Text(
+                            'Thử lại',
+                            style: TextStyle(color: context.vd.primary),
                           ),
+                        ),
+                      ],
+                    ),
+                  )
+                : _items.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.notifications_none,
+                          color: context.vd.inkFaint,
+                          size: 56,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'Chưa có thông báo nào',
+                          style: TextStyle(
+                            color: context.vd.inkFaint,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    color: context.vd.primary,
+                    onRefresh: _fetch,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 12,
+                      ),
+                      itemCount: _items.length,
+                      itemBuilder: (context, i) {
+                        final n = _items[i];
+                        return _NotiCard(
+                          noti: n,
+                          formatDate: _formatDate,
+                          onTap: () {
+                            if (!n.isRead) _markRead(n.id);
+                            _showDetail(n);
+                          },
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -237,7 +296,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       isScrollControlled: true,
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
@@ -256,17 +316,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(n.title,
-                style: const TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.bold)),
+            Text(
+              n.title,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 6),
-            Text(_formatDate(n.sentAt),
-                style:
-                    TextStyle(fontSize: 12, color: context.vd.inkFaint)),
+            Text(
+              _formatDate(n.sentAt),
+              style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+            ),
             const Divider(height: 24),
-            Text(n.body,
-                style:
-                    const TextStyle(fontSize: 15, height: 1.5)),
+            Text(n.body, style: const TextStyle(fontSize: 15, height: 1.5)),
             const SizedBox(height: 16),
           ],
         ),
@@ -288,7 +348,7 @@ class _NotiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -297,7 +357,11 @@ class _NotiCard extends StatelessWidget {
           color: noti.isRead ? context.vd.surface : context.vd.accentSoft,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(color: context.vd.shadow, blurRadius: 4, offset: Offset(0, 2)),
+            BoxShadow(
+              color: context.vd.shadow,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
           ],
           border: noti.isRead
               ? null
@@ -359,9 +423,10 @@ class _NotiCard extends StatelessWidget {
                   Text(
                     noti.body,
                     style: TextStyle(
-                        fontSize: 13,
-                        color: context.vd.inkMuted,
-                        height: 1.4),
+                      fontSize: 13,
+                      color: context.vd.inkMuted,
+                      height: 1.4,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

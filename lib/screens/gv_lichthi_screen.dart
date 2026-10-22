@@ -41,13 +41,23 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
   }
 
   Future<void> _fetchHocKy() async {
-    setState(() { _loadingHocKy = true; _error = null; });
+    setState(() {
+      _loadingHocKy = true;
+      _error = null;
+    });
     try {
       final data = await CrmTeacherApi.semesters();
-      final sems = data.map((e) => _Semester(
-          id: e.id, ma: e.ma, ten: e.ten,
-          ngayBatDau: e.ngayBatDau ?? '', ngayKetThuc: e.ngayKetThuc ?? '',
-        )).toList();
+      final sems = data
+          .map(
+            (e) => _Semester(
+              id: e.id,
+              ma: e.ma,
+              ten: e.ten,
+              ngayBatDau: e.ngayBatDau ?? '',
+              ngayKetThuc: e.ngayKetThuc ?? '',
+            ),
+          )
+          .toList();
       sems.sort((a, b) => b.id.compareTo(a.id));
       if (!mounted) return;
       setState(() {
@@ -55,19 +65,29 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
         _loadingHocKy = false;
       });
       final def = await CrmTeacherApi.defaultSemester(
-          sems, (s) => s.ma, (s) => s.ngayBatDau);
+        sems,
+        (s) => s.ma,
+        (s) => s.ngayBatDau,
+      );
       if (!mounted) return;
       if (def != null) await _fetchExams(def);
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingHocKy = false; _error = e.toString(); });
+      setState(() {
+        _loadingHocKy = false;
+        _error = e.toString();
+      });
     }
   }
 
   Future<void> _fetchExams(_Semester sem) async {
-    setState(() { _selected = sem; _loadingExams = true; _error = null; });
+    setState(() {
+      _selected = sem;
+      _loadingExams = true;
+      _error = null;
+    });
     try {
       // `GET /api/teacher/me/exams?semester=` đã tự lọc theo lớp của giáo
       // viên ở phía server (xem `docs/api/mobile-ims-replacement-S3.md`) —
@@ -75,19 +95,23 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
       final exams = await CrmTeacherApi.exams(semester: sem.ma);
       if (!mounted) return;
 
-      final list = exams.map((e) => {
-            '_tenMon': e.subjectName ?? '',
-            '_maLop': e.classCode ?? '',
-            'loaiThi': e.examType ?? '',
-            'ngayThi': e.examDate,
-            'gioBatDau': e.startTime ?? '',
-            'thoiGian': e.durationMinutes ?? 0,
-            'siSo': e.classSize ?? 0,
-            'hinhThuc': e.examFormat ?? '',
-            'canBoCoiThi1': e.proctor1 ?? '',
-            'canBoCoiThi2': e.proctor2 ?? '',
-            'ghiChu': e.note ?? '',
-          }).toList();
+      final list = exams
+          .map(
+            (e) => {
+              '_tenMon': e.subjectName ?? '',
+              '_maLop': e.classCode ?? '',
+              'loaiThi': e.examType ?? '',
+              'ngayThi': e.examDate,
+              'gioBatDau': e.startTime ?? '',
+              'thoiGian': e.durationMinutes ?? 0,
+              'siSo': e.classSize ?? 0,
+              'hinhThuc': e.examFormat ?? '',
+              'canBoCoiThi1': e.proctor1 ?? '',
+              'canBoCoiThi2': e.proctor2 ?? '',
+              'ghiChu': e.note ?? '',
+            },
+          )
+          .toList();
 
       list.sort((a, b) {
         final da = a['ngayThi'] as String? ?? '';
@@ -102,7 +126,10 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
-      setState(() { _loadingExams = false; _error = e.toString(); });
+      setState(() {
+        _loadingExams = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -120,128 +147,192 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.vd.bg,
-      body: SafeArea(top: false, child: Column(
-        children: [
-          // ── Header ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [context.vd.primary, context.vd.accent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            // ── Header ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [context.vd.primary, context.vd.accent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Icon(Icons.arrow_back_ios,
-                          color: context.vd.onPrimary, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Lịch thi',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: context.vd.onPrimary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Quay lại',
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.arrow_back_ios,
+                          color: context.vd.onPrimary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Lịch thi',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: context.vd.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!_loadingHocKy && _semesters.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.only(
+                        left: 14,
+                        right: 6,
+                        top: 6,
+                        bottom: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.vd.surface,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.vd.shadow,
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<_Semester>(
+                          isExpanded: true,
+                          itemHeight:
+                              48 * MediaQuery.textScalerOf(context).scale(1),
+                          value: _selected,
+                          dropdownColor: context.vd.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          iconEnabledColor: context.vd.primary,
+                          icon: const Icon(Icons.expand_more_rounded, size: 20),
+                          isDense: false,
+                          style: TextStyle(
+                            color: context.vd.ink,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          selectedItemBuilder: (_) => _semesters
+                              .map(
+                                (s) => Center(
+                                  child: Text(
+                                    s.ten,
+                                    style: TextStyle(
+                                      color: context.vd.primary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          items: _semesters
+                              .map(
+                                (s) => DropdownMenuItem(
+                                  value: s,
+                                  child: Text(s.ten),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (s) {
+                            if (s != null && s.id != _selected?.id) {
+                              _fetchExams(s);
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ],
-                ),
-                if (!_loadingHocKy && _semesters.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.only(left: 14, right: 6, top: 6, bottom: 6),
-                    decoration: BoxDecoration(
-                      color: context.vd.surface,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2))],
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<_Semester>(
-                        value: _selected,
-                        dropdownColor: context.vd.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        iconEnabledColor: context.vd.primary,
-                        icon: const Icon(Icons.expand_more_rounded, size: 20),
-                        isDense: true,
-                        style: TextStyle(color: context.vd.ink, fontSize: 13, fontWeight: FontWeight.w500),
-                        selectedItemBuilder: (_) => _semesters.map((s) => Center(
-                          child: Text(s.ten, style: TextStyle(color: context.vd.primary, fontSize: 13, fontWeight: FontWeight.w600)),
-                        )).toList(),
-                        items: _semesters.map((s) => DropdownMenuItem(
-                          value: s,
-                          child: Text(s.ten),
-                        )).toList(),
-                        onChanged: (s) { if (s != null && s.id != _selected?.id) _fetchExams(s); },
+                ],
+              ),
+            ),
+
+            // ── Content ──
+            Expanded(
+              child: _loadingHocKy
+                  ? skeletonList()
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: context.vd.inkFaint,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            style: TextStyle(color: context.vd.inkMuted),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _retry,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.vd.primary,
+                            ),
+                            child: Text(
+                              'Thử lại',
+                              style: TextStyle(color: context.vd.onPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _loadingExams
+                  ? skeletonList()
+                  : _exams.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.event_busy,
+                            size: 64,
+                            color: context.vd.inkFaint,
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'Chưa có lịch thi học kỳ này',
+                            style: TextStyle(color: context.vd.inkMuted),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        if (_selected != null) await _fetchExams(_selected!);
+                      },
+                      color: context.vd.primary,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        itemCount: _exams.length,
+                        itemBuilder: (ctx, i) => _ExamCard(data: _exams[i]),
                       ),
                     ),
-                  ),
-                ],
-              ],
             ),
-          ),
-
-          // ── Content ──
-          Expanded(
-            child: _loadingHocKy
-                ? skeletonList()
-                : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
-                            const SizedBox(height: 12),
-                            Text(_error!, style: TextStyle(color: context.vd.inkMuted),
-                                textAlign: TextAlign.center),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _retry,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: context.vd.primary),
-                              child: Text('Thử lại',
-                                  style: TextStyle(color: context.vd.onPrimary)),
-                            ),
-                          ],
-                        ),
-                      )
-                    : _loadingExams
-                        ? skeletonList()
-                        : _exams.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.event_busy, size: 64, color: context.vd.inkFaint),
-                                    SizedBox(height: 12),
-                                    Text('Chưa có lịch thi học kỳ này',
-                                        style: TextStyle(color: context.vd.inkMuted)),
-                                  ],
-                                ),
-                              )
-                            : RefreshIndicator(
-                                onRefresh: () async {
-                                  if (_selected != null) await _fetchExams(_selected!);
-                                },
-                                color: context.vd.primary,
-                                child: ListView.builder(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                                itemCount: _exams.length,
-                                itemBuilder: (ctx, i) => _ExamCard(data: _exams[i]),
-                              ),
-                            ),
-          ),
-        ],
-      )),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -275,7 +366,9 @@ class _ExamCardState extends State<_ExamCard> {
     final d = widget.data;
     final tenMon = d['_tenMon']?.toString() ?? '';
     final maLop = d['_maLop']?.toString() ?? '';
-    final displayName = tenMon.isNotEmpty ? tenMon : (d['maNhom']?.toString() ?? '');
+    final displayName = tenMon.isNotEmpty
+        ? tenMon
+        : (d['maNhom']?.toString() ?? '');
     final loaiThi = d['loaiThi']?.toString() ?? '';
     final ngayThi = _formatDate(d['ngayThi'] as String?);
     final gioBatDau = d['gioBatDau']?.toString() ?? '';
@@ -290,7 +383,7 @@ class _ExamCardState extends State<_ExamCard> {
         ? context.vd.info
         : context.vd.primary;
 
-    return GestureDetector(
+    return InkWell(
       onTap: () => setState(() => _expanded = !_expanded),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -298,7 +391,11 @@ class _ExamCardState extends State<_ExamCard> {
           color: context.vd.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+            BoxShadow(
+              color: context.vd.shadow,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
           ],
         ),
         child: Column(
@@ -312,8 +409,9 @@ class _ExamCardState extends State<_ExamCard> {
                     width: 5,
                     decoration: BoxDecoration(
                       color: loaiColor,
-                      borderRadius:
-                          const BorderRadius.horizontal(left: Radius.circular(16)),
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(16),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -329,30 +427,43 @@ class _ExamCardState extends State<_ExamCard> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(displayName,
-                                        style: const TextStyle(
-                                            fontSize: 14, fontWeight: FontWeight.bold)),
+                                    Text(
+                                      displayName,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                     if (maLop.isNotEmpty)
-                                      Text(maLop,
-                                          style: TextStyle(
-                                              fontSize: 11, color: context.vd.inkMuted),
-                                          overflow: TextOverflow.ellipsis),
+                                      Text(
+                                        maLop,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: context.vd.inkMuted,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                   ],
                                 ),
                               ),
                               if (loaiThi.isNotEmpty)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: loaiColor.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: Text(loaiThi,
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: loaiColor)),
+                                  child: Text(
+                                    loaiThi,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: loaiColor,
+                                    ),
+                                  ),
                                 ),
                               const SizedBox(width: 6),
                               Icon(
@@ -365,31 +476,55 @@ class _ExamCardState extends State<_ExamCard> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Row(
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Icon(Icons.calendar_today,
-                                  size: 13, color: context.vd.primary),
+                              Icon(
+                                Icons.calendar_today,
+                                size: 13,
+                                color: context.vd.primary,
+                              ),
                               const SizedBox(width: 4),
-                              Text(ngayThi,
-                                  style: TextStyle(
-                                      fontSize: 12, color: context.vd.inkMuted)),
+                              Text(
+                                ngayThi,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.vd.inkMuted,
+                                ),
+                              ),
                               if (gioBatDau.isNotEmpty) ...[
                                 const SizedBox(width: 12),
-                                Icon(Icons.access_time,
-                                    size: 13, color: context.vd.primary),
+                                Icon(
+                                  Icons.access_time,
+                                  size: 13,
+                                  color: context.vd.primary,
+                                ),
                                 const SizedBox(width: 4),
-                                Text(gioBatDau,
-                                    style: TextStyle(
-                                        fontSize: 12, color: context.vd.inkMuted)),
+                                Text(
+                                  gioBatDau,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.vd.inkMuted,
+                                  ),
+                                ),
                               ],
                               if (thoiGian > 0) ...[
                                 const SizedBox(width: 12),
-                                Icon(Icons.timer_outlined,
-                                    size: 13, color: context.vd.primary),
+                                Icon(
+                                  Icons.timer_outlined,
+                                  size: 13,
+                                  color: context.vd.primary,
+                                ),
                                 const SizedBox(width: 4),
-                                Text('$thoiGian phút',
-                                    style: TextStyle(
-                                        fontSize: 12, color: context.vd.inkMuted)),
+                                Text(
+                                  '$thoiGian phút',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.vd.inkMuted,
+                                  ),
+                                ),
                               ],
                             ],
                           ),
@@ -409,20 +544,35 @@ class _ExamCardState extends State<_ExamCard> {
                 child: Column(
                   children: [
                     if (siSo > 0)
-                      _DetailRow(icon: Icons.people_outline,
-                          label: 'Sĩ số', value: '$siSo sinh viên'),
+                      _DetailRow(
+                        icon: Icons.people_outline,
+                        label: 'Sĩ số',
+                        value: '$siSo sinh viên',
+                      ),
                     if (hinhThuc.isNotEmpty)
-                      _DetailRow(icon: Icons.description_outlined,
-                          label: 'Hình thức', value: hinhThuc),
+                      _DetailRow(
+                        icon: Icons.description_outlined,
+                        label: 'Hình thức',
+                        value: hinhThuc,
+                      ),
                     if (cb1.isNotEmpty)
-                      _DetailRow(icon: Icons.person_outline,
-                          label: 'CB coi thi 1', value: cb1),
+                      _DetailRow(
+                        icon: Icons.person_outline,
+                        label: 'CB coi thi 1',
+                        value: cb1,
+                      ),
                     if (cb2.isNotEmpty)
-                      _DetailRow(icon: Icons.person_outline,
-                          label: 'CB coi thi 2', value: cb2),
+                      _DetailRow(
+                        icon: Icons.person_outline,
+                        label: 'CB coi thi 2',
+                        value: cb2,
+                      ),
                     if (ghiChu.isNotEmpty)
-                      _DetailRow(icon: Icons.notes,
-                          label: 'Ghi chú', value: ghiChu),
+                      _DetailRow(
+                        icon: Icons.notes,
+                        label: 'Ghi chú',
+                        value: ghiChu,
+                      ),
                   ],
                 ),
               ),
@@ -438,7 +588,11 @@ class _DetailRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _DetailRow({required this.icon, required this.label, required this.value});
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -451,13 +605,16 @@ class _DetailRow extends StatelessWidget {
           const SizedBox(width: 8),
           SizedBox(
             width: 100,
-            child: Text(label,
-                style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),

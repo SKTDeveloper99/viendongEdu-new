@@ -59,7 +59,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   Future<void> _fetch() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       if (_isTeacher) {
         final p = await CrmProfileApi.getTeacherMe();
@@ -78,13 +81,19 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
   }
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final email = _emailCtrl.text.trim();
       final phone = _phoneCtrl.text.trim();
@@ -109,25 +118,32 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _cccdCtrl.text = res.cmnd ?? cccd;
       }
       if (!mounted) return;
-      setState(() { _saving = false; _saved = true; });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          'Đã cập nhật hồ sơ ở EMS. Thay đổi CHƯA được gửi tới hệ thống IMS của trường.',
+      setState(() {
+        _saving = false;
+        _saved = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã cập nhật hồ sơ ở EMS. Thay đổi CHƯA được gửi tới hệ thống IMS của trường.',
+          ),
+          backgroundColor: context.vd.success,
+          behavior: SnackBarBehavior.floating,
         ),
-        backgroundColor: context.vd.success,
-        behavior: SnackBarBehavior.floating,
-      ));
+      );
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() => _saving = false);
       // Hiện nguyên văn thông điệp lỗi validate/máy chủ.
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString()),
-        backgroundColor: context.vd.danger,
-        behavior: SnackBarBehavior.floating,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: context.vd.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -144,50 +160,82 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         Navigator.pop(context, _saved);
       },
       child: Scaffold(
-      backgroundColor: context.vd.bg,
-      body: SafeArea(top: false, child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [context.vd.primary, context.vd.accent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        backgroundColor: context.vd.bg,
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [context.vd.primary, context.vd.accent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Quay lại',
+                      onPressed: () => Navigator.pop(context, _saved),
+                      icon: Icon(
+                        Icons.arrow_back_ios,
+                        color: context.vd.onPrimary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Sửa hồ sơ',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: context.vd.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-            ),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context, _saved),
-                  child: Icon(Icons.arrow_back_ios, color: context.vd.onPrimary, size: 20),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Sửa hồ sơ',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.vd.onPrimary),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _loading
-                ? Center(child: CircularProgressIndicator(color: context.vd.primary))
-                : _error != null
+              Expanded(
+                child: _loading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: context.vd.primary,
+                        ),
+                      )
+                    : _error != null
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: context.vd.inkFaint,
+                            ),
                             const SizedBox(height: 12),
-                            Text(_error!, style: TextStyle(color: context.vd.inkFaint), textAlign: TextAlign.center),
+                            Text(
+                              _error!,
+                              style: TextStyle(color: context.vd.inkFaint),
+                              textAlign: TextAlign.center,
+                            ),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _fetch,
-                              style: ElevatedButton.styleFrom(backgroundColor: context.vd.primary),
-                              child: Text('Thử lại', style: TextStyle(color: context.vd.onPrimary)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.vd.primary,
+                              ),
+                              child: Text(
+                                'Thử lại',
+                                style: TextStyle(color: context.vd.onPrimary),
+                              ),
                             ),
                           ],
                         ),
@@ -208,7 +256,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.info_outline, color: context.vd.primary, size: 18),
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: context.vd.primary,
+                                      size: 18,
+                                    ),
                                     SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -229,7 +281,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                 validator: (v) {
                                   final s = (v ?? '').trim();
                                   if (s.isEmpty) return null;
-                                  if (!_emailRe.hasMatch(s)) return 'Email không đúng định dạng.';
+                                  if (!_emailRe.hasMatch(s)) {
+                                    return 'Email không đúng định dạng.';
+                                  }
                                   return null;
                                 },
                               ),
@@ -272,29 +326,41 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                               const SizedBox(height: 24),
                               SizedBox(
                                 width: double.infinity,
-                                height: 46,
+                                // Allow the save label to grow.
                                 child: ElevatedButton(
                                   onPressed: _saving ? null : _save,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: context.vd.primary,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
                                   ),
                                   child: _saving
                                       ? SizedBox(
                                           height: 22,
                                           width: 22,
-                                          child: CircularProgressIndicator(strokeWidth: 2.5, color: context.vd.onPrimary),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            color: context.vd.onPrimary,
+                                          ),
                                         )
-                                      : Text('Lưu thay đổi', style: TextStyle(color: context.vd.onPrimary, fontWeight: FontWeight.w600)),
+                                      : Text(
+                                          'Lưu thay đổi',
+                                          style: TextStyle(
+                                            color: context.vd.onPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
+              ),
+            ],
           ),
-        ],
-      )),
+        ),
       ),
     );
   }

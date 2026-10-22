@@ -115,21 +115,26 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 child: Row(
                   children: [
                     if (!widget.forced)
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Icon(
+                      IconButton(
+                        tooltip: 'Quay lại',
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
                           Icons.arrow_back_ios,
                           color: context.vd.onPrimary,
                           size: 20,
                         ),
                       ),
                     if (!widget.forced) const SizedBox(width: 8),
-                    Text(
-                      widget.forced ? 'Vui lòng đổi mật khẩu' : 'Đổi mật khẩu',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: context.vd.onPrimary,
+                    Expanded(
+                      child: Text(
+                        widget.forced
+                            ? 'Vui lòng đổi mật khẩu'
+                            : 'Đổi mật khẩu',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: context.vd.onPrimary,
+                        ),
                       ),
                     ),
                   ],
@@ -299,6 +304,7 @@ class _PassField extends StatelessWidget {
         labelStyle: const TextStyle(fontSize: 14),
         prefixIcon: Icon(Icons.lock_outline, color: context.vd.primary),
         suffixIcon: IconButton(
+          tooltip: show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu',
           icon: Icon(
             show ? Icons.visibility_off_outlined : Icons.visibility_outlined,
             color: context.vd.inkFaint,

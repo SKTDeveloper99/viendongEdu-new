@@ -46,7 +46,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Future<void> _fetchPeriods() async {
-    setState(() { _loadingPeriods = true; _error = null; });
+    setState(() {
+      _loadingPeriods = true;
+      _error = null;
+    });
     try {
       final periods = await CrmRegistrationApi.getPeriods();
       if (!mounted) return;
@@ -62,7 +65,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loadingPeriods = false; _error = e.toString(); });
+      setState(() {
+        _loadingPeriods = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -83,7 +89,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Future<void> _loadOfferingsAndResults() async {
     final period = _selectedPeriod;
     if (period == null) return;
-    setState(() { _loadingData = true; _error = null; });
+    setState(() {
+      _loadingData = true;
+      _error = null;
+    });
     try {
       final periodId = period.periodId;
       final offeringsFuture = periodId == null
@@ -92,7 +101,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               periodId: periodId,
               allSections: _allSections,
             );
-      final resultsFuture = CrmRegistrationApi.getResults(semester: period.semesterCode);
+      final resultsFuture = CrmRegistrationApi.getResults(
+        semester: period.semesterCode,
+      );
       final offeringsPage = await offeringsFuture;
       final results = await resultsFuture;
       if (!mounted) return;
@@ -104,7 +115,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loadingData = false; _error = e.toString(); });
+      setState(() {
+        _loadingData = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -114,12 +128,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   bool _isEmsRegistered(String offeringId) => _results.any(
-        (r) => r.isEmsRequest && r.offeringId == offeringId && r.status != 'withdrawn',
-      );
+    (r) =>
+        r.isEmsRequest && r.offeringId == offeringId && r.status != 'withdrawn',
+  );
 
   CrmRegistrationResult? _emsResultFor(String offeringId) {
     for (final r in _results) {
-      if (r.isEmsRequest && r.offeringId == offeringId && r.status != 'withdrawn') return r;
+      if (r.isEmsRequest &&
+          r.offeringId == offeringId &&
+          r.status != 'withdrawn') {
+        return r;
+      }
     }
     return null;
   }
@@ -141,24 +160,28 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         setState(() {
           _results.removeWhere((r) => r.id == existing.id);
         });
-        _showSnack(res.alreadyWithdrawn
-            ? 'Đã hủy đăng ký từ trước.'
-            : 'Đã hủy đăng ký ${offering.subjectName ?? ''}');
+        _showSnack(
+          res.alreadyWithdrawn
+              ? 'Đã hủy đăng ký từ trước.'
+              : 'Đã hủy đăng ký ${offering.subjectName ?? ''}',
+        );
       } else {
         final res = await CrmRegistrationApi.register(offering.offeringId);
         if (!mounted) return;
         setState(() {
-          _results.add(CrmRegistrationResult(
-            id: res.id,
-            offeringId: offering.offeringId,
-            subjectName: offering.subjectName,
-            subjectCode: offering.subjectCode,
-            classCode: offering.classCode,
-            status: res.status ?? 'pending',
-            submittedAt: res.submittedAt,
-            source: 'ems_request',
-            syncedToIms: false,
-          ));
+          _results.add(
+            CrmRegistrationResult(
+              id: res.id,
+              offeringId: offering.offeringId,
+              subjectName: offering.subjectName,
+              subjectCode: offering.subjectCode,
+              classCode: offering.classCode,
+              status: res.status ?? 'pending',
+              submittedAt: res.submittedAt,
+              source: 'ems_request',
+              syncedToIms: false,
+            ),
+          );
         });
         _showSnack(
           'Đã gửi đăng ký ${offering.subjectName ?? ''} lên EMS. '
@@ -176,11 +199,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? context.vd.danger : context.vd.success,
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? context.vd.danger : context.vd.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -201,25 +226,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Icon(Icons.arrow_back_ios,
-                            color: context.vd.onPrimary, size: 20),
+                      IconButton(
+                        tooltip: 'Quay lại',
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.arrow_back_ios,
+                          color: context.vd.onPrimary,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'Đăng ký môn học',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: context.vd.onPrimary,
+                      Expanded(
+                        child: Text(
+                          'Đăng ký môn học',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: context.vd.onPrimary,
+                          ),
                         ),
                       ),
                     ],
@@ -227,42 +260,64 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   const SizedBox(height: 12),
                   if (!_loadingPeriods && _periods.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.only(left: 14, right: 6, top: 6, bottom: 6),
+                      padding: const EdgeInsets.only(
+                        left: 14,
+                        right: 6,
+                        top: 6,
+                        bottom: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: context.vd.surface,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
-                          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2)),
+                          BoxShadow(
+                            color: context.vd.shadow,
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
                         ],
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<CrmRegistrationPeriod>(
+                          isExpanded: true,
+                          itemHeight:
+                              48 * MediaQuery.textScalerOf(context).scale(1),
                           value: _selectedPeriod,
                           dropdownColor: context.vd.surface,
                           borderRadius: BorderRadius.circular(14),
                           iconEnabledColor: context.vd.primary,
                           icon: const Icon(Icons.expand_more_rounded, size: 20),
-                          isDense: true,
+                          isDense: false,
                           style: TextStyle(
-                              color: context.vd.ink,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500),
+                            color: context.vd.ink,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                           selectedItemBuilder: (_) => _periods
-                              .map((p) => Center(
-                                    child: Text(p.periodName ?? p.periodCode ?? '–',
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            color: context.vd.primary,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600)),
-                                  ))
+                              .map(
+                                (p) => Center(
+                                  child: Text(
+                                    p.periodName ?? p.periodCode ?? '–',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: context.vd.primary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              )
                               .toList(),
                           items: _periods
-                              .map((p) => DropdownMenuItem(
-                                    value: p,
-                                    child: Text(p.periodName ?? p.periodCode ?? '–',
-                                        overflow: TextOverflow.ellipsis),
-                                  ))
+                              .map(
+                                (p) => DropdownMenuItem(
+                                  value: p,
+                                  child: Text(
+                                    p.periodName ?? p.periodCode ?? '–',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
                               .toList(),
                           onChanged: (p) {
                             if (p != null) _selectPeriod(p);
@@ -279,10 +334,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             Expanded(
               child: _loadingPeriods
                   ? Center(
-                      child: CircularProgressIndicator(color: context.vd.primary))
+                      child: CircularProgressIndicator(
+                        color: context.vd.primary,
+                      ),
+                    )
                   : _error != null && _periods.isEmpty
-                      ? _buildError()
-                      : _buildBody(),
+                  ? _buildError()
+                  : _buildBody(),
             ),
           ],
         ),
@@ -298,7 +356,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       decoration: BoxDecoration(
         color: open ? context.vd.successSoft : context.vd.surfaceAlt,
         border: Border.all(
-            color: open ? context.vd.success : context.vd.hairline),
+          color: open ? context.vd.success : context.vd.hairline,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -337,7 +396,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Widget _buildBody() {
     if (_loadingData) {
       return Center(
-          child: CircularProgressIndicator(color: context.vd.primary));
+        child: CircularProgressIndicator(color: context.vd.primary),
+      );
     }
     if (_error != null) return _buildError();
     if (_periods.isEmpty) {
@@ -363,27 +423,38 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       children: [
         // ── Kết quả đã ghi nhận (EMS + IMS) ──
         if (_results.isNotEmpty) ...[
-          const Text('Đã đăng ký / đã xếp lớp',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const Text(
+            'Đã đăng ký / đã xếp lớp',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
           const SizedBox(height: 8),
           ..._results.map((r) => _ResultCard(result: r)),
           const SizedBox(height: 16),
         ],
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          spacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            const Text('Môn học mở đăng ký',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const Text(
+              'Môn học mở đăng ký',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
             // "Xem tất cả lớp" — scope=all, bỏ lọc theo chương trình học.
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Xem tất cả lớp', style: TextStyle(fontSize: 12, color: context.vd.inkFaint)),
-                Switch(
-                  value: _allSections,
-                  activeThumbColor: context.vd.primary,
-                  onChanged: _loadingData ? null : _toggleAllSections,
+                Text(
+                  'Xem tất cả lớp',
+                  style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+                ),
+                Semantics(
+                  label: 'Xem tất cả lớp',
+                  child: Switch(
+                    value: _allSections,
+                    activeThumbColor: context.vd.primary,
+                    onChanged: _loadingData ? null : _toggleAllSections,
+                  ),
                 ),
               ],
             ),
@@ -417,15 +488,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           Padding(
             padding: EdgeInsets.only(top: 16),
             child: Center(
-              child: Text('Không có môn học mở đăng ký cho đợt này.',
-                  style: TextStyle(color: context.vd.inkFaint)),
+              child: Text(
+                'Không có môn học mở đăng ký cho đợt này.',
+                style: TextStyle(color: context.vd.inkFaint),
+              ),
             ),
           )
         else
-          ...offerings.map((o) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _buildOfferingCard(o),
-              )),
+          ...offerings.map(
+            (o) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _buildOfferingCard(o),
+            ),
+          ),
       ],
     );
   }
@@ -434,7 +509,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final isRegistered = _isEmsRegistered(mon.offeringId);
     final isProcessing = _processing.contains(mon.offeringId);
     final canRegister = _selectedPeriod?.isOpen ?? false;
-    final full = mon.maxSize != null &&
+    final full =
+        mon.maxSize != null &&
         mon.registeredCount != null &&
         mon.registeredCount! >= mon.maxSize!;
 
@@ -443,13 +519,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isRegistered
-              ? context.vd.success
-              : context.vd.hairline,
+          color: isRegistered ? context.vd.success : context.vd.hairline,
           width: isRegistered ? 1.5 : 1,
         ),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 5, offset: Offset(0, 2)),
+          BoxShadow(
+            color: context.vd.shadow,
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Padding(
@@ -464,14 +542,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   child: Text(
                     mon.subjectName ?? '–',
                     style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
                 if (isRegistered) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: context.vd.successSoft,
                       borderRadius: BorderRadius.circular(20),
@@ -479,9 +561,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     child: Text(
                       'Đã gửi (EMS)',
                       style: TextStyle(
-                          fontSize: 11,
-                          color: context.vd.success,
-                          fontWeight: FontWeight.w600),
+                        fontSize: 11,
+                        color: context.vd.success,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -489,8 +572,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             ),
             const SizedBox(height: 8),
             _infoRow(Icons.tag_rounded, mon.subjectCode ?? '–'),
-            _infoRow(Icons.person_outline_rounded,
-                (mon.teacherName ?? '').isNotEmpty ? mon.teacherName! : '–'),
+            _infoRow(
+              Icons.person_outline_rounded,
+              (mon.teacherName ?? '').isNotEmpty ? mon.teacherName! : '–',
+            ),
             _infoRow(Icons.location_on_outlined, mon.facilityName ?? '–'),
             _infoRow(
               Icons.star_border_rounded,
@@ -499,8 +584,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               '${(mon.creditsTh ?? 0) > 0 ? '  ·  TH: ${mon.creditsTh}' : ''}',
             ),
             if (mon.maxSize != null)
-              _infoRow(Icons.groups_outlined,
-                  'Sĩ số: ${mon.registeredCount ?? 0}/${mon.maxSize}'),
+              _infoRow(
+                Icons.groups_outlined,
+                'Sĩ số: ${mon.registeredCount ?? 0}/${mon.maxSize}',
+              ),
             // Chỉ có ý nghĩa khi đang "Xem tất cả lớp" (chế độ mặc định đã
             // tự lọc theo chương trình rồi, mọi thẻ đều trong chương trình).
             if (_allSections && mon.inMyCurriculum == false)
@@ -508,20 +595,26 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   'Ngoài chương trình học của bạn',
-                  style: TextStyle(fontSize: 11, color: context.vd.inkMuted, fontStyle: FontStyle.italic),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.vd.inkMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              height: 40,
+              height: 48 * MediaQuery.textScalerOf(context).scale(1),
               child: isProcessing
                   ? Center(
                       child: SizedBox(
                         height: 24,
                         width: 24,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2.5, color: context.vd.primary),
+                          strokeWidth: 2.5,
+                          color: context.vd.primary,
+                        ),
                       ),
                     )
                   : ElevatedButton(
@@ -537,17 +630,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             : context.vd.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         disabledBackgroundColor: context.vd.hairline,
                       ),
                       child: Text(
                         isRegistered
                             ? 'Hủy đăng ký'
                             : full
-                                ? 'Lớp đã đầy'
-                                : 'Đăng ký',
+                            ? 'Lớp đã đầy'
+                            : 'Đăng ký',
                         style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 14),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
             ),
@@ -558,45 +654,50 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Widget _infoRow(IconData icon, String text) => Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Row(
-          children: [
-            Icon(icon, size: 14, color: context.vd.primary),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(fontSize: 13, color: context.vd.ink),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      );
-
-  Widget _buildError() => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
-              const SizedBox(height: 12),
-              Text(_error ?? 'Có lỗi xảy ra',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: context.vd.inkFaint)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _fetchPeriods,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: context.vd.primary),
-                child: Text('Thử lại',
-                    style: TextStyle(color: context.vd.onPrimary)),
-              ),
-            ],
+    padding: const EdgeInsets.only(top: 4),
+    child: Row(
+      children: [
+        Icon(icon, size: 14, color: context.vd.primary),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 13, color: context.vd.ink),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-      );
+      ],
+    ),
+  );
+
+  Widget _buildError() => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
+          const SizedBox(height: 12),
+          Text(
+            _error ?? 'Có lỗi xảy ra',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.vd.inkFaint),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _fetchPeriods,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.vd.primary,
+            ),
+            child: Text(
+              'Thử lại',
+              style: TextStyle(color: context.vd.onPrimary),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 // ── Card kết quả đăng ký/xếp lớp — luôn ghi rõ nguồn ──
@@ -622,16 +723,27 @@ class _ResultCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(result.subjectName ?? result.classCode ?? '–',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(
+                  result.subjectName ?? result.classCode ?? '–',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(result.classCode ?? '–',
-                    style: TextStyle(fontSize: 11, color: context.vd.inkFaint)),
+                Text(
+                  result.classCode ?? '–',
+                  style: TextStyle(fontSize: 11, color: context.vd.inkFaint),
+                ),
                 if (isEms && !result.syncedToIms) ...[
                   const SizedBox(height: 4),
                   Text(
                     'Ghi nhận ở EMS, chưa gửi tới Phòng Đào tạo (IMS).',
-                    style: TextStyle(fontSize: 10, color: context.vd.accent, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: context.vd.accent,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ],
               ],
@@ -643,8 +755,14 @@ class _ResultCard extends StatelessWidget {
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(result.sourceLabel,
-                style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+            child: Text(
+              result.sourceLabel,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),

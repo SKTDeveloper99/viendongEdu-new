@@ -136,9 +136,11 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
       lastDate: DateTime(2030),
       locale: const Locale('vi', 'VN'),
       builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: context.vd.primary)),
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(
+            ctx,
+          ).colorScheme.copyWith(primary: context.vd.primary),
+        ),
         child: child!,
       ),
     );
@@ -172,7 +174,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
               padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [context.vd.primary, context.vd.accent],
+                  colors: [context.vd.headerTop, context.vd.headerBottom],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -185,21 +187,24 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                 children: [
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Icon(
+                      IconButton(
+                        tooltip: 'Quay lại',
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
                           Icons.arrow_back_ios,
-                          color: context.vd.onPrimary,
+                          color: context.vd.onHeader,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'Lịch dạy',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: context.vd.onPrimary,
+                      Expanded(
+                        child: Text(
+                          'Lịch dạy',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: context.vd.onHeader,
+                          ),
                         ),
                       ),
                     ],
@@ -209,31 +214,37 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
-                        onTap: _prevWeek,
-                        child: Icon(
+                      IconButton(
+                        tooltip: 'Tuần trước',
+                        onPressed: _prevWeek,
+                        icon: Icon(
                           Icons.chevron_left,
-                          color: context.vd.onPrimary,
+                          color: context.vd.onHeader,
                           size: 28,
                         ),
                       ),
-                      Text(
-                        () {
-                          final s = _currentMonday;
-                          final e = _currentMonday.add(const Duration(days: 6));
-                          return '${s.day}/${s.month} – ${e.day}/${e.month}/${e.year}';
-                        }(),
-                        style: TextStyle(
-                          color: context.vd.onPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Text(
+                          () {
+                            final s = _currentMonday;
+                            final e = _currentMonday.add(
+                              const Duration(days: 6),
+                            );
+                            return '${s.day}/${s.month} – ${e.day}/${e.month}/${e.year}';
+                          }(),
+                          style: TextStyle(
+                            color: context.vd.onHeader,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: _nextWeek,
-                        child: Icon(
+                      IconButton(
+                        tooltip: 'Tuần sau',
+                        onPressed: _nextWeek,
+                        icon: Icon(
                           Icons.chevron_right,
-                          color: context.vd.onPrimary,
+                          color: context.vd.onHeader,
                           size: 28,
                         ),
                       ),
@@ -242,7 +253,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                   const SizedBox(height: 12),
                   // Day chips
                   SizedBox(
-                    height: 84,
+                    height: 84 * MediaQuery.textScalerOf(context).scale(1),
                     child: ListView.builder(
                       controller: _chipScroll,
                       scrollDirection: Axis.horizontal,
@@ -253,7 +264,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                             _fmtDate(day) == _fmtDate(_selectedDate);
                         final isToday =
                             _fmtDate(day) == _fmtDate(_calendar.today);
-                        return GestureDetector(
+                        return InkWell(
                           key: ValueKey('schedule-day-${_fmtDate(day)}'),
                           onTap: () => _selectDate(day),
                           child: AnimatedContainer(
@@ -263,7 +274,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? context.vd.surface
-                                  : context.vd.surface.withValues(alpha: 0.2),
+                                  : context.vd.headerBottom,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Column(
@@ -284,7 +295,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                                     fontWeight: FontWeight.w600,
                                     color: isSelected
                                         ? context.vd.primary
-                                        : context.vd.onPrimary,
+                                        : context.vd.onHeader,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -295,7 +306,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                                     fontWeight: FontWeight.bold,
                                     color: isSelected
                                         ? context.vd.primary
-                                        : context.vd.onPrimary,
+                                        : context.vd.onHeader,
                                   ),
                                 ),
                                 if (isToday)

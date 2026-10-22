@@ -69,7 +69,7 @@ class ScheduleBody extends StatelessWidget {
         else if (!scheduleExpanded)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: GestureDetector(
+            child: InkWell(
               onTap: () => Navigator.pushNamed(context, '/schedule'),
               child: Container(
                 width: double.infinity,
@@ -157,9 +157,14 @@ class ScheduleBody extends StatelessWidget {
                     color: context.vd.success,
                   ),
                   SizedBox(width: 8),
-                  Text(
-                    'Không có lịch học hôm nay',
-                    style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
+                  Expanded(
+                    child: Text(
+                      'Không có lịch học hôm nay',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.vd.inkMuted,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -173,7 +178,7 @@ class ScheduleBody extends StatelessWidget {
                   .map(
                     (e) => VdFadeIn(
                       index: e.$1,
-                      child: GestureDetector(
+                      child: InkWell(
                         onTap: () => Navigator.pushNamed(context, '/schedule'),
                         child: ClassChip(data: e.$2),
                       ),

@@ -76,9 +76,10 @@ class SubjectFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = context.vd.primary;
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: AnimatedContainer(
+        constraints: const BoxConstraints(minHeight: 48),
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
@@ -86,10 +87,8 @@ class SubjectFilterChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: selected ? color : context.vd.hairline),
         ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 label,
@@ -103,7 +102,7 @@ class SubjectFilterChip extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: selected ? context.vd.onPrimary.withValues(alpha: 0.25) : context.vd.surfaceAlt,
+                  color: selected ? context.vd.primary : context.vd.surfaceAlt,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -116,7 +115,6 @@ class SubjectFilterChip extends StatelessWidget {
                 ),
               ),
             ],
-          ),
         ),
       ),
     );

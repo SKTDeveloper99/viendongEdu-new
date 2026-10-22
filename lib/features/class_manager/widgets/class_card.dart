@@ -15,7 +15,7 @@ class ClassCard extends StatelessWidget {
     final mhten = lop.subjectName ?? '';
     final mhma = lop.subjectCode ?? '';
     final sotinchi = lop.credits ?? 0;
-    return VdPressable(child: GestureDetector(
+    return VdPressable(child: InkWell(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),

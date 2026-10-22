@@ -147,7 +147,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
       appBar: AppBar(
         title: const Text('Ngày làm việc của tôi'),
         backgroundColor: context.vd.headerTop,
-        foregroundColor: context.vd.onPrimary,
+        foregroundColor: context.vd.onHeader,
         actions: [
           IconButton(
             tooltip: 'Tải lại',
@@ -466,8 +466,14 @@ class _DaySummary extends StatelessWidget {
           Row(
             children: [
               TeacherDaySummaryNumber(value: '$sessions', label: 'buổi dạy'),
-              TeacherDaySummaryNumber(value: '$unmarked', label: 'chưa điểm danh'),
-              TeacherDaySummaryNumber(value: '$cases', label: 'ca cần phản hồi'),
+              TeacherDaySummaryNumber(
+                value: '$unmarked',
+                label: 'chưa điểm danh',
+              ),
+              TeacherDaySummaryNumber(
+                value: '$cases',
+                label: 'ca cần phản hồi',
+              ),
               TeacherDaySummaryNumber(value: '$overdue', label: 'quá hạn'),
             ],
           ),

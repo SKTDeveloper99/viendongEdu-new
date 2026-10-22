@@ -8,7 +8,8 @@ String _fmtDate(DateTime? d) => d == null
     ? '–'
     : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-String _fmtAmount(num? v) => v == null ? 'chưa có dữ liệu' : '${v.toString()} đ';
+String _fmtAmount(num? v) =>
+    v == null ? 'chưa có dữ liệu' : '${v.toString()} đ';
 
 // Thay ApiService.getCapBu (IMS hocvien/capbu) bằng CrmMoneyApi.getCapBu
 // (GET /api/student/me/capbu) — mirror IMS nguyên văn, không có luật CRM.
@@ -31,7 +32,10 @@ class _CapBuScreenState extends State<CapBuScreen> {
   }
 
   Future<void> _fetch() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final data = await CrmMoneyApi.getCapBu();
       if (!mounted) return;
@@ -42,7 +46,10 @@ class _CapBuScreenState extends State<CapBuScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -50,124 +57,150 @@ class _CapBuScreenState extends State<CapBuScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.vd.bg,
-      body: SafeArea(top: false, child: Column(
-        children: [
-          // ── Header ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [context.vd.primary, context.vd.accent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            // ── Header ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [context.vd.primary, context.vd.accent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-            ),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Icon(Icons.arrow_back_ios,
-                      color: context.vd.onPrimary, size: 20),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Cấp bù',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Quay lại',
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios,
                       color: context.vd.onPrimary,
+                      size: 20,
                     ),
                   ),
-                ),
-                if (!_loading && _error == null && _items.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: context.vd.surface.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                  const SizedBox(width: 8),
+                  Expanded(
                     child: Text(
-                      '${_items.length} hóa đơn',
+                      'Cấp bù',
                       style: TextStyle(
-                          color: context.vd.onPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: context.vd.onPrimary,
+                      ),
                     ),
                   ),
-              ],
-            ),
-          ),
-
-          // ── Content ──
-          Expanded(
-            child: _loading
-                ? Center(
-                    child: CircularProgressIndicator(
-                        color: context.vd.accent))
-                : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline,
-                                size: 48, color: context.vd.inkFaint),
-                            const SizedBox(height: 12),
-                            Text(_error!,
-                                style: TextStyle(color: context.vd.inkFaint),
-                                textAlign: TextAlign.center),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _fetch,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: context.vd.accent),
-                              child: Text('Thử lại',
-                                  style: TextStyle(color: context.vd.onPrimary)),
-                            ),
-                          ],
+                  if (!_loading && _error == null && _items.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.vd.headerBottom,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_items.length} hóa đơn',
+                        style: TextStyle(
+                          color: context.vd.onHeader,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
-                      )
-                    : _items.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.account_balance,
-                                    size: 64, color: context.vd.inkFaint),
-                                SizedBox(height: 12),
-                                Text('Không có hóa đơn cấp bù',
-                                    style: TextStyle(color: context.vd.inkFaint)),
-                              ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // ── Content ──
+            Expanded(
+              child: _loading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: context.vd.accent,
+                      ),
+                    )
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: context.vd.inkFaint,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            style: TextStyle(color: context.vd.inkFaint),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _fetch,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.vd.accent,
                             ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _fetch,
-                            color: context.vd.accent,
-                            child: ListView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding:
-                                const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                            itemCount: _items.length,
-                            itemBuilder: (_, i) => _CapBuCard(
-                              item: _items[i],
-                              onTap: () => showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (ctx) => SizedBox(
-                                    height: MediaQuery.of(ctx).size.height * 0.75,
-                                    child: _CapBuDetailSheet(item: _items[i]),
-                                  ),
-                              ),
+                            child: Text(
+                              'Thử lại',
+                              style: TextStyle(color: context.vd.onPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _items.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.account_balance,
+                            size: 64,
+                            color: context.vd.inkFaint,
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'Không có hóa đơn cấp bù',
+                            style: TextStyle(color: context.vd.inkFaint),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetch,
+                      color: context.vd.accent,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        itemCount: _items.length,
+                        itemBuilder: (_, i) => _CapBuCard(
+                          item: _items[i],
+                          onTap: () => showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (ctx) => SizedBox(
+                              height: MediaQuery.of(ctx).size.height * 0.75,
+                              child: _CapBuDetailSheet(item: _items[i]),
                             ),
                           ),
                         ),
-          ),
-        ],
-      )),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -179,83 +212,101 @@ class _CapBuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: context.vd.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-        border: Border(
-            left: BorderSide(color: context.vd.accent, width: 4)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Tên + số tiền
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    item.ten ?? '–',
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _fmtAmount(item.thanhTien),
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: context.vd.accent,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Học kỳ — dùng hocky_ten (nhãn đầy đủ) thay vì hocKy IMS cũ.
-            Row(
-              children: [
-                Icon(Icons.school_outlined,
-                    size: 13, color: context.vd.inkFaint),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(item.hocKyTen ?? '–',
-                      style: TextStyle(
-                          fontSize: 12, color: context.vd.inkFaint)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            // Mã + ngày cấp
-            Row(
-              children: [
-                Icon(Icons.tag, size: 13, color: context.vd.inkFaint),
-                const SizedBox(width: 5),
-                Text('Mã: ${item.ma ?? '–'}',
-                    style: TextStyle(
-                        fontSize: 12, color: context.vd.inkFaint)),
-                const Spacer(),
-                Icon(Icons.calendar_today,
-                    size: 12, color: context.vd.inkFaint),
-                const SizedBox(width: 4),
-                Text(_fmtDate(item.ngayCap),
-                    style: TextStyle(
-                        fontSize: 12, color: context.vd.inkFaint)),
-              ],
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: context.vd.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: context.vd.shadow,
+              blurRadius: 6,
+              offset: Offset(0, 3),
             ),
           ],
+          border: Border(left: BorderSide(color: context.vd.accent, width: 4)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Tên + số tiền
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.ten ?? '–',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _fmtAmount(item.thanhTien),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: context.vd.accent,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Học kỳ — dùng hocky_ten (nhãn đầy đủ) thay vì hocKy IMS cũ.
+              Row(
+                children: [
+                  Icon(
+                    Icons.school_outlined,
+                    size: 13,
+                    color: context.vd.inkFaint,
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      item.hocKyTen ?? '–',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.vd.inkFaint,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Mã + ngày cấp
+              Wrap(
+                spacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Icon(Icons.tag, size: 13, color: context.vd.inkFaint),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Mã: ${item.ma ?? '–'}',
+                    style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+                  ),
+                  Icon(
+                    Icons.calendar_today,
+                    size: 12,
+                    color: context.vd.inkFaint,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _fmtDate(item.ngayCap),
+                    style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }
 
@@ -279,41 +330,74 @@ class _CapBuDetailSheet extends StatelessWidget {
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12, bottom: 20),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: context.vd.hairline,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          Text(item.ten ?? '–',
-              style: const TextStyle(
-                  fontSize: 17, fontWeight: FontWeight.bold)),
+          Text(
+            item.ten ?? '–',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
-          Text(_fmtAmount(item.thanhTien),
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: context.vd.accent)),
+          Text(
+            _fmtAmount(item.thanhTien),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: context.vd.accent,
+            ),
+          ),
           const SizedBox(height: 16),
           Divider(height: 1, color: context.vd.surfaceAlt),
           const SizedBox(height: 16),
           _Row(icon: Icons.tag, label: 'Mã HĐ', value: item.ma ?? '–'),
           const SizedBox(height: 10),
-          _Row(icon: Icons.confirmation_number_outlined, label: 'Ký hiệu', value: item.kyHieu ?? '–'),
+          _Row(
+            icon: Icons.confirmation_number_outlined,
+            label: 'Ký hiệu',
+            value: item.kyHieu ?? '–',
+          ),
           const SizedBox(height: 10),
-          _Row(icon: Icons.school_outlined, label: 'Học kỳ', value: item.hocKyTen ?? '–'),
+          _Row(
+            icon: Icons.school_outlined,
+            label: 'Học kỳ',
+            value: item.hocKyTen ?? '–',
+          ),
           const SizedBox(height: 10),
-          _Row(icon: Icons.calendar_today, label: 'Ngày cấp', value: _fmtDate(item.ngayCap)),
+          _Row(
+            icon: Icons.calendar_today,
+            label: 'Ngày cấp',
+            value: _fmtDate(item.ngayCap),
+          ),
           const SizedBox(height: 10),
-          _Row(icon: Icons.price_change_outlined, label: 'Đơn giá', value: _fmtAmount(item.donGia)),
+          _Row(
+            icon: Icons.price_change_outlined,
+            label: 'Đơn giá',
+            value: _fmtAmount(item.donGia),
+          ),
           const SizedBox(height: 10),
-          _Row(icon: Icons.payments_outlined, label: 'Thành tiền', value: _fmtAmount(item.thanhTien)),
+          _Row(
+            icon: Icons.payments_outlined,
+            label: 'Thành tiền',
+            value: _fmtAmount(item.thanhTien),
+          ),
           const SizedBox(height: 10),
-          _Row(icon: Icons.calculate_outlined, label: 'Tổng cộng', value: _fmtAmount(item.total)),
+          _Row(
+            icon: Icons.calculate_outlined,
+            label: 'Tổng cộng',
+            value: _fmtAmount(item.total),
+          ),
           if ((item.ghiChu ?? '').isNotEmpty) ...[
             const SizedBox(height: 12),
-            _Row(icon: Icons.notes_outlined, label: 'Ghi chú', value: item.ghiChu!),
+            _Row(
+              icon: Icons.notes_outlined,
+              label: 'Ghi chú',
+              value: item.ghiChu!,
+            ),
           ],
         ],
       ),
@@ -335,14 +419,17 @@ class _Row extends StatelessWidget {
         const SizedBox(width: 10),
         SizedBox(
           width: 88,
-          child: Text(label,
-              style: TextStyle(fontSize: 13, color: context.vd.inkFaint)),
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 13, color: context.vd.inkFaint),
+          ),
         ),
         Expanded(
-          child: Text(value,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600),
-              softWrap: true),
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            softWrap: true,
+          ),
         ),
       ],
     );

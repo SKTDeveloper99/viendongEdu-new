@@ -33,7 +33,7 @@ class StudentScheduleHeader extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
     decoration: BoxDecoration(
       gradient: LinearGradient(
-        colors: [context.vd.primary, context.vd.accent],
+        colors: [context.vd.headerTop, context.vd.headerBottom],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -45,21 +45,24 @@ class StudentScheduleHeader extends StatelessWidget {
         // Back + title
         Row(
           children: [
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Icon(
+            IconButton(
+              tooltip: 'Quay lại',
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(
                 Icons.arrow_back_ios,
-                color: context.vd.onPrimary,
+                color: context.vd.onHeader,
                 size: 20,
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              'Lịch học',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: context.vd.onPrimary,
+            Expanded(
+              child: Text(
+                'Lịch học',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: context.vd.onHeader,
+                ),
               ),
             ),
           ],
@@ -70,27 +73,31 @@ class StudentScheduleHeader extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            GestureDetector(
-              onTap: onPrevWeek,
-              child: Icon(
+            IconButton(
+              tooltip: 'Tuần trước',
+              onPressed: onPrevWeek,
+              icon: Icon(
                 Icons.chevron_left,
-                color: context.vd.onPrimary,
+                color: context.vd.onHeader,
                 size: 28,
               ),
             ),
-            Text(
-              weekLabel,
-              style: TextStyle(
-                color: context.vd.onPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            Expanded(
+              child: Text(
+                weekLabel,
+                style: TextStyle(
+                  color: context.vd.onHeader,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            GestureDetector(
-              onTap: onNextWeek,
-              child: Icon(
+            IconButton(
+              tooltip: 'Tuần sau',
+              onPressed: onNextWeek,
+              icon: Icon(
                 Icons.chevron_right,
-                color: context.vd.onPrimary,
+                color: context.vd.onHeader,
                 size: 28,
               ),
             ),
@@ -100,7 +107,7 @@ class StudentScheduleHeader extends StatelessWidget {
 
         // Day chips
         SizedBox(
-          height: 84,
+          height: 84 * MediaQuery.textScalerOf(context).scale(1),
           child: ListView.builder(
             controller: chipScroll,
             scrollDirection: Axis.horizontal,
@@ -109,7 +116,7 @@ class StudentScheduleHeader extends StatelessWidget {
               final day = weekDays[i];
               final isSelected = _sameDay(day, selectedDate);
               final isToday = _sameDay(day, today);
-              return GestureDetector(
+              return InkWell(
                 onTap: () => onSelectDate(day),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
@@ -118,7 +125,7 @@ class StudentScheduleHeader extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? context.vd.surface
-                        : context.vd.surface.withValues(alpha: 0.2),
+                        : context.vd.headerBottom,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -132,7 +139,7 @@ class StudentScheduleHeader extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: isSelected
                               ? context.vd.primary
-                              : context.vd.onPrimary,
+                              : context.vd.onHeader,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -143,7 +150,7 @@ class StudentScheduleHeader extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                           color: isSelected
                               ? context.vd.primary
-                              : context.vd.onPrimary,
+                              : context.vd.onHeader,
                         ),
                       ),
                       if (isToday)

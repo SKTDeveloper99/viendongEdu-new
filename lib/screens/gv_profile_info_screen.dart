@@ -59,15 +59,20 @@ class GvProfileInfoScreen extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
               ),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(Icons.arrow_back_ios,
-                        color: context.vd.onPrimary, size: 20),
+                  IconButton(
+                    tooltip: 'Quay lại',
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios,
+                      color: context.vd.onPrimary,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -82,7 +87,10 @@ class GvProfileInfoScreen extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => _openEdit(context),
-                    icon: Icon(Icons.edit_outlined, color: context.vd.onPrimary),
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      color: context.vd.onPrimary,
+                    ),
                     tooltip: 'Sửa hồ sơ',
                   ),
                 ],
@@ -94,27 +102,43 @@ class GvProfileInfoScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [
-                  _Section(title: 'Thông tin cơ bản', children: [
-                    _InfoRow(icon: Icons.person_outline, label: 'Họ tên', value: name),
-                    _InfoRow(icon: Icons.badge_outlined, label: 'Mã GV', value: code),
-                    if (profile?.isCoHuu == true)
-                      const _InfoRow(
-                        icon: Icons.workspace_premium_outlined,
-                        label: 'Cơ hữu',
-                        value: 'Có',
+                  _Section(
+                    title: 'Thông tin cơ bản',
+                    children: [
+                      _InfoRow(
+                        icon: Icons.person_outline,
+                        label: 'Họ tên',
+                        value: name,
                       ),
-                  ]),
+                      _InfoRow(
+                        icon: Icons.badge_outlined,
+                        label: 'Mã GV',
+                        value: code,
+                      ),
+                      if (profile?.isCoHuu == true)
+                        const _InfoRow(
+                          icon: Icons.workspace_premium_outlined,
+                          label: 'Cơ hữu',
+                          value: 'Có',
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
-                  _Section(title: 'Liên hệ', children: [
-                    _InfoRow(
+                  _Section(
+                    title: 'Liên hệ',
+                    children: [
+                      _InfoRow(
                         icon: Icons.phone_outlined,
                         label: 'Số điện thoại',
-                        value: (phone?.isNotEmpty ?? false) ? phone! : '–'),
-                    _InfoRow(
+                        value: (phone?.isNotEmpty ?? false) ? phone! : '–',
+                      ),
+                      _InfoRow(
                         icon: Icons.email_outlined,
                         label: 'Email',
-                        value: (email?.isNotEmpty ?? false) ? email! : '–'),
-                  ]),
+                        value: (email?.isNotEmpty ?? false) ? email! : '–',
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -137,11 +161,14 @@ class _Section extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(title,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: context.vd.primary)),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.vd.primary,
+            ),
+          ),
         ),
         Container(
           decoration: BoxDecoration(
@@ -168,7 +195,11 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -180,14 +211,17 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 110,
-            child: Text(label,
-                style: TextStyle(fontSize: 13, color: context.vd.inkFaint)),
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: context.vd.inkFaint),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.end),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.end,
+            ),
           ),
         ],
       ),

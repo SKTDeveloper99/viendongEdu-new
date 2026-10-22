@@ -122,10 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Thử lại',
-              style: TextStyle(color: context.vd.accent),
-            ),
+            child: Text('Thử lại', style: TextStyle(color: context.vd.accent)),
           ),
         ],
       ),
@@ -196,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ── Tài khoản ──
               SizedBox(
-                height: 48,
+                // Let input labels and text grow with the system text size.
                 child: TextField(
                   key: ValueKey(_role),
                   controller: _idCtrl,
@@ -224,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ── Mật khẩu ──
               SizedBox(
-                height: 48,
+                // Let input labels and text grow with the system text size.
                 child: TextField(
                   controller: _passCtrl,
                   obscureText: _obscure,
@@ -238,6 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelStyle: TextStyle(color: context.vd.accent),
                     prefixIcon: Icon(Icons.lock, color: context.vd.accent),
                     suffixIcon: IconButton(
+                      tooltip: _obscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
                       icon: Icon(
                         _obscure ? Icons.visibility_off : Icons.visibility,
                         color: context.vd.accent,
@@ -260,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ── Nút đăng nhập ──
               SizedBox(
-                height: 50,
+                // The button grows with its label.
                 child: ElevatedButton(
                   onPressed: _loading ? null : _login,
                   style: ElevatedButton.styleFrom(
@@ -335,13 +333,14 @@ class _RoleTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? context.vd.accent : Colors.transparent,
+          color: selected ? context.vd.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),
         alignment: Alignment.center,

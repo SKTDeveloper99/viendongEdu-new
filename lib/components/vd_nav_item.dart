@@ -23,28 +23,29 @@ class VdNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.vd;
     return VdPressable(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: 8,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: selected ? t.primary : t.inkFaint, size: 26),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: selected ? t.primary : t.inkMuted,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      child: Semantics(
+        selected: selected,
+        button: true,
+        child: InkWell(
+          onTap: onTap,
+
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: selected ? t.primary : t.inkFaint, size: 26),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: selected ? t.primary : t.inkMuted,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

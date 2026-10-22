@@ -40,9 +40,10 @@ class ClassManagerHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Icon(
+              IconButton(
+                tooltip: 'Quay lại',
+                onPressed: () => Navigator.pop(context),
+                icon: Icon(
                   Icons.arrow_back_ios,
                   color: context.vd.onPrimary,
                   size: 20,
@@ -66,7 +67,7 @@ class ClassManagerHeader extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: context.vd.onPrimary.withValues(alpha: 0.25),
+                    color: context.vd.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -112,17 +113,23 @@ class _SemesterDropdown extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2)),
+          BoxShadow(
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<ClassSemester>(
+          isExpanded: true,
+          itemHeight: 48 * MediaQuery.textScalerOf(context).scale(1),
           value: selected,
           dropdownColor: context.vd.surface,
           borderRadius: BorderRadius.circular(14),
           iconEnabledColor: context.vd.primary,
           icon: const Icon(Icons.expand_more_rounded, size: 20),
-          isDense: true,
+          isDense: false,
           // DropdownButton replaces the inherited DefaultTextStyle, so start
           // from the theme text style to keep the app font.
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(

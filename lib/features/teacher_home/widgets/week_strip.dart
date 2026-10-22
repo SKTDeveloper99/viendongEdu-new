@@ -60,21 +60,33 @@ class _WeekStripState extends State<WeekStrip> {
           children: [
             IconButton(
               tooltip: 'Tuần trước',
-              visualDensity: VisualDensity.compact,
               icon: Icon(Icons.chevron_left, color: t.inkMuted),
               onPressed: () => _shift(-1),
             ),
-            for (var i = 0; i < 7; i++)
-              Expanded(
-                child: _dayCell(
-                  context,
-                  DateTime(_monday.year, _monday.month, _monday.day + i),
-                  i,
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < 7; i++)
+                      SizedBox(
+                        width: 48 * MediaQuery.textScalerOf(context).scale(1),
+                        child: _dayCell(
+                          context,
+                          DateTime(
+                            _monday.year,
+                            _monday.month,
+                            _monday.day + i,
+                          ),
+                          i,
+                        ),
+                      ),
+                  ],
                 ),
               ),
+            ),
             IconButton(
               tooltip: 'Tuần sau',
-              visualDensity: VisualDensity.compact,
               icon: Icon(Icons.chevron_right, color: t.inkMuted),
               onPressed: () => _shift(1),
             ),
@@ -104,8 +116,8 @@ class _WeekStripState extends State<WeekStrip> {
             ),
             const SizedBox(height: 4),
             Container(
-              width: 32,
-              height: 32,
+              width: 32 * MediaQuery.textScalerOf(context).scale(1),
+              height: 32 * MediaQuery.textScalerOf(context).scale(1),
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,

@@ -75,6 +75,7 @@ class _EmsAttendanceStudentScreenState
         title: const Text('Điểm danh EMS'),
         actions: [
           IconButton(
+            tooltip: 'Tải lại',
             onPressed: _loading ? null : _load,
             icon: const Icon(Icons.refresh),
           ),

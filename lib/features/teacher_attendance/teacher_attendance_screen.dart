@@ -69,6 +69,7 @@ class _EmsAttendanceTeacherScreenState
           ),
           actions: [
             IconButton(
+              tooltip: 'Tải lại',
               onPressed: _vm.loading ? null : _vm.load,
               icon: const Icon(Icons.refresh),
             ),

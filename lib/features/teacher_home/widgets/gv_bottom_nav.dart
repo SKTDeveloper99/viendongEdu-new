@@ -20,7 +20,7 @@ class GvBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Container(
-          height: 64,
+          constraints: const BoxConstraints(minHeight: 64),
           decoration: BoxDecoration(
             color: context.vd.surface,
             border: Border(top: BorderSide(color: context.vd.hairline)),
@@ -28,19 +28,23 @@ class GvBottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              VdNavItem(
-                icon: Icons.dashboard_rounded,
-                label: 'Trang chủ',
-                selected: currentIndex == 0,
-                horizontalPadding: 32,
-                onTap: () => onSelect(0),
+              Expanded(
+                child: VdNavItem(
+                  icon: Icons.dashboard_rounded,
+                  label: 'Trang chủ',
+                  selected: currentIndex == 0,
+                  horizontalPadding: 32,
+                  onTap: () => onSelect(0),
+                ),
               ),
-              VdNavItem(
-                icon: Icons.person_rounded,
-                label: 'Cá nhân',
-                selected: currentIndex == 1,
-                horizontalPadding: 32,
-                onTap: () => onSelect(1),
+              Expanded(
+                child: VdNavItem(
+                  icon: Icons.person_rounded,
+                  label: 'Cá nhân',
+                  selected: currentIndex == 1,
+                  horizontalPadding: 32,
+                  onTap: () => onSelect(1),
+                ),
               ),
             ],
           ),

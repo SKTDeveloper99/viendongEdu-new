@@ -15,15 +15,21 @@ class ClassGradeCard extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Điểm số',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const Text(
+            'Điểm số',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -53,14 +59,19 @@ class ClassGradeCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Text('Tổng kết',
-                      style: TextStyle(color: context.vd.onPrimary.withValues(alpha: 0.7), fontSize: 13)),
+                  Text(
+                    'Tổng kết',
+                    style: TextStyle(color: context.vd.onPrimary, fontSize: 13),
+                  ),
                   const Spacer(),
-                  Text(item.tongdiem!.toStringAsFixed(1),
-                      style: TextStyle(
-                          color: context.vd.onPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    item.tongdiem!.toStringAsFixed(1),
+                    style: TextStyle(
+                      color: context.vd.onPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -89,12 +100,16 @@ class _ScoreBox extends StatelessWidget {
           Text(
             value % 1 == 0 ? value.toInt().toString() : value.toString(),
             style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: context.vd.ink),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: context.vd.ink,
+            ),
           ),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: context.vd.inkMuted)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: context.vd.inkMuted),
+          ),
         ],
       ),
     );
