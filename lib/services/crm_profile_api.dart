@@ -18,10 +18,16 @@ class CrmProfileApi {
   static Future<CrmStudentProfile> getStudentMe() async {
     final token = AppSession.instance.emsToken;
     final body = await EmsApiService.send('GET', '/student/me');
-    final profile = CrmStudentProfile.fromGetMeJson(body as Map<String, dynamic>);
+    if (body is! Map<String, dynamic> ||
+        body['student'] is! Map<String, dynamic>) {
+      throw EmsException('Máy chủ không trả về hồ sơ học viên.');
+    }
+    final profile = CrmStudentProfile.fromGetMeJson(body);
     if (token == AppSession.instance.emsToken) {
       AppSession.instance.applyStudentDataGate(body);
-      AppSession.instance.fullName = profile.fullName;
+      if ((body['student'] as Map<String, dynamic>).containsKey('full_name')) {
+        AppSession.instance.fullName = profile.fullName;
+      }
     }
     return profile;
   }

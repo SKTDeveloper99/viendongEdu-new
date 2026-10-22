@@ -45,7 +45,11 @@ class CrmStudentApi {
     final profile = CrmStudentProfile.fromJson(student);
     if (token == AppSession.instance.emsToken) {
       AppSession.instance.applyStudentDataGate(body);
-      AppSession.instance.fullName = profile.fullName.isEmpty ? null : profile.fullName;
+      if (student.containsKey('full_name')) {
+        AppSession.instance.fullName = profile.fullName.isEmpty
+            ? null
+            : profile.fullName;
+      }
     }
     return profile;
   }

@@ -347,8 +347,9 @@ class EmsApiService {
       if (newTag != null && newTag.isNotEmpty) {
         await OfflineSnapshot.save(resource, {'etag': newTag, 'body': data});
       } else {
-        // A fresh masked/uncached response supersedes the previous ETag body.
-        await OfflineSnapshot.remove(resource);
+        // Replace an old ETag body even when the fresh response has no ETag
+        // (including a masked/empty response). Offline reads keep this copy.
+        await OfflineSnapshot.save(resource, {'body': data});
       }
       return (data: data, savedAt: DateTime.now(), fresh: true);
     } on EmsException catch (e) {
@@ -358,6 +359,7 @@ class EmsApiService {
         await OfflineSnapshot.remove(resource);
         rethrow;
       }
+      if (e.statusCode != null && e.statusCode! < 500) rethrow;
       if (!hasBody) rethrow;
       return (data: blob['body'], savedAt: stored!.savedAt, fresh: false);
     }
