@@ -15,7 +15,9 @@ abstract final class AuthApi {
       body: {'mssv': mssv, 'password': password},
       auth: false,
     );
-    final identity = CrmIdentity.fromStudentLogin(body);
+    final identity = EmsApiService.parse(
+      () => CrmIdentity.fromStudentLogin(body),
+    );
     if (identity.token.isEmpty) {
       throw EmsException('Máy chủ không cấp được phiên đăng nhập.');
     }
@@ -41,7 +43,9 @@ abstract final class AuthApi {
       },
       auth: false,
     );
-    final identity = CrmIdentity.fromTeacherLogin(body);
+    final identity = EmsApiService.parse(
+      () => CrmIdentity.fromTeacherLogin(body),
+    );
     if (identity.token.isEmpty) {
       throw EmsException('Máy chủ không cấp được phiên đăng nhập.');
     }

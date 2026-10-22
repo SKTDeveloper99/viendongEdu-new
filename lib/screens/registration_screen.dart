@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_registration_models.dart';
 import '../services/crm_registration_api.dart';
@@ -8,11 +9,6 @@ String _fmtDate(DateTime? d) => d == null
     ? '–'
     : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-// ── Screen ─────────────────────────────────────────────
-// Thay ApiService.getDotDangKy/getMonHocDuKien/getKetQuaDangKy/
-// postDangKyMon/deleteDangKyMon (IMS) bằng CrmRegistrationApi (đọc:
-// docs/api/mobile-ims-replacement-S3.md; ghi: .../S5.md).
-//
 // `offering_id` bây giờ là id LMH IMS (`tbl_qldt_tkb_lopmonhoc.id`), KHÔNG
 // còn là `mhid` (monhocid) như app IMS cũ. Đăng ký được GHI Ở EMS, CHƯA gửi
 // lên IMS — màn hình phải nói rõ điều đó, không giấu (owner ruling
@@ -62,7 +58,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loadingPeriods = false; _error = e.toString(); });
+      setState(() { _loadingPeriods = false; _error = crmErrorMessage(e); });
     }
   }
 
@@ -93,8 +89,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               allSections: _allSections,
             );
       final resultsFuture = CrmRegistrationApi.getResults(semester: period.semesterCode);
-      final offeringsPage = await offeringsFuture;
-      final results = await resultsFuture;
+      final loaded = await Future.wait<Object>([
+        offeringsFuture,
+        resultsFuture,
+      ]);
+      final offeringsPage = loaded[0] as CrmRegistrationOfferingsPage;
+      final results = loaded[1] as List<CrmRegistrationResult>;
       if (!mounted) return;
       setState(() {
         _offeringsPage = offeringsPage;
@@ -104,7 +104,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
-      setState(() { _loadingData = false; _error = e.toString(); });
+      setState(() { _loadingData = false; _error = crmErrorMessage(e); });
     }
   }
 
@@ -169,7 +169,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       // Hiện nguyên văn lỗi máy chủ (đợt đóng / lớp đầy / đã đăng ký).
-      _showSnack(e.toString(), isError: true);
+      _showSnack(crmErrorMessage(e), isError: true);
     } finally {
       if (mounted) setState(() => _processing.remove(offering.offeringId));
     }

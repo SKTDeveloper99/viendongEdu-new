@@ -10,17 +10,23 @@ import '../models/crm_registration_models.dart';
 class CrmRegistrationApi {
   /// `GET /api/student/me/registration/periods?semester=`.
   /// [semester] bỏ trống = học kỳ hiện tại (máy chủ tự chọn).
-  static Future<List<CrmRegistrationPeriod>> getPeriods({String? semester}) async {
-    final body = await EmsApiService.send(
+  static Future<List<CrmRegistrationPeriod>> getPeriods({
+    String? semester,
+  }) async {
+    final body = await EmsApiService.sendMap(
       'GET',
       '/student/me/registration/periods',
-      query: (semester == null || semester.isEmpty) ? null : {'semester': semester},
-    ) as Map<String, dynamic>;
-    final list = body['periods'];
-    if (list is! List) return const [];
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+    );
+    final list = EmsApiService.rows(body['periods']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(CrmRegistrationPeriod.fromJson)
+        .map(
+          (row) =>
+              EmsApiService.parse(() => CrmRegistrationPeriod.fromJson(row)),
+        )
         .toList();
   }
 
@@ -38,15 +44,14 @@ class CrmRegistrationApi {
     required String periodId,
     bool allSections = false,
   }) async {
-    final body = await EmsApiService.send(
+    final body = await EmsApiService.sendMap(
       'GET',
       '/student/me/registration/offerings',
-      query: {
-        'period_id': periodId,
-        if (allSections) 'scope': 'all',
-      },
-    ) as Map<String, dynamic>;
-    return CrmRegistrationOfferingsPage.fromJson(body);
+      query: {'period_id': periodId, if (allSections) 'scope': 'all'},
+    );
+    return EmsApiService.parse(
+      () => CrmRegistrationOfferingsPage.fromJson(body),
+    );
   }
 
   /// `GET /api/student/me/registration/results?semester=`. [semester] bỏ
@@ -54,38 +59,50 @@ class CrmRegistrationApi {
   /// [semester] để giới hạn về một học kỳ. Trả về cả kết quả gửi qua EMS
   /// (`source: 'ems_request'`) lẫn đã lên danh sách lớp IMS (`source:
   /// 'ims_roster'`) — màn hình phải hiện cả hai, có nhãn.
-  static Future<List<CrmRegistrationResult>> getResults({String? semester}) async {
-    final body = await EmsApiService.send(
+  static Future<List<CrmRegistrationResult>> getResults({
+    String? semester,
+  }) async {
+    final body = await EmsApiService.sendMap(
       'GET',
       '/student/me/registration/results',
-      query: (semester == null || semester.isEmpty) ? null : {'semester': semester},
-    ) as Map<String, dynamic>;
-    final list = body['results'];
-    if (list is! List) return const [];
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+    );
+    final list = EmsApiService.rows(body['results']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(CrmRegistrationResult.fromJson)
+        .map(
+          (row) =>
+              EmsApiService.parse(() => CrmRegistrationResult.fromJson(row)),
+        )
         .toList();
   }
 
   /// `POST /api/student/me/registration {offering_id}`. Ném [EmsException]
   /// nguyên văn thông điệp máy chủ khi đợt đã đóng / lớp đầy / đã đăng ký —
   /// màn hình hiện đúng câu đó, không tự diễn giải lại.
-  static Future<CrmRegistrationRequestResult> register(String offeringId) async {
-    final body = await EmsApiService.send(
+  static Future<CrmRegistrationRequestResult> register(
+    String offeringId,
+  ) async {
+    final body = await EmsApiService.sendMap(
       'POST',
       '/student/me/registration',
       body: {'offering_id': offeringId},
-    ) as Map<String, dynamic>;
-    return CrmRegistrationRequestResult.fromJson(body);
+    );
+    return EmsApiService.parse(
+      () => CrmRegistrationRequestResult.fromJson(body),
+    );
   }
 
   /// `DELETE /api/student/me/registration/:id`.
   static Future<CrmRegistrationCancelResult> cancel(String id) async {
-    final body = await EmsApiService.send(
+    final body = await EmsApiService.sendMap(
       'DELETE',
       '/student/me/registration/$id',
-    ) as Map<String, dynamic>;
-    return CrmRegistrationCancelResult.fromJson(body);
+    );
+    return EmsApiService.parse(
+      () => CrmRegistrationCancelResult.fromJson(body),
+    );
   }
 }

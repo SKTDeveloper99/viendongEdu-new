@@ -15,14 +15,14 @@ class CrmProfileApi {
   /// `GET /api/student/me` — điền sẵn form. Không có `cccd`/`cmnd` ở endpoint
   /// này (xem [CrmStudentProfile.fromGetMeJson]).
   static Future<CrmStudentProfile> getStudentMe() async {
-    final body = await EmsApiService.send('GET', '/student/me');
-    return CrmStudentProfile.fromGetMeJson(body as Map<String, dynamic>);
+    final body = await EmsApiService.sendMap('GET', '/student/me');
+    return EmsApiService.parse(() => CrmStudentProfile.fromGetMeJson(body));
   }
 
   /// `GET /api/teacher/me` — điền sẵn form.
   static Future<CrmTeacherProfile> getTeacherMe() async {
-    final body = await EmsApiService.send('GET', '/teacher/me');
-    return CrmTeacherProfile.fromGetMeJson(body as Map<String, dynamic>);
+    final body = await EmsApiService.sendMap('GET', '/teacher/me');
+    return EmsApiService.parse(() => CrmTeacherProfile.fromGetMeJson(body));
   }
 
   /// `PATCH /api/student/me/profile {email?, sdt?, cmnd?}`. Chỉ gửi trường
@@ -39,9 +39,12 @@ class CrmProfileApi {
       if (sdt != null && sdt.isNotEmpty) 'sdt': sdt,
       if (cmnd != null && cmnd.isNotEmpty) 'cmnd': cmnd,
     };
-    final res = await EmsApiService.send('PATCH', '/student/me/profile', body: body)
-        as Map<String, dynamic>;
-    return CrmStudentProfile.fromPatchJson(res);
+    final res = await EmsApiService.sendMap(
+      'PATCH',
+      '/student/me/profile',
+      body: body,
+    );
+    return EmsApiService.parse(() => CrmStudentProfile.fromPatchJson(res));
   }
 
   /// `PATCH /api/teacher/me/profile {email?, sdt?}`.
@@ -53,8 +56,11 @@ class CrmProfileApi {
       if (email != null && email.isNotEmpty) 'email': email,
       if (sdt != null && sdt.isNotEmpty) 'sdt': sdt,
     };
-    final res = await EmsApiService.send('PATCH', '/teacher/me/profile', body: body)
-        as Map<String, dynamic>;
-    return CrmTeacherProfile.fromPatchJson(res);
+    final res = await EmsApiService.sendMap(
+      'PATCH',
+      '/teacher/me/profile',
+      body: body,
+    );
+    return EmsApiService.parse(() => CrmTeacherProfile.fromPatchJson(res));
   }
 }
