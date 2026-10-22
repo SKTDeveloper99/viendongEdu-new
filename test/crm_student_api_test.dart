@@ -312,7 +312,7 @@ void main() {
 
     test('thiếu academic không làm vỡ app', () {
       final summary = CrmGraduationSummary.fromJson({'student': {}});
-      expect(summary.academic.total, 0);
+      expect(summary.academic.total, isNull);
       expect(summary.academic.hasCurriculum, isFalse);
       expect(summary.remainingSubjects, isEmpty);
     });

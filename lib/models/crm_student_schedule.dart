@@ -46,6 +46,20 @@ import 'json_values.dart';
 
 DateTime? _calendarDate(dynamic v) {
   if (v == null) return null;
+  // Correction overlays use date-only strings. Parsing those as device-local
+  // midnight and then converting to UTC moved them back a day in UTC+ zones.
+  final dateOnly = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})$',
+  ).firstMatch(v.toString());
+  if (dateOnly != null) {
+    final year = int.parse(dateOnly.group(1)!);
+    final month = int.parse(dateOnly.group(2)!);
+    final day = int.parse(dateOnly.group(3)!);
+    final date = DateTime.utc(year, month, day);
+    return date.year == year && date.month == month && date.day == day
+        ? date
+        : null;
+  }
   final dt = DateTime.tryParse(v.toString());
   if (dt == null) return null;
   final u = dt.toUtc();

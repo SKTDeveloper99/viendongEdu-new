@@ -10,8 +10,15 @@ double? jsonDouble(dynamic value) {
 }
 
 int? jsonInt(dynamic value) {
+  if (value is int) return value;
+  if (value is String) {
+    final integer = int.tryParse(value.trim());
+    if (integer != null) return integer;
+  }
   final number = jsonDouble(value);
-  return number?.toInt();
+  // Do not silently round money, credits or identifiers in a malformed row.
+  if (number == null || number.truncateToDouble() != number) return null;
+  return number.toInt();
 }
 
 Map<String, dynamic>? jsonMap(dynamic value) =>

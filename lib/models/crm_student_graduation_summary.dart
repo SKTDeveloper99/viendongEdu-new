@@ -27,16 +27,16 @@ import 'json_values.dart';
 import 'crm_student_grades.dart';
 
 class CrmAcademicSummary {
-  final int total;
-  final int scored;
-  final int passed;
-  final int failed;
+  final int? total;
+  final int? scored;
+  final int? passed;
+  final int? failed;
   final double? averageScore;
   final bool hasCurriculum;
-  final int requiredSubjects;
-  final int requiredPassed;
-  final int remainingSubjectsCount;
-  final bool academicallyClear;
+  final int? requiredSubjects;
+  final int? requiredPassed;
+  final int? remainingSubjectsCount;
+  final bool? academicallyClear;
 
   const CrmAcademicSummary({
     this.total = 0,
@@ -53,32 +53,38 @@ class CrmAcademicSummary {
 
   factory CrmAcademicSummary.fromJson(Map<String, dynamic> j) =>
       CrmAcademicSummary(
-        total: jsonInt(j['total']) ?? 0,
-        scored: jsonInt(j['scored']) ?? 0,
-        passed: jsonInt(j['passed']) ?? 0,
-        failed: jsonInt(j['failed']) ?? 0,
+        total: jsonInt(j['total']),
+        scored: jsonInt(j['scored']),
+        passed: jsonInt(j['passed']),
+        failed: jsonInt(j['failed']),
         averageScore: jsonDouble(j['average_score']),
         hasCurriculum: j['has_curriculum'] == true,
-        requiredSubjects: jsonInt(j['required_subjects']) ?? 0,
-        requiredPassed: jsonInt(j['required_passed']) ?? 0,
-        remainingSubjectsCount: jsonInt(j['remaining_subjects_count']) ?? 0,
-        academicallyClear: j['academically_clear'] == true,
+        requiredSubjects: jsonInt(j['required_subjects']),
+        requiredPassed: jsonInt(j['required_passed']),
+        remainingSubjectsCount: jsonInt(j['remaining_subjects_count']),
+        academicallyClear: j['academically_clear'] is bool
+            ? j['academically_clear'] as bool
+            : null,
       );
 }
 
 class CrmGraduationSummary {
   final CrmAcademicSummary academic;
   final List<CrmRemainingSubject> remainingSubjects;
+  final bool remainingSubjectsKnown;
 
   const CrmGraduationSummary({
     required this.academic,
     this.remainingSubjects = const [],
+    this.remainingSubjectsKnown = true,
   });
 
   factory CrmGraduationSummary.fromJson(Map<String, dynamic> j) {
     final list = j['remaining_subjects'];
     return CrmGraduationSummary(
       academic: CrmAcademicSummary.fromJson(jsonMap(j['academic']) ?? const {}),
+      remainingSubjectsKnown:
+          list is List && list.every((row) => row is Map<String, dynamic>),
       remainingSubjects: list is List
           ? list
                 .whereType<Map<String, dynamic>>()
