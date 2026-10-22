@@ -8,8 +8,7 @@ library;
 //   flutter test --exclude-tags golden                          # skip on CI
 //
 // Real fonts are loaded (BeVietnamPro + MaterialIcons) so the PNGs are
-// readable. Schedule dates are fixed; home dates still differ by a few pixels
-// day to day, so comparison allows a small diff ratio.
+// readable. Dates are frozen; a small tolerance accommodates platform rasterization.
 import 'dart:convert';
 import 'dart:io';
 
@@ -49,7 +48,7 @@ Map<String, dynamic> _todayClass(String name, String start, String end) => {
   'subject_name': name,
   'semester_code': '262',
   'section_code': '06CDTHUNGHIEM-$start',
-  'day_code': dayCodeForWeekday((_scheduleDate ?? DateTime.now()).weekday),
+  'day_code': dayCodeForWeekday((_scheduleDate ?? _homeClock()).weekday),
   'start_time': start,
   'end_time': end,
   'room_name': 'P.101',
@@ -186,7 +185,7 @@ http.Response _route(http.Request req) {
   }
   if (p.endsWith('/student/me')) {
     return _ok({
-      'student': {'mssv': '2600000001', 'class_code': '06CDTHUNGHIEM'},
+      'student': {'mssv': 'TEST260001', 'class_code': '06CDTHUNGHIEM'},
     });
   }
   if (p.endsWith('/board/unread-count')) {
@@ -330,10 +329,7 @@ Future<void> _loadFonts() async {
 
 // Home goldens freeze the time of day at 07:00 so the "Tiếp theo" card always
 // shows the 07:30 class ("bắt đầu sau 30 phút") and the greeting is "sáng".
-DateTime _homeClock() {
-  final d = DateTime.now();
-  return DateTime(d.year, d.month, d.day, 7);
-}
+DateTime _homeClock() => DateTime(2026, 10, 22, 7);
 
 // Match the date in the existing schedule goldens; no visual change intended.
 DateTime _scheduleClock() => DateTime(2026, 9, 30, 7);
@@ -387,7 +383,7 @@ void main() {
   void asStudent() => AppSession.instance
     ..emsToken = 'test-token'
     ..role = CrmRole.student
-    ..mssv = '2600000001'
+    ..mssv = 'TEST260001'
     ..fullName = 'Học Viên Thử Nghiệm'
     ..emsDenied = false;
 
