@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/core/lantern_gate.dart';
 import 'package:viendongedu2_flutter/core/remote/app_remote_config.dart';
 import 'package:viendongedu2_flutter/features/infinite/quest.dart';
+import 'package:viendongedu2_flutter/models/mock_data.dart';
 
 void main() {
   final book = parseQuestBook(defaultQuestsJson)!;
@@ -30,10 +31,22 @@ void main() {
   });
 
   test('the built-in book equals firebase/infinite/book.json', () {
-    final file = jsonDecode(
-      File('firebase/infinite/book.json').readAsStringSync(),
+    // The live kill switch (enabled/notice) is set in Remote Config only.
+    Map<String, dynamic> quests(String raw) =>
+        (jsonDecode(raw) as Map<String, dynamic>)
+          ..remove('enabled')
+          ..remove('notice');
+    expect(
+      quests(defaultQuestsJson),
+      quests(File('firebase/infinite/book.json').readAsStringSync()),
     );
-    expect(jsonDecode(defaultQuestsJson), file);
+  });
+
+  test('Infinite is parked: no home menu tile', () {
+    expect(
+      MockData.menuItems.map((m) => m['route']),
+      isNot(contains('/infinite')),
+    );
   });
 
   test('an unusable document is rejected so the last good copy stays', () {

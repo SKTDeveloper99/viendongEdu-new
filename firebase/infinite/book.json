@@ -1,6 +1,7 @@
 {
   "v": 2,
-  "enabled": true,
+  "enabled": false,
+  "notice": "Viễn Đông Infinite đang tạm nghỉ. Hẹn gặp lại bạn sau!",
   "school": {
     "lat": 10.851835539538312,
     "lng": 106.62820562524071,
