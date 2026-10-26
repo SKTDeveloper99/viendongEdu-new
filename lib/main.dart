@@ -164,7 +164,6 @@ class MyApp extends StatelessWidget {
         // chuông đẩy (push) nào.
         '/student_board': (context) => const StudentBoardScreen(),
         '/student_questions': (context) => const StudentQuestionsScreen(),
-        '/infinite': (context) => const InfiniteScreen(),
         // Điểm danh EMS — EMS là nguồn dữ liệu điểm danh chính thức.
         '/ems_attendance_gv': (context) => const EmsAttendanceTeacherScreen(),
         '/ems_attendance_hv': (context) => const EmsAttendanceStudentScreen(),

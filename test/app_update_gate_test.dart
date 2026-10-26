@@ -15,4 +15,19 @@ void main() {
     expect(AppUpdateGate.isOutdated('6.0.4', ''), isFalse);
     expect(AppUpdateGate.isOutdated('x.y', '6.0.4'), isFalse);
   });
+
+  test('same name, lower build is outdated when the server names a build', () {
+    // 2026-10-26: 101 (tdat535) and 102 were both 6.0.8.
+    expect(AppUpdateGate.isBuildOutdated('101', 103), isTrue);
+    expect(AppUpdateGate.isBuildOutdated('101', '103'), isTrue);
+    expect(AppUpdateGate.isBuildOutdated('103', 103), isFalse);
+    expect(AppUpdateGate.isBuildOutdated('104', 103), isFalse);
+  });
+
+  test('a missing or odd build minimum never locks a user out', () {
+    expect(AppUpdateGate.isBuildOutdated('101', null), isFalse);
+    expect(AppUpdateGate.isBuildOutdated('101', ''), isFalse);
+    expect(AppUpdateGate.isBuildOutdated('', 103), isFalse);
+    expect(AppUpdateGate.isBuildOutdated('abc', 103), isFalse);
+  });
 }

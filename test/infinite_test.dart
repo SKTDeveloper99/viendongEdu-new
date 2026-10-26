@@ -42,10 +42,14 @@ void main() {
     );
   });
 
-  test('Infinite is parked: no home menu tile', () {
+  test('Infinite is parked: no home menu tile and no named route', () {
     expect(
       MockData.menuItems.map((m) => m['route']),
       isNot(contains('/infinite')),
+    );
+    expect(
+      File('lib/main.dart').readAsStringSync(),
+      isNot(contains("'/infinite'")),
     );
   });
 

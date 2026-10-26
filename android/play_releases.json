@@ -1,0 +1,12 @@
+{
+  "_why": "Every Android build ever uploaded to Google Play for com.viendong.vidostudentbeta. On 2026-10-26 Android phones dropped from our 6.0.8 (102) to tdat535's 6.0.8 (101): same name, different code, and the update gate could not tell them apart. test/play_release_ledger_test.dart fails when the next build would repeat a versionCode or reuse a versionName from another line. Add a row for every upload, including uploads from other branches.",
+  "releases": [
+    { "versionCode": 91, "versionName": "6.1.0", "line": "legacy" },
+    { "versionCode": 97, "versionName": "6.0.6", "line": "viendong" },
+    { "versionCode": 99, "versionName": "6.0.6", "line": "viendong" },
+    { "versionCode": 100, "versionName": "6.0.8", "line": "viendong" },
+    { "versionCode": 101, "versionName": "6.0.8", "line": "tdat535" },
+    { "versionCode": 102, "versionName": "6.0.8", "line": "viendong" },
+    { "versionCode": 103, "versionName": "6.0.9", "line": "viendong" }
+  ]
+}
