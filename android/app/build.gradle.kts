@@ -42,7 +42,7 @@ android {
         // fails on a repeated code or a versionName another line shipped
         // (101 and 102 were both "6.0.8"). iOS uses pubspec's build number;
         // Android keeps its own counter. Raise by 1 for every Play upload.
-        versionCode = 103
+        versionCode = 104
         versionName = flutter.versionName
     }
 

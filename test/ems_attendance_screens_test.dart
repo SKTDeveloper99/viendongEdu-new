@@ -368,6 +368,7 @@ void main() {
     // Tick only the first student present.
     await tester.tap(find.text('Có').first);
     await tester.pump();
+    expect(find.textContaining('CHƯA LƯU • bấm Lưu'), findsOneWidget);
     await tester.tap(find.text('Lưu điểm danh'));
     await tester.pumpAndSettle();
 
@@ -390,6 +391,8 @@ void main() {
     expect(marks.single['mssv'], '2600000001');
     expect(status['2600000002'], isNull, reason: 'undecided is never absent');
     expect(find.textContaining('Đã lưu 1 dòng'), findsOneWidget);
+    expect(find.textContaining('ĐÃ LƯU ✓'), findsOneWidget);
+    expect(find.textContaining('CHƯA LƯU • bấm Lưu'), findsNothing);
   });
 
   // 17/09 Hậu 43194: bốn lần 422 y hệt trong 30 giây vì hàng đợi 20 s gửi lại.
