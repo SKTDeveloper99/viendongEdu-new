@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/data/teacher_attendance_repository.dart';
 import 'package:viendongedu2_flutter/features/teacher_attendance/roster_view_model.dart';
+import 'package:viendongedu2_flutter/features/teacher_attendance/save_status.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 import 'package:viendongedu2_flutter/services/ems_attendance_cache.dart';
 
@@ -302,6 +303,47 @@ void main() {
       await vm.save(ui.prompts);
       expect(ui.confirms, 1);
       expect(repo.log, isEmpty);
+      expect(ui.toasts, ['CHƯA LƯU — chưa gửi gì lên máy chủ.']);
+      expect(vm.saveStatus, RosterSaveStatus.unsaved);
+    });
+
+    test('save status: unsaved until the server holds the marks', () async {
+      final at = DateTime(2026, 10, 29, 15, 11);
+      final repo = _FakeRepo(
+        rosters: [
+          [_s(_a)],
+          [
+            EmsRosterStudent(
+              mssv: _a,
+              fullName: 'Học viên $_a',
+              status: 'present',
+              markedAt: at,
+            ),
+          ],
+        ],
+        posts: [const EmsSaveResult(saved: 1)],
+      );
+      final vm = RosterViewModel(repo, _session);
+      await vm.load();
+      expect(vm.saveStatus, RosterSaveStatus.none);
+      vm.select(_a, 'present');
+      expect(vm.saveStatus, RosterSaveStatus.unsaved);
+      await vm.save(_Ui().prompts);
+      expect(vm.saveStatus, RosterSaveStatus.saved);
+      expect(vm.savedAt, at);
+      vm.select(_a, 'absent');
+      expect(vm.saveStatus, RosterSaveStatus.unsaved);
+    });
+
+    test('save status: a reopened saved roster says saved', () async {
+      final repo = _FakeRepo(
+        rosters: [
+          [_s(_a, 'present'), _s(_b, 'absent')],
+        ],
+      );
+      final vm = RosterViewModel(repo, _session);
+      await vm.load();
+      expect(vm.saveStatus, RosterSaveStatus.saved);
     });
 
     test('Vắng check: "Xem lại" sends nothing; checked → sends', () async {

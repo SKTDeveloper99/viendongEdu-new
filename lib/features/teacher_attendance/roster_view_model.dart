@@ -62,6 +62,7 @@ class RosterViewModel extends ChangeNotifier {
   bool get needsReview => _needsReview;
   String? get error => _error;
   String? get offlineBanner => _offlineBanner;
+  bool get usingOfflineRoster => _usingOfflineRoster;
   List<EmsRosterStudent> get students => _students;
   DateTime? get scanSyncedAt => _scanSyncedAt;
   bool get sortAz => _sortAz;
@@ -271,15 +272,14 @@ class RosterViewModel extends ChangeNotifier {
     }
     // 17/09 (Huy, lớp 43461): 12 học viên chưa chạm tới, bấm Lưu vẫn xanh.
     // Máy chủ KHÔNG ghi vắng người chưa điểm danh — nhưng thầy/cô tưởng đã
-    // xong. Hỏi rõ trước khi lưu thiếu; không bao giờ tự ghi vắng thay.
-    if (unmarkedCount > 0) {
-      final undecided = _students
-          .where((s) => !_marks.containsKey(s.mssv))
-          .toList();
-      final go = await ui.confirmUnmarked(undecided, _marks.length);
-      if (!go) return;
+    // xong. Hỏi rõ trước khi lưu thiếu; không bao giờ tự ghi vắng thay. Huỷ
+    // thì nói rõ CHƯA LƯU: im lặng trông như đã lưu (29/10/2026).
+    final undecided = _students.where((s) => !_marks.containsKey(s.mssv));
+    if ((undecided.isNotEmpty &&
+            !await ui.confirmUnmarked(undecided.toList(), _marks.length)) ||
+        !await askOtherReasons(ui, _marks, _notes, nameOf)) {
+      return ui.toast('CHƯA LƯU — chưa gửi gì lên máy chủ.');
     }
-    if (!await askOtherReasons(ui, _marks, _notes, nameOf)) return;
     if (!AttendanceSendLock.tryAcquire(draftKey)) {
       ui.toast('Đang tự động gửi buổi này, vui lòng đợi giây lát.');
       return;

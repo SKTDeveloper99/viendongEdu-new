@@ -77,6 +77,9 @@ class EmsRosterStudent {
   final bool inScope;
   final String? status;
   final String? note;
+
+  /// When the server stored [status]; null when unmarked or unknown.
+  final DateTime? markedAt;
   final bool scanned;
   final DateTime? scannedAt;
   final int? punchId;
@@ -88,6 +91,7 @@ class EmsRosterStudent {
     this.inScope = false,
     this.status,
     this.note,
+    this.markedAt,
     this.scanned = false,
     this.scannedAt,
     this.punchId,
@@ -100,6 +104,7 @@ class EmsRosterStudent {
     inScope: j['in_scope'] == true,
     status: j['status']?.toString(),
     note: j['note']?.toString(),
+    markedAt: DateTime.tryParse(j['marked_at']?.toString() ?? '')?.toLocal(),
     scanned: j['scanned'] == true,
     scannedAt: DateTime.tryParse(j['scanned_at']?.toString() ?? '')?.toLocal(),
     // punch_id là bigint của Postgres — tuỳ driver trả về SỐ hoặc CHUỖI. Ép
@@ -116,6 +121,7 @@ class EmsRosterStudent {
     'in_scope': inScope,
     'status': ?status,
     'note': ?note,
+    'marked_at': ?markedAt?.toIso8601String(),
     'scanned': scanned,
     'scanned_at': ?scannedAt?.toIso8601String(),
     'punch_id': ?punchId,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/vd_tokens.dart';
+import '../save_status.dart';
 
 /// Status line (CHƯA GỬI / CHƯA LƯU + counts) and the "Lưu điểm danh" button.
 class RosterBottomBar extends StatelessWidget {
@@ -15,6 +16,8 @@ class RosterBottomBar extends StatelessWidget {
     required this.unmarkedCount,
     required this.saving,
     required this.onSave,
+    this.saveStatus = RosterSaveStatus.none,
+    this.savedAt,
   });
 
   final bool queued;
@@ -28,6 +31,26 @@ class RosterBottomBar extends StatelessWidget {
   final int unmarkedCount;
   final bool saving;
   final VoidCallback onSave;
+  final RosterSaveStatus saveStatus;
+  final DateTime? savedAt;
+
+  /// "ĐÃ LƯU ✓ lúc 15:11 03/11" / "CHƯA LƯU • …"; null when nothing to say or
+  /// a more specific CHƯA GỬI / CHƯA LƯU line is already shown.
+  String? get saveLine {
+    if (queued || needsReasonCount != null) return null;
+    switch (saveStatus) {
+      case RosterSaveStatus.unsaved:
+        return 'CHƯA LƯU • bấm Lưu điểm danh để gửi';
+      case RosterSaveStatus.saved:
+        final t = savedAt;
+        if (t == null) return 'ĐÃ LƯU ✓';
+        String two(int n) => n.toString().padLeft(2, '0');
+        return 'ĐÃ LƯU ✓ lúc ${two(t.hour)}:${two(t.minute)} '
+            '${two(t.day)}/${two(t.month)}';
+      case RosterSaveStatus.none:
+        return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,15 +64,34 @@ class RosterBottomBar extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                '${queued ? 'CHƯA GỬI • kết nối lại rồi bấm Lưu\n' : ''}'
-                '${needsReasonCount != null ? 'CHƯA LƯU • $needsReasonCount SV quẹt cổng bị ghi vắng, cần lý do\n' : ''}'
-                'Có $presentCount • Vắng $absentCount • '
-                'Khác ${lateCount + excusedCount} • Chưa điểm danh $unmarkedCount',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: needsReasonCount != null ? context.vd.danger : null,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (saveLine case final line?)
+                    Text(
+                      line,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: saveStatus == RosterSaveStatus.saved
+                            ? context.vd.success
+                            : context.vd.danger,
+                      ),
+                    ),
+                  Text(
+                    '${queued ? 'CHƯA GỬI • kết nối lại rồi bấm Lưu\n' : ''}'
+                    '${needsReasonCount != null ? 'CHƯA LƯU • $needsReasonCount SV quẹt cổng bị ghi vắng, cần lý do\n' : ''}'
+                    'Có $presentCount • Vắng $absentCount • '
+                    'Khác ${lateCount + excusedCount} • Chưa điểm danh $unmarkedCount',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: needsReasonCount != null
+                          ? context.vd.danger
+                          : null,
+                    ),
+                  ),
+                ],
               ),
             ),
             FilledButton(

@@ -5,6 +5,7 @@ import '../../data/teacher_attendance_repository.dart';
 import '../../services/ems_api_service.dart';
 import 'attendance_outbox.dart';
 import 'roster_view_model.dart';
+import 'save_status.dart';
 import 'widgets/absence_check_dialog.dart';
 import 'widgets/attendance_message.dart';
 import 'widgets/reasons_dialog.dart';
@@ -79,12 +80,16 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
   void _toast(String msg, {bool good = false}) {
     if (!mounted) return;
     if (good) HapticFeedback.mediumImpact(); // only the successful-save toast
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: good ? context.vd.success : null,
-      ),
-    );
+    // The newest message replaces the old one: a queued "CHƯA LƯU" must
+    // never sit in front of the "Đã lưu" that came after it.
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: good ? context.vd.success : null,
+        ),
+      );
   }
 
   @override
@@ -128,6 +133,8 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
                 unmarkedCount: _vm.unmarkedCount,
                 saving: _vm.saving,
                 onSave: () => _vm.save(_prompts),
+                saveStatus: _vm.saveStatus,
+                savedAt: _vm.savedAt,
               ),
       ),
     );
