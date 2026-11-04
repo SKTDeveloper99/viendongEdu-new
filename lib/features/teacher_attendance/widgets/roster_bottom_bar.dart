@@ -52,6 +52,16 @@ class RosterBottomBar extends StatelessWidget {
     }
   }
 
+  /// The server holds exactly what is on screen: the button itself says so
+  /// (Linh 03/11: on weak floor-4 Wi-Fi teachers could not tell whether Lưu
+  /// had gone through). Any edit turns it back into "Lưu điểm danh".
+  bool get showsSaved =>
+      !queued &&
+      needsReasonCount == null &&
+      saveStatus == RosterSaveStatus.saved;
+
+  String get buttonLabel => showsSaved ? '✓ Đã lưu' : 'Lưu điểm danh';
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -96,7 +106,9 @@ class RosterBottomBar extends StatelessWidget {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: context.vd.primary,
+                backgroundColor: showsSaved
+                    ? context.vd.success
+                    : context.vd.primary,
               ),
               onPressed: saving ? null : onSave,
               child: saving
@@ -108,7 +120,7 @@ class RosterBottomBar extends StatelessWidget {
                         color: context.vd.onPrimary,
                       ),
                     )
-                  : const Text('Lưu điểm danh'),
+                  : Text(buttonLabel),
             ),
           ],
         ),

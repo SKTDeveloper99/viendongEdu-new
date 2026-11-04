@@ -33,3 +33,21 @@ disappearing.
 
 - Server `/app/min-version` unchanged; raise `android_min_build` 104 /
   `ios_min_build` 2 only if the owner wants to force it.
+
+## Added 2026-11-04 (same version, rebuilt; first 6.0.9 (2)/104 build was never uploaded and was discarded)
+
+Teacher Linh's feedback (03/11):
+
+4. After a save the button itself turns green and reads "✓ Đã lưu"; any edit
+   turns it back into "Lưu điểm danh" (weak floor-4 Wi-Fi).
+5. Sessions recorded only in IMS show "Đã ĐD" and "x / y có mặt (IMS)"
+   instead of "Chưa ĐD"; their detail lists the IMS marks. A session with any
+   EMS marks shows EMS only, so students left blank on EMS stay blank.
+6. Roster (điểm danh) opens A–Z by given name; the A–Z button returns to
+   the IMS order. "Danh sách" and "Tổng hợp" are A–Z too (server sorts the
+   class list since CRM b3bb1ba, for every installed version).
+
+Store text addition:
+- Nút lưu điểm danh đổi thành "✓ Đã lưu" khi đã lưu xong.
+- Buổi đã điểm danh trên IMS hiện "Đã ĐD".
+- Danh sách lớp xếp theo tên A–Z.

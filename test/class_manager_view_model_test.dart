@@ -222,8 +222,9 @@ void main() {
       expect(s1.marked, isTrue);
       expect(s1.countText, '2 / 3 có mặt (EMS)');
       final s2 = vm.summaryOf(vm.sessions[1]);
-      expect(s2.marked, isFalse);
-      expect(s2.countText, '1 / 3 có mặt trên CRM — chưa xác nhận trên EMS');
+      // s2 has only IMS marks: still marked (Linh 03/11, was "Chưa ĐD").
+      expect(s2.marked, isTrue);
+      expect(s2.countText, '1 / 3 có mặt (IMS)');
     });
 
     test(
@@ -349,7 +350,7 @@ void main() {
       expect(vm.sessionKeyOf(vm.sessions.first), isNull);
       expect(
         vm.summaryOf(vm.sessions.first).countText,
-        '1 / 3 có mặt trên CRM — chưa xác nhận trên EMS',
+        '1 / 3 có mặt (IMS)',
       );
     });
 
@@ -365,7 +366,8 @@ void main() {
         );
         await vm.loadAttendance();
         expect(vm.attendanceError, isNull);
-        expect(vm.summaryOf(vm.sessions.first).marked, isFalse);
+        // EMS unreadable: the IMS marks still count.
+        expect(vm.summaryOf(vm.sessions.first).marked, isTrue);
 
         repo.attendanceFn = (_) async => throw 'boom';
         await vm.loadAttendance();
@@ -415,13 +417,24 @@ void main() {
       expect(vm.presentOf(vm.students[2]), isNull);
     });
 
-    test('no session key: nobody marked, EMS not called', () async {
+    test('no session key: IMS marks shown, EMS not called', () async {
       final repo = _FakeRepo();
       final vm = make(repo, key: null);
       await vm.load();
 
       expect(repo.requestedKeys, isEmpty);
-      expect(vm.unmarkedCount, 3);
+      expect(vm.presentCount, 3);
+      expect(vm.unmarkedCount, 0);
+    });
+
+    test('EMS marks win: students blank on EMS stay blank', () async {
+      final repo = _FakeRepo()..marksFn = (_) async => {'TEST260001': 'absent'};
+      final vm = make(repo);
+      await vm.load();
+
+      expect(vm.absentCount, 1);
+      expect(vm.presentCount, 0);
+      expect(vm.unmarkedCount, 2);
     });
 
     test('error is exposed and retry recovers', () async {

@@ -591,28 +591,25 @@ void main() {
         .map((t) => t.data!)
         .toList();
 
+    const az = [
+      'Lê Ngọc Ánh', // anh
+      'Huỳnh Thị Mỹ Lộc', // loc
+      'Nguyễn Thị Lan Phương', // phuong
+      'Ngô Anh Thư', // thu
+    ];
+    expect(order(), az, reason: 'mặc định A–Z theo tên (Linh 04/11)');
+
+    await tester.tap(find.byIcon(Icons.sort_by_alpha));
+    await tester.pump();
     expect(order(), [
       'Nguyễn Thị Lan Phương',
       'Huỳnh Thị Mỹ Lộc',
       'Ngô Anh Thư',
       'Lê Ngọc Ánh',
-    ], reason: 'mặc định giữ thứ tự IMS');
+    ], reason: 'tắt = về thứ tự IMS');
 
     await tester.tap(find.byIcon(Icons.sort_by_alpha));
     await tester.pump();
-    expect(order(), [
-      'Lê Ngọc Ánh', // anh
-      'Huỳnh Thị Mỹ Lộc', // loc
-      'Nguyễn Thị Lan Phương', // phuong
-      'Ngô Anh Thư', // thu
-    ]);
-
-    await tester.tap(find.byIcon(Icons.sort_by_alpha));
-    await tester.pump();
-    expect(
-      order().first,
-      'Nguyễn Thị Lan Phương',
-      reason: 'tắt = về thứ tự IMS',
-    );
+    expect(order(), az);
   });
 }

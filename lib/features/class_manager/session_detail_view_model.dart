@@ -6,7 +6,9 @@ import 'class_manager_models.dart';
 
 /// State of one session's detail sheet: the CRM student list of the session
 /// plus the EMS status per student. Present / absent counts come from EMS
-/// `session-marks` only (CRM `attendance.status` is not used here).
+/// `session-marks`; a session with no EMS marks at all shows its IMS marks
+/// (CRM `attendance.status`). The two are never mixed within one session, so
+/// students a teacher left blank on EMS stay blank.
 class SessionDetailViewModel extends ChangeNotifier {
   final ClassManagerRepository _repository;
   final SessionGroup session;
@@ -28,11 +30,12 @@ class SessionDetailViewModel extends ChangeNotifier {
   bool get loading => _loading;
   String? get error => _error;
 
-  /// null = not marked on EMS yet.
+  /// null = not marked (on EMS, or in IMS when EMS has nothing).
   bool? presentOf(CrmAttendanceRow s) {
-    final st = _emsStatus[s.mssv ?? ''];
-    if (st == null) return null;
-    return st == 'present' || st == 'late' || st == 'excused';
+    final st = _emsStatus.isEmpty ? s.status : _emsStatus[s.mssv ?? ''];
+    if (st == 'present' || st == 'late' || st == 'excused') return true;
+    if (st == 'absent') return false;
+    return null;
   }
 
   int get presentCount => _students.where((s) => presentOf(s) == true).length;

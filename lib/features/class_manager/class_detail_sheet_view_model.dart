@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../data/class_manager_repository.dart';
 import '../../models/crm_teacher_class.dart';
 import '../../services/ems_api_service.dart';
+import '../teacher_attendance/attendance_format.dart' show givenNameSortKey;
 import 'class_manager_format.dart';
 import 'class_manager_models.dart';
 
@@ -94,7 +95,15 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
     try {
       final data = await _repository.students(lop.sectionId);
       if (_disposed) return;
-      _students = data;
+      // A–Z by given name, then family name (Linh 04/11: server order is by
+      // class code and MSSV, which reads as random).
+      _students = List.of(data)
+        ..sort((a, b) {
+          final c = givenNameSortKey(
+            a.fullName,
+          ).compareTo(givenNameSortKey(b.fullName));
+          return c != 0 ? c : a.mssv.compareTo(b.mssv);
+        });
       _loadingStudents = false;
       _notify();
     } catch (e) {
@@ -201,7 +210,11 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
       if (isPresentLike(st)) agg.present++;
     }
     final list = byMssv.values.toList()
-      ..sort((a, b) => a.fullName.compareTo(b.fullName));
+      ..sort(
+        (a, b) => givenNameSortKey(
+          a.fullName,
+        ).compareTo(givenNameSortKey(b.fullName)),
+      );
     return list;
   }
 
@@ -274,16 +287,23 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
     final siso = lop.enrolledStudents;
     final key = sessionKeyOf(b);
     final ems = key == null ? null : _emsCounts[key];
-    final marked = ems != null && ems.total > 0;
-    final crmPresent = b.students.where((s) => s.status == 'present').length;
-    final hiendien = marked ? ems.present : crmPresent;
+    final emsMarked = ems != null && ems.total > 0;
+    // A session recorded in IMS (before the app, or marked there directly)
+    // is marked too; it used to say "Chưa ĐD" (Linh 03/11, GRA22421).
+    final imsMarked = b.students.any((s) => _isMarked(s.status));
+    final imsPresent = b.students.where((s) => isPresentLike(s.status)).length;
+    final hiendien = emsMarked ? ems.present : imsPresent;
     final pct = siso > 0 ? hiendien / siso : 0.0;
-    final countText = marked
+    final countText = emsMarked
         ? '$hiendien / $siso có mặt (EMS)'
-        : crmPresent > 0
-        ? '$crmPresent / $siso có mặt trên CRM — chưa xác nhận trên EMS'
+        : imsMarked
+        ? '$imsPresent / $siso có mặt (IMS)'
         : '0 / $siso — chưa điểm danh';
-    return SessionRowSummary(marked: marked, pct: pct, countText: countText);
+    return SessionRowSummary(
+      marked: emsMarked || imsMarked,
+      pct: pct,
+      countText: countText,
+    );
   }
 
   /// "Đã dạy 12/30 buổi · Kết thúc 20/12/2026"; null without a plan.

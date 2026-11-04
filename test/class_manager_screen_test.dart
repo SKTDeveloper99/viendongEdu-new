@@ -257,13 +257,10 @@ void main() {
     expect(find.text('07:00 – 09:30'), findsNWidgets(2));
     // s1 has EMS marks: present + late = 2 of 3.
     expect(find.text('2 / 3 có mặt (EMS)'), findsOneWidget);
-    expect(find.text('Đã ĐD'), findsOneWidget);
-    // s2 has no EMS marks: CRM fallback wording.
-    expect(
-      find.text('2 / 3 có mặt trên CRM — chưa xác nhận trên EMS'),
-      findsOneWidget,
-    );
-    expect(find.text('Chưa ĐD'), findsOneWidget);
+    // s2 has only IMS marks: counted as marked (Linh 03/11).
+    expect(find.text('2 / 3 có mặt (IMS)'), findsOneWidget);
+    expect(find.text('Đã ĐD'), findsNWidgets(2));
+    expect(find.text('Chưa ĐD'), findsNothing);
 
     await tester.tap(find.text('Tổng hợp'));
     await tester.pumpAndSettle();
@@ -286,15 +283,12 @@ void main() {
 
     expect(find.text('Có mặt'), findsNWidgets(3)); // pill + 2 rows
     expect(find.text('Vắng'), findsNWidgets(2)); // pill + 1 row
-    expect(
-      find.text('Chưa ĐD'),
-      findsNWidgets(2),
-    ); // pill (0) + s2 badge underneath
+    expect(find.text('Chưa ĐD'), findsOneWidget); // pill (0); s2 is Đã ĐD
     expect(find.text('Chưa điểm danh'), findsNothing);
     expect(find.text('An Thử Nghiệm'), findsWidgets);
   });
 
-  testWidgets('session without EMS marks lists students as not yet marked', (
+  testWidgets('session without EMS marks shows its IMS marks', (
     tester,
   ) async {
     EmsApiService.client = _server();
@@ -303,10 +297,11 @@ void main() {
     await tester.tap(find.text('Điểm danh'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.textContaining('chưa xác nhận trên EMS'));
+    await tester.tap(find.text('2 / 3 có mặt (IMS)'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Chưa điểm danh'), findsNWidgets(3));
+    expect(find.text('Chưa điểm danh'), findsNothing);
+    expect(find.text('Vắng'), findsNWidgets(2)); // pill + Chi
   });
 
   testWidgets('session marks error shows retry', (tester) async {
@@ -315,10 +310,8 @@ void main() {
     await openClassA(tester);
     await tester.tap(find.text('Điểm danh'));
     await tester.pumpAndSettle();
-    // Class-level EMS counts swallow the errors → both rows show CRM wording.
-    await tester.tap(
-      find.text('2 / 3 có mặt trên CRM — chưa xác nhận trên EMS').first,
-    );
+    // Class-level EMS counts swallow the errors → both rows show IMS marks.
+    await tester.tap(find.text('2 / 3 có mặt (IMS)').first);
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();

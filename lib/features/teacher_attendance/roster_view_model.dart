@@ -47,10 +47,9 @@ class RosterViewModel extends ChangeNotifier {
   final Map<String, String> _marks = {};
   final Map<String, String> _notes = {};
 
-  /// 18/09 (Dũng): giáo viên điểm danh tay muốn dò tên theo A–Z. Mặc định
-  /// giữ thứ tự danh sách lớp của IMS; bật nút trên thanh tiêu đề để xếp
-  /// theo TÊN (chữ cuối) rồi họ, bỏ dấu khi so sánh.
-  bool _sortAz = false;
+  /// Mặc định A–Z theo TÊN (chữ cuối) rồi họ, bỏ dấu (Dũng 18/09, Linh 04/11:
+  /// thứ tự IMS trông lộn xộn); nút trên thanh tiêu đề trả về thứ tự IMS.
+  bool _sortAz = true;
 
   /// Danh sách học viên đã quẹt cổng mà bị ghi vắng, máy chủ đang chờ lý do.
   /// Khi khác null: hàng đợi tắt, thanh dưới nhắc; bấm Lưu để nêu lý do.
