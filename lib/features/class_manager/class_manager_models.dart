@@ -22,13 +22,6 @@ class SessionGroup {
   final String? startTime;
   final String? endTime;
   final String? room;
-  final int? reportedPresent;
-  final String? reportedSource;
-
-  bool get hasTeachingLogReport =>
-      reportedSource == 'owner_supplied_teaching_log' &&
-      reportedPresent != null &&
-      reportedPresent! >= 0;
   final List<CrmAttendanceRow> students = [];
 
   /// Buổi dự kiến (tương lai), không có điểm danh.
@@ -43,8 +36,6 @@ class SessionGroup {
     this.startTime,
     this.endTime,
     this.room,
-    this.reportedPresent,
-    this.reportedSource,
     this.planned = false,
   });
 }
@@ -73,8 +64,7 @@ class EmsSessionCount {
 
 /// What one row of the "Buổi học" list displays, exactly as before.
 class SessionRowSummary {
-  final bool marked; // Individual marks exist for the session
-  final bool reported;
+  final bool marked; // EMS has marks for the session
   final double pct;
   final String countText;
 
@@ -85,6 +75,5 @@ class SessionRowSummary {
     required this.pct,
     required this.countText,
     this.planned = false,
-    this.reported = false,
   });
 }

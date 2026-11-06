@@ -131,9 +131,8 @@ class SessionCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (!planned && !summary.reported)
-                      const SizedBox(height: 6),
-                    if (!planned && !summary.reported)
+                    if (!planned) const SizedBox(height: 6),
+                    if (!planned)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
@@ -160,11 +159,7 @@ class SessionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    summary.reported
-                        ? 'Theo sổ'
-                        : marked
-                        ? 'Đã ĐD'
-                        : 'Chưa ĐD',
+                    marked ? 'Đã ĐD' : 'Chưa ĐD',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

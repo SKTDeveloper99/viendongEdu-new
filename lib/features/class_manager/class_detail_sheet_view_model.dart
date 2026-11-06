@@ -159,8 +159,6 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
           startTime: r.startTime,
           endTime: r.endTime,
           room: r.room,
-          reportedPresent: r.reportedPresent,
-          reportedSource: r.reportedSource,
           planned: r.isPlanned,
         ),
       );
@@ -294,16 +292,6 @@ class ClassDetailSheetViewModel extends ChangeNotifier {
     // is marked too; it used to say "Chưa ĐD" (Linh 03/11, GRA22421).
     final imsMarked = b.students.any((s) => _isMarked(s.status));
     final imsPresent = b.students.where((s) => isPresentLike(s.status)).length;
-    // A teaching-log headcount is session evidence, never student marks.
-    // Individual attendance replaces this display fallback automatically.
-    if (!emsMarked && !imsMarked && b.hasTeachingLogReport) {
-      return SessionRowSummary(
-        marked: false,
-        reported: true,
-        pct: 0,
-        countText: '${b.reportedPresent} có mặt (theo sổ)',
-      );
-    }
     final hiendien = emsMarked ? ems.present : imsPresent;
     final pct = siso > 0 ? hiendien / siso : 0.0;
     final countText = emsMarked

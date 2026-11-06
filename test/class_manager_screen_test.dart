@@ -12,9 +12,6 @@
 //
 import 'dart:convert';
 
-import 'package:viendongedu2_flutter/features/class_manager/class_manager_models.dart';
-import 'package:viendongedu2_flutter/features/class_manager/widgets/attendance_session_card.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -159,42 +156,6 @@ MockClient _server({int semestersStatus = 200, int marksStatus = 200}) {
 }
 
 void main() {
-  testWidgets('teaching-log card fits a narrow phone with large text', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(320, 640);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MediaQuery(
-          data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
-          child: Scaffold(
-            body: SessionCard(
-              session: SessionGroup(
-                sessionId: 'TEST-report',
-                date: '2026-03-02',
-              ),
-              summary: const SessionRowSummary(
-                marked: false,
-                reported: true,
-                pct: 0,
-                countText: '12 có mặt (theo sổ)',
-              ),
-              onTap: () {},
-            ),
-          ),
-        ),
-      ),
-    );
-    expect(find.text('12 có mặt (theo sổ)'), findsOneWidget);
-    expect(find.text('Theo sổ'), findsOneWidget);
-    expect(find.text('Chưa ĐD'), findsNothing);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
-
   setUp(() => SharedPreferences.setMockInitialValues({}));
   tearDown(() => EmsApiService.client = http.Client());
 
@@ -327,7 +288,9 @@ void main() {
     expect(find.text('An Thử Nghiệm'), findsWidgets);
   });
 
-  testWidgets('session without EMS marks shows its IMS marks', (tester) async {
+  testWidgets('session without EMS marks shows its IMS marks', (
+    tester,
+  ) async {
     EmsApiService.client = _server();
     await pump(tester);
     await openClassA(tester);
