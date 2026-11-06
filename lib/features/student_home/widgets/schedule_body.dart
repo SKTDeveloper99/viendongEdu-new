@@ -66,6 +66,9 @@ class ScheduleBody extends StatelessWidget {
           )
         else if (vm.scheduleFailed)
           const SizedBox.shrink()
+        else if (n == 0 &&
+            (vm.examsLoading || vm.examsFailed || vm.hasExamToday))
+          const SizedBox.shrink()
         else if (!scheduleExpanded)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),

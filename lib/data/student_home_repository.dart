@@ -1,4 +1,5 @@
 import '../models/crm_student_schedule.dart';
+import '../models/crm_student_exams.dart';
 import '../services/app_session.dart';
 import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
@@ -28,6 +29,9 @@ class StudentHomeRepository {
   Future<CachedSchedule> schedule({
     void Function(List<CrmScheduleItem> items, DateTime savedAt)? onStored,
   }) => CrmStudentApi.scheduleCached(onStored: onStored);
+
+  Future<({CrmStudentExamsView data, DateTime savedAt, bool fresh})> exams() =>
+      CrmStudentApi.examsCached();
 
   /// The 20 latest board items; [onStored] paints the stored copy first.
   Future<CachedBoard> board({

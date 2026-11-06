@@ -1,4 +1,7 @@
 import '../components/skeleton.dart';
+import '../components/schedule_exam_card.dart';
+import '../components/exam_load_warning.dart';
+import '../models/crm_student_exams.dart';
 import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_student_schedule.dart';
@@ -30,11 +33,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   DateTime _now() => widget.now?.call() ?? DateTime.now();
 
-  // CRM /me/schedule không có API theo-ngày như IMS `hocvien/tkbtheongay`:
-  // nó trả TOÀN BỘ lịch học lặp-hàng-tuần của mọi học kỳ đã ghi danh trong
-  // một lần gọi (xem lib/models/crm_student_schedule.dart). Tải một lần rồi
-  // lọc theo ngày ở client (CrmScheduleItem.occursOn), và giữ cache theo
-  // ngày để build() không lọc lại mỗi lần.
+  // Load all schedule slots once; cache the occurrences by calendar day.
   List<CrmScheduleItem>? _fullSchedule;
   List<CrmUnscheduledSection> _chuaCoLich = const [];
   bool _scheduleFailed = false;
@@ -42,13 +41,31 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final Map<String, List<CrmScheduleItem>> _cache = {};
   bool _loading = false;
   DateTime? _staleAt;
+  List<CrmStudentExam> _exams = [];
+  bool _examsLoading = true;
+  bool _examsFailed = false;
+  DateTime? _examsStaleAt;
 
-  // ── Trạng thái điểm danh: CHỈ đọc từ EMS ─────────────────────────────────
-  // Trước 2026-09-11 huy hiệu trên thẻ lấy `hienDienYN` của IMS. Từ khi giáo
-  // viên điểm danh trên EMS, IMS không còn là nơi ghi nhận: một sinh viên bị
-  // đánh VẮNG trên EMS vẫn hiện "Có mặt" ở đây vì IMS còn giữ dòng cũ. Lịch
-  // (giờ, phòng, giáo viên) vẫn là IMS; trạng thái là EMS — hai nguồn, không
-  // trộn. Khoá: mã lớp môn học + ngày (+ giờ bắt đầu nếu EMS có).
+  Future<void> _fetchExams() async {
+    setState(() => _examsLoading = true);
+    try {
+      final r = await CrmStudentApi.examsCached();
+      if (!mounted) return;
+      setState(() {
+        _exams = r.data.exams;
+        _examsFailed = false;
+        _examsStaleAt = r.fresh ? null : r.savedAt;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
+      if (mounted) setState(() => _examsFailed = true);
+    } finally {
+      if (mounted) setState(() => _examsLoading = false);
+    }
+  }
+
+  // Attendance is read from EMS; schedule and exam details come from CRM.
   final Map<String, EmsStudentMark> _emsByKey = {};
   bool _emsLoaded = false;
   bool _marksLoading = true;
@@ -61,12 +78,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> _loadEmsMarks({bool force = false}) async {
     if (_emsLoaded && !force) return;
     if (mounted) setState(() => _marksLoading = true);
-    // 2026-09-11: a student (2652092061) was marked VẮNG on EMS but saw "Chưa
-    // điểm danh". The mirror at login had timed out on the phone (IMS edge
-    // 302-ing) while the server finished it later, so this screen opened with
-    // no EMS token, skipped silently, and never asked again. Never skip
-    // silently: without a token, ask for one here; on failure the cards show
-    // "Chưa điểm danh" and pull-to-refresh tries the whole thing again.
     if (!AppSession.instance.hasEms) {
       await AppSession.instance.refreshEmsToken(force: force);
       if (!mounted || !AppSession.instance.hasEms) return;
@@ -153,6 +164,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _currentMonday = _findMonday(now);
     _selectedDate = now;
     _fetchDate(now);
+    _fetchExams();
     _loadEmsMarks();
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
@@ -278,7 +290,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final weekLabel =
         '${start.day}/${start.month} – ${end.day}/${end.month}/${end.year}';
     final key = _fmtDate(_selectedDate);
-    final classes = _cache[key];
+    final classes = _cache[key] ?? <CrmScheduleItem>[];
+    final exams = _exams.where((e) => e.occursOn(_selectedDate)).toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Scaffold(
       backgroundColor: context.vd.bg,
@@ -296,6 +310,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: Column(
           children: [
             StudentScheduleHeader(
+              examDays: _exams
+                  .map((e) => e.examDate)
+                  .whereType<DateTime>()
+                  .toList(),
               weekDays: weekDays,
               weekLabel: weekLabel,
               selectedDate: _selectedDate,
@@ -307,40 +325,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
 
             if (_staleAt != null) StaleNote(_staleAt!),
-            // ── Content ──
+            if (_examsStaleAt != null) StaleNote(_examsStaleAt!),
             Expanded(
-              child: _loading
+              child: _loading || _examsLoading
                   ? skeletonList(accentColor: context.vd.primary)
-                  : _scheduleFailed
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _scheduleError!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: context.vd.inkMuted),
-                          ),
-                          TextButton(
-                            onPressed: _refresh,
-                            child: const Text('Thử lại'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : classes == null
-                  ? const SizedBox.shrink()
-                  : classes.isEmpty && _chuaCoLich.isEmpty
-                  ? RefreshIndicator(
-                      onRefresh: _refresh,
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          const SizedBox(height: 80),
-                          _emptyDay(context),
-                        ],
-                      ),
-                    )
                   : RefreshIndicator(
                       color: context.vd.primary,
                       onRefresh: _refresh,
@@ -348,7 +336,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                         children: [
-                          if (classes.isEmpty)
+                          if (_examsFailed)
+                            ExamLoadWarning(
+                              onRetry: _scheduleFailed ? _refresh : _fetchExams,
+                            ),
+                          for (final exam in exams)
+                            ScheduleExamCard(exam: exam),
+                          if (_scheduleFailed) ...[
+                            Text(
+                              _scheduleError!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: context.vd.inkMuted),
+                            ),
+                            if (!_examsFailed)
+                              TextButton(
+                                onPressed: _refresh,
+                                child: const Text('Thử lại'),
+                              ),
+                          ],
+                          if (!_scheduleFailed &&
+                              !_examsFailed &&
+                              classes.isEmpty &&
+                              exams.isEmpty)
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 24),
                               child: _emptyDay(context),
@@ -373,7 +382,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> _refresh() async {
     _cache.clear();
     _fullSchedule = null;
-    await Future.wait([_fetchDate(_selectedDate), _loadEmsMarks(force: true)]);
+    await Future.wait([
+      _fetchDate(_selectedDate),
+      _fetchExams(),
+      _loadEmsMarks(force: true),
+    ]);
   }
 
   Widget _emptyDay(BuildContext context) => Column(

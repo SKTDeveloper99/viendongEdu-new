@@ -6,6 +6,7 @@ bool _sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
 class StudentScheduleHeader extends StatelessWidget {
+  final List<DateTime> examDays;
   final List<DateTime> weekDays;
   final String weekLabel;
   final DateTime selectedDate;
@@ -17,6 +18,7 @@ class StudentScheduleHeader extends StatelessWidget {
 
   const StudentScheduleHeader({
     super.key,
+    this.examDays = const [],
     required this.weekDays,
     required this.weekLabel,
     required this.selectedDate,
@@ -146,6 +148,15 @@ class StudentScheduleHeader extends StatelessWidget {
                               : context.vd.onPrimary,
                         ),
                       ),
+                      if (examDays.any((d) => _sameDay(d, day)))
+                        Icon(
+                          Icons.assignment_outlined,
+                          size: 14,
+                          semanticLabel: 'Có lịch thi',
+                          color: isSelected
+                              ? context.vd.primary
+                              : context.vd.onPrimary,
+                        ),
                       if (isToday)
                         Container(
                           width: 6,

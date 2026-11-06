@@ -11,6 +11,7 @@ import 'package:viendongedu2_flutter/features/teacher_home/teacher_home_screen.d
 import 'package:viendongedu2_flutter/features/teacher_home/teacher_home_view_model.dart';
 import 'package:viendongedu2_flutter/features/teacher_home/widgets/gv_class_chip.dart';
 import 'package:viendongedu2_flutter/models/crm_student_schedule.dart';
+import 'package:viendongedu2_flutter/models/crm_student_exams.dart';
 import 'package:viendongedu2_flutter/models/crm_teacher_class.dart';
 import 'package:viendongedu2_flutter/models/crm_teacher_profile.dart';
 import 'package:viendongedu2_flutter/services/crm_teacher_api.dart';
@@ -18,6 +19,13 @@ import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 import 'package:viendongedu2_flutter/theme/vd_theme.dart';
 
 class _StudentRepo extends StudentHomeRepository {
+  @override
+  Future<({CrmStudentExamsView data, DateTime savedAt, bool fresh})>
+  exams() async => (
+    data: const CrmStudentExamsView(semesterCode: ''),
+    savedAt: DateTime(2026),
+    fresh: true,
+  );
   @override
   Future<CachedSchedule> schedule({
     void Function(List<CrmScheduleItem>, DateTime)? onStored,

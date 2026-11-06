@@ -1,4 +1,5 @@
 import '../components/skeleton.dart';
+import 'stale_note.dart';
 import 'package:flutter/material.dart';
 import '../components/student_exam_card.dart';
 import '../services/crm_student_api.dart';
@@ -25,6 +26,8 @@ class _ExamScreenState extends State<ExamScreen> {
   bool _switchingSemester = false;
   String? _error;
   int _request = 0;
+  DateTime? _staleAt;
+  DateTime? _allStaleAt;
 
   static const String allLabel = 'Tất cả các học kỳ';
 
@@ -49,7 +52,8 @@ class _ExamScreenState extends State<ExamScreen> {
       _error = null;
     });
     try {
-      final view = await CrmStudentApi.exams();
+      final r = await CrmStudentApi.examsCached();
+      final view = r.data;
       final exams = view.exams.map(ExamItem.new).toList()
         ..sort((a, b) {
           final da = a.ngayThi ?? DateTime(0);
@@ -68,6 +72,8 @@ class _ExamScreenState extends State<ExamScreen> {
 
       if (!mounted || request != _request) return;
       setState(() {
+        _staleAt = r.fresh ? null : r.savedAt;
+        _allStaleAt = _staleAt;
         _allExams = exams;
         _displayExams = exams;
         _semesters = semesters;
@@ -99,24 +105,33 @@ class _ExamScreenState extends State<ExamScreen> {
       _switchingSemester = false;
     });
     if (hkma.isEmpty) {
-      setState(() => _displayExams = _allExams);
+      setState(() {
+        _displayExams = _allExams;
+        _staleAt = _allStaleAt;
+      });
       return;
     }
     setState(() => _switchingSemester = true);
     try {
-      final view = await CrmStudentApi.exams(semester: hkma);
+      final r = await CrmStudentApi.examsCached(semester: hkma);
+      final view = r.data;
       if (!mounted || request != _request) return;
       setState(() {
+        _staleAt = r.fresh ? null : r.savedAt;
+        _allStaleAt ??= _staleAt;
         _displayExams = view.exams.map(ExamItem.new).toList()
           ..sort((a, b) {
             final da = a.ngayThi ?? DateTime(0);
             final db = b.ngayThi ?? DateTime(0);
             return db.compareTo(da);
           });
-        _allExams = [
-          ..._allExams.where((e) => e.hkma != hkma),
-          ..._displayExams,
-        ];
+        final seenIds = <String>{};
+        _allExams =
+            [..._allExams.where((e) => e.hkma != hkma), ..._displayExams]
+                .where(
+                  (e) => e.exam.examId.isEmpty || seenIds.add(e.exam.examId),
+                )
+                .toList();
         _switchingSemester = false;
       });
     } catch (e) {
@@ -266,6 +281,7 @@ class _ExamScreenState extends State<ExamScreen> {
               ),
             ),
 
+            if (_staleAt != null) StaleNote(_staleAt!),
             // ── Content ──
             Expanded(
               child: _loading || _switchingSemester

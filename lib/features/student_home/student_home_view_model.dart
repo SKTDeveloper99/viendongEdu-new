@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/student_home_repository.dart';
 import '../../models/crm_student_schedule.dart';
+import '../../models/crm_student_exams.dart';
 import '../../services/ems_api_service.dart';
 import '../../core/schedule/next_up.dart';
 import 'must_read_gate.dart';
@@ -35,6 +36,35 @@ class StudentHomeViewModel extends ChangeNotifier {
        _gate = gate ?? MustReadGate.shared,
        _delay = delay ?? Future<void>.delayed,
        _now = now ?? DateTime.now;
+
+  List<CrmStudentExam> _exams = [];
+  bool examsLoading = true;
+  bool examsFailed = false;
+  DateTime? examsStaleAt;
+  List<CrmStudentExam> get upcomingExams => next_up.upcomingExams(_exams, now);
+  bool get hasExamToday => upcomingExams.any((e) => e.occursOn(now));
+
+  Future<void> loadExams() async {
+    if (_disposed) return;
+    examsLoading = true;
+    notifyListeners();
+    try {
+      final r = await _repository.exams();
+      if (_disposed) return;
+      _exams = r.data.exams;
+      examsStaleAt = r.fresh ? null : r.savedAt;
+      examsFailed = false;
+    } catch (e) {
+      if (_disposed) return;
+      examsFailed = true;
+      if (e is EmsException && e.statusCode == 401) _authError = e;
+    } finally {
+      if (!_disposed) {
+        examsLoading = false;
+        notifyListeners();
+      }
+    }
+  }
 
   List<CrmScheduleItem> _todayClasses = [];
   DateTime? _scheduleStaleAt;
@@ -85,7 +115,7 @@ class StudentHomeViewModel extends ChangeNotifier {
   DateTime get now => _now();
 
   /// "Tiếp theo" card state for [now]; display-only from the loaded schedule.
-  NextUp get upNext => next_up.nextUp(_todayClasses, _now());
+  NextUp get upNext => next_up.nextUp(_todayClasses, _now(), exams: _exams);
 
   /// Starts the once-a-minute countdown refresh (idempotent).
   void startClock() {
@@ -107,6 +137,7 @@ class StudentHomeViewModel extends ChangeNotifier {
   void start() {
     startClock();
     loadTodaySchedule();
+    loadExams();
     _loadSecondary();
   }
 
@@ -179,6 +210,7 @@ class StudentHomeViewModel extends ChangeNotifier {
   Future<void> refresh() async {
     await Future.wait([
       loadTodaySchedule(),
+      loadExams(),
       _loadProfile(),
       loadUnreadCount(),
       loadBoard(),

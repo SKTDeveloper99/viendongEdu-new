@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../screens/stale_note.dart';
+import '../../../components/schedule_exam_card.dart';
+import '../../../components/exam_load_warning.dart';
+import '../../../components/next_up_card.dart';
+import '../next_up.dart';
 import '../student_home_view_model.dart';
 import 'schedule_body.dart';
 import '../../../theme/vd_tokens.dart';
@@ -38,6 +42,21 @@ class TodaySchedule extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (vm.examsStaleAt != null) StaleNote(vm.examsStaleAt!),
+        if (vm.examsFailed) ExamLoadWarning(onRetry: vm.loadExams),
+        for (final exam in vm.upcomingExams)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ScheduleExamCard(
+              exam: exam,
+              onTap: () => Navigator.pushNamed(context, '/exam'),
+            ),
+          ),
+        if (!vm.scheduleLoading &&
+            !vm.scheduleFailed &&
+            ((!vm.examsLoading && !vm.examsFailed && !vm.hasExamToday) ||
+                vm.upNext.entry != null))
+          NextUpCard(state: vm.upNext, emptyText: studentNextUpEmpty),
         if (vm.scheduleStaleAt != null) StaleNote(vm.scheduleStaleAt!),
         if (vm.scheduleFailed)
           Padding(

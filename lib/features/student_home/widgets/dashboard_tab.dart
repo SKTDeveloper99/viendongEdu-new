@@ -4,8 +4,6 @@ import '../../../core/lantern_gate.dart';
 import '../../../services/app_session.dart';
 
 import '../student_home_view_model.dart';
-import '../../../components/next_up_card.dart';
-import '../next_up.dart';
 import 'board_card.dart';
 import 'home_bottom_nav.dart' show homeNavOverhang;
 import 'home_header.dart';
@@ -46,8 +44,6 @@ class DashboardTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (dataOpen && !vm.scheduleLoading && !vm.scheduleFailed)
-                    NextUpCard(state: vm.upNext, emptyText: studentNextUpEmpty),
                   if (dataOpen)
                     TodaySchedule(
                       vm: vm,

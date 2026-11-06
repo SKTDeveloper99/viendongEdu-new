@@ -49,6 +49,12 @@ class CrmStudentExam {
     this.semesterName,
   });
 
+  bool occursOn(DateTime day) =>
+      examDate != null &&
+      examDate!.year == day.year &&
+      examDate!.month == day.month &&
+      examDate!.day == day.day;
+
   String get examDateFormatted {
     final d = examDate;
     if (d == null) return '–';
@@ -58,7 +64,10 @@ class CrmStudentExam {
 
   factory CrmStudentExam.fromJson(Map<String, dynamic> j) => CrmStudentExam(
     examId: j['exam_id']?.toString() ?? '',
-    examDate: DateTime.tryParse(j['exam_date']?.toString() ?? ''),
+    // Exam dates are calendar dates, not instants in the phone's zone.
+    examDate: DateTime.tryParse(
+      (j['exam_date']?.toString() ?? '').split('T').first,
+    ),
     startTime: j['start_time']?.toString() ?? '',
     durationMinutes: jsonInt(j['duration_minutes']),
     examType: j['exam_type']?.toString() ?? '',
@@ -86,12 +95,14 @@ class CrmStudentExamsView {
 
   factory CrmStudentExamsView.fromJson(Map<String, dynamic> j) {
     final list = j['exams'];
+    final seen = <String>{};
     return CrmStudentExamsView(
       semesterCode: j['semester_code']?.toString() ?? '',
       exams: list is List
           ? list
                 .whereType<Map<String, dynamic>>()
                 .map(CrmStudentExam.fromJson)
+                .where((e) => e.examId.isEmpty || seen.add(e.examId))
                 .toList()
           : const [],
     );

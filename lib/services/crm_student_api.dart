@@ -192,6 +192,21 @@ class CrmStudentApi {
   /// (hoặc truyền `'all'`) để lấy TOÀN BỘ lịch sử, mới nhất trước — hợp đồng
   /// server kể từ 2026-09-25; truyền một mã học kỳ cụ thể để lọc đúng kỳ đó.
   /// Xem docs/ims_to_crm_student_academic_map.md.
+  static Future<({CrmStudentExamsView data, DateTime savedAt, bool fresh})>
+  examsCached({String? semester}) async {
+    final r = await EmsApiService.sendCached(
+      '/student/me/exams',
+      query: semester == null || semester.isEmpty
+          ? null
+          : {'semester': semester},
+    );
+    return (
+      data: CrmStudentExamsView.fromJson(r.data as Map<String, dynamic>),
+      savedAt: r.savedAt,
+      fresh: r.fresh,
+    );
+  }
+
   static Future<CrmStudentExamsView> exams({String? semester}) async {
     final body =
         await EmsApiService.send(
