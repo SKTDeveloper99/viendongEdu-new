@@ -88,7 +88,10 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
                     ),
                     Text(
                       '${b.startTime ?? ''} – ${fmtTime(b.endTime)}',
-                      style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.vd.inkMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -119,6 +122,15 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
               ],
             ),
           ),
+          if (b.hasTeachingLogReport)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Text(
+                '${b.reportedPresent} có mặt theo sổ giảng dạy. '
+                'Số liệu tổng hợp; chưa xác nhận danh sách từng học viên.',
+                style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
+              ),
+            ),
           Divider(height: 1, color: context.vd.hairline),
           Expanded(child: _body()),
         ],
@@ -133,7 +145,12 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
     final students = _vm.students;
     if (students.isEmpty) {
       return Center(
-        child: Text('Không có học viên', style: TextStyle(color: context.vd.inkMuted)),
+        child: Text(
+          widget.session.hasTeachingLogReport
+              ? 'Chưa có danh sách điểm danh từng học viên'
+              : 'Không có học viên',
+          style: TextStyle(color: context.vd.inkMuted),
+        ),
       );
     }
     return SessionStudentList(vm: _vm);

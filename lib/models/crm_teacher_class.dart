@@ -221,6 +221,8 @@ class CrmAttendanceRow {
   final String? fullName;
   final String? status;
   final String? notes;
+  final int? reportedPresent;
+  final String? reportedSource;
 
   /// Buổi dự kiến trong tương lai (chưa có bản ghi thật; không điểm danh được).
   bool get isPlanned =>
@@ -238,6 +240,8 @@ class CrmAttendanceRow {
     this.fullName,
     this.status,
     this.notes,
+    this.reportedPresent,
+    this.reportedSource,
   });
 
   factory CrmAttendanceRow.fromJson(Map<String, dynamic> j) => CrmAttendanceRow(
@@ -252,6 +256,8 @@ class CrmAttendanceRow {
     fullName: j['full_name']?.toString(),
     status: j['status']?.toString(),
     notes: j['notes']?.toString(),
+    reportedPresent: _integerValue(j['reported_present']),
+    reportedSource: j['reported_source']?.toString(),
   );
 }
 

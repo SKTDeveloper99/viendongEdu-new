@@ -228,6 +228,65 @@ void main() {
     });
 
     test(
+      'teaching-log report stays aggregate and yields to individual marks',
+      () async {
+        final report = CrmAttendanceRow.fromJson({
+          'session_id': 'TEST-report',
+          'date': '2026-03-02',
+          'reported_present': 12,
+          'reported_source': 'owner_supplied_teaching_log',
+        });
+        final repo = _FakeRepo()..attendanceFn = (_) async => [report];
+        repo.marksFn = (_) async => {};
+        final vm = ClassDetailSheetViewModel(
+          repo,
+          lop: _lop('TEST-section', 'TEST261', enrolled: 15),
+          lmhId: '900',
+          now: () => DateTime.utc(2026, 3, 5),
+        );
+        await vm.loadAttendance();
+        final summary = vm.summaryOf(vm.sessions.single);
+        expect(summary.reported, isTrue);
+        expect(summary.marked, isFalse);
+        expect(summary.countText, '12 có mặt (theo sổ)');
+        expect(vm.sessions.single.students, isEmpty);
+        expect(vm.totals, isEmpty);
+
+        repo.attendanceFn = (_) async => [
+          report,
+          _row('TEST-report', '2026-03-02', 'TEST260001', 'present'),
+        ];
+        await vm.loadAttendance();
+        expect(vm.summaryOf(vm.sessions.single).reported, isFalse);
+        expect(
+          vm.summaryOf(vm.sessions.single).countText,
+          '1 / 15 có mặt (IMS)',
+        );
+        vm.dispose();
+      },
+    );
+
+    test('old payload without headcount remains unrecorded', () async {
+      final repo = _FakeRepo()
+        ..attendanceFn = (_) async => [
+          CrmAttendanceRow.fromJson({
+            'session_id': 'TEST-blank',
+            'date': '2026-03-02',
+          }),
+        ];
+      repo.marksFn = (_) async => {};
+      final vm = ClassDetailSheetViewModel(
+        repo,
+        lop: _lop('TEST-section', 'TEST261'),
+        lmhId: '900',
+      );
+      await vm.loadAttendance();
+      expect(vm.summaryOf(vm.sessions.single).reported, isFalse);
+      expect(vm.summaryOf(vm.sessions.single).marked, isFalse);
+      vm.dispose();
+    });
+
+    test(
       'plan: header, numbering, planned rows are muted and not asked',
       () async {
         final repo = _FakeRepo()
@@ -348,10 +407,7 @@ void main() {
 
       expect(repo.requestedKeys, isEmpty);
       expect(vm.sessionKeyOf(vm.sessions.first), isNull);
-      expect(
-        vm.summaryOf(vm.sessions.first).countText,
-        '1 / 3 có mặt (IMS)',
-      );
+      expect(vm.summaryOf(vm.sessions.first).countText, '1 / 3 có mặt (IMS)');
     });
 
     test(
