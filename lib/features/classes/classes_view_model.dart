@@ -6,6 +6,7 @@ import '../../models/crm_student_exams.dart' show semesterCodeLabel;
 import '../../models/crm_student_grades.dart';
 import '../../services/ems_api_service.dart';
 import 'class_models.dart';
+import '../../models/student_notice.dart';
 
 /// State of the classes list: the semesters derived from the enrolments and
 /// the classes (with scores) of the selected semester.
@@ -26,6 +27,11 @@ class ClassesViewModel extends ChangeNotifier {
 
   List<ClassSemester> get semesters => _semesters;
   List<ClassItem> get classes => _classes;
+
+  List<StudentNotice> _notices = const [];
+
+  /// Server notices for Lớp học, from the selected semester's sections read.
+  List<StudentNotice> get notices => _notices;
   ClassSemester? get selected => _selected;
   bool get loading => _loading;
   bool get loadingClasses => _loadingClasses;
@@ -127,9 +133,11 @@ class ClassesViewModel extends ChangeNotifier {
           timetableEnd: data.timetableEnd[s.sectionCode],
         );
       }).toList();
+      _notices = data.notices;
       _loadingClasses = false;
     } catch (e) {
       if (_disposed || selection != _selection) return;
+      _notices = const [];
       _loadingClasses = false;
       _error = e.toString();
       _flagAuth(e);

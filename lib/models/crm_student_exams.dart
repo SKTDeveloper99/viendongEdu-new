@@ -13,6 +13,7 @@
 //     3. Data freshness is the nightly ims_snapshot mirror (worst case ~24h
 //        stale) — same as every other IMS-backed CRM read.
 import 'json_values.dart';
+import 'student_notice.dart';
 
 class CrmStudentExam {
   final String examId;
@@ -88,9 +89,13 @@ class CrmStudentExamsView {
   final String semesterCode;
   final List<CrmStudentExam> exams;
 
+  /// Server notices for Lịch thi (contract S3); empty when absent.
+  final List<StudentNotice> notices;
+
   const CrmStudentExamsView({
     required this.semesterCode,
     this.exams = const [],
+    this.notices = const [],
   });
 
   factory CrmStudentExamsView.fromJson(Map<String, dynamic> j) {
@@ -105,6 +110,7 @@ class CrmStudentExamsView {
                 .where((e) => e.examId.isEmpty || seen.add(e.examId))
                 .toList()
           : const [],
+      notices: parseStudentNotices(j),
     );
   }
 }

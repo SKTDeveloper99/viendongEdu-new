@@ -28,13 +28,18 @@ import '../models/crm_student_exams.dart';
 import 'ems_api_service.dart';
 import 'offline_snapshot.dart';
 import 'app_session.dart';
+import '../models/student_notice.dart';
 
 class CrmStudentApi {
   CrmStudentApi._();
 
   /// `GET /api/student/me` → { student }.
   /// Thay `hocvien/user/info` (`ApiService.getUserInfo`).
-  static Future<CrmStudentProfile> me() async {
+  static Future<CrmStudentProfile> me() async => (await meView()).profile;
+
+  /// [me] plus the server notices for Home (contract S3).
+  static Future<({CrmStudentProfile profile, List<StudentNotice> notices})>
+  meView() async {
     final token = AppSession.instance.emsToken;
     final body = await EmsApiService.sendMap('GET', '/student/me');
     final student = body['student'];
@@ -52,7 +57,7 @@ class CrmStudentApi {
             : profile.fullName;
       }
     }
-    return profile;
+    return (profile: profile, notices: parseStudentNotices(body));
   }
 
   /// `GET /api/student/me/grades` → { mssv, summary, grades }.
@@ -96,7 +101,14 @@ class CrmStudentApi {
 
   /// `GET /api/student/me/sections?semester=` → { mssv, sections }.
   /// Thay `hocvien/lopmonhoc` (`ApiService.getLopMonHoc`).
-  static Future<List<CrmStudentSection>> sections({String? semester}) async {
+  static Future<List<CrmStudentSection>> sections({String? semester}) async =>
+      (await sectionsView(semester: semester)).sections;
+
+  /// [sections] plus the server notices for Lớp học (contract S3).
+  static Future<
+    ({List<CrmStudentSection> sections, List<StudentNotice> notices})
+  >
+  sectionsView({String? semester}) async {
     final body = await EmsApiService.sendMap(
       'GET',
       '/student/me/sections',
@@ -105,12 +117,13 @@ class CrmStudentApi {
           : {'semester': semester},
     );
     final list = EmsApiService.rows(body['sections']);
-    return list
+    final sections = list
         .whereType<Map<String, dynamic>>()
         .map(
           (row) => EmsApiService.parse(() => CrmStudentSection.fromJson(row)),
         )
         .toList();
+    return (sections: sections, notices: parseStudentNotices(body));
   }
 
   /// `GET /api/student/me/schedule?semester=` → { mssv, schedule, chua_co_lich }.

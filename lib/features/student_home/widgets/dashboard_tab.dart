@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/student_notices.dart';
 import '../../../core/lantern_gate.dart';
 import '../../../services/app_session.dart';
 
@@ -48,6 +49,10 @@ class DashboardTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  StudentNoticeList(
+                    notices: vm.notices,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  ),
                   if (dataOpen)
                     TodaySchedule(
                       vm: vm,

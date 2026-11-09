@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../data/student_home_repository.dart';
 import '../../models/crm_student_schedule.dart';
 import '../../models/crm_student_exams.dart';
+import '../../models/student_notice.dart';
 import '../../services/ems_api_service.dart';
 import '../../core/schedule/next_up.dart';
 import 'must_read_gate.dart';
@@ -117,6 +118,11 @@ class StudentHomeViewModel extends ChangeNotifier {
   String get mssv => _repository.mssv ?? '–';
   String get classCode => _classCode ?? '–';
 
+  List<StudentNotice> _notices = const [];
+
+  /// Server notices for Home (from `/student/me`); kept on a failed refresh.
+  List<StudentNotice> get notices => _notices;
+
   /// True when the schedule request failed with HTTP 401; the view reacts by
   /// calling `handleCrmAuthError` with [authError].
   bool get unauthorized => _authError != null;
@@ -219,9 +225,10 @@ class StudentHomeViewModel extends ChangeNotifier {
 
   Future<void> _loadProfile() async {
     try {
-      final code = await _repository.classCode();
+      final p = await _repository.profile();
       if (_disposed) return;
-      _classCode = code;
+      _classCode = p.classCode;
+      _notices = p.notices;
       _profileFailed = false;
       notifyListeners();
     } catch (e) {

@@ -9,6 +9,7 @@ import 'package:viendongedu2_flutter/features/student_home/must_read_gate.dart';
 import 'package:viendongedu2_flutter/features/student_home/student_home_view_model.dart';
 import 'package:viendongedu2_flutter/models/crm_student_schedule.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
+import 'package:viendongedu2_flutter/models/student_notice.dart';
 
 // 2026-09-30 is a Wednesday → day_code '4'.
 final _today = DateTime(2026, 9, 30, 9);
@@ -83,10 +84,12 @@ class _FakeRepo extends StudentHomeRepository {
     return unreadFn();
   }
 
+  List<StudentNotice> notices = const [];
+
   @override
-  Future<String?> classCode() {
+  Future<({String? classCode, List<StudentNotice> notices})> profile() async {
     order.add('profile');
-    return classFn();
+    return (classCode: await classFn(), notices: notices);
   }
 
   @override

@@ -1,6 +1,8 @@
 import '../core/network/ems_exception.dart';
 import '../components/skeleton.dart';
 import 'stale_note.dart';
+import '../components/student_notices.dart';
+import '../models/student_notice.dart';
 import 'package:flutter/material.dart';
 import '../components/student_exam_card.dart';
 import '../services/crm_student_api.dart';
@@ -29,6 +31,7 @@ class _ExamScreenState extends State<ExamScreen> {
   int _request = 0;
   DateTime? _staleAt;
   DateTime? _allStaleAt;
+  List<StudentNotice> _notices = const [];
 
   static const String allLabel = 'Tất cả các học kỳ';
 
@@ -68,6 +71,7 @@ class _ExamScreenState extends State<ExamScreen> {
       setState(() {
         _staleAt = r.fresh ? null : r.savedAt;
         _allStaleAt = _staleAt;
+        _notices = view.notices;
         _allExams = exams;
         _displayExams = exams;
         _semesters = semesters;
@@ -276,6 +280,11 @@ class _ExamScreenState extends State<ExamScreen> {
             ),
 
             if (_staleAt != null) StaleNote(_staleAt!),
+            if (!_loading && !_switchingSemester)
+              StudentNoticeList(
+                notices: _notices,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              ),
             // ── Content ──
             Expanded(
               child: _loading || _switchingSemester

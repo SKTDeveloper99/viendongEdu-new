@@ -11,6 +11,7 @@ import 'widgets/overview_tab.dart';
 import 'widgets/subjects_tab.dart';
 import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
+import '../../components/student_notices.dart';
 
 /// "Bảng điểm" — read-only grades: overview, per-subject detail, subjects
 /// still to study. Layout only; state lives in [GradesViewModel].
@@ -67,7 +68,7 @@ class _GradesScreenState extends State<GradesScreen>
     if (error != null) {
       return GradesErrorView(message: error, onRetry: _vm.refresh);
     }
-    return RefreshIndicator(
+    final tabs = RefreshIndicator(
       onRefresh: _vm.refresh,
       child: TabBarView(
         controller: _tabController,
@@ -82,6 +83,15 @@ class _GradesScreenState extends State<GradesScreen>
           ),
         ],
       ),
+    );
+    return Column(
+      children: [
+        StudentNoticeList(
+          notices: _vm.notices,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        ),
+        Expanded(child: tabs),
+      ],
     );
   }
 

@@ -17,6 +17,7 @@ import 'package:viendongedu2_flutter/models/crm_teacher_profile.dart';
 import 'package:viendongedu2_flutter/services/crm_teacher_api.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 import 'package:viendongedu2_flutter/theme/vd_theme.dart';
+import 'package:viendongedu2_flutter/models/student_notice.dart';
 
 class _StudentRepo extends StudentHomeRepository {
   @override
@@ -53,7 +54,8 @@ class _StudentRepo extends StudentHomeRepository {
   Future<BoardUnread> unreadCount() async =>
       const BoardUnread(unread: 0, mustReadPending: 0);
   @override
-  Future<String?> classCode() async => '06CDTHUNGHIEM';
+  Future<({String? classCode, List<StudentNotice> notices})> profile() async =>
+      (classCode: '06CDTHUNGHIEM', notices: const <StudentNotice>[]);
   @override
   String? get fullName => 'Học Viên Thử Nghiệm';
   @override

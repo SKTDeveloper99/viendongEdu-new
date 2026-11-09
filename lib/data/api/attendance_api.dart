@@ -1,3 +1,4 @@
+import '../../models/student_notice.dart';
 import '../../services/ems_api_service.dart';
 
 abstract final class AttendanceApi {
@@ -97,15 +98,23 @@ abstract final class AttendanceApi {
   }
 
   /// Học viên xem điểm danh EMS của chính mình.
-  static Future<List<EmsStudentMark>> myAttendance({int limit = 100}) async {
+  static Future<List<EmsStudentMark>> myAttendance({int limit = 100}) async =>
+      (await myAttendanceView(limit: limit)).marks;
+
+  /// [myAttendance] plus the server notices for Điểm danh (contract S3).
+  static Future<({List<EmsStudentMark> marks, List<StudentNotice> notices})>
+  myAttendanceView({int limit = 100}) async {
     final body = await EmsApiService.sendMap(
       'GET',
       '/student/me/attendance-ems?limit=$limit',
     );
-    final list = EmsApiService.rows(body['marks'] ?? body['history'] ?? body['items']);
-    return list
+    final list = EmsApiService.rows(
+      body['marks'] ?? body['history'] ?? body['items'],
+    );
+    final marks = list
         .whereType<Map<String, dynamic>>()
         .map((row) => EmsApiService.parse(() => EmsStudentMark.fromJson(row)))
         .toList();
+    return (marks: marks, notices: parseStudentNotices(body));
   }
 }

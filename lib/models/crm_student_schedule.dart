@@ -43,6 +43,7 @@
 // any phone west of UTC, even though Vietnam (UTC+7) happens to be safe —
 // the rule has to be explicit, not "works for our timezone".
 import 'json_values.dart';
+import 'student_notice.dart';
 
 DateTime? _calendarDate(dynamic v) {
   if (v == null) return null;
@@ -140,9 +141,13 @@ class CrmStudentScheduleView {
   final List<CrmScheduleItem> schedule;
   final List<CrmUnscheduledSection> chuaCoLich;
 
+  /// Server notices for Lịch học (contract S3); empty when absent.
+  final List<StudentNotice> notices;
+
   const CrmStudentScheduleView({
     this.schedule = const [],
     this.chuaCoLich = const [],
+    this.notices = const [],
   });
 
   factory CrmStudentScheduleView.fromJson(Map<String, dynamic> j) {
@@ -161,6 +166,7 @@ class CrmStudentScheduleView {
                 .map(CrmUnscheduledSection.fromJson)
                 .toList()
           : const [],
+      notices: parseStudentNotices(j),
     );
   }
 }

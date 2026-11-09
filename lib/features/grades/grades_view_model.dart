@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/grades_repository.dart';
 import '../../models/crm_student_graduation_summary.dart';
+import '../../models/student_notice.dart';
 import '../../services/ems_api_service.dart';
 import 'grade_item.dart';
 
@@ -30,6 +31,11 @@ class GradesViewModel extends ChangeNotifier {
   List<GradeItem> get grades => _grades;
   List<GradeItem> get ungraded => _chuaHoc;
   List<RemainingSubjectItem> get remaining => _chuaDat;
+
+  List<StudentNotice> _notices = const [];
+
+  /// Server notices for Bảng điểm, from the grades read.
+  List<StudentNotice> get notices => _notices;
   bool get remainingKnown => _remainingKnown;
   bool get loading => _loading;
   String? get error => _error;
@@ -67,6 +73,7 @@ class GradesViewModel extends ChangeNotifier {
             ),
           )
           .toList();
+      _notices = data.grades.notices;
       _stats = data.summary.academic;
       _remainingKnown = data.summary.remainingSubjectsKnown;
       _loading = false;

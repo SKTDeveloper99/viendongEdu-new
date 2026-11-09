@@ -1,5 +1,6 @@
 import '../models/crm_student_schedule.dart';
 import '../models/crm_student_exams.dart';
+import '../models/student_notice.dart';
 import '../services/app_session.dart';
 import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
@@ -48,8 +49,14 @@ class StudentHomeRepository {
 
   Future<BoardUnread> unreadCount() => BoardApi.unreadCount();
 
-  /// Class code for the header (not part of the login session).
-  Future<String?> classCode() async => (await CrmStudentApi.me()).classCode;
+  /// Class code for the header (not part of the login session) and the
+  /// server notices for Home, both from `GET /api/student/me`.
+  Future<({String? classCode, List<StudentNotice> notices})> profile() async {
+    final r = await CrmStudentApi.meView();
+    return (classCode: r.profile.classCode, notices: r.notices);
+  }
+
+  Future<String?> classCode() async => (await profile()).classCode;
 
   // Identity always comes from the CRM login session.
   String? get fullName => AppSession.instance.fullName;

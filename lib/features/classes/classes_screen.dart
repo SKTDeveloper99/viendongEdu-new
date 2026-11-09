@@ -8,6 +8,7 @@ import 'widgets/class_list.dart';
 import 'widgets/classes_header.dart';
 import 'widgets/classes_state_views.dart';
 import '../../theme/vd_tokens.dart';
+import '../../components/student_notices.dart';
 
 /// "Lớp học" — the student's classes per semester (newest first), with
 /// scores. Layout only; state lives in [ClassesViewModel].
@@ -92,6 +93,11 @@ class _ClassesScreenState extends State<ClassesScreen> {
                 selected: _vm.selected,
                 onSelected: _vm.selectSemester,
               ),
+              if (!_vm.loading && !_vm.loadingClasses && _vm.error == null)
+                StudentNoticeList(
+                  notices: _vm.notices,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                ),
               Expanded(child: _content()),
             ],
           ),

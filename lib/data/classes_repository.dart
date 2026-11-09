@@ -1,5 +1,6 @@
 import '../models/crm_student_grades.dart';
 import '../models/crm_student_schedule.dart';
+import '../models/student_notice.dart';
 import '../services/crm_student_api.dart';
 import '../services/ems_api_service.dart';
 import 'api/attendance_api.dart';
@@ -13,10 +14,14 @@ class SemesterClassesData {
   /// section_code -> last date of its official timetable (tkb.ngayketthuc);
   /// empty when the timetable could not be read.
   final Map<String, DateTime> timetableEnd;
+
+  /// Server notices for Lớp học (from the sections response).
+  final List<StudentNotice> notices;
   const SemesterClassesData({
     required this.sections,
     required this.grades,
     this.timetableEnd = const {},
+    this.notices = const [],
   });
 }
 
@@ -34,7 +39,7 @@ class ClassesRepository {
   /// Sections of [semester] and the grade rows, requested together.
   Future<SemesterClassesData> semesterClasses(String semester) async {
     final results = await Future.wait([
-      CrmStudentApi.sections(semester: semester),
+      CrmStudentApi.sectionsView(semester: semester),
       CrmStudentApi.grades(),
       // Optional: a timetable failure only leaves the end date N/A.
       CrmStudentApi.schedule(
@@ -48,10 +53,17 @@ class ClassesRepository {
       final cur = ends[t.sectionCode];
       if (cur == null || d.isAfter(cur)) ends[t.sectionCode] = d;
     }
+    final sections =
+        results[0]
+            as ({
+              List<CrmStudentSection> sections,
+              List<StudentNotice> notices,
+            });
     return SemesterClassesData(
-      sections: results[0] as List<CrmStudentSection>,
+      sections: sections.sections,
       grades: (results[1] as CrmStudentGradesView).grades,
       timetableEnd: ends,
+      notices: sections.notices,
     );
   }
 

@@ -8,8 +8,8 @@ import '../theme/vd_tokens.dart';
 class StudentNoticeList extends StatelessWidget {
   final List<StudentNotice> notices;
 
-  /// Space under the list when it shows something.
-  final double gap;
+  /// Space around the list, applied only when it shows something.
+  final EdgeInsetsGeometry padding;
 
   /// Test clock; production uses the phone clock converted to Vietnam time.
   final DateTime Function()? now;
@@ -17,7 +17,7 @@ class StudentNoticeList extends StatelessWidget {
   const StudentNoticeList({
     super.key,
     required this.notices,
-    this.gap = 12,
+    this.padding = const EdgeInsets.only(bottom: 12),
     this.now,
   });
 
@@ -26,7 +26,7 @@ class StudentNoticeList extends StatelessWidget {
     final shown = visibleStudentNotices(notices, now?.call());
     if (shown.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: EdgeInsets.only(bottom: gap),
+      padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

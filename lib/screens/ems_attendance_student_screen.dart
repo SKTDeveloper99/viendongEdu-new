@@ -12,6 +12,8 @@
 
 import '../components/skeleton.dart';
 import '../core/schedule/unmarked_session.dart';
+import '../components/student_notices.dart';
+import '../models/student_notice.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
 import '../services/crm_session_guard.dart';
@@ -33,6 +35,7 @@ class _EmsAttendanceStudentScreenState
   bool _loading = true;
   String? _error;
   List<EmsStudentMark> _marks = const [];
+  List<StudentNotice> _notices = const [];
 
   @override
   void initState() {
@@ -48,10 +51,11 @@ class _EmsAttendanceStudentScreenState
       });
     }
     try {
-      final m = await AttendanceApi.myAttendance();
+      final r = await AttendanceApi.myAttendanceView();
       if (!mounted) return;
       setState(() {
-        _marks = m;
+        _marks = r.marks;
+        _notices = r.notices;
         _loading = false;
         _error = null;
       });
@@ -61,6 +65,7 @@ class _EmsAttendanceStudentScreenState
       if (!background) {
         setState(() {
           _marks = const [];
+          _notices = const [];
           _error = crmErrorMessage(e);
           _loading = false;
         });
@@ -114,12 +119,16 @@ class _EmsAttendanceStudentScreenState
         onRetry: _load,
       );
     }
+    final notices = StudentNoticeList(
+      notices: _notices,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+    );
     if (_marks.isEmpty) {
-      return _center(
-        Icons.inbox_outlined,
-        'Chưa có buổi nào được ghi',
-        'Chưa có lịch hoặc kết quả điểm danh. Nếu đã quẹt cổng, bằng chứng '
-            'vào trường sẽ hiện ngay khi thiết bị đồng bộ.',
+      return Column(
+        children: [
+          notices,
+          Expanded(child: _emptyState()),
+        ],
       );
     }
     return RefreshIndicator(
@@ -128,6 +137,7 @@ class _EmsAttendanceStudentScreenState
       child: ListView(
         padding: const EdgeInsets.all(12),
         children: [
+          StudentNoticeList(notices: _notices),
           _summary(),
           const SizedBox(height: 12),
           for (final m in _marks) ...[_row(m), const SizedBox(height: 6)],
@@ -135,6 +145,13 @@ class _EmsAttendanceStudentScreenState
       ),
     );
   }
+
+  Widget _emptyState() => _center(
+    Icons.inbox_outlined,
+    'Chưa có buổi nào được ghi',
+    'Chưa có lịch hoặc kết quả điểm danh. Nếu đã quẹt cổng, bằng chứng '
+        'vào trường sẽ hiện ngay khi thiết bị đồng bộ.',
+  );
 
   Widget _summary() {
     return Container(

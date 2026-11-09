@@ -1,4 +1,5 @@
 import '../components/skeleton.dart';
+import '../components/student_notices.dart';
 import '../core/schedule/unmarked_session.dart';
 import '../components/schedule_exam_card.dart';
 import '../components/exam_load_warning.dart';
@@ -36,7 +37,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   // Load all schedule slots once; cache the occurrences by calendar day.
   List<CrmScheduleItem>? _fullSchedule;
-  List<CrmUnscheduledSection> _chuaCoLich = const [];
+  CrmStudentScheduleView _view = const CrmStudentScheduleView();
   bool _scheduleFailed = false;
   String? _scheduleError;
   final Map<String, List<CrmScheduleItem>> _cache = {};
@@ -213,7 +214,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         final r = await CrmStudentApi.scheduleViewCached();
         if (!mounted) return;
         _fullSchedule = r.data.schedule;
-        _chuaCoLich = r.data.chuaCoLich;
+        _view = r.data;
         _staleAt = r.fresh ? null : r.savedAt;
       }
       if (!mounted) return;
@@ -225,10 +226,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (await handleCrmAuthError(context, e)) return;
       setState(() {
         _scheduleFailed = true;
-        _scheduleError = e is EmsException
-            ? e.message
-            : 'Không tải được lịch học. Vui lòng thử lại.';
-        _chuaCoLich = const [];
+        _scheduleError = crmErrorMessage(e);
+        _view = const CrmStudentScheduleView();
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -323,6 +322,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
             if (_staleAt != null) StaleNote(_staleAt!),
             if (_examsStaleAt != null) StaleNote(_examsStaleAt!),
+            StudentNoticeList(
+              notices: _view.notices,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            ),
             Expanded(
               child: _loading || _examsLoading
                   ? skeletonList(accentColor: context.vd.primary)
@@ -364,8 +367,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               data: data,
                               status: _statusFor(data, key),
                             ),
-                          if (_chuaCoLich.isNotEmpty)
-                            UnscheduledSubjects(sections: _chuaCoLich),
+                          if (_view.chuaCoLich.isNotEmpty)
+                            UnscheduledSubjects(sections: _view.chuaCoLich),
                         ],
                       ),
                     ),

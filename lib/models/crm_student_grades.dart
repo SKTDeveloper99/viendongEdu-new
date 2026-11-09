@@ -29,6 +29,7 @@
 //     client-side credit or average arithmetic any more.
 
 import 'json_values.dart';
+import 'student_notice.dart';
 
 double? _numOrNull(dynamic v) => jsonDouble(v);
 
@@ -194,10 +195,14 @@ class CrmStudentGradesView {
   final CrmStudentGradesSummary summary;
   final List<CrmStudentGrade> grades;
 
+  /// Server notices for Bảng điểm (contract S3); empty when absent.
+  final List<StudentNotice> notices;
+
   const CrmStudentGradesView({
     required this.mssv,
     required this.summary,
     this.grades = const [],
+    this.notices = const [],
   });
 
   factory CrmStudentGradesView.fromJson(Map<String, dynamic> j) {
@@ -213,6 +218,7 @@ class CrmStudentGradesView {
                 .map(CrmStudentGrade.fromJson)
                 .toList()
           : const [],
+      notices: parseStudentNotices(j),
     );
   }
 }
