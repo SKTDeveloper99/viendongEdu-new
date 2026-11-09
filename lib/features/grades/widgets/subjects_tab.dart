@@ -46,7 +46,10 @@ class _SubjectsTabState extends State<SubjectsTab> {
               Expanded(
                 child: SubjectFilterChip(
                   label: 'Chưa học',
-                  count: widget.chuaHoc.length,
+                  // No curriculum = unknown, never "0 left to study".
+                  count: widget.hasCurriculum && widget.remainingKnown
+                      ? widget.chuaHoc.length
+                      : null,
                   selected: _selected == 1,
                   onTap: () => setState(() => _selected = 1),
                 ),
@@ -71,7 +74,9 @@ class _SubjectsTabState extends State<SubjectsTab> {
 
 class SubjectFilterChip extends StatelessWidget {
   final String label;
-  final int count;
+
+  /// Null hides the count badge (the number is not known).
+  final int? count;
   final bool selected;
   final VoidCallback onTap;
   const SubjectFilterChip({
@@ -108,26 +113,31 @@ class SubjectFilterChip extends StatelessWidget {
                   color: selected ? context.vd.onPrimary : context.vd.inkMuted,
                 ),
               ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? context.vd.onPrimary.withValues(alpha: 0.25)
-                      : context.vd.surfaceAlt,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+              if (count != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
                     color: selected
-                        ? context.vd.onPrimary
-                        : context.vd.inkMuted,
+                        ? context.vd.onPrimary.withValues(alpha: 0.25)
+                        : context.vd.surfaceAlt,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: selected
+                          ? context.vd.onPrimary
+                          : context.vd.inkMuted,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

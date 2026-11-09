@@ -14,6 +14,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:viendongedu2_flutter/features/grades/grades_screen.dart';
+import 'package:viendongedu2_flutter/features/grades/widgets/mini_stat.dart';
+import 'package:viendongedu2_flutter/features/grades/widgets/subjects_tab.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
 
 const _json = {'content-type': 'application/json; charset=utf-8'};
@@ -149,6 +151,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('no curriculum: no "0 / 0 môn đạt" and no "Chưa học" count', (
+    tester,
+  ) async {
+    for (final academic in [
+      {'has_curriculum': false, 'required_subjects': 0, 'required_passed': 0},
+      {'required_subjects': 0, 'required_passed': 0}, // flag missing
+      {'has_curriculum': true, 'required_subjects': 0, 'required_passed': 0},
+    ]) {
+      EmsApiService.client = _server(
+        summary: {'academic': academic, 'remaining_subjects': []},
+      );
+      await pump(tester);
+      expect(find.textContaining('0 / 0'), findsNothing, reason: '$academic');
+      expect(find.text('Chưa có chương trình đào tạo'), findsOneWidget);
+      await tester.tap(find.text('Môn học'));
+      await tester.pumpAndSettle();
+      final chip = tester
+          .widgetList<SubjectFilterChip>(find.byType(SubjectFilterChip))
+          .firstWhere((c) => c.label == 'Chưa học');
+      expect(chip.count, isNull, reason: '$academic');
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
+
   testWidgets('overview tab shows server totals, distribution and mini stats', (
     tester,
   ) async {
@@ -163,7 +189,11 @@ void main() {
     expect(find.text('40%'), findsOneWidget);
     expect(find.text('hoàn thành'), findsOneWidget);
     expect(find.text('Môn đã học'), findsOneWidget);
-    expect(find.text('3'), findsWidgets); // 3 graded rows
+    // 3 graded rows, but B was retaken: 2 subjects studied.
+    final studied = tester
+        .widgetList<MiniStat>(find.byType(MiniStat))
+        .firstWhere((m) => m.label == 'Môn đã học');
+    expect(studied.value, '2');
     expect(find.text('Không đạt'), findsOneWidget);
     expect(find.text('1 môn'), findsNWidgets(2)); // failed + no score
     expect(find.text('Phân bổ điểm chữ'), findsOneWidget);

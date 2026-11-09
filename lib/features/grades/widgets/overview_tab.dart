@@ -33,11 +33,15 @@ class OverviewTab extends StatelessWidget {
         : (s!.total! - s.scored!).clamp(0, 1 << 30);
     final tcKhongDat = s?.failed;
     final progressKnown =
-        s?.hasCurriculum == true && tcDat != null && tcTong != null;
+        s?.hasCurriculum == true &&
+        tcDat != null &&
+        tcTong != null &&
+        tcTong > 0;
     final progress = progressKnown && tcTong > 0
         ? (tcDat / tcTong).clamp(0.0, 1.0)
         : 0.0;
-    final noCurriculum = s?.hasCurriculum != true; // progress unknown, not 0/0
+    // Progress unknown, never "0 / 0": no curriculum flag, or no required row.
+    final noCurriculum = s?.hasCurriculum != true || tcTong == 0;
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -163,7 +167,7 @@ class OverviewTab extends StatelessWidget {
               children: [
                 MiniStat(
                   label: 'Môn đã học',
-                  value: '${grades.length}',
+                  value: '${distinctSubjects(grades)}',
                   icon: Icons.menu_book_outlined,
                   color: context.vd.info,
                 ),

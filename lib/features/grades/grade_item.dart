@@ -63,3 +63,10 @@ List<GradeItem> withRetakeNumbers(List<CrmStudentGrade> grades) {
   }
   return grades.map((g) => GradeItem(g, solan: solanFor[g] ?? 1)).toList();
 }
+
+/// Subjects studied, each counted once however many times it was retaken
+/// (by subject code; by name when a row has no code).
+int distinctSubjects(List<GradeItem> grades) => {
+  for (final g in grades)
+    g.mhma.isNotEmpty ? 'code:${g.mhma}' : 'name:${g.mhten}',
+}.length;

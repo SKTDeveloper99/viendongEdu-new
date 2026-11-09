@@ -78,7 +78,10 @@ class _GradesScreenState extends State<GradesScreen>
           SubjectsTab(
             chuaDiem: _vm.ungraded,
             chuaHoc: _vm.remaining,
-            hasCurriculum: _vm.stats?.hasCurriculum ?? false,
+            // Zero required subjects is no curriculum, not "nothing left".
+            hasCurriculum:
+                (_vm.stats?.hasCurriculum ?? false) &&
+                _vm.stats?.requiredSubjects != 0,
             remainingKnown: _vm.remainingKnown,
           ),
         ],
