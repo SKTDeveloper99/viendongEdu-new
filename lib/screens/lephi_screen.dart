@@ -7,7 +7,7 @@ import '../services/crm_session_guard.dart';
 import '../theme/vd_tokens.dart';
 
 String _fmtAmount(int? amount) {
-  if (amount == null) return 'Chưa có quy định tính phí';
+  if (amount == null) return 'Chưa xác định';
   final s = amount.abs().toString();
   final buf = StringBuffer();
   for (var i = 0; i < s.length; i++) {

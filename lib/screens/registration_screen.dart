@@ -199,8 +199,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           );
         });
         _showSnack(
-          'Đã gửi đăng ký ${offering.subjectName ?? ''} lên EMS. '
-          'Chưa được gửi tới Phòng Đào tạo (IMS) — đây chỉ là ghi nhận ở EMS.',
+          'Đã ghi nhận đăng ký ${offering.subjectName ?? ''}. '
+          'Phòng Đào tạo chưa xác nhận — đây mới là ghi nhận ban đầu.',
         );
       }
     } catch (e) {

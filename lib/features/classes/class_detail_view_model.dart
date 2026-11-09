@@ -119,7 +119,7 @@ class ClassDetailViewModel extends ChangeNotifier {
     } catch (e) {
       if (_disposed || request != _request) return;
       _sessions = [];
-      _error = e.toString();
+      _error = crmErrorMessage(e);
       if (e is EmsException && e.statusCode == 401) _authError = e;
     }
     _loading = false;

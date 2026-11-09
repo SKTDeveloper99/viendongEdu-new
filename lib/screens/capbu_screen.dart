@@ -5,12 +5,13 @@ import '../models/crm_money_capbu.dart';
 import '../services/crm_money_api.dart';
 import '../services/crm_session_guard.dart';
 import '../theme/vd_tokens.dart';
+import '../utils/money_text.dart';
 
 String _fmtDate(DateTime? d) => d == null
     ? '–'
     : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-String _fmtAmount(num? v) => v == null ? 'chưa có dữ liệu' : '${v.toString()} đ';
+String _fmtAmount(num? v) => vndText(v, unknown: 'chưa có dữ liệu');
 
 // Thay ApiService.getCapBu (IMS hocvien/capbu) bằng CrmMoneyApi.getCapBu
 // (GET /api/student/me/capbu) — mirror IMS nguyên văn, không có luật CRM.

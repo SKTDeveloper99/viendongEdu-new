@@ -113,7 +113,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       setState(() { _saving = false; _saved = true; });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-          'Đã cập nhật hồ sơ ở EMS. Thay đổi CHƯA được gửi tới hệ thống IMS của trường.',
+          'Đã cập nhật hồ sơ. Phòng Đào tạo CHƯA nhận được thay đổi này.',
         ),
         backgroundColor: context.vd.success,
         behavior: SnackBarBehavior.floating,
@@ -213,7 +213,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                     SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Thay đổi được ghi vào EMS. Hệ thống quản lý đào tạo (IMS) của trường CHƯA nhận được cập nhật này.',
+                                        'Thay đổi được ghi nhận trên ứng dụng. Hồ sơ của Phòng Đào tạo CHƯA nhận được cập nhật này.',
                                         style: TextStyle(fontSize: 12),
                                       ),
                                     ),

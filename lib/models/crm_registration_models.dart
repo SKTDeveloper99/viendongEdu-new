@@ -189,7 +189,7 @@ class CrmRegistrationResult {
 
   /// Nhãn tiếng Việt cho hai nguồn — trung thực, không giấu học viên việc
   /// đăng ký EMS chưa lên IMS.
-  String get sourceLabel => isEmsRequest ? 'Đã gửi (EMS)' : 'Đã xếp lớp';
+  String get sourceLabel => isEmsRequest ? 'Đã ghi nhận' : 'Đã xếp lớp';
 
   factory CrmRegistrationResult.fromJson(Map<String, dynamic> j) =>
       CrmRegistrationResult(

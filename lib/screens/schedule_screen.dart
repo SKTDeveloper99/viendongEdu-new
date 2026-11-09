@@ -20,6 +20,10 @@ import '../components/unscheduled_subjects.dart';
 String _fmtDate(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+/// `dd/MM`, the screen's one date style (`dd/MM/yyyy` with the year).
+String _ddMM(DateTime d) =>
+    '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key, this.now});
 
@@ -279,8 +283,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final weekDays = _weekDays;
     final start = _currentMonday;
     final end = _currentMonday.add(const Duration(days: 6));
-    final weekLabel =
-        '${start.day}/${start.month} – ${end.day}/${end.month}/${end.year}';
+    final weekLabel = '${_ddMM(start)} – ${_ddMM(end)}/${end.year}';
     final key = _fmtDate(_selectedDate);
     final classes = _cache[key] ?? <CrmScheduleItem>[];
     final exams = _exams.where((e) => e.occursOn(_selectedDate)).toList()
@@ -293,7 +296,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         backgroundColor: context.vd.primary,
         icon: Icon(Icons.calendar_month, color: context.vd.onPrimary, size: 20),
         label: Text(
-          '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+          '${_ddMM(_selectedDate)}/${_selectedDate.year}',
           style: TextStyle(color: context.vd.onPrimary, fontSize: 13),
         ),
       ),

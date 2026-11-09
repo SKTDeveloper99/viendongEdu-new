@@ -61,15 +61,9 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
     final ngaysinh = _fmtDate(p?.dateOfBirth);
     final email = p?.email ?? '–';
     final sdt = p?.phone ?? '–';
-    // CRM's `students` table has a `cccd` column, but the /api/student/me
-    // repo query (repositories/portals-student-portal-repo.js#getStudent)
-    // does not select it — the endpoint simply has no CCCD field to hand
-    // back. Shown as "—" rather than guessed; documented in
-    // docs/ims_to_crm_student_academic_map.md.
-    const cmnd = '—';
-    // CRM models only ONE ngành level (no separate "chuyên ngành" tier the
-    // old IMS hierarchy had) — same gap, documented rather than guessed.
-    const chuyenNganhTen = '—';
+    // /api/student/me returns no CCCD and CRM has no "chuyên ngành" tier,
+    // so those rows are not drawn (they were always "—", reading as a blank
+    // record). See docs/ims_to_crm_student_academic_map.md.
     final nganhTen = p?.nganhName?.isNotEmpty == true ? p!.nganhName! : '–';
     final heDaoTaoTen = p?.programName?.isNotEmpty == true ? p!.programName! : '–';
 
@@ -156,7 +150,6 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                               _InfoRow(icon: Icons.person_outline, label: 'Họ tên', value: fullName),
                               _InfoRow(icon: Icons.badge_outlined, label: 'MSSV', value: mssv),
                               _InfoRow(icon: Icons.cake_outlined, label: 'Ngày sinh', value: ngaysinh),
-                              _InfoRow(icon: Icons.credit_card_outlined, label: 'CCCD', value: cmnd),
                             ]),
                             const SizedBox(height: 12),
                             _Section(title: 'Liên hệ', children: [
@@ -167,7 +160,6 @@ class _HvProfileInfoScreenState extends State<HvProfileInfoScreen> {
                             _Section(title: 'Học vụ', children: [
                               _InfoRow(icon: Icons.group_outlined, label: 'Lớp', value: malop),
                               _InfoRow(icon: Icons.school_outlined, label: 'Khóa học', value: khoahoc),
-                              _InfoRow(icon: Icons.menu_book_outlined, label: 'Chuyên ngành', value: chuyenNganhTen),
                               _InfoRow(icon: Icons.account_balance_outlined, label: 'Ngành', value: nganhTen),
                               _InfoRow(icon: Icons.workspace_premium_outlined, label: 'Hệ đào tạo', value: heDaoTaoTen),
                             ]),

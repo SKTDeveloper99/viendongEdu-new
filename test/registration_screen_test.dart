@@ -133,108 +133,109 @@ void main() {
     expect(find.text('Thử lại'), findsOneWidget);
   });
 
-  testWidgets('đăng ký thành công -> báo rõ đã ghi ở EMS, CHƯA gửi IMS', (
-    tester,
-  ) async {
-    var registered = false;
-    EmsApiService.client = MockClient((request) async {
-      final path = request.url.path;
-      if (path.endsWith('/registration/periods')) {
-        return http.Response(
-          jsonEncode({
-            'semester_code': '261',
-            'periods': [
-              {
-                'period_id': '125',
-                'period_code': 'HK261',
-                'period_name': 'Học kỳ 1, 2026 -2027',
-                'start_at': '2026-01-01T00:00:00.000Z',
-                'end_at': '2030-01-01T00:00:00.000Z',
-                'is_open': true,
-                'semester_code': '261',
-              },
-            ],
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      if (path.endsWith('/registration/offerings')) {
-        return http.Response(
-          jsonEncode({
-            'period_id': '125',
-            'curriculum_resolved': true,
-            'offerings': [
-              {
-                'offering_id': '169',
-                'class_code': '06THC-TEST',
-                'subject_code': '2DC003',
-                'subject_name': 'Môn thử nghiệm',
-                'credits': 3,
-                'max_size': 50,
-                'registered_count': 10,
-                'in_my_curriculum': true,
-              },
-            ],
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      if (path.endsWith('/registration/results')) {
-        return http.Response(
-          jsonEncode({
-            'semester_code': '261',
-            'results': registered
-                ? [
-                    {
-                      'id': 'req-1',
-                      'offering_id': '169',
-                      'subject_name': 'Môn thử nghiệm',
-                      'status': 'pending',
-                      'source': 'ems_request',
-                      'synced_to_ims': false,
-                    },
-                  ]
-                : [],
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      if (request.method == 'POST' &&
-          path.endsWith('/student/me/registration')) {
-        registered = true;
-        return http.Response(
-          jsonEncode({
-            'recorded_in': 'ems',
-            'synced_to_ims': false,
-            'id': 'req-1',
-            'mssv': 'TEST2600001',
-            'semester_code': '261',
-            'offering_id': '169',
-            'status': 'pending',
-            'submitted_at': '2026-09-24T08:00:00.000Z',
-          }),
-          201,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      return http.Response('{}', 404);
-    });
+  testWidgets(
+    'đăng ký thành công -> báo rõ mới ghi nhận, Phòng Đào tạo chưa xác nhận',
+    (tester) async {
+      var registered = false;
+      EmsApiService.client = MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/registration/periods')) {
+          return http.Response(
+            jsonEncode({
+              'semester_code': '261',
+              'periods': [
+                {
+                  'period_id': '125',
+                  'period_code': 'HK261',
+                  'period_name': 'Học kỳ 1, 2026 -2027',
+                  'start_at': '2026-01-01T00:00:00.000Z',
+                  'end_at': '2030-01-01T00:00:00.000Z',
+                  'is_open': true,
+                  'semester_code': '261',
+                },
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        if (path.endsWith('/registration/offerings')) {
+          return http.Response(
+            jsonEncode({
+              'period_id': '125',
+              'curriculum_resolved': true,
+              'offerings': [
+                {
+                  'offering_id': '169',
+                  'class_code': '06THC-TEST',
+                  'subject_code': '2DC003',
+                  'subject_name': 'Môn thử nghiệm',
+                  'credits': 3,
+                  'max_size': 50,
+                  'registered_count': 10,
+                  'in_my_curriculum': true,
+                },
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        if (path.endsWith('/registration/results')) {
+          return http.Response(
+            jsonEncode({
+              'semester_code': '261',
+              'results': registered
+                  ? [
+                      {
+                        'id': 'req-1',
+                        'offering_id': '169',
+                        'subject_name': 'Môn thử nghiệm',
+                        'status': 'pending',
+                        'source': 'ems_request',
+                        'synced_to_ims': false,
+                      },
+                    ]
+                  : [],
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        if (request.method == 'POST' &&
+            path.endsWith('/student/me/registration')) {
+          registered = true;
+          return http.Response(
+            jsonEncode({
+              'recorded_in': 'ems',
+              'synced_to_ims': false,
+              'id': 'req-1',
+              'mssv': 'TEST2600001',
+              'semester_code': '261',
+              'offering_id': '169',
+              'status': 'pending',
+              'submitted_at': '2026-09-24T08:00:00.000Z',
+            }),
+            201,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('{}', 404);
+      });
 
-    await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Đăng ký'), findsOneWidget);
-    await tester.tap(find.text('Đăng ký'));
-    await tester.pump(); // show snackbar
-    await tester.pumpAndSettle();
+      expect(find.text('Đăng ký'), findsOneWidget);
+      await tester.tap(find.text('Đăng ký'));
+      await tester.pump(); // show snackbar
+      await tester.pumpAndSettle();
 
-    // Thông điệp trung thực: ghi ở EMS, CHƯA lên IMS — không giấu học viên.
-    expect(
-      find.textContaining('Chưa được gửi tới Phòng Đào tạo (IMS)'),
-      findsOneWidget,
-    );
-  });
+      // Thông điệp trung thực: mới ghi nhận, Phòng Đào tạo chưa xác nhận —
+      // không giấu học viên, và không lộ tên hệ thống (EMS/IMS).
+      expect(find.textContaining('Phòng Đào tạo chưa xác nhận'), findsWidgets);
+      expect(find.textContaining('EMS'), findsNothing);
+      expect(find.textContaining('IMS'), findsNothing);
+    },
+  );
 }

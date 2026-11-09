@@ -93,7 +93,7 @@ class RegistrationResultCard extends StatelessWidget {
                 if (isEms && !result.syncedToIms) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Ghi nhận ở EMS, chưa gửi tới Phòng Đào tạo (IMS).',
+                    'Đã ghi nhận, Phòng Đào tạo chưa xác nhận.',
                     style: TextStyle(
                       fontSize: 10,
                       color: context.vd.accent,
@@ -194,7 +194,7 @@ class RegistrationOfferingCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Đã gửi (EMS)',
+                      'Đã ghi nhận',
                       style: TextStyle(
                         fontSize: 11,
                         color: context.vd.success,

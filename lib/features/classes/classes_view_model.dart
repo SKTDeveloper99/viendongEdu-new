@@ -139,7 +139,7 @@ class ClassesViewModel extends ChangeNotifier {
       if (_disposed || selection != _selection) return;
       _notices = const [];
       _loadingClasses = false;
-      _error = e.toString();
+      _error = crmErrorMessage(e);
       _flagAuth(e);
     }
     notifyListeners();

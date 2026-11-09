@@ -80,12 +80,17 @@ class StudentScheduleHeader extends StatelessWidget {
                 size: 28,
               ),
             ),
-            Text(
-              weekLabel,
-              style: TextStyle(
-                color: context.vd.onPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  weekLabel,
+                  style: TextStyle(
+                    color: context.vd.onPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
             GestureDetector(

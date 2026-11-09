@@ -82,7 +82,7 @@ void main() {
   });
 
   group('CrmRegistrationResult.fromJson', () {
-    test('source=ems_request -> nhãn "Đã gửi (EMS)", chưa đồng bộ IMS', () {
+    test('source=ems_request -> nhãn "Đã ghi nhận", chưa đồng bộ IMS', () {
       final r = CrmRegistrationResult.fromJson({
         'id': 'req-1',
         'offering_id': '169',
@@ -92,7 +92,7 @@ void main() {
         'synced_to_ims': false,
       });
       expect(r.isEmsRequest, isTrue);
-      expect(r.sourceLabel, 'Đã gửi (EMS)');
+      expect(r.sourceLabel, 'Đã ghi nhận');
       expect(r.syncedToIms, isFalse);
     });
 

@@ -257,7 +257,7 @@ void main() {
     expect(page.offerings.single.inMyCurriculum, isNull);
     expect(
       CrmRegistrationResult.fromJson({'source': 'ems_request'}).sourceLabel,
-      'Đã gửi (EMS)',
+      'Đã ghi nhận',
     );
     expect(
       CrmRegistrationResult.fromJson({'source': 'ims_roster'}).sourceLabel,
