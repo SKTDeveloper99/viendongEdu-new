@@ -7,6 +7,7 @@
 library;
 
 import 'json_values.dart';
+import 'student_notice.dart';
 
 int? _numOrNull(dynamic v) => jsonInt(v);
 
@@ -125,11 +126,15 @@ class CrmTuitionResponse {
   /// Khác null khi đây là bản lưu trên máy (không kết nối được máy chủ).
   final DateTime? offlineSavedAt;
 
+  /// Server notices for the Học phí screen (contract S3); empty when absent.
+  final List<StudentNotice> notices;
+
   const CrmTuitionResponse({
     this.mssv,
     required this.summary,
     this.payments = const [],
     this.offlineSavedAt,
+    this.notices = const [],
   });
 
   CrmTuitionResponse withOfflineSavedAt(DateTime at) => CrmTuitionResponse(
@@ -137,6 +142,7 @@ class CrmTuitionResponse {
     summary: summary,
     payments: payments,
     offlineSavedAt: at,
+    notices: notices,
   );
 
   factory CrmTuitionResponse.fromJson(Map<String, dynamic> j) =>
@@ -149,6 +155,7 @@ class CrmTuitionResponse {
                   .map(CrmTuitionPayment.fromJson)
                   .toList()
             : const [],
+        notices: parseStudentNotices(j),
       );
 }
 

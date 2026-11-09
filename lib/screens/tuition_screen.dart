@@ -145,9 +145,9 @@ class _TuitionScreenState extends State<TuitionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TuitionNotices(response: _tuition), // M-53 + bản lưu
+                  TuitionNotices(response: _tuition), // bản lưu + thông báo
                   if (_congNoError != null) ...[
-                    Text('Chưa tải được sổ công nợ. $_congNoError'),
+                    Text('Chưa tải được công nợ. $_congNoError'),
                     TextButton(onPressed: _fetch, child: const Text('Thử lại')),
                   ],
                   _SummarySection(summary: summary),
@@ -399,7 +399,7 @@ class _CongNoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Sổ công nợ (IMS)',
+          Text('Công nợ',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.vd.inkFaint)),
           const SizedBox(height: 6),
           if (!congNo.computable || congNo.note != null)

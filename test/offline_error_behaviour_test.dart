@@ -64,7 +64,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: TuitionScreen()));
       await tester.pumpAndSettle();
       expect(find.textContaining('dữ liệu cũ'), findsOneWidget);
-      expect(find.textContaining('Chưa tải được sổ công nợ'), findsOneWidget);
+      expect(find.textContaining('Chưa tải được công nợ'), findsOneWidget);
       expect(find.text('Lịch sử giao dịch'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       offline = false;
