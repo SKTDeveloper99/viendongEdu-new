@@ -60,6 +60,67 @@ void main() {
       expect(find.text('Không có lịch học'), findsOneWidget);
     },
   );
+  group('class badge without a mark row says what the date means', () {
+    Future<void> show(
+      WidgetTester t,
+      DateTime now, {
+      bool marksFail = false,
+    }) async {
+      SharedPreferences.setMockInitialValues({});
+      AppSession.instance
+        ..emsToken = 'test-token'
+        ..role = CrmRole.student
+        ..mssv = 'TEST-STUDENT';
+      EmsApiService.client = MockClient((req) async {
+        final path = req.url.path;
+        if (path.endsWith('/attendance-ems') && marksFail) {
+          return http.Response('test-server-error', 500);
+        }
+        final body = path.endsWith('/student/me/schedule')
+            ? {
+                'schedule': [_slot],
+              }
+            : path.endsWith('/attendance-ems')
+            ? {'marks': []}
+            : {'exams': []};
+        return http.Response(
+          jsonEncode(body),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      addTearDown(() => EmsApiService.client = http.Client());
+      await t.pumpWidget(MaterialApp(home: ScheduleScreen(now: () => now)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('T4'));
+      await t.pumpAndSettle();
+      expect(find.text('Môn thử nghiệm đã có lịch'), findsOneWidget);
+      expect(find.text('Chưa điểm danh'), findsNothing);
+    }
+
+    testWidgets('later this week: Sắp tới', (t) async {
+      await show(t, DateTime(2026, 9, 28, 8)); // Monday; class on Wednesday
+      expect(find.text('Sắp tới'), findsOneWidget);
+    });
+
+    testWidgets('today: Chờ điểm danh', (t) async {
+      await show(t, DateTime(2026, 9, 30, 8));
+      expect(find.text('Chờ điểm danh'), findsOneWidget);
+    });
+
+    testWidgets('earlier this week: Chưa có dữ liệu, not absent', (t) async {
+      await show(t, DateTime(2026, 10, 2, 8)); // Friday
+      expect(find.text('Chưa có dữ liệu'), findsOneWidget);
+      expect(find.text('Vắng'), findsNothing);
+    });
+
+    testWidgets('marks failed to load: Chưa tải được', (t) async {
+      await show(t, DateTime(2026, 10, 2, 8), marksFail: true);
+      expect(find.text('Chưa tải được'), findsOneWidget);
+      expect(find.text('Chưa có dữ liệu'), findsNothing);
+    });
+  });
+
   late Map<String, dynamic> body;
   late bool offline;
   late int calls;

@@ -1,14 +1,17 @@
 // lib/screens/ems_attendance_student_screen.dart
 //
-// Điểm danh EMS của chính học viên — nguồn dữ liệu điểm danh chính thức.
+// Điểm danh của chính học viên — nguồn dữ liệu điểm danh chính thức.
 //
 // Khác màn hình "Lớp môn học" (đọc thẳng IMS): đây là bản ghi của EMS, nơi
 // mỗi buổi chỉ có ĐÚNG MỘT dòng. Trong IMS một buổi có thể tồn tại hai dòng
 // mâu thuẫn nhau — có mặt và vắng cùng lúc — và bản hiển thị đếm cả hai.
 //
-// Buổi chưa được thầy/cô ghi vẫn hiện là CHỜ XÁC NHẬN, tuyệt đối không là vắng.
+// Buổi chưa được thầy/cô ghi KHÔNG BAO GIỜ là vắng: hôm nay là "chờ giảng
+// viên", ngày sau là "sắp tới", ngày đã qua là "chưa có dữ liệu"
+// (lib/core/schedule/unmarked_session.dart).
 
 import '../components/skeleton.dart';
+import '../core/schedule/unmarked_session.dart';
 import 'package:flutter/material.dart';
 import '../services/ems_api_service.dart';
 import '../services/crm_session_guard.dart';
@@ -16,7 +19,9 @@ import '../data/api/attendance_api.dart';
 import '../theme/vd_tokens.dart';
 
 class EmsAttendanceStudentScreen extends StatefulWidget {
-  const EmsAttendanceStudentScreen({super.key});
+  /// Test clock; production uses the phone clock.
+  final DateTime Function()? now;
+  const EmsAttendanceStudentScreen({super.key, this.now});
 
   @override
   State<EmsAttendanceStudentScreen> createState() =>
@@ -50,13 +55,13 @@ class _EmsAttendanceStudentScreenState
         _loading = false;
         _error = null;
       });
-    } on EmsException catch (e) {
+    } catch (e) {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       if (!background) {
         setState(() {
           _marks = const [];
-          _error = e.message;
+          _error = crmErrorMessage(e);
           _loading = false;
         });
       }
@@ -65,7 +70,20 @@ class _EmsAttendanceStudentScreenState
 
   int get _present => _marks.where((m) => m.status == 'present').length;
   int get _absent => _marks.where((m) => m.status == 'absent').length;
-  int get _pending => _marks.where((m) => m.status == null).length;
+  DateTime _now() => widget.now?.call() ?? DateTime.now();
+
+  UnmarkedSession? _unmarked(EmsStudentMark m) {
+    if (const {'present', 'late', 'absent', 'excused'}.contains(m.status)) {
+      return null;
+    }
+    final day = sessionDay(m.sessionDate);
+    return day == null
+        ? UnmarkedSession.noData
+        : unmarkedSessionOn(day, _now());
+  }
+
+  int _count(UnmarkedSession kind) =>
+      _marks.where((m) => _unmarked(m) == kind).length;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +92,7 @@ class _EmsAttendanceStudentScreenState
       appBar: AppBar(
         backgroundColor: context.vd.primary,
         foregroundColor: context.vd.onPrimary,
-        title: const Text('Điểm danh EMS'),
+        title: const Text('Điểm danh'),
         actions: [
           IconButton(
             onPressed: _loading ? null : _load,
@@ -100,7 +118,7 @@ class _EmsAttendanceStudentScreenState
       return _center(
         Icons.inbox_outlined,
         'Chưa có buổi nào được ghi',
-        'Chưa có lịch hoặc kết quả điểm danh EMS. Nếu đã quẹt cổng, bằng chứng '
+        'Chưa có lịch hoặc kết quả điểm danh. Nếu đã quẹt cổng, bằng chứng '
             'vào trường sẽ hiện ngay khi thiết bị đồng bộ.',
       );
     }
@@ -129,7 +147,17 @@ class _EmsAttendanceStudentScreenState
         children: [
           _stat('Có mặt', _present, context.vd.success),
           _stat('Vắng', _absent, context.vd.danger),
-          _stat('Chờ xác nhận', _pending, context.vd.primary),
+          _stat(
+            'Chờ giảng viên',
+            _count(UnmarkedSession.awaiting),
+            context.vd.primary,
+          ),
+          if (_count(UnmarkedSession.noData) > 0)
+            _stat(
+              'Chưa có dữ liệu',
+              _count(UnmarkedSession.noData),
+              context.vd.inkMuted,
+            ),
         ],
       ),
     );
@@ -158,7 +186,11 @@ class _EmsAttendanceStudentScreenState
       'late' => ('Đi muộn', context.vd.warning),
       'absent' => ('Vắng', context.vd.danger),
       'excused' => ('Vắng có phép', context.vd.info),
-      _ => ('Chờ giảng viên xác nhận', context.vd.inkFaint),
+      _ => switch (_unmarked(m)) {
+        UnmarkedSession.upcoming => ('Sắp tới', context.vd.inkMuted),
+        UnmarkedSession.noData => ('Chưa có dữ liệu', context.vd.inkMuted),
+        _ => ('Chờ giảng viên xác nhận', context.vd.inkMuted),
+      },
     };
     return Container(
       padding: const EdgeInsets.all(12),

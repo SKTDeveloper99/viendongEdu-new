@@ -166,11 +166,11 @@ void main() {
         MaterialApp(home: ScheduleScreen(now: () => DateTime(2026, 10, 23))),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Chưa điểm danh'), findsOneWidget);
+      expect(find.text('Chờ điểm danh'), findsOneWidget);
       phase = 1;
       await _refresh(tester);
       expect(find.text('Chưa tải được'), findsOneWidget);
-      expect(find.text('Chưa điểm danh'), findsNothing);
+      expect(find.text('Chờ điểm danh'), findsNothing);
       phase = 2;
       await _refresh(tester);
       expect(find.text('Không có quyền'), findsOneWidget);
@@ -506,6 +506,7 @@ void main() {
         const ClassesRepository(),
         sectionCode: 'TEST-SECTION',
         item: ClassItem.fromSection(CrmStudentSection.fromJson(_section)),
+        now: () => DateTime(2026, 11, 10),
       );
       phase = 1;
       await vm.refresh();
@@ -516,7 +517,8 @@ void main() {
       expect(vm.item!.examDate, DateTime.utc(2026, 12, 3));
       expect(vm.item!.tongdiem, 8);
       expect(vm.absent, 0);
-      expect(vm.pending, 1);
+      // A past session with no mark is unknown, never absent.
+      expect(vm.noData, 1);
       phase = 2;
       await vm.refresh();
       expect(vm.item!.room, isNull);

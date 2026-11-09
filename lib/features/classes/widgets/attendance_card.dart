@@ -2,24 +2,36 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../../theme/vd_tokens.dart';
 
-/// Donut chart and legend of present / absent / not-yet-marked sessions.
+/// Donut chart and legend of a class's sessions.
+///
+/// Presence % counts only sessions with an outcome (present, absent, báo
+/// nghỉ). Sessions without a mark are split by date (Sắp tới, Chờ điểm danh,
+/// Chưa có dữ liệu), shown in neutral greys and never counted as absent.
 class AttendanceCard extends StatelessWidget {
   final int total;
   final int present;
   final int absent;
-  final int pending;
+  final int excused;
+  final int upcoming;
+  final int awaiting;
+  final int noData;
 
   const AttendanceCard({
     super.key,
     required this.total,
     required this.present,
     required this.absent,
-    required this.pending,
+    this.excused = 0,
+    this.upcoming = 0,
+    this.awaiting = 0,
+    this.noData = 0,
   });
+
+  int get _decided => present + absent + excused;
 
   @override
   Widget build(BuildContext context) {
-    final pct = total > 0 ? (present / total * 100).round() : 0;
+    final pct = _decided > 0 ? (present / _decided * 100).round() : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -48,7 +60,7 @@ class AttendanceCard extends StatelessWidget {
     );
   }
 
-  Widget _donut(BuildContext context, int pct) {
+  Widget _donut(BuildContext context, int? pct) {
     return SizedBox(
       width: 130,
       height: 130,
@@ -63,14 +75,17 @@ class AttendanceCard extends StatelessWidget {
               sections: [
                 if (present > 0) _slice(present, context.vd.success),
                 if (absent > 0) _slice(absent, context.vd.danger),
-                if (pending > 0) _slice(pending, context.vd.inkFaint),
+                if (excused > 0) _slice(excused, context.vd.info),
+                if (awaiting + upcoming > 0)
+                  _slice(awaiting + upcoming, context.vd.inkFaint),
+                if (noData > 0) _slice(noData, context.vd.hairline),
               ],
             ),
           ),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('$pct%',
+              Text(pct == null ? '—' : '$pct%',
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -95,11 +110,22 @@ class AttendanceCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _LegendRow(context.vd.success, 'Có mặt', present, total),
+        _LegendRow(context.vd.success, 'Có mặt', present, _decided),
         const SizedBox(height: 10),
-        _LegendRow(context.vd.danger, 'Vắng', absent, total),
-        const SizedBox(height: 10),
-        _LegendRow(context.vd.inkFaint, 'Chưa điểm danh', pending, total),
+        _LegendRow(context.vd.danger, 'Vắng', absent, _decided),
+        if (excused > 0) ...[
+          const SizedBox(height: 10),
+          _LegendRow(context.vd.info, 'Báo nghỉ', excused, _decided),
+        ],
+        for (final (label, n, color) in [
+          ('Chờ điểm danh', awaiting, context.vd.inkFaint),
+          ('Sắp tới', upcoming, context.vd.inkFaint),
+          ('Chưa có dữ liệu', noData, context.vd.hairline),
+        ])
+          if (n > 0) ...[
+            const SizedBox(height: 10),
+            _LegendRow(color, label, n, null),
+          ],
         const Divider(height: 20),
         Row(
           children: [
@@ -120,12 +146,15 @@ class _LegendRow extends StatelessWidget {
   final Color color;
   final String label;
   final int count;
-  final int total;
+
+  /// Denominator for the percentage; null = count only (no outcome yet).
+  final int? total;
   const _LegendRow(this.color, this.label, this.count, this.total);
 
   @override
   Widget build(BuildContext context) {
-    final pct = total > 0 ? (count / total * 100).round() : 0;
+    final t = total;
+    final suffix = t == null || t == 0 ? '' : '  (${(count / t * 100).round()}%)';
     return Row(
       children: [
         Container(
@@ -138,9 +167,11 @@ class _LegendRow extends StatelessWidget {
           child: Text(label,
               style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
         ),
-        Text('$count  ($pct%)',
+        Text('$count$suffix',
             style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: total == null ? context.vd.inkMuted : color)),
       ],
     );
   }

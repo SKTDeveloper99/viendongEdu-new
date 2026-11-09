@@ -1,4 +1,5 @@
 import '../components/skeleton.dart';
+import '../core/schedule/unmarked_session.dart';
 import '../components/schedule_exam_card.dart';
 import '../components/exam_load_warning.dart';
 import '../models/crm_student_exams.dart';
@@ -140,19 +141,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final m =
         (hhmm != null ? _emsByKey[_markKey(code, date, hhmm)] : null) ??
         _emsByKey[_markKey(code, date)];
-    if (m?.status != null) {
-      return switch (m!.status) {
-        'present' || 'late' => 'present',
-        'absent' => 'absent',
-        'excused' => 'excused',
-        _ => 'pending',
-      };
-    }
-    // IMS's schedule row carried its own `baonghiyn` (báo nghỉ) flag as a
-    // fallback when no EMS mark existed yet; CRM's /me/schedule has no such
-    // per-row flag (that concept never migrated — see
-    // docs/ims_to_crm_student_academic_map.md). Falls back to "pending".
-    return 'pending';
+    final known = switch (m?.status) {
+      'present' || 'late' => 'present',
+      'absent' => 'absent',
+      'excused' => 'excused',
+      _ => null,
+    };
+    // No mark row (or an unmarked one): say what that means for this date.
+    return known ??
+        unmarkedSessionOn(sessionDay(date) ?? _now(), _now()).statusKey;
   }
 
   final ScrollController _chipScroll = ScrollController();

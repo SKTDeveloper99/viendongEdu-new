@@ -260,7 +260,8 @@ void main() {
       ]);
       expect(vm.present, 2); // present + late
       expect(vm.absent, 1);
-      expect(vm.pending, 1); // excused has no hiendien
+      expect(vm.excused, 1); // báo nghỉ is its own outcome
+      expect(vm.noData + vm.awaiting + vm.upcoming, 0);
       expect(vm.sessions[2].baonghi, isTrue);
       vm.dispose();
     });

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../class_models.dart';
+import '../../../core/schedule/unmarked_session.dart';
 import '../../../theme/vd_tokens.dart';
 
 /// "Chi tiết các buổi học": one row per attendance session, oldest first.
 class SessionListCard extends StatelessWidget {
   final List<AttendanceSession> sessions;
-  const SessionListCard({super.key, required this.sessions});
+
+  /// Today's date decides how a session without a mark is labelled.
+  final DateTime now;
+  const SessionListCard({super.key, required this.sessions, required this.now});
 
   @override
   Widget build(BuildContext context) {
@@ -37,13 +41,23 @@ class SessionListCard extends StatelessWidget {
         ? '${ngay.day.toString().padLeft(2, '0')}/${ngay.month.toString().padLeft(2, '0')}/${ngay.year}'
         : '';
 
+    final unmarked = s.unmarked(now);
     final (label, color, bg, icon) = s.hiendien == true
         ? ('Có mặt', context.vd.success, context.vd.successSoft, Icons.check_circle_outline)
         : s.hiendien == false
             ? ('Vắng', context.vd.danger, context.vd.dangerSoft, Icons.cancel_outlined)
             : s.baonghi
                 ? ('Báo nghỉ', context.vd.primary, context.vd.accentSoft, Icons.event_busy_outlined)
-                : ('Chưa điểm danh', context.vd.inkFaint, context.vd.surfaceAlt, Icons.radio_button_unchecked);
+                : (
+                    unmarked!.label,
+                    context.vd.inkMuted,
+                    context.vd.surfaceAlt,
+                    switch (unmarked) {
+                      UnmarkedSession.upcoming => Icons.schedule,
+                      UnmarkedSession.awaiting => Icons.radio_button_unchecked,
+                      UnmarkedSession.noData => Icons.help_outline,
+                    },
+                  );
 
     return Column(
       children: [

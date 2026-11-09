@@ -4,6 +4,7 @@ import '../../data/classes_repository.dart';
 import '../../services/ems_api_service.dart';
 import '../../models/crm_student_grades.dart';
 import 'class_models.dart';
+import '../../core/schedule/unmarked_session.dart';
 
 /// State of one class's detail page: its EMS attendance sessions.
 class ClassDetailViewModel extends ChangeNotifier {
@@ -14,7 +15,14 @@ class ClassDetailViewModel extends ChangeNotifier {
     this._repository, {
     required this.sectionCode,
     ClassItem? item,
-  }) : _item = item;
+    DateTime Function()? now,
+  }) : _item = item,
+       _now = now ?? DateTime.now;
+
+  final DateTime Function() _now;
+
+  /// Clock for the date-based labels of unmarked sessions.
+  DateTime now() => _now();
 
   ClassItem? _item;
   ClassItem? get item => _item;
@@ -34,7 +42,22 @@ class ClassDetailViewModel extends ChangeNotifier {
 
   int get present => _sessions.where((s) => s.hiendien == true).length;
   int get absent => _sessions.where((s) => s.hiendien == false).length;
-  int get pending => _sessions.where((s) => s.hiendien == null).length;
+  int get excused =>
+      _sessions.where((s) => s.hiendien == null && s.baonghi).length;
+
+  int _unmarked(UnmarkedSession kind) {
+    final today = _now();
+    return _sessions.where((s) => s.unmarked(today) == kind).length;
+  }
+
+  /// Later days, not marked yet.
+  int get upcoming => _unmarked(UnmarkedSession.upcoming);
+
+  /// Today, the teacher may still mark it.
+  int get awaiting => _unmarked(UnmarkedSession.awaiting);
+
+  /// Past sessions without a mark: unknown, never absent.
+  int get noData => _unmarked(UnmarkedSession.noData);
 
   // Điểm danh đọc từ EMS, KHÔNG còn từ IMS. EMS là nguồn chính thức: một buổi
   // chỉ có mặt trong danh sách khi giáo viên đã ghi nhận trên EMS. Lọc trực

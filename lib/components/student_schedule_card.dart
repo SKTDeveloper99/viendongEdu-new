@@ -250,8 +250,21 @@ class _StatusBadge extends StatelessWidget {
         bg: context.vd.infoSoft,
         icon: Icons.event_busy_outlined,
       ),
+      'upcoming' => (
+        label: 'Sắp tới',
+        color: context.vd.inkMuted,
+        bg: context.vd.surfaceAlt,
+        icon: Icons.schedule,
+      ),
+      'nodata' => (
+        label: 'Chưa có dữ liệu',
+        color: context.vd.inkMuted,
+        bg: context.vd.surfaceAlt,
+        icon: Icons.help_outline,
+      ),
+      // 'awaiting' and anything unknown: today's class, not marked yet.
       _ => (
-        label: 'Chưa điểm danh',
+        label: 'Chờ điểm danh',
         color: context.vd.inkMuted,
         bg: context.vd.surfaceAlt,
         icon: Icons.radio_button_unchecked,

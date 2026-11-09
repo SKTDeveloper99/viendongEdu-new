@@ -204,7 +204,8 @@ void main() {
       expect(find.text('02/03/2026'), findsOneWidget);
       expect(find.text('Có mặt'), findsWidgets);
       expect(find.text('Vắng'), findsWidgets);
-      expect(find.text('Báo nghỉ'), findsOneWidget);
+      expect(find.text('Báo nghỉ'), findsNWidgets(2)); // legend + row
+      expect(find.text('Chưa điểm danh'), findsNothing);
 
       await tester.tap(find.byIcon(Icons.arrow_back_ios));
       await tester.pumpAndSettle();

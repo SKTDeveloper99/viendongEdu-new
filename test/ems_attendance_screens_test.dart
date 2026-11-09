@@ -243,7 +243,9 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(home: EmsAttendanceStudentScreen()),
+      MaterialApp(
+        home: EmsAttendanceStudentScreen(now: () => DateTime(2026, 9, 8, 19)),
+      ),
     );
     await tester.pumpAndSettle();
 

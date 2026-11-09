@@ -1,5 +1,6 @@
 import '../../models/crm_student_grades.dart';
 import '../../models/crm_student_schedule.dart';
+import '../../core/schedule/unmarked_session.dart';
 
 // CRM has no dedicated "danh sách học kỳ" endpoint for students (only
 // GET /api/teacher/me/semesters exists, teacher-only — verified by reading
@@ -113,4 +114,12 @@ class AttendanceSession {
   });
 
   DateTime? get date => DateTime.tryParse(ngay);
+
+  /// Null when the session has an outcome (present, absent or báo nghỉ);
+  /// otherwise what the missing mark means on [now]'s date.
+  UnmarkedSession? unmarked(DateTime now) {
+    if (hiendien != null || baonghi) return null;
+    final d = date;
+    return d == null ? UnmarkedSession.noData : unmarkedSessionOn(d, now);
+  }
 }
