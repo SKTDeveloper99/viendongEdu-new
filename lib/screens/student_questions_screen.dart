@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../components/question_message_bubble.dart';
+import '../components/support_status_strip.dart';
+import '../models/support_status.dart';
 import '../services/crm_questions_api.dart';
 import '../services/crm_session_guard.dart';
 import '../services/ems_api_service.dart';
@@ -96,12 +99,21 @@ class _StudentQuestionsScreenState extends State<StudentQuestionsScreen> {
                   maxLines: 2,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                subtitle: Text(
-                  thread.preview.isEmpty
-                      ? (thread.isClosed ? 'Đã đóng' : 'Đang chờ phản hồi')
-                      : thread.preview,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      thread.preview.isEmpty
+                          ? (thread.isClosed ? 'Đã đóng' : 'Đang chờ phản hồi')
+                          : thread.preview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (thread.support case final support?) ...[
+                      const SizedBox(height: 6),
+                      SupportStatusStrip(info: support, compact: true),
+                    ],
+                  ],
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
@@ -173,15 +185,18 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
     }
   }
 
-  Future<void> _send() async {
-    final text = _reply.text.trim();
+  /// Sends the typed reply, or [fixed] (a T-45 confirmation line) as is.
+  Future<void> _send([String? fixed]) async {
+    final text = fixed ?? _reply.text.trim();
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
     try {
       await CrmQuestionsApi.sendMessage(widget.thread.id, text);
-      _reply.clear();
-      await _draftWrites;
-      await OfflineSnapshot.save('question_reply_${widget.thread.id}', '');
+      if (fixed == null) {
+        _reply.clear();
+        await _draftWrites;
+        await OfflineSnapshot.save('question_reply_${widget.thread.id}', '');
+      }
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -193,6 +208,20 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  /// A confirmation button only while the request waits for the student and
+  /// the server gave its code; it sends the exact line the CRM expects.
+  VoidCallback? _confirm(
+    QuestionDetail? detail,
+    String Function(({String satisfied, String unsatisfied})) pick,
+  ) {
+    final code = detail?.confirmationCode;
+    if (code == null ||
+        detail?.support?.status != SupportStatus.awaitingConfirmation) {
+      return null;
+    }
+    return () => _send(pick(supportConfirmationReplies(code)));
   }
 
   @override
@@ -216,52 +245,23 @@ class _QuestionThreadScreenState extends State<_QuestionThreadScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
+                  if (detail?.support ?? widget.thread.support
+                      case final support?) ...[
+                    SupportStatusStrip(
+                      info: support,
+                      busy: _sending,
+                      onSatisfied: _confirm(detail, (r) => r.satisfied),
+                      onUnsatisfied: _confirm(detail, (r) => r.unsatisfied),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   if (detail == null && _error == null)
                     const Center(child: CircularProgressIndicator()),
                   if (detail != null && detail.messages.isEmpty)
                     const Text('Chưa có tin nhắn.'),
                   for (final message
                       in detail?.messages ?? const <QuestionMessage>[])
-                    Align(
-                      alignment: message.fromStudent
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.sizeOf(context).width * .83,
-                        ),
-                        child: Card(
-                          color: message.fromStudent
-                              ? context.vd.accentSoft
-                              : context.vd.surfaceAlt,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  message.fromStudent ? 'Bạn' : 'Nhà trường',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(message.body),
-                                if (message.createdAt != null)
-                                  Text(
-                                    _shortDate(message.createdAt!),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: context.vd.inkMuted,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    QuestionMessageBubble(message: message),
                 ],
               ),
             ),
@@ -578,6 +578,3 @@ class _Notice extends StatelessWidget {
     child: Text(message, style: TextStyle(color: context.vd.ink)),
   );
 }
-
-String _shortDate(DateTime date) =>
-    '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';

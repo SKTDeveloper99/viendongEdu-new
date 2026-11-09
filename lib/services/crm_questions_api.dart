@@ -1,3 +1,4 @@
+import '../models/support_status.dart';
 import 'ems_api_service.dart';
 import 'offline_snapshot.dart';
 
@@ -120,12 +121,16 @@ class QuestionThread {
   final String preview;
   final DateTime? updatedAt;
 
+  /// Support request progress (contract S4); null = an ordinary chat.
+  final SupportInfo? support;
+
   const QuestionThread({
     required this.id,
     required this.subject,
     required this.status,
     required this.preview,
     this.updatedAt,
+    this.support,
   });
 
   bool get isClosed => status == 'closed';
@@ -142,6 +147,7 @@ class QuestionThread {
       updatedAt: DateTime.tryParse(
         j['updated_at']?.toString() ?? '',
       )?.toLocal(),
+      support: SupportInfo.tryParse(j['support']),
     );
   }
 }
@@ -187,7 +193,22 @@ class QuestionDetail {
   final String subject;
   final String status;
   final List<QuestionMessage> messages;
-  const QuestionDetail(this.id, this.subject, this.status, this.messages);
+
+  /// Support request progress (contract S4); null = an ordinary chat.
+  final SupportInfo? support;
+
+  /// Code the student quotes to confirm the outcome (T-45); only while the
+  /// request waits for them (`support_request.confirmation_code`).
+  final String? confirmationCode;
+
+  const QuestionDetail(
+    this.id,
+    this.subject,
+    this.status,
+    this.messages, {
+    this.support,
+    this.confirmationCode,
+  });
 
   bool get isClosed => status == 'closed';
 
@@ -196,6 +217,8 @@ class QuestionDetail {
         ? j['conversation']
         : const <String, dynamic>{};
     final raw = j['messages'];
+    final request = j['support_request'];
+    final code = request is Map ? request['confirmation_code'] : null;
     return QuestionDetail(
       conv['id']?.toString() ?? '',
       conv['subject']?.toString() ?? 'Câu hỏi của tôi',
@@ -206,6 +229,10 @@ class QuestionDetail {
                 .map(QuestionMessage.fromJson)
                 .toList()
           : const [],
+      support: SupportInfo.tryParse(j['support']),
+      confirmationCode: code is String && code.trim().isNotEmpty
+          ? code.trim()
+          : null,
     );
   }
 }
