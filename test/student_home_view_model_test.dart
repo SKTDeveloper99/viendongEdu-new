@@ -51,12 +51,20 @@ class _FakeRepo extends StudentHomeRepository {
   int cleared = 0;
   final order = <String>[];
 
+  /// Subjects with no published timetable, sent beside every schedule read.
+  List<CrmUnscheduledSection> unscheduled = const [];
+
   @override
-  Future<CachedSchedule> schedule({
-    void Function(List<CrmScheduleItem>, DateTime)? onStored,
-  }) {
+  Future<CachedScheduleView> schedule({
+    void Function(CrmStudentScheduleView, DateTime)? onStored,
+  }) async {
     order.add('schedule');
-    return scheduleFn(onStored);
+    CrmStudentScheduleView view(List<CrmScheduleItem> items) =>
+        CrmStudentScheduleView(schedule: items, chuaCoLich: unscheduled);
+    final r = await scheduleFn(
+      onStored == null ? null : (items, at) => onStored(view(items), at),
+    );
+    return (data: view(r.data), savedAt: r.savedAt, fresh: r.fresh);
   }
 
   @override
@@ -129,6 +137,27 @@ void main() {
     expect(vm.scheduleFailed, isFalse);
     expect(vm.scheduleStaleAt, isNull);
   });
+
+  test(
+    'unpublished subjects are counted once per subject; 0 on failure',
+    () async {
+      repo.unscheduled = const [
+        CrmUnscheduledSection(sectionCode: 'S1', subjectCode: 'A'),
+        CrmUnscheduledSection(sectionCode: 'S2', subjectCode: 'A'),
+        CrmUnscheduledSection(sectionCode: 'S3', subjectName: 'Môn B'),
+        CrmUnscheduledSection(sectionCode: 'S4'),
+      ];
+      final vm = make();
+      await vm.loadTodaySchedule();
+      expect(vm.unscheduledSubjects, 3);
+
+      repo.scheduleFn = (_) async => throw EmsException('mất mạng');
+      await vm.loadTodaySchedule();
+      expect(vm.scheduleFailed, isTrue);
+      expect(vm.unscheduledSubjects, 0);
+      vm.dispose();
+    },
+  );
 
   test('stored copy paints first, then the fresh result replaces it', () async {
     final gateOpen = Completer<void>();

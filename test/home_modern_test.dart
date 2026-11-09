@@ -27,18 +27,20 @@ class _StudentRepo extends StudentHomeRepository {
     fresh: true,
   );
   @override
-  Future<CachedSchedule> schedule({
-    void Function(List<CrmScheduleItem>, DateTime)? onStored,
+  Future<CachedScheduleView> schedule({
+    void Function(CrmStudentScheduleView, DateTime)? onStored,
   }) async => (
-    data: [
-      const CrmScheduleItem(
-        subjectName: 'Môn thử nghiệm sáng',
-        dayCode: '4',
-        startTime: '07:30',
-        endTime: '09:30',
-        room: 'P.101',
-      ),
-    ],
+    data: const CrmStudentScheduleView(
+      schedule: [
+        CrmScheduleItem(
+          subjectName: 'Môn thử nghiệm sáng',
+          dayCode: '4',
+          startTime: '07:30',
+          endTime: '09:30',
+          room: 'P.101',
+        ),
+      ],
+    ),
     savedAt: DateTime(2026),
     fresh: true,
   );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../student_home_view_model.dart';
 import 'class_chip.dart';
+import 'unpublished_schedule_note.dart';
 import '../../../components/vd_fade_in.dart';
 import '../../../theme/vd_motion.dart';
 import '../../../theme/vd_tokens.dart';
@@ -66,6 +67,8 @@ class ScheduleBody extends StatelessWidget {
           )
         else if (vm.scheduleFailed)
           const SizedBox.shrink()
+        else if (n == 0 && vm.unscheduledSubjects > 0)
+          UnpublishedScheduleNote(count: vm.unscheduledSubjects)
         else if (n == 0 &&
             (vm.examsLoading || vm.examsFailed || vm.hasExamToday))
           const SizedBox.shrink()

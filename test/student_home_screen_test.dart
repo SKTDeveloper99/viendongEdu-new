@@ -107,14 +107,18 @@ void main() {
     bool mustRead = false,
     bool scheduleFails = false,
     bool boardFails = false,
+    Map<String, dynamic>? schedule,
   }) {
     EmsApiService.client = MockClient((req) async {
       final p = req.url.path;
       hits[p] = (hits[p] ?? 0) + 1;
+      if (p.endsWith('/student/me/exams')) {
+        return http.Response(jsonEncode({'exams': []}), 200, headers: _json);
+      }
       if (p.endsWith('/student/me/schedule')) {
         if (scheduleFails) return http.Response('{"error":"boom"}', 500);
         return http.Response(
-          jsonEncode(_scheduleBody),
+          jsonEncode(schedule ?? _scheduleBody),
           200,
           headers: {..._json, 'etag': '"sched-1"'},
         );
@@ -147,7 +151,10 @@ void main() {
     });
   }
 
-  Future<void> pumpHome(WidgetTester tester) async {
+  Future<void> pumpHome(
+    WidgetTester tester, {
+    Map<String, WidgetBuilder> routes = const {},
+  }) async {
     final vm = StudentHomeViewModel(
       const StudentHomeRepository(),
       now: () => _today,
@@ -157,7 +164,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: HomeScreen(viewModel: vm),
-        routes: {'/student_board': (_) => const StudentBoardScreen()},
+        routes: {
+          '/student_board': (_) => const StudentBoardScreen(),
+          ...routes,
+        },
       ),
     );
     await tester.pump();
@@ -306,6 +316,68 @@ void main() {
       find.textContaining('Chưa cập nhật được — dữ liệu lúc'),
       findsOneWidget,
     );
+  });
+
+  testWidgets(
+    'no class today but unpublished subjects: say so, link to Lịch học',
+    (tester) async {
+      mock(
+        schedule: {
+          'schedule': [],
+          'chua_co_lich': [
+            {
+              'section_code': 'TEST-A1',
+              'subject_code': 'TNA',
+              'subject_name': 'Môn thử nghiệm A',
+            },
+            {
+              'section_code': 'TEST-A2',
+              'subject_code': 'TNA',
+              'subject_name': 'Môn thử nghiệm A',
+            },
+            {
+              'section_code': 'TEST-B1',
+              'subject_code': 'TNB',
+              'subject_name': 'Môn thử nghiệm B',
+            },
+          ],
+        },
+      );
+      await pumpHome(
+        tester,
+        routes: {'/schedule': (_) => const Scaffold(body: Text('Trang lịch'))},
+      );
+      // Two subjects (one has two sections), never the party line.
+      expect(
+        find.text('Lịch học của 2 môn chưa được công bố.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('không có lịch học nào'), findsNothing);
+      expect(find.text('Không có lịch học hôm nay'), findsNothing);
+      await tester.tap(find.text('Thu gọn'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('không có lịch học nào'), findsNothing);
+      expect(
+        find.text('Lịch học của 2 môn chưa được công bố.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Xem Lịch học'));
+      await tester.pumpAndSettle();
+      expect(find.text('Trang lịch'), findsOneWidget);
+    },
+  );
+
+  testWidgets('truly nothing today and nothing unscheduled: party line', (
+    tester,
+  ) async {
+    mock(schedule: {'schedule': [], 'chua_co_lich': []});
+    await pumpHome(tester);
+    // Expanded by default: the empty card; collapsed: the 🎉 summary line.
+    expect(find.text('Không có lịch học hôm nay'), findsOneWidget);
+    expect(find.textContaining('chưa được công bố'), findsNothing);
+    await tester.tap(find.text('Thu gọn'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hôm nay bạn không có lịch học nào 🎉'), findsOneWidget);
   });
 
   testWidgets('tab Cá nhân: thông tin, đổi mật khẩu, đăng xuất', (

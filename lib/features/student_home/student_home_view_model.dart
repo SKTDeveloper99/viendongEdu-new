@@ -86,6 +86,21 @@ class StudentHomeViewModel extends ChangeNotifier {
 
   List<CrmScheduleItem> get todayClasses => _todayClasses;
 
+  int _unscheduledSubjects = 0;
+
+  /// Subjects this student studies whose timetable is not published yet
+  /// (`chua_co_lich`); 0 when there are none or the schedule failed.
+  int get unscheduledSubjects => _unscheduledSubjects;
+
+  static int _countSubjects(List<CrmUnscheduledSection> sections) => {
+    for (final s in sections)
+      s.subjectCode.isNotEmpty
+          ? 'code:${s.subjectCode}'
+          : s.subjectName.isNotEmpty
+          ? 'name:${s.subjectName}'
+          : 'section:${s.sectionCode}',
+  }.length;
+
   /// Set when the shown schedule is a stored copy (refresh failed).
   DateTime? get scheduleStaleAt => _scheduleStaleAt;
   bool get scheduleLoading => _scheduleLoading;
@@ -166,18 +181,22 @@ class StudentHomeViewModel extends ChangeNotifier {
     try {
       final today = _now();
       final r = await _repository.schedule(
-        onStored: (items, at) {
+        onStored: (view, at) {
           if (_disposed) return;
           _scheduleStaleAt = at;
-          _todayClasses = items.where((s) => s.occursOn(today)).toList();
+          _todayClasses = view.schedule
+              .where((s) => s.occursOn(today))
+              .toList();
+          _unscheduledSubjects = _countSubjects(view.chuaCoLich);
           _scheduleLoading = false;
           notifyListeners();
         },
       );
-      final todays = r.data.where((s) => s.occursOn(today)).toList();
+      final todays = r.data.schedule.where((s) => s.occursOn(today)).toList();
       if (_disposed) return;
       _scheduleStaleAt = r.fresh ? null : r.savedAt;
       _todayClasses = todays;
+      _unscheduledSubjects = _countSubjects(r.data.chuaCoLich);
       _scheduleFailed = false;
       _scheduleDenied = false;
       _scheduleLoading = false;
@@ -190,6 +209,7 @@ class StudentHomeViewModel extends ChangeNotifier {
         return;
       }
       _todayClasses = [];
+      _unscheduledSubjects = 0;
       _scheduleFailed = true;
       _scheduleDenied = e is EmsException && e.statusCode == 403;
       _scheduleLoading = false;

@@ -11,6 +11,13 @@ typedef CachedSchedule = ({
   bool fresh,
 });
 
+/// The schedule read with its "Môn chưa có lịch" list (`chua_co_lich`).
+typedef CachedScheduleView = ({
+  CrmStudentScheduleView data,
+  DateTime savedAt,
+  bool fresh,
+});
+
 typedef CachedBoard = ({
   List<AnnouncementItem> data,
   DateTime savedAt,
@@ -25,10 +32,11 @@ typedef CachedBoard = ({
 class StudentHomeRepository {
   const StudentHomeRepository();
 
-  /// Full schedule (every semester); [onStored] paints the stored copy first.
-  Future<CachedSchedule> schedule({
-    void Function(List<CrmScheduleItem> items, DateTime savedAt)? onStored,
-  }) => CrmStudentApi.scheduleCached(onStored: onStored);
+  /// Full schedule (every semester) plus the subjects whose timetable is not
+  /// published yet; [onStored] paints the stored copy first.
+  Future<CachedScheduleView> schedule({
+    void Function(CrmStudentScheduleView view, DateTime savedAt)? onStored,
+  }) => CrmStudentApi.scheduleViewCached(onStored: onStored);
 
   Future<({CrmStudentExamsView data, DateTime savedAt, bool fresh})> exams() =>
       CrmStudentApi.examsCached();
