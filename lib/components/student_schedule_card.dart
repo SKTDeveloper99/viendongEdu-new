@@ -143,9 +143,9 @@ class StudentScheduleCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           end.isNotEmpty ? '$start – $end' : start,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color.fromARGB(255, 0, 0, 0),
+                            color: context.vd.ink,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -158,9 +158,9 @@ class StudentScheduleCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             teacher,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color.fromARGB(255, 0, 0, 0),
+                              color: context.vd.ink,
                             ),
                           ),
                         ),
@@ -175,9 +175,9 @@ class StudentScheduleCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             room,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color.fromARGB(255, 0, 0, 0),
+                              color: context.vd.ink,
                             ),
                           ),
                         ),

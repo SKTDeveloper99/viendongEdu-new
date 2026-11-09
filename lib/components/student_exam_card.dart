@@ -109,9 +109,9 @@ class StudentExamCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         exam.ngayThiFormatted,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color.fromARGB(255, 0, 0, 0),
+                          color: context.vd.ink,
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -123,9 +123,9 @@ class StudentExamCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         exam.gioBatDau,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color.fromARGB(255, 0, 0, 0),
+                          color: context.vd.ink,
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -137,9 +137,9 @@ class StudentExamCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         exam.thoiGian == null ? '—' : '${exam.thoiGian} phút',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color.fromARGB(255, 0, 0, 0),
+                          color: context.vd.ink,
                         ),
                       ),
                     ],
@@ -152,9 +152,9 @@ class StudentExamCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         exam.phongten,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color.fromARGB(255, 0, 0, 0),
+                          color: context.vd.ink,
                         ),
                       ),
                     ],

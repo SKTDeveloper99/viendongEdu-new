@@ -30,9 +30,14 @@ const Map<String, int> _allowlist = {
 /// `Color(0x...)` and no `Colors.x` (except `Colors.transparent`) outside
 /// lib/theme/. Files not yet migrated are listed with their current literal
 /// count; the counts may only SHRINK, and an entry must be deleted at 0.
-const Map<String, int> _colorLiteralAllowlist = {};
+const Map<String, int> _colorLiteralAllowlist = {
+  // Teacher roster avatar (fixed orange); left for the teacher task.
+  'lib/features/class_manager/widgets/class_students_tab.dart': 1,
+};
 
-final RegExp _colorLiteral = RegExp(r'Color\(0x|Colors\.(?!transparent\b)');
+final RegExp _colorLiteral = RegExp(
+  r'Color\(\s*0x|Color\.from(ARGB|RGBO)\(|Colors\.(?!transparent\b)',
+);
 
 List<File> _dartFiles(String dir) {
   final root = Directory(dir);

@@ -63,6 +63,11 @@ class VdTokens extends ThemeExtension<VdTokens> {
   Color? announcementColor(String name) =>
       announcementColorFor(name, dark: bg.computeLuminance() < 0.5);
 
+  /// QR code colours: always dark ink on near-white paper, in both themes,
+  /// so attendance scanners can read the code.
+  Color get qrInk => const Color(0xFF000000);
+  Color get qrPaper => const Color(0xFFFFFFFF);
+
   Color get announcementHighlight =>
       announcementHighlightFor(dark: bg.computeLuminance() < 0.5);
 

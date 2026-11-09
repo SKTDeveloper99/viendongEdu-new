@@ -46,3 +46,6 @@ app.*.map.json
 
 # Viễn Đông Infinite plain answers (seeded to Firestore, never committed)
 firebase/infinite/secrets.json
+
+# Golden test failure output (regenerated on every failing run)
+/test/goldens/failures/

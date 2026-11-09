@@ -59,7 +59,27 @@ class QrTab extends StatelessWidget {
                 ),
               ],
             ),
-            child: QrImageView(data: vm.mssv, size: 220),
+            // Scanners need dark modules on a light field in both themes.
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.vd.qrPaper,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: QrImageView(
+                data: vm.mssv,
+                size: 220,
+                backgroundColor: context.vd.qrPaper,
+                eyeStyle: QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: context.vd.qrInk,
+                ),
+                dataModuleStyle: QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: context.vd.qrInk,
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           Text(

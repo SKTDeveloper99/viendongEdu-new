@@ -261,12 +261,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
       locale: const Locale('vi', 'VN'),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: context.vd.primary)),
-        child: child!,
-      ),
+      // The app theme already carries light and dark pickers; forcing
+      // ColorScheme.light here made it glare in dark mode.
     );
     if (picked != null) {
       setState(() {

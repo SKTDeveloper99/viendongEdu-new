@@ -294,16 +294,18 @@ class _ExamScreenState extends State<ExamScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.error_outline,
                             size: 48,
-                            color: Color.fromARGB(255, 0, 0, 0),
+                            color: context.vd.inkMuted,
                           ),
                           const SizedBox(height: 12),
-                          Text(
-                            _error!,
-                            style: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: context.vd.ink),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -325,8 +327,8 @@ class _ExamScreenState extends State<ExamScreen> {
                       onRefresh: _fetchExams,
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 80),
+                        children: [
+                          const SizedBox(height: 80),
                           Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -334,14 +336,12 @@ class _ExamScreenState extends State<ExamScreen> {
                                 Icon(
                                   Icons.event_busy,
                                   size: 64,
-                                  color: Color.fromARGB(255, 0, 0, 0),
+                                  color: context.vd.inkMuted,
                                 ),
-                                SizedBox(height: 12),
+                                const SizedBox(height: 12),
                                 Text(
                                   'Không có lịch thi',
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 0, 0, 0),
-                                  ),
+                                  style: TextStyle(color: context.vd.ink),
                                 ),
                               ],
                             ),
