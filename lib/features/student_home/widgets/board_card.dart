@@ -1,3 +1,4 @@
+import '../../../screens/stale_note.dart';
 import 'package:flutter/material.dart';
 
 import '../../../components/vd_pressable.dart';
@@ -13,7 +14,7 @@ class BoardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Chưa có gì để nói và cũng không lỗi → không chiếm chỗ trên trang chủ.
     // Học viên chưa có tài khoản EMS cũng không thấy thẻ này (emsDenied).
-    if (vm.latestBoardItem == null && !vm.boardFailed) {
+    if (vm.latestBoardItem == null && !vm.boardFailed && vm.boardStaleAt == null) {
       return const SizedBox.shrink();
     }
 
@@ -87,10 +88,12 @@ class BoardCard extends StatelessWidget {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      if (vm.boardStaleAt != null)
+                          StaleNote(vm.boardStaleAt!),
+                        const SizedBox(height: 4),
                       Text(
                         vm.latestBoardItem?.title ??
-                            'Không tải được bảng tin. Chạm để thử lại.',
+                            (vm.boardFailed ? 'Không tải được bảng tin. Chạm để thử lại.' : 'Chưa có thông báo mới.'),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

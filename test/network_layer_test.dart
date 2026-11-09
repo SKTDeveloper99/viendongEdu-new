@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -18,11 +19,15 @@ http.Response _json(Object body, {int status = 200, Map<String, String>? h}) =>
 
 void main() {
   late http.Client original;
+  late Duration Function(int) originalDelay;
+  late Future<void> Function() originalProbe;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
     original = EmsApiService.client;
+    originalDelay = EmsApiService.retryDelay;
+    originalProbe = EmsApiService.probe;
     EmsApiService.retryDelay = (_) => Duration.zero;
     EmsApiService.resetConnectionState();
     final s = AppSession.instance;
@@ -33,7 +38,148 @@ void main() {
 
   tearDown(() {
     EmsApiService.client = original;
+    EmsApiService.retryDelay = originalDelay;
+    EmsApiService.probe = originalProbe;
+    EmsApiService.onUnauthorized = null;
     AppSession.instance.emsToken = null;
+  });
+
+  for (final method in ['GET', 'POST', 'PATCH', 'DELETE']) {
+    for (final failure in ['offline', 'timeout', '500', '401', 'json']) {
+      test('$method $failure is Vietnamese and can be retried', () async {
+        var calls = 0;
+        EmsApiService.client = MockClient((_) async {
+          calls++;
+          if (calls > 1) return _json({'ok': true});
+          switch (failure) {
+            case 'offline':
+              throw http.ClientException('fictional network failure');
+            case 'timeout':
+              throw TimeoutException('fictional timeout');
+            case '500':
+              return _json({
+                'error': 'internal_error',
+                'message': 'SQL failure',
+              }, status: 500);
+            case '401':
+              return http.Response('<html>Unauthorized</html>', 401);
+            default:
+              return http.Response('{broken', 200);
+          }
+        });
+        await expectLater(
+          EmsApiService.sendMap(method, '/test'),
+          throwsA(
+            isA<EmsException>().having(
+              (e) => e.message,
+              'Vietnamese message',
+              matches(RegExp(r'[À-ỹĐđ]')),
+            ),
+          ),
+        );
+        expect(calls, 1); // No implicit write retry.
+        expect(await EmsApiService.sendMap(method, '/test'), {'ok': true});
+        expect(calls, 2);
+      });
+    }
+  }
+
+  testWidgets('a client that never completes is bounded by read timeout', (
+    tester,
+  ) async {
+    EmsApiService.client = MockClient((_) => Completer<http.Response>().future);
+    Object? error;
+    final read = EmsApiService.send('GET', '/test').catchError((Object e) {
+      error = e;
+      return null;
+    });
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 7));
+    await read;
+    expect(error, isA<EmsException>());
+  });
+
+  for (final method in ['POST', 'PATCH', 'DELETE']) {
+    testWidgets('$method stops waiting after fifteen seconds', (tester) async {
+      EmsApiService.client = MockClient(
+        (_) => Completer<http.Response>().future,
+      );
+      Object? error;
+      final request = EmsApiService.send(method, '/test').catchError((
+        Object e,
+      ) {
+        error = e;
+        return null;
+      });
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 15));
+      await request;
+      expect(error, isA<EmsException>());
+    });
+  }
+
+  testWidgets('a hanging connection probe stops before any write is sent', (
+    tester,
+  ) async {
+    final methods = <String>[];
+    EmsApiService.probe = EmsApiService.defaultProbe;
+    EmsApiService.client = MockClient((req) {
+      methods.add(req.method);
+      return Completer<http.Response>().future;
+    });
+    Object? error;
+    final request = EmsApiService.send('POST', '/test').catchError((Object e) {
+      error = e;
+      return null;
+    });
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    await request;
+    expect(methods, ['GET']);
+    expect(
+      error,
+      isA<EmsException>().having((e) => e.code, 'code', 'network_unsure'),
+    );
+  });
+
+  test('sendMap rejects a JSON array with a Vietnamese error', () async {
+    EmsApiService.client = MockClient((_) async => _json([]));
+    await expectLater(
+      EmsApiService.sendMap('GET', '/test'),
+      throwsA(isA<EmsException>()),
+    );
+  });
+
+  test('machine-only validation codes use Vietnamese fallback', () async {
+    EmsApiService.client = MockClient(
+      (_) async => _json({'error': 'bad_request'}, status: 400),
+    );
+    await expectLater(
+      EmsApiService.send('GET', '/test'),
+      throwsA(
+        isA<EmsException>().having(
+          (e) => e.message,
+          'message',
+          'Không thực hiện được yêu cầu. Vui lòng thử lại.',
+        ),
+      ),
+    );
+  });
+
+  test('only authenticated 401s notify the shell', () async {
+    final errors = <EmsException>[];
+    EmsApiService.onUnauthorized = errors.add;
+    EmsApiService.client = MockClient(
+      (_) async => http.Response('invalid', 401),
+    );
+    for (final auth in [false, true]) {
+      await expectLater(
+        EmsApiService.send('GET', '/test', auth: auth),
+        throwsA(isA<EmsException>()),
+      );
+    }
+    expect(errors, hasLength(1));
+    expect(errors.single.requestToken, 'test-token');
   });
 
   test('two parallel identical GETs make one request', () async {
@@ -103,6 +249,96 @@ void main() {
       throwsA(isA<EmsException>()),
     );
     expect(calls, 1);
+  });
+
+  test('an untagged response is still available offline', () async {
+    EmsApiService.client = MockClient((_) async => _json({'v': 4}));
+    await EmsApiService.sendCached('/test');
+    EmsApiService.client = MockClient(
+      (_) async => throw TimeoutException('test'),
+    );
+    final result = await EmsApiService.sendCached('/test');
+    expect(result.data, {'v': 4});
+    expect(result.fresh, isFalse);
+  });
+
+  for (final status in [401, 403]) {
+    test('$status invalidates the cached body instead of using it', () async {
+      EmsApiService.client = MockClient((_) async => _json({'v': 4}));
+      await EmsApiService.sendCached('/test');
+      EmsApiService.client = MockClient((_) async => _json({}, status: status));
+      await expectLater(
+        EmsApiService.sendCached('/test'),
+        throwsA(
+          isA<EmsException>().having((e) => e.statusCode, 'status', status),
+        ),
+      );
+      EmsApiService.client = MockClient(
+        (_) async => throw http.ClientException('offline'),
+      );
+      await expectLater(
+        EmsApiService.sendCached('/test'),
+        throwsA(isA<EmsException>()),
+      );
+    });
+  }
+
+  test('invalid typed JSON cannot overwrite the last good snapshot', () async {
+    void validate(dynamic data) {
+      (data['items'] as List).cast<Map<String, dynamic>>().toList();
+    }
+
+    EmsApiService.client = MockClient(
+      (_) async => _json({
+        'items': [
+          {'id': 'TEST26'},
+        ],
+      }),
+    );
+    await EmsApiService.sendCached('/test', validate: validate);
+    EmsApiService.client = MockClient((_) async => _json({'items': 'broken'}));
+    final result = await EmsApiService.sendCached('/test', validate: validate);
+    expect(result.data, {
+      'items': [
+        {'id': 'TEST26'},
+      ],
+    });
+    expect(result.fresh, isFalse);
+  });
+
+  test('corrupt stored data does not prevent a fresh request', () async {
+    await OfflineSnapshot.save('http_cache:/api/test?', {
+      'body': {'items': 'broken'},
+    });
+    EmsApiService.client = MockClient((_) async => _json({'items': []}));
+    var painted = false;
+    final result = await EmsApiService.sendCached(
+      '/test',
+      validate: (data) {
+        data['items'] as List;
+      },
+      onStored: (_, _) => painted = true,
+    );
+    expect(painted, isFalse);
+    expect(result.fresh, isTrue);
+  });
+
+  test('an old request cannot populate another account cache', () async {
+    final response = Completer<http.Response>();
+    EmsApiService.client = MockClient((_) => response.future);
+    final read = EmsApiService.sendCached('/test');
+    // Let the account-scoped disk read finish and the fake request start.
+    await Future<void>.delayed(Duration.zero);
+    AppSession.instance
+      ..emsToken = 'test-new-session'
+      ..mssv = 'TEST260002';
+    response.complete(_json({'items': []}));
+    await expectLater(
+      read,
+      throwsA(isA<EmsException>().having((e) => e.statusCode, 'status', 403)),
+    );
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getKeys().where((k) => k.startsWith('offline_v1_')), isEmpty);
   });
 
   test('304 returns the stored body as fresh', () async {

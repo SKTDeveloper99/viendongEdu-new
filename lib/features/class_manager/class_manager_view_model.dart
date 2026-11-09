@@ -91,13 +91,19 @@ class ClassManagerViewModel extends ChangeNotifier {
         return;
       }
       _loadingSemesters = false;
-      _error = e.toString();
+      _error = crmErrorMessage(e);
       _notify();
     }
   }
 
   Future<void> selectSemester(ClassSemester sem) async {
+    final changed = _selected != sem;
     _selected = sem;
+    if (changed) {
+      _classes = [];
+      _staleAt = null;
+      _lmhIdByCode = {};
+    }
     _loadingClasses = true;
     _error = null;
     _authError = null;
@@ -106,16 +112,23 @@ class ClassManagerViewModel extends ChangeNotifier {
       final results = await Future.wait([
         repository.classes(
           semester: sem.ma,
-          onStored: (c, _) {
+          onStored: (c, at) {
             if (_disposed || _selected != sem) return;
+            _staleAt = at;
             _classes = c;
             _loadingClasses = false;
             _notify();
           },
-        ),
+        ).then((cached) {
+          if (!_disposed && _selected == sem) {
+            _classes = cached.data;
+            _staleAt = cached.fresh ? null : cached.savedAt;
+          }
+          return cached;
+        }),
         repository.schedule(sem.ma),
       ]);
-      if (_disposed) return;
+      if (_disposed || _selected != sem) return;
       final cached = results[0] as CachedTeacherClasses;
       _staleAt = cached.fresh ? null : cached.savedAt;
       final slots = results[1] as List<CrmScheduleSlot>;
@@ -124,14 +137,21 @@ class ClassManagerViewModel extends ChangeNotifier {
       _loadingClasses = false;
       _notify();
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || _selected != sem) return;
       if (_is401(e)) {
+        _classes = [];
+        _staleAt = null;
+        _loadingClasses = false;
         _authError = e;
         _notify();
         return;
       }
       _loadingClasses = false;
-      _error = e.toString();
+      if (e is EmsException && (e.statusCode == 401 || e.statusCode == 403)) {
+        _classes = [];
+        _staleAt = null;
+      }
+      _error = crmErrorMessage(e);
       _notify();
     }
   }

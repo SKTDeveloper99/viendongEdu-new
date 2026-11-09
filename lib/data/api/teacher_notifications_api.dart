@@ -11,27 +11,38 @@ abstract final class TeacherNotificationsApi {
 
   /// `GET /teacher/notifications?limit=`.
   static Future<List<dynamic>> teacherNotifications({int limit = 50}) async {
-    final body =
-        await EmsApiService.send('GET', '/teacher/notifications', query: {'limit': '$limit'})
-            as Map<String, dynamic>;
-    final list = body['data'];
-    return list is List ? list : const [];
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/notifications',
+      query: {'limit': '$limit'},
+    );
+    return EmsApiService.rows(body['data']);
   }
 
   /// `PATCH /teacher/notifications/:id { read: true }`.
   static Future<void> markTeacherNotificationRead(String id) {
-    return EmsApiService.sendMap('PATCH', '/teacher/notifications/$id', body: {'read': true});
+    return EmsApiService.sendMap(
+      'PATCH',
+      '/teacher/notifications/$id',
+      body: {'read': true},
+    );
   }
 
   /// `POST /teacher/notifications/mark-all-read`.
   static Future<void> markAllTeacherNotificationsRead() {
-    return EmsApiService.sendMap('POST', '/teacher/notifications/mark-all-read');
+    return EmsApiService.sendMap(
+      'POST',
+      '/teacher/notifications/mark-all-read',
+    );
   }
 
   /// `GET /teacher/notifications/unread-count` → `{count}`.
   static Future<int> teacherUnreadCount() async {
-    final body = await EmsApiService.sendMap('GET', '/teacher/notifications/unread-count');
-    return (body['count'] as num?)?.toInt() ?? 0;
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/teacher/notifications/unread-count',
+    );
+    return EmsApiService.parse(() => (body['count'] as num?)?.toInt() ?? 0);
   }
 
   /// `POST /teacher/notifications/devices {fcm_token, platform?, app_version?}`.

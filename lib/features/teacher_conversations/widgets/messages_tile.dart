@@ -21,6 +21,7 @@ class MessagesTile extends StatefulWidget {
 
 class _MessagesTileState extends State<MessagesTile> {
   int _unread = 0;
+  bool _failed = false;
 
   @override
   void initState() {
@@ -32,8 +33,10 @@ class _MessagesTileState extends State<MessagesTile> {
     try {
       final n =
           await (widget.loadCount ?? TeacherConversationsApi.unreadCount)();
-      if (mounted) setState(() => _unread = n);
-    } catch (_) {}
+      if (mounted) setState(() { _unread = n; _failed = false; });
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
   }
 
   Future<void> _open() async {
@@ -51,7 +54,7 @@ class _MessagesTileState extends State<MessagesTile> {
           child: MenuItemWidget(
             index: widget.index,
             icon: Icons.chat_bubble_outline,
-            label: 'Tin nhắn',
+            label: _failed ? 'Tin nhắn — chưa cập nhật' : 'Tin nhắn',
             onTap: _open,
           ),
         ),

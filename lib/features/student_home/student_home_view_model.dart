@@ -68,6 +68,7 @@ class StudentHomeViewModel extends ChangeNotifier {
 
   List<CrmScheduleItem> _todayClasses = [];
   DateTime? _scheduleStaleAt;
+  DateTime? _boardStaleAt;
   bool _scheduleLoading = true;
   bool _scheduleFailed = false;
   bool _scheduleDenied = false;
@@ -76,6 +77,8 @@ class StudentHomeViewModel extends ChangeNotifier {
   AnnouncementItem? _latestBoardItem;
   int _boardUnread = 0;
   bool _boardFailed = false;
+  bool _profileFailed = false;
+  bool _unreadFailed = false;
   bool _boardLoading = false;
   bool _mustReadPrompt = false;
   Object? _authError;
@@ -92,6 +95,8 @@ class StudentHomeViewModel extends ChangeNotifier {
   AnnouncementItem? get latestBoardItem => _latestBoardItem;
   int get boardUnread => _boardUnread;
   bool get boardFailed => _boardFailed;
+  bool get secondaryFailed => _profileFailed || _unreadFailed;
+  DateTime? get boardStaleAt => _boardStaleAt;
 
   String get name => _repository.fullName ?? '–';
   String get mssv => _repository.mssv ?? '–';
@@ -161,8 +166,9 @@ class StudentHomeViewModel extends ChangeNotifier {
     try {
       final today = _now();
       final r = await _repository.schedule(
-        onStored: (items, _) {
+        onStored: (items, at) {
           if (_disposed) return;
+          _scheduleStaleAt = at;
           _todayClasses = items.where((s) => s.occursOn(today)).toList();
           _scheduleLoading = false;
           notifyListeners();
@@ -196,13 +202,13 @@ class StudentHomeViewModel extends ChangeNotifier {
       final code = await _repository.classCode();
       if (_disposed) return;
       _classCode = code;
+      _profileFailed = false;
       notifyListeners();
     } catch (e) {
-      if (!_disposed && e is EmsException && e.statusCode == 401) {
-        _authError = e;
-        notifyListeners();
-      }
-      // Header vẫn hiện tên/MSSV từ phiên; chỉ mã lớp trống.
+      if (_disposed) return;
+      if (e is EmsException && e.statusCode == 401) _authError = e;
+      _profileFailed = true;
+      notifyListeners();
     }
   }
 
@@ -225,8 +231,14 @@ class StudentHomeViewModel extends ChangeNotifier {
       final u = await _repository.unreadCount();
       if (_disposed) return;
       _unreadCount = u.unread + u.mustReadPending;
+      _unreadFailed = false;
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      if (_disposed) return;
+      if (e is EmsException && e.statusCode == 401) _authError = e;
+      _unreadFailed = true;
+      notifyListeners();
+    }
   }
 
   /// Thẻ mới nhất + số chưa đọc của Bảng tin.
@@ -238,13 +250,15 @@ class StudentHomeViewModel extends ChangeNotifier {
     _boardLoading = true;
     try {
       final r = await _repository.board(
-        onStored: (stored, _) {
+        onStored: (stored, at) {
           if (_disposed) return;
+          _boardStaleAt = at;
           _latestBoardItem = stored.isEmpty ? null : stored.first;
           notifyListeners();
         },
       );
       final items = r.data;
+      _boardStaleAt = r.fresh ? null : r.savedAt;
       final unread = items.where((i) => i.isUnread).length;
       if (_disposed) return;
       _latestBoardItem = items.isEmpty ? null : items.first;
@@ -252,11 +266,13 @@ class StudentHomeViewModel extends ChangeNotifier {
       _boardFailed = false;
       _maybeRequestMustRead(items);
       notifyListeners();
-    } catch (_) {
+    } catch (e) {
+      if (e is EmsException && e.statusCode == 401) _authError = e;
       // A DELIBERATE denial (no EMS account for this student, or a deactivated
       // one) is not a failure to retry — only a real fault gets the retry card.
       if (!_disposed) {
         _latestBoardItem = null;
+        _boardStaleAt = null;
         _boardUnread = 0;
         _boardFailed = !_repository.emsDenied;
         notifyListeners();

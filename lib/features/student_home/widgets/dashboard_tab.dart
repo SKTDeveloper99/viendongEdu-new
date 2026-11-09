@@ -33,6 +33,10 @@ class DashboardTab extends StatelessWidget {
     return Column(
       children: [
         HomeHeader(vm: vm),
+        if (vm.secondaryFailed) TextButton(
+          onPressed: vm.refresh,
+          child: const Text('Chưa cập nhật được thông tin. Thử lại'),
+        ),
         Expanded(
           child: RefreshIndicator(
             color: context.vd.primary,

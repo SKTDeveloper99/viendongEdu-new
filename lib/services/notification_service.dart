@@ -39,7 +39,7 @@ class NotificationService {
     // Đọc initial message TRƯỚC tiên và báo cho splash biết ngay,
     // để splash không phải chờ requestPermission (người dùng có thể để yên hộp thoại)
     try {
-      _pendingInitialMessage = await _fcm.getInitialMessage();
+      _pendingInitialMessage = await _fcm.getInitialMessage().timeout(const Duration(seconds: 3));
     } catch (e) {
       debugPrint('[FCM] getInitialMessage error: $e');
     }
@@ -49,6 +49,8 @@ class NotificationService {
     // (Sửa của tdat535 11/09, lấy lại sạch từ bản có xung đột trên upstream.)
     try {
       await _fcm.requestPermission(alert: true, badge: true, sound: true);
+    } catch (_) {
+      // Permission/plugin failure must not abort startup or token refresh.
     } finally {
       // Dù người dùng chọn "Cho phép" hay "Từ chối", vẫn báo done
       // để registerToken không bị chờ mãi mãi.
@@ -59,11 +61,15 @@ class NotificationService {
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
 
     // Foreground: hiển thị notification khi app đang mở
-    await _fcm.setForegroundNotificationPresentationOptions(
-      alert: false,
-      badge: true,
-      sound: true,
-    );
+    try {
+      await _fcm.setForegroundNotificationPresentationOptions(
+        alert: false,
+        badge: true,
+        sound: true,
+      ).timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // Push is optional; foreground listeners may still work.
+    }
 
     // Lắng nghe foreground message → hiện popup đẹp
     FirebaseMessaging.onMessage.listen((message) {
@@ -73,7 +79,7 @@ class NotificationService {
       if (title.isNotEmpty || body.isNotEmpty) {
         _showInAppBanner(title, body, _routeFor(message));
       }
-    });
+    }, onError: (Object _) {});
 
     // FCM xoay token (cài lại app, khôi phục iCloud, xoay định kỳ) →
     // đăng ký lại ngay, nếu không thì server giữ token cũ và notification chết im lặng
@@ -89,10 +95,10 @@ class NotificationService {
         ngaysinh: _lastNgaysinh,
         userid: _lastUserid,
       );
-    });
+    }, onError: (Object _) {});
 
     // Người dùng bấm vào notification khi app đang ở background
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap, onError: (Object _) {});
   }
 
   RemoteMessage? _pendingInitialMessage;
@@ -176,7 +182,7 @@ class NotificationService {
   /// để đăng ký với APNs xong.
   Future<String?> _waitForApnsToken() async {
     for (var i = 0; i < 10; i++) {
-      final apns = await _fcm.getAPNSToken();
+      final apns = await _fcm.getAPNSToken().timeout(const Duration(seconds: 1), onTimeout: () => null);
       if (apns != null) return apns;
       await Future.delayed(const Duration(seconds: 1));
     }
@@ -222,14 +228,8 @@ class NotificationService {
     );
   }
 
-  /// Đăng ký token FCM lên EMS — học viên qua `/v1/student/board/devices`
-  /// ([_emsStudentRegister]/[AppSession.registerStudentDeviceToken]), giảng
-  /// viên qua `/teacher/notifications/devices`
-  /// ([_emsTeacherRegister]/[AppSession.registerTeacherDeviceToken]). Cả hai
-  /// gọi được lúc đăng nhập LẪN lúc khôi phục phiên/xoay token (khác với
-  /// trước 2026-09-25: giảng viên chỉ đăng ký được lúc đăng nhập, qua
-  /// `POST /auth/teacher/login {fcm_token, platform}` — route thiết bị riêng
-  /// ở trên mới bù được khoảng trống đó, xem báo cáo gỡ Vercel, bot A5).
+  /// Bind the current installation to the signed-in student's or teacher's
+  /// CRM notification channel, including restoration and token rotation.
   Future<void> _postToken(
     String hocVienId,
     String token, {

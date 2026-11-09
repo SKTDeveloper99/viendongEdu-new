@@ -5,11 +5,12 @@ abstract final class StudentCasesApi {
   /// whether a submitted answer needs approval.
   static Future<List<TeacherStudentCase>> myOpenStudentCases() async {
     final body = await EmsApiService.sendMap('GET', '/student-cases/my-open');
-    final rows = body['cases'];
-    if (rows is! List) return const [];
+    final rows = EmsApiService.rows(body['cases']);
     return rows
         .whereType<Map<String, dynamic>>()
-        .map(TeacherStudentCase.fromJson)
+        .map(
+          (row) => EmsApiService.parse(() => TeacherStudentCase.fromJson(row)),
+        )
         .where((item) => item.id.isNotEmpty)
         .toList();
   }
@@ -23,6 +24,6 @@ abstract final class StudentCasesApi {
       '/student-cases/my-open/${Uri.encodeComponent(caseId)}/answer',
       body: {'answer': answer.trim()},
     );
-    return TeacherCaseAnswer.fromJson(body);
+    return EmsApiService.parse(() => TeacherCaseAnswer.fromJson(body));
   }
 }

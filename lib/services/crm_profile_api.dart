@@ -17,12 +17,13 @@ class CrmProfileApi {
   /// này (xem [CrmStudentProfile.fromGetMeJson]).
   static Future<CrmStudentProfile> getStudentMe() async {
     final token = AppSession.instance.emsToken;
-    final body = await EmsApiService.send('GET', '/student/me');
-    if (body is! Map<String, dynamic> ||
-        body['student'] is! Map<String, dynamic>) {
+    final body = await EmsApiService.sendMap('GET', '/student/me');
+    if (body['student'] is! Map<String, dynamic>) {
       throw EmsException('Máy chủ không trả về hồ sơ học viên.');
     }
-    final profile = CrmStudentProfile.fromGetMeJson(body);
+    final profile = EmsApiService.parse(
+      () => CrmStudentProfile.fromGetMeJson(body),
+    );
     if (token == AppSession.instance.emsToken) {
       AppSession.instance.applyStudentDataGate(body);
       if ((body['student'] as Map<String, dynamic>).containsKey('full_name')) {
@@ -34,8 +35,8 @@ class CrmProfileApi {
 
   /// `GET /api/teacher/me` — điền sẵn form.
   static Future<CrmTeacherProfile> getTeacherMe() async {
-    final body = await EmsApiService.send('GET', '/teacher/me');
-    return CrmTeacherProfile.fromGetMeJson(body as Map<String, dynamic>);
+    final body = await EmsApiService.sendMap('GET', '/teacher/me');
+    return EmsApiService.parse(() => CrmTeacherProfile.fromGetMeJson(body));
   }
 
   /// `PATCH /api/student/me/profile {email?, sdt?, cmnd?}`. Chỉ gửi trường
@@ -52,10 +53,12 @@ class CrmProfileApi {
       if (sdt != null && sdt.isNotEmpty) 'sdt': sdt,
       if (cmnd != null && cmnd.isNotEmpty) 'cmnd': cmnd,
     };
-    final res =
-        await EmsApiService.send('PATCH', '/student/me/profile', body: body)
-            as Map<String, dynamic>;
-    return CrmStudentProfile.fromPatchJson(res);
+    final res = await EmsApiService.sendMap(
+      'PATCH',
+      '/student/me/profile',
+      body: body,
+    );
+    return EmsApiService.parse(() => CrmStudentProfile.fromPatchJson(res));
   }
 
   /// `PATCH /api/teacher/me/profile {email?, sdt?}`.
@@ -67,9 +70,11 @@ class CrmProfileApi {
       if (email != null && email.isNotEmpty) 'email': email,
       if (sdt != null && sdt.isNotEmpty) 'sdt': sdt,
     };
-    final res =
-        await EmsApiService.send('PATCH', '/teacher/me/profile', body: body)
-            as Map<String, dynamic>;
-    return CrmTeacherProfile.fromPatchJson(res);
+    final res = await EmsApiService.sendMap(
+      'PATCH',
+      '/teacher/me/profile',
+      body: body,
+    );
+    return EmsApiService.parse(() => CrmTeacherProfile.fromPatchJson(res));
   }
 }

@@ -4,7 +4,10 @@ class EmsException implements Exception {
   final String message;
   final String? code;
   final int? statusCode;
-  EmsException(this.message, {this.code, this.statusCode});
+
+  /// Token used by the failed request, so a late 401 cannot end a new login.
+  final String? requestToken;
+  EmsException(this.message, {this.code, this.statusCode, this.requestToken});
 
   /// EMS đã trả lời rằng tài khoản không được phép dùng EMS.
   ///
@@ -30,4 +33,20 @@ class EmsPunchConflict extends EmsException {
   final List<EmsPunchedStudent> students;
   EmsPunchConflict(super.message, {required this.students, super.statusCode})
     : super(code: 'punch_conflict_needs_reason');
+}
+
+/// Keep parser/plugin exceptions out of product copy.
+String crmErrorMessage(Object error) => error is EmsException
+    ? error.message
+    : 'Không đọc được dữ liệu. Vui lòng thử lại.';
+
+/// Normalize typed JSON failures before they reach a screen or draft loader.
+T parseCrmResponse<T>(T Function() decode) {
+  try {
+    return decode();
+  } on EmsException {
+    rethrow;
+  } catch (_) {
+    throw EmsException('Máy chủ trả về dữ liệu không đọc được. Vui lòng thử lại.');
+  }
 }

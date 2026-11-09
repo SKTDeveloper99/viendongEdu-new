@@ -290,7 +290,8 @@ void main() {
           'student': {'full_name': 'Thử Nghiệm A'},
         }),
       );
-      await pending;
+      // The shared session check now discards the stale reply outright.
+      await expectLater(pending, throwsA(isA<EmsException>()));
       expect(AppSession.instance.dataOpen, isFalse);
       expect(AppSession.instance.fullName, 'Thử Nghiệm B');
     },

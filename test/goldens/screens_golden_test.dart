@@ -128,6 +128,7 @@ const _rosterKey = '123:18-00:2026-09-08';
 
 http.Response _route(http.Request req) {
   final p = req.url.path;
+  if (p.endsWith('/student/me/attendance-ems')) return _ok({'marks': []});
   if (p.endsWith('/student/me/schedule')) {
     return _ok({
       'schedule': [

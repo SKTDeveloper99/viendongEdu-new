@@ -1,3 +1,4 @@
+import '../services/crm_session_guard.dart';
 import '../components/skeleton.dart';
 import '../components/announcement_body.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,13 +9,6 @@ import '../data/api/board_api.dart';
 import '../components/vd_fade_in.dart';
 import '../theme/vd_motion.dart';
 import '../theme/vd_tokens.dart';
-/// Bảng tin — thông tin trung tâm gửi cho học viên này.
-///
-/// Chỉ ĐỌC. Nội dung hiển thị là nguyên văn server đã đóng băng lúc phát hành;
-/// app không ghép trường và không dựng lại từ mẫu.
-///
-/// Khi EMS không truy cập được: hiện trạng thái lỗi CÓ NÚT THỬ LẠI ngay trong
-/// màn hình này — không bao giờ để trắng màn, và không ảnh hưởng màn hình IMS.
 class StudentBoardScreen extends StatefulWidget {
   const StudentBoardScreen({super.key});
 
@@ -56,9 +50,10 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     if (mounted && _items.isEmpty) setState(() => _loading = true);
     try {
       final r = await BoardApi.boardCached(
-        onStored: (stored, _) {
+        onStored: (stored, at) {
           if (!mounted || _items.isNotEmpty) return;
           setState(() {
+            _staleAt = at;
             _items = stored;
             _loading = false;
           });
@@ -71,10 +66,12 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
         _error = null;
         _loading = false;
       });
-    } on EmsException catch (e) {
+    } catch (e) {
+      if (!mounted) return;
+      if (await handleCrmAuthError(context, e)) return;
       if (!mounted) return;
       setState(() {
-        _error = e.message;
+        _error = crmErrorMessage(e);
         _loading = false;
       });
     } finally {
@@ -82,18 +79,21 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     }
   }
 
-  /// Mở một thông báo: đóng dấu đã đọc (idempotent) rồi hiện toàn văn.
-  ///
-  /// Cập nhật giao diện TRƯỚC khi chờ mạng, và hoàn nguyên nếu server từ chối:
-  /// người đọc không phải chờ một vòng round-trip để thấy mình vừa mở cái gì.
+  /// Mark read optimistically; undo and report failures so opening retries.
   Future<void> _open(AnnouncementItem item) async {
     final wasUnread = item.isUnread;
     if (wasUnread) {
       setState(() => item.readAt = DateTime.now());
       try {
         await BoardApi.markRead(item.id);
-      } on EmsException {
-        if (mounted) setState(() => item.readAt = null);
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => item.readAt = null);
+        if (await handleCrmAuthError(context, e)) return;
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(crmErrorMessage(e))));
       }
     }
     if (!mounted) return;
@@ -105,11 +105,13 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
     setState(() => item.acknowledgedAt = DateTime.now());
     try {
       await BoardApi.acknowledge(item.id);
-    } on EmsException catch (e) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => item.acknowledgedAt = before);
+      if (await handleCrmAuthError(context, e)) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(crmErrorMessage(e))));
     }
   }
 
@@ -183,7 +185,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
                             ),
                             onPressed: () async {
                               await _acknowledge(item);
-                              setSheetState(() {});
+                              if (sheetContext.mounted) setSheetState(() {});
                             },
                             child: const Text('Tôi đã đọc và hiểu',
                                 style: TextStyle(
@@ -225,8 +227,6 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
   Widget _buildBody() {
     if (_loading) return skeletonList(accentColor: context.vd.primary);
 
-    // Trạng thái lỗi phải CUỘN ĐƯỢC, nếu không RefreshIndicator không kéo được
-    // và người dùng kẹt lại với một màn hình chết.
     if (_error != null) {
       return ListView(
         padding: const EdgeInsets.all(32),
@@ -257,6 +257,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen>
       return ListView(
         padding: const EdgeInsets.all(32),
         children: [
+          if (_staleAt != null) StaleNote(_staleAt!),
           const SizedBox(height: 60),
           Icon(Icons.inbox_outlined, size: 56, color: context.vd.inkFaint),
           const SizedBox(height: 16),

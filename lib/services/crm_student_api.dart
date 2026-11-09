@@ -36,13 +36,14 @@ class CrmStudentApi {
   /// Thay `hocvien/user/info` (`ApiService.getUserInfo`).
   static Future<CrmStudentProfile> me() async {
     final token = AppSession.instance.emsToken;
-    final body =
-        await EmsApiService.send('GET', '/student/me') as Map<String, dynamic>;
+    final body = await EmsApiService.sendMap('GET', '/student/me');
     final student = body['student'];
     if (student is! Map<String, dynamic>) {
       throw EmsException('Máy chủ không trả về hồ sơ học viên.');
     }
-    final profile = CrmStudentProfile.fromJson(student);
+    final profile = EmsApiService.parse(
+      () => CrmStudentProfile.fromJson(student),
+    );
     if (token == AppSession.instance.emsToken) {
       AppSession.instance.applyStudentDataGate(body);
       if (student.containsKey('full_name')) {
@@ -57,10 +58,8 @@ class CrmStudentApi {
   /// `GET /api/student/me/grades` → { mssv, summary, grades }.
   /// Thay `hocvien/bangdiemtongket` (`ApiService.getBangDiem`).
   static Future<CrmStudentGradesView> grades() async {
-    final body =
-        await EmsApiService.send('GET', '/student/me/grades')
-            as Map<String, dynamic>;
-    return CrmStudentGradesView.fromJson(body);
+    final body = await EmsApiService.sendMap('GET', '/student/me/grades');
+    return EmsApiService.parse(() => CrmStudentGradesView.fromJson(body));
   }
 
   /// `GET /api/student/me/remaining-subjects` → { mssv, has_curriculum,
@@ -70,10 +69,11 @@ class CrmStudentApi {
   /// điểm trung bình, đủ điều kiện) dùng [graduationSummary] thay vì cộng
   /// dồn danh sách này ở client.
   static Future<CrmRemainingSubjectsView> remainingSubjects() async {
-    final body =
-        await EmsApiService.send('GET', '/student/me/remaining-subjects')
-            as Map<String, dynamic>;
-    return CrmRemainingSubjectsView.fromJson(body);
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/student/me/remaining-subjects',
+    );
+    return EmsApiService.parse(() => CrmRemainingSubjectsView.fromJson(body));
   }
 
   /// `GET /api/student/me/graduation-summary` → { student, academic,
@@ -85,34 +85,31 @@ class CrmStudentApi {
   /// and eligibility now come straight from this endpoint instead of being
   /// summed client-side over /me/grades.
   static Future<CrmGraduationSummary> graduationSummary() async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/student/me/graduation-summary',
-              // Academic part only: the server skips the tuition engine.
-              query: {'part': 'academic'},
-            )
-            as Map<String, dynamic>;
-    return CrmGraduationSummary.fromJson(body);
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/student/me/graduation-summary',
+      // Academic part only: the server skips the tuition engine.
+      query: {'part': 'academic'},
+    );
+    return EmsApiService.parse(() => CrmGraduationSummary.fromJson(body));
   }
 
   /// `GET /api/student/me/sections?semester=` → { mssv, sections }.
   /// Thay `hocvien/lopmonhoc` (`ApiService.getLopMonHoc`).
   static Future<List<CrmStudentSection>> sections({String? semester}) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/student/me/sections',
-              query: (semester == null || semester.isEmpty)
-                  ? null
-                  : {'semester': semester},
-            )
-            as Map<String, dynamic>;
-    final list = body['sections'];
-    if (list is! List) return const [];
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/student/me/sections',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+    );
+    final list = EmsApiService.rows(body['sections']);
     return list
         .whereType<Map<String, dynamic>>()
-        .map(CrmStudentSection.fromJson)
+        .map(
+          (row) => EmsApiService.parse(() => CrmStudentSection.fromJson(row)),
+        )
         .toList();
   }
 
@@ -122,16 +119,16 @@ class CrmStudentApi {
   /// lib/models/crm_student_schedule.dart về khác biệt theo-tuần so với
   /// theo-ngày của IMS.
   static Future<List<CrmScheduleItem>> schedule({String? semester}) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/student/me/schedule',
-              query: (semester == null || semester.isEmpty)
-                  ? null
-                  : {'semester': semester},
-            )
-            as Map<String, dynamic>;
-    return CrmStudentScheduleView.fromJson(body).schedule;
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/student/me/schedule',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+    );
+    return EmsApiService.parse(
+      () => CrmStudentScheduleView.fromJson(body),
+    ).schedule;
   }
 
   static Future<({List<CrmScheduleItem> data, DateTime savedAt, bool fresh})>
@@ -156,13 +153,21 @@ class CrmStudentApi {
     void Function(CrmStudentScheduleView view, DateTime savedAt)? onStored,
   }) async {
     CrmStudentScheduleView parse(dynamic body) {
-      return CrmStudentScheduleView.fromJson(
-        body is Map<String, dynamic> ? body : const {},
-      );
+      if (body is! Map<String, dynamic> || body['schedule'] is! List) {
+        throw EmsException(
+          'Máy chủ trả về lịch học không đọc được. Vui lòng thử lại.',
+        );
+      }
+      EmsApiService.rows(body['schedule']);
+      if (body['chua_co_lich'] != null) {
+        EmsApiService.rows(body['chua_co_lich']);
+      }
+      return EmsApiService.parse(() => CrmStudentScheduleView.fromJson(body));
     }
 
     final r = await EmsApiService.sendCached(
       '/student/me/schedule',
+      validate: parse,
       query: (semester == null || semester.isEmpty)
           ? null
           : {'semester': semester},
@@ -181,7 +186,9 @@ class CrmStudentApi {
     return (
       items: rows
           .whereType<Map<String, dynamic>>()
-          .map(CrmScheduleItem.fromJson)
+          .map(
+            (row) => EmsApiService.parse(() => CrmScheduleItem.fromJson(row)),
+          )
           .toList(),
       savedAt: cached.savedAt,
     );
@@ -208,15 +215,13 @@ class CrmStudentApi {
   }
 
   static Future<CrmStudentExamsView> exams({String? semester}) async {
-    final body =
-        await EmsApiService.send(
-              'GET',
-              '/student/me/exams',
-              query: (semester == null || semester.isEmpty)
-                  ? null
-                  : {'semester': semester},
-            )
-            as Map<String, dynamic>;
-    return CrmStudentExamsView.fromJson(body);
+    final body = await EmsApiService.sendMap(
+      'GET',
+      '/student/me/exams',
+      query: (semester == null || semester.isEmpty)
+          ? null
+          : {'semester': semester},
+    );
+    return EmsApiService.parse(() => CrmStudentExamsView.fromJson(body));
   }
 }

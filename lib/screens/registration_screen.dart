@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 import '../models/crm_registration_models.dart';
 import '../components/student_registration_cards.dart';
@@ -79,7 +80,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       if (await handleCrmAuthError(context, e)) return;
       setState(() {
         _loadingPeriods = false;
-        _error = e.toString();
+        _error = crmErrorMessage(e);
       });
     }
   }
@@ -131,7 +132,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       if (await handleCrmAuthError(context, e)) return;
       setState(() {
         _loadingData = false;
-        _error = e.toString();
+        _error = crmErrorMessage(e);
       });
     }
   }
@@ -206,7 +207,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       if (!mounted) return;
       if (await handleCrmAuthError(context, e)) return;
       // Hiện nguyên văn lỗi máy chủ (đợt đóng / lớp đầy / đã đăng ký).
-      _showSnack(e.toString(), isError: true);
+      _showSnack(crmErrorMessage(e), isError: true);
     } finally {
       if (mounted) setState(() => _processing.remove(offering.offeringId));
     }

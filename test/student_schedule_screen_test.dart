@@ -259,5 +259,9 @@ void main() {
     expect(find.text('Thử lại'), findsOneWidget);
     expect(find.text('Không có lịch học'), findsNothing);
     expect(find.byType(UnscheduledSubjects), findsNothing);
+    offline = false;
+    await t.tap(find.text('Thử lại'));
+    await t.pumpAndSettle();
+    expect(_subject(_section['subject_name']!), findsOneWidget);
   });
 }

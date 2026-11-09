@@ -1,3 +1,4 @@
+import '../../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/teacher_attendance_repository.dart';
@@ -103,7 +104,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
       );
     } catch (e) {
       if (!mounted) return;
-      showErrorSnack(context, e.toString());
+      showErrorSnack(context, crmErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

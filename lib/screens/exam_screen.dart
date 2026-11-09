@@ -1,3 +1,4 @@
+import '../core/network/ems_exception.dart';
 import '../components/skeleton.dart';
 import 'stale_note.dart';
 import 'package:flutter/material.dart';
@@ -37,14 +38,7 @@ class _ExamScreenState extends State<ExamScreen> {
     _fetchExams();
   }
 
-  // `GET /api/student/me/exams` KHÔNG kèm `semester` (hoặc `semester=all`)
-  // trả TOÀN BỘ lịch sử thi, mới nhất trước — mặc định của màn hình này.
-  // `?semester=<mã>` lọc đúng một học kỳ, chỉ gọi khi người dùng CHỌN một
-  // học kỳ cụ thể ở dropdown (xem _onSemesterChanged). Đây là hợp đồng MỚI
-  // của server (2026-09-25) — trước đó không truyền `semester` chỉ trả học
-  // kỳ hiện tại, và exam_screen từng phải tự dựng lịch sử bằng cách gọi lặp
-  // theo từng mã học kỳ lấy từ /me/sections; không còn cần nữa. Xem
-  // docs/ims_to_crm_student_academic_map.md.
+  // Load every semester; explicit selections make their own filtered read.
   Future<void> _fetchExams() async {
     final request = ++_request;
     setState(() {
@@ -87,16 +81,12 @@ class _ExamScreenState extends State<ExamScreen> {
       setState(() {
         _loading = false;
         _switchingSemester = false;
-        _error = e.toString();
+        _error = crmErrorMessage(e);
       });
     }
   }
 
-  // Người dùng chọn một học kỳ cụ thể (hoặc quay về "Tất cả"). Chỉ "Tất cả"
-  // dùng lại bản đã tải; một học kỳ cụ thể LUÔN gọi lại server với
-  // `semester=` đúng như hợp đồng mới, thay vì lọc từ bản toàn bộ đang có
-  // trong bộ nhớ — để danh sách hiện đúng những gì server coi là thuộc học
-  // kỳ đó.
+  // Reload the selected semester; never relabel the previous semester's data.
   Future<void> _onSemesterChanged(String hkma) async {
     final request = ++_request;
     setState(() {
@@ -111,7 +101,10 @@ class _ExamScreenState extends State<ExamScreen> {
       });
       return;
     }
-    setState(() => _switchingSemester = true);
+    setState(() {
+      _switchingSemester = true;
+      _error = null;
+    });
     try {
       final r = await CrmStudentApi.examsCached(semester: hkma);
       final view = r.data;
@@ -137,10 +130,11 @@ class _ExamScreenState extends State<ExamScreen> {
     } catch (e) {
       if (!mounted || request != _request) return;
       if (await handleCrmAuthError(context, e)) return;
-      // Giữ danh sách cũ trên màn hình; chỉ tắt vòng xoay tải.
+      if (!mounted || request != _request) return;
       setState(() {
         _switchingSemester = false;
-        _error = e.toString();
+        _displayExams = [];
+        _error = crmErrorMessage(e);
       });
     }
   }

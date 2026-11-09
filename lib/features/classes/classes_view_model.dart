@@ -85,7 +85,7 @@ class ClassesViewModel extends ChangeNotifier {
     } catch (e) {
       if (_disposed || request != _selection) return;
       _loading = false;
-      _error = e.toString();
+      _error = crmErrorMessage(e);
       _flagAuth(e);
       notifyListeners();
     }

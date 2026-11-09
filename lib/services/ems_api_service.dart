@@ -11,15 +11,9 @@ import '../core/network/ems_exception.dart';
 import 'app_session.dart';
 import 'offline_snapshot.dart';
 
-/// Cầu nối tới EMS (CRM Viễn Đông).
-///
-/// Tách hẳn khỏi [ApiService] (IMS) vì hai hệ thống có hai token riêng và hai
-/// vòng đời riêng: EMS hỏng thì màn hình IMS vẫn phải chạy bình thường.
-///
-/// Không hardcode IP/port, không bỏ qua kiểm tra TLS.
+/// Shared CRM transport. All requests retain normal TLS verification.
 class EmsApiService {
-  /// Production. Đổi khi build bằng:
-  ///   flutter build --dart-define=EMS_API_BASE_URL=https://.../api
+  /// Production; override with --dart-define=EMS_API_BASE_URL=https://.../api
   static const String baseUrl = String.fromEnvironment(
     'EMS_API_BASE_URL',
     defaultValue: 'https://ems.viendong.edu.vn/api',
@@ -28,10 +22,11 @@ class EmsApiService {
   static const Duration _readTimeout = Duration(seconds: 7);
   static const Duration _writeTimeout = Duration(seconds: 15);
 
-  /// Đường ra mạng. Thay được trong test để chạy màn hình Bảng tin với dữ liệu
-  /// dựng sẵn; trong app thật luôn là client HTTP mặc định (giữ nguyên kiểm tra
-  /// TLS — không có chế độ bỏ qua chứng chỉ).
+  /// Injectable HTTP client; normal TLS verification stays enabled.
   static http.Client client = http.Client();
+
+  /// Installed by the app shell, also for background/badge requests.
+  static void Function(EmsException error)? onUnauthorized;
 
   /// Header cho widget ảnh (Image.network) — ảnh cũng nằm sau Bearer token.
   static Map<String, String> get authHeaders {
@@ -59,8 +54,7 @@ class EmsApiService {
     (_) => _rng.nextInt(256).toRadixString(16).padLeft(2, '0'),
   ).join();
 
-  /// Wait before the single GET retry: min(Retry-After, 5)s + 0–1s jitter.
-  /// Replaceable in tests.
+  /// GET retry wait: min(Retry-After, 5)s + 0–1s jitter (test-replaceable).
   static Duration Function(int retryAfterSeconds) retryDelay = (ra) =>
       Duration(seconds: min(ra, 5), milliseconds: _rng.nextInt(1000));
 
@@ -81,18 +75,13 @@ class EmsApiService {
     return h;
   }
 
-  /// Đọc body JSON và dựng [EmsException] từ cả `error` lẫn `message`.
-  ///
-  /// Server trả `{error: <mã máy>, message: <tiếng Việt>}` cho các lỗi có mã,
-  /// và `{error: <câu tiếng Việt>}` cho các lỗi do middleware dựng. Xử lý cả
-  /// hai dạng, và cả trường hợp body KHÔNG phải JSON (nginx/Cloudflare chen vào
-  /// một trang HTML) — lúc đó vẫn phải là một lỗi đọc được, không phải crash.
-  ///
-  /// Trả về `dynamic` (không chỉ `Map`) vì một số route trả thẳng một mảng
-  /// JSON ở cấp cao nhất (vd. `GET /teacher/me/semesters`) — [send] không
-  /// còn ép người gọi phải bọc route đó trong một client HTTP riêng chỉ để
-  /// đọc mảng.
-  static dynamic _decode(http.Response res) {
+  /// Decode object/array responses and normalize infrastructure failures.
+  /// Preserve Vietnamese validation messages and typed attendance conflicts.
+  static dynamic _decode(
+    http.Response res, {
+    String? requestToken,
+    bool auth = true,
+  }) {
     dynamic body;
     try {
       body = jsonDecode(res.body);
@@ -105,6 +94,7 @@ class EmsApiService {
         throw EmsException(
           'Máy chủ trả về dữ liệu không đọc được.',
           statusCode: res.statusCode,
+          code: 'invalid_response',
         );
       }
       return body;
@@ -113,6 +103,15 @@ class EmsApiService {
     final map = body is Map<String, dynamic> ? body : null;
     final rawError = map?['error']?.toString();
     final rawMessage = map?['message']?.toString();
+    if (res.statusCode == 401 && auth) {
+      final error = EmsException(
+        'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+        statusCode: 401,
+        requestToken: requestToken,
+      );
+      onUnauthorized?.call(error);
+      throw error;
+    }
 
     // 422 riêng của điểm danh: có học viên đã quẹt cổng mà bị ghi VẮNG không
     // kèm lý do. Không phải lỗi — là câu hỏi. Màn hình hỏi lý do rồi gửi lại,
@@ -147,26 +146,29 @@ class EmsApiService {
       );
     }
 
+    // Infrastructure errors and machine codes are never product copy.
+    if (res.statusCode >= 500) {
+      throw EmsException(
+        'Máy chủ gặp sự cố. Vui lòng thử lại sau giây lát.',
+        code: rawError,
+        statusCode: res.statusCode,
+      );
+    }
+    final message = rawMessage ?? rawError;
+    final vietnamese =
+        message != null &&
+        RegExp(r'[À-ỹĐđ]').hasMatch(message) &&
+        !RegExp(r'[<>\r\n]').hasMatch(message);
     throw EmsException(
-      rawMessage ?? rawError ?? 'Không kết nối được máy chủ thông tin.',
+      vietnamese ? message : 'Không thực hiện được yêu cầu. Vui lòng thử lại.',
       code: rawError,
       statusCode: res.statusCode,
     );
   }
 
-  /// Đường ra mạng CHUNG cho toàn app — mọi feature-service khác (điểm danh,
-  /// bảng tin, và các file các bot khác dựng thêm) đi qua đây thay vì tự viết
-  /// http.post/get riêng. Giữ nguyên cách xử lý lỗi cũ: đọc body JSON dựng
-  /// [EmsException] (kể cả 401), timeout thì báo lỗi mạng chứ không crash.
-  ///
-  /// [method] là 'GET' | 'POST' | 'PATCH' | 'DELETE'. [query] được ghép vào
-  /// chuỗi query của URL; [body] được jsonEncode làm request body
-  /// (POST/PATCH/DELETE).
-  ///
-  /// 401 KHÔNG còn được thử lại ở đây (không còn token IMS để đối chiếu lại):
-  /// nó nghĩa là phiên đã hết hạn. Gọi nơi gọi tự bắt
-  /// `EmsException(statusCode: 401)` và điều hướng về `/login` — xem
-  /// `AppSession.clear()`.
+  /// Shared GET/POST/PATCH/DELETE transport. Identical GETs are coalesced;
+  /// only a busy (503) GET is retried, once. Authenticated 401s notify the
+  /// app shell; login refusals remain on the login form.
   static Future<dynamic> send(
     String method,
     String path, {
@@ -175,19 +177,25 @@ class EmsApiService {
     bool auth = true,
   }) async {
     final uri = _buildUri(path, query);
+    final token = auth ? AppSession.instance.emsToken : null;
     if (method != 'GET') {
-      // Đăng nhập (auth:false) và đăng ký thiết bị nhận thông báo không qua
-      // cổng này: chúng tự báo lỗi riêng và không mang dữ liệu học vụ.
+      // Login and device registration skip the reachability gate.
       if (auth && !path.contains('/devices')) await _ensureConnectionSure();
-      return _decode(await _once(method, uri, body: body, auth: auth));
+      _checkSession(token, auth: auth);
+      return _decode(
+        await _once(method, uri, body: body, auth: auth),
+        requestToken: token,
+        auth: auth,
+      );
     }
     // Identical in-flight GETs (same token + URL) share one request.
     final key = '${auth ? AppSession.instance.emsToken : ''}|$uri';
     final existing = _inflight[key];
     if (existing != null) return existing;
-    final future = () async {
-      return _decode(await _getWithRetry(uri, auth: auth));
-    }();
+    final future = _getWithRetry(
+      uri,
+      auth: auth,
+    ).then((res) => _decode(res, requestToken: token, auth: auth));
     _inflight[key] = future;
     try {
       return await future;
@@ -196,15 +204,8 @@ class EmsApiService {
     }
   }
 
-  // ── Cổng "mạng chắc chắn" cho mọi lần GHI ────────────────────────────────
-  // Quy tắc của chủ trường (2026-09-30): khi không chắc mạng, KHÔNG gửi gì lên
-  // máy chủ. Một lần ghi trên mạng chập chờn có thể tới máy chủ mà câu trả lời
-  // bị mất — thầy/cô không biết đã lưu hay chưa. Nên: nếu chưa có phản hồi
-  // HTTP nào trong [_sureWindow] (hoặc lần gần nhất vừa lỗi mạng), hỏi thử một
-  // endpoint công khai rất nhỏ; không có phản hồi trong [_probeTimeout] thì
-  // KHÔNG gửi, ném lỗi `network_unsure` — màn hình giữ dữ liệu trên máy
-  // (điểm danh hiện "CHƯA GỬI") để người dùng bấm gửi lại khi mạng ổn.
-  // Đọc (GET) không qua cổng này: đọc được thì hiện bản đã lưu kèm giờ.
+  // Writes require recent contact or a bounded public probe. A failed probe
+  // leaves attendance drafts on the phone; reads may show labelled snapshots.
   static const Duration _sureWindow = Duration(seconds: 20);
   static const Duration _probeTimeout = Duration(seconds: 3);
   static DateTime? _lastContact; // lần gần nhất nhận được BẤT KỲ phản hồi HTTP
@@ -215,8 +216,7 @@ class EmsApiService {
       _lastContact != null &&
       DateTime.now().difference(_lastContact!) < _sureWindow;
 
-  /// Hỏi thử máy chủ. Bất kỳ phản hồi HTTP nào (kể cả 4xx/5xx) đều chứng minh
-  /// có đường tới máy chủ; chỉ lỗi mạng hoặc quá 3 giây mới là "không chắc".
+  /// Any HTTP answer proves reachability; only network errors/3 s are unsure.
   static Future<void> defaultProbe() =>
       client.get(Uri.parse('$baseUrl/app/min-version')).timeout(_probeTimeout);
 
@@ -263,6 +263,7 @@ class EmsApiService {
     // Not awaited: a slow/absent plugin must never delay or hang a request;
     // the header simply appears from the next request on.
     unawaited(_loadAppVersion());
+    final token = auth ? AppSession.instance.emsToken : null;
     try {
       final headers = {..._headers(auth: auth), ...?extraHeaders};
       final encoded = body == null ? null : jsonEncode(body);
@@ -277,21 +278,20 @@ class EmsApiService {
               .timeout(method == 'GET' ? _readTimeout : _writeTimeout);
       _lastContact = DateTime.now();
       _lastFailed = false;
+      _checkSession(token, auth: auth);
       return res;
+    } on EmsException {
+      rethrow;
     } catch (e) {
       _lastFailed = true;
-      // Mạng hỏng / quá hạn / DNS — không có statusCode, nên không bị coi là
-      // từ chối có chủ đích và màn hình sẽ hiện nút "Thử lại".
+      // Network/timeout/DNS: no statusCode, so screens offer "Thử lại".
       throw EmsException(
         'Không có kết nối Internet hoặc máy chủ không phản hồi. Vui lòng thử lại.',
       );
     }
   }
 
-  /// GET with ONE retry, only when the server answers 503 (busy). Offline and
-  /// timeouts are not retried: offline cannot succeed a second later, and
-  /// re-sending a timed-out read adds load exactly when the server is
-  /// struggling. Writes never come here.
+  /// GET with ONE retry, only on 503 (busy); offline/timeouts are not retried.
   static Future<http.Response> _getWithRetry(
     Uri uri, {
     bool auth = true,
@@ -299,35 +299,40 @@ class EmsApiService {
   }) async {
     Future<http.Response> attempt() =>
         _once('GET', uri, auth: auth, extraHeaders: extraHeaders);
+    final token = AppSession.instance.emsToken;
     final res = await attempt();
     if (res.statusCode != 503) return res;
     final ra = int.tryParse(res.headers['retry-after'] ?? '') ?? 1;
     await Future<void>.delayed(retryDelay(ra < 0 ? 0 : ra));
+    _checkSession(token, auth: auth);
     return attempt();
   }
 
-  /// Opt-in disk-cached GET. Stores ETag + body per account (via
-  /// [OfflineSnapshot], so logout clears it) and revalidates with
-  /// If-None-Match. On failure returns the stored body with `fresh: false`.
+  /// Opt-in disk-cached GET: ETag + body per account ([OfflineSnapshot]),
+  /// revalidated with If-None-Match; on failure the stored body, `fresh: false`.
   static Future<({dynamic data, DateTime savedAt, bool fresh})> sendCached(
     String path, {
     Map<String, String>? query,
     void Function(dynamic data, DateTime savedAt)? onStored,
+    void Function(dynamic data)? validate,
   }) async {
+    final token = AppSession.instance.emsToken;
     final uri = _buildUri(path, query);
     final resource = 'http_cache:${uri.path}?${uri.query}';
-    final token = AppSession.instance.emsToken;
     final stored = await OfflineSnapshot.load(resource);
-    void ensureSameSession() {
-      if (token != AppSession.instance.emsToken) {
-        throw EmsException('Phiên đăng nhập đã thay đổi.', statusCode: 401);
-      }
-    }
-
-    ensureSameSession();
+    _checkSession(token);
     final blob = stored?.data;
     final etag = blob is Map ? blob['etag']?.toString() : null;
-    final hasBody = blob is Map && blob.containsKey('body');
+    var hasBody = blob is Map && blob.containsKey('body');
+    if (hasBody) {
+      try {
+        parse(() => validate?.call(blob['body']));
+      } on EmsException {
+        hasBody = false;
+        await OfflineSnapshot.remove(resource);
+        _checkSession(token);
+      }
+    }
     if (hasBody && onStored != null) onStored(blob['body'], stored!.savedAt);
     try {
       final res = await _getWithRetry(
@@ -336,26 +341,26 @@ class EmsApiService {
             ? {'If-None-Match': etag}
             : null,
       );
+      _checkSession(token);
       if (res.statusCode == 304 && hasBody) {
-        ensureSameSession();
         final now = DateTime.now();
         await OfflineSnapshot.save(resource, blob);
         return (data: blob['body'], savedAt: now, fresh: true);
       }
-      final data = _decode(res);
-      ensureSameSession();
+      final data = _decode(res, requestToken: token);
+      parse(() => validate?.call(data));
       final newTag = res.headers['etag'];
       if (newTag != null && newTag.isNotEmpty) {
         await OfflineSnapshot.save(resource, {'etag': newTag, 'body': data});
       } else {
-        // Replace an old ETag body even when the fresh response has no ETag
-        // (including a masked/empty response). Offline reads keep this copy.
+        // Replace an old ETag body even when the fresh response has none.
         await OfflineSnapshot.save(resource, {'body': data});
       }
+      _checkSession(token);
       return (data: data, savedAt: DateTime.now(), fresh: true);
     } on EmsException catch (e) {
-      ensureSameSession();
       // 401/403 mean the session/permission changed: never mask with old data.
+      _checkSession(token);
       if (e.statusCode == 401 || e.statusCode == 403) {
         await OfflineSnapshot.remove(resource);
         rethrow;
@@ -366,15 +371,28 @@ class EmsApiService {
     }
   }
 
-  /// [send] typed for endpoints that answer with a JSON object. Shared by the
-  /// per-domain API files in `lib/data/api/`.
+  /// [send] typed for endpoints that answer with a JSON object.
   static Future<Map<String, dynamic>> sendMap(
     String method,
     String path, {
     Map<String, dynamic>? body,
     bool auth = true,
+    Map<String, String>? query,
   }) async {
-    return (await send(method, path, body: body, auth: auth))
-        as Map<String, dynamic>;
+    final data = await send(method, path, body: body, auth: auth, query: query);
+    return parse(() => data as Map<String, dynamic>);
+  }
+
+  /// Typed response parsing shares the same Vietnamese failure contract.
+  static T parse<T>(T Function() decode) => parseCrmResponse(decode);
+
+  /// A malformed list must not masquerade as a successful empty result.
+  static List<Map<String, dynamic>> rows(dynamic data) =>
+      parse(() => (data as List).cast<Map<String, dynamic>>().toList());
+
+  static void _checkSession(String? token, {bool auth = true}) {
+    if (auth && token != AppSession.instance.emsToken) {
+      throw EmsException('Phiên đăng nhập đã thay đổi.', statusCode: 403);
+    }
   }
 }
