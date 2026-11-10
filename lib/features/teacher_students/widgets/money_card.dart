@@ -44,7 +44,7 @@ class MoneyCard extends StatelessWidget {
   }
 }
 
-/// Red reminder at the top of a student who owes before the midterm.
+/// Red reminder at the top of a student who owes (no stale exam date).
 class OweBanner extends StatelessWidget {
   const OweBanner({super.key});
 
@@ -59,8 +59,7 @@ class OweBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
-        'Còn nợ học phí. Cần đóng trước kỳ thi giữa kỳ $midtermLabel '
-        'để được dự thi.',
+        'Còn nợ học phí. Cần đóng trước buổi thi gần nhất để được dự thi.',
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,

@@ -136,12 +136,7 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
       locale: const Locale('vi', 'VN'),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: context.vd.primary)),
-        child: child!,
-      ),
+      // The app theme carries light and dark pickers (was forced light).
     );
     if (picked != null) {
       setState(() => _currentMonday = _findMonday(picked));
@@ -337,12 +332,12 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                           Icon(
                             Icons.error_outline,
                             size: 48,
-                            color: context.vd.inkFaint,
+                            color: context.vd.inkMuted,
                           ),
                           const SizedBox(height: 12),
                           Text(
                             _error!,
-                            style: TextStyle(color: context.vd.inkFaint),
+                            style: TextStyle(color: context.vd.inkMuted),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
@@ -366,12 +361,12 @@ class _GvScheduleScreenState extends State<GvScheduleScreen>
                           Icon(
                             Icons.event_busy,
                             size: 64,
-                            color: context.vd.inkFaint,
+                            color: context.vd.inkMuted,
                           ),
                           SizedBox(height: 12),
                           Text(
                             'Không có lịch dạy',
-                            style: TextStyle(color: context.vd.inkFaint),
+                            style: TextStyle(color: context.vd.inkMuted),
                           ),
                         ],
                       ),

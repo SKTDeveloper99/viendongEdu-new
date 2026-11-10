@@ -199,7 +199,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.error_outline, size: 48, color: context.vd.inkFaint),
+                            Icon(Icons.error_outline, size: 48, color: context.vd.inkMuted),
                             const SizedBox(height: 12),
                             Text(_error!, style: TextStyle(color: context.vd.inkMuted),
                                 textAlign: TextAlign.center),
@@ -221,7 +221,7 @@ class _GvLichThiScreenState extends State<GvLichThiScreen> {
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.event_busy, size: 64, color: context.vd.inkFaint),
+                                    Icon(Icons.event_busy, size: 64, color: context.vd.inkMuted),
                                     SizedBox(height: 12),
                                     Text('Chưa có lịch thi học kỳ này',
                                         style: TextStyle(color: context.vd.inkMuted)),
@@ -360,7 +360,7 @@ class _ExamCardState extends State<_ExamCard> {
                                 _expanded
                                     ? Icons.keyboard_arrow_up
                                     : Icons.keyboard_arrow_down,
-                                color: context.vd.inkFaint,
+                                color: context.vd.inkMuted,
                                 size: 20,
                               ),
                             ],
@@ -404,7 +404,7 @@ class _ExamCardState extends State<_ExamCard> {
 
             // ── Expanded detail ──
             if (_expanded) ...[
-              Divider(height: 1, color: context.vd.surfaceAlt),
+              Divider(height: 1, color: context.vd.hairline),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                 child: Column(

@@ -4,10 +4,6 @@ library;
 
 const unknownText = 'Đang đối chiếu';
 
-/// Midterm deadline shown with the debt reminder (same date as the student
-/// app's banner in lib/components/tuition_notes.dart).
-const midtermLabel = '02/11';
-
 String formatCareTime(DateTime time) {
   final vn = time.toUtc().add(const Duration(hours: 7));
   String two(int n) => n.toString().padLeft(2, '0');

@@ -14,7 +14,7 @@ import '../../theme/vd_tokens.dart';
       'S' => (label: 'Sáng', color: context.vd.info),
       'C' => (label: 'Chiều', color: context.vd.warning),
       'T' => (label: 'Tối', color: context.vd.evening),
-      _ => (label: '', color: context.vd.inkFaint),
+      _ => (label: '', color: context.vd.inkMuted),
     };
 
 class ScheduleCard extends StatefulWidget {
@@ -139,7 +139,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
           ],
           border: Border(
             left: BorderSide(
-              color: daBaoNghi ? context.vd.inkFaint : buoi.color,
+              color: daBaoNghi ? context.vd.inkMuted : buoi.color,
               width: 5,
             ),
           ),
@@ -167,7 +167,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
                         end,
                         style: TextStyle(
                           fontSize: 12,
-                          color: context.vd.inkFaint,
+                          color: context.vd.inkMuted,
                         ),
                       ),
                     ],
@@ -256,7 +256,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
                               room,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: context.vd.inkFaint,
+                                color: context.vd.inkMuted,
                               ),
                             ),
                           ],
@@ -289,7 +289,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
                     _expanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: context.vd.inkFaint,
+                    color: context.vd.inkMuted,
                     size: 20,
                   ),
                 ],

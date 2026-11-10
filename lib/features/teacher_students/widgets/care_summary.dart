@@ -20,7 +20,7 @@ class CareSummary extends StatelessWidget {
         Expanded(
           child: _Tile(
             value: owing,
-            label: 'sinh viên còn nợ học phí trước giữa kỳ $midtermLabel',
+            label: 'sinh viên còn nợ học phí',
           ),
         ),
         const SizedBox(width: 10),

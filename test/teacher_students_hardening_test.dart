@@ -104,7 +104,7 @@ void main() {
     },
   );
 
-  testWidgets('M-32 owes true alone shows the midterm reminder', (
+  testWidgets('M-32 owes true alone shows the date-free reminder', (
     tester,
   ) async {
     final json = careStudentJson();
@@ -113,7 +113,8 @@ void main() {
     await detail(tester, s, WidgetCareRepository()..read = () async => s);
     await tester.pumpAndSettle();
     expect(find.byType(OweBanner), findsOneWidget);
-    expect(find.textContaining('02/11'), findsOneWidget);
+    expect(find.textContaining('buổi thi gần nhất'), findsOneWidget);
+    expect(find.textContaining('02/11'), findsNothing);
     oneVoice(tester);
   });
 

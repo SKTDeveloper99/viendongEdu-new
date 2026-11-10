@@ -223,10 +223,10 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: context.vd.inkFaint),
+                                size: 48, color: context.vd.inkMuted),
                             const SizedBox(height: 12),
                             Text(_error!,
-                                style: TextStyle(color: context.vd.inkFaint),
+                                style: TextStyle(color: context.vd.inkMuted),
                                 textAlign: TextAlign.center),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -247,10 +247,10 @@ class _GvLopHocScreenState extends State<GvLopHocScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(Icons.class_outlined,
-                                        size: 64, color: context.vd.inkFaint),
+                                        size: 64, color: context.vd.inkMuted),
                                     SizedBox(height: 12),
                                     Text('Không có lớp học',
-                                        style: TextStyle(color: context.vd.inkFaint)),
+                                        style: TextStyle(color: context.vd.inkMuted)),
                                   ],
                                 ),
                               )
@@ -304,7 +304,7 @@ class _DayHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '$count lớp',
-            style: TextStyle(fontSize: 12, color: context.vd.inkFaint),
+            style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -358,7 +358,7 @@ class _LopCard extends StatelessWidget {
                         color: context.vd.primary)),
                 Text(tgkt,
                     style: TextStyle(
-                        fontSize: 12, color: context.vd.inkFaint)),
+                        fontSize: 12, color: context.vd.inkMuted)),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -417,7 +417,7 @@ class _LopCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(phongten,
                             style: TextStyle(
-                                fontSize: 12, color: context.vd.inkFaint)),
+                                fontSize: 12, color: context.vd.inkMuted)),
                       ],
                     ),
                   if (lmhma.isNotEmpty) ...[
@@ -434,7 +434,7 @@ class _LopCard extends StatelessWidget {
                         Expanded(
                           child: Text(lmhma,
                               style: TextStyle(
-                                  fontSize: 12, color: context.vd.inkFaint),
+                                  fontSize: 12, color: context.vd.inkMuted),
                               softWrap: true),
                         ),
                       ],
