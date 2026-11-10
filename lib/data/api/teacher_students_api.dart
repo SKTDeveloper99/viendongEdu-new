@@ -63,7 +63,7 @@ class TeacherStudentsApi {
         for (final row in rows) {
           if (row is! Map<String, dynamic>) throw _invalid();
           final student = EmsApiService.parse(
-            () => TeacherCareStudent.fromJson(row),
+            () => TeacherCareStudent.fromJson(row).forList(),
           );
           if (student.mssv.isEmpty || !seen.add(student.mssv)) {
             // A moving/repeated page must never become a plausible partial list.
@@ -106,7 +106,7 @@ class TeacherStudentsApi {
       for (final row in rows) {
         if (row is! Map<String, dynamic>) throw _invalid();
         final student = EmsApiService.parse(
-          () => TeacherCareStudent.fromJson(row),
+          () => TeacherCareStudent.fromJson(row).forList(),
         );
         if (student.mssv.isEmpty || !seen.add(student.mssv)) throw _invalid();
         out.add(student);

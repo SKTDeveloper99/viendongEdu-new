@@ -289,7 +289,8 @@ void main() {
   ) async {
     await pumpScreen(tester);
     await openStudent(tester, 'Bình Thử Nghiệm');
-    expect(find.text('Đang đối chiếu'), findsOneWidget);
+    // Current term and all terms; never a 0.
+    expect(find.text('Đang đối chiếu'), findsNWidgets(2));
     expect(find.textContaining(RegExp(r'\d đ')), findsNothing);
     expectOneVoice(tester);
   });
@@ -324,7 +325,10 @@ void main() {
     expect(find.text('Tin học thử nghiệm'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
     await openStudent(tester, 'An Thử Nghiệm');
-    expect(find.text('1.500.000 đ'), findsOneWidget);
+    // The saved list keeps status only: amounts need the one-student read.
+    expect(find.textContaining(RegExp(r'\d đ')), findsNothing);
+    expect(find.text('Chưa tải được, kéo để tải lại'), findsNWidgets(2));
+    expect(find.text('Còn nợ học phí'), findsWidgets);
     expect(find.textContaining('Chưa cập nhật được'), findsOneWidget);
     expectOneVoice(tester);
   });

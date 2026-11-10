@@ -1,39 +1,85 @@
 import 'package:flutter/material.dart';
 
+import '../../../models/exam_status_models.dart';
 import '../../../models/teacher_care_student.dart';
 import '../../../theme/vd_tokens.dart';
 import '../care_format.dart';
 import 'care_card.dart';
 
-/// "Học phí" — the one number of LAW M-54. Unknown shows exactly
-/// "Đang đối chiếu" and no amount.
+/// "Học phí" for ONE student (owner 2026-11-10, P-03): exam-gate status,
+/// the current term (owed, paid, remaining) and all terms (LAW M-54 one
+/// number). Unknown reads exactly "Đang đối chiếu", never 0. No list, no
+/// total: figures arrive only with the one-student read.
 class MoneyCard extends StatelessWidget {
-  final CareMoney money;
-  const MoneyCard({super.key, required this.money});
+  final TeacherCareStudent student;
+
+  /// True while the one-student read has not answered yet (list copy shown).
+  final bool loadingFigures;
+  const MoneyCard({
+    super.key,
+    required this.student,
+    this.loadingFigures = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (!money.known) {
-      return const CareCard(
-        title: 'Học phí',
-        children: [CareLine('Tình trạng', unknownText)],
-      );
-    }
-    final balance = money.balance!;
+    final money = student.money;
+    final term = student.term;
+    final vd = context.vd;
+    final gate = ExamStudentStatus(
+      mssv: student.mssv,
+      fullName: student.name,
+      status: student.examStatus,
+      owesSemesters: student.examOwesSemesters,
+    );
+    final waiting = money.known && !money.hasFigures;
+    final pending = loadingFigures
+        ? 'Đang tải…'
+        : 'Chưa tải được, kéo để tải lại';
     return CareCard(
       title: 'Học phí',
       children: [
-        CareLine('Phải nộp', formatVnd(money.owedTotal!)),
-        CareLine('Đã nộp', formatVnd(money.paid!)),
         CareLine(
-          'Còn nợ',
-          balance > 0
-              ? formatVnd(balance)
-              : money.overpaid
-              ? 'Đã đóng dư'
-              : 'Đã đóng đủ',
-          valueColor: balance > 0 ? context.vd.danger : context.vd.success,
+          'Dự thi',
+          gate.label,
+          valueColor: switch (gate.status) {
+            ExamMoneyStatus.allowed => vd.success,
+            ExamMoneyStatus.owes => vd.danger,
+            ExamMoneyStatus.noData => null,
+          },
         ),
+        if (gate.status == ExamMoneyStatus.noData)
+          const CareLine('', 'Theo quy định: vẫn được thi'),
+        if (term.known) ...[
+          CareLine(
+            'Học kỳ ${term.semesterCode ?? 'hiện tại'} · phải nộp',
+            formatVnd(term.owed!),
+          ),
+          CareLine('Học kỳ này · đã nộp', formatVnd(term.paid!)),
+          CareLine(
+            'Học kỳ này · còn lại',
+            formatVnd(term.remaining!),
+            valueColor: term.remaining! > 0 ? vd.danger : vd.success,
+          ),
+        ] else
+          CareLine('Học kỳ hiện tại', waiting ? pending : unknownText),
+        if (!money.known)
+          const CareLine('Tất cả học kỳ', unknownText)
+        else if (waiting)
+          CareLine('Tất cả học kỳ', pending)
+        else ...[
+          CareLine('Tất cả học kỳ · phải nộp', formatVnd(money.owedTotal!)),
+          CareLine('Tất cả học kỳ · đã nộp', formatVnd(money.paid!)),
+          CareLine(
+            'Tất cả học kỳ · còn nợ',
+            money.balance! > 0
+                ? formatVnd(money.balance!)
+                : money.overpaid
+                ? 'Đã đóng dư'
+                : 'Đã đóng đủ',
+            valueColor: money.balance! > 0 ? vd.danger : vd.success,
+          ),
+        ],
         if (money.asOf != null)
           CareLine(
             money.stale ? 'Lần cập nhật gần nhất' : 'Cập nhật lúc',

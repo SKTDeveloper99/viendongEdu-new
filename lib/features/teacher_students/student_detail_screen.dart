@@ -144,7 +144,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                   if (!_vm.blocked) ...[
                     if (s.money.owes) const OweBanner(),
                     ..._academic(),
-                    MoneyCard(money: s.money),
+                    MoneyCard(student: s, loadingFigures: _vm.refreshing),
                     if (s.needsAttention)
                       CareCard(
                         title: 'Cần chú ý',

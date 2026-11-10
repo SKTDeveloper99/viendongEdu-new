@@ -96,8 +96,9 @@ void main() {
       final repo = WidgetCareRepository()..read = () async => s;
       await detail(tester, s, repo);
       await tester.pumpAndSettle();
-      expect(find.text('Còn nợ'), findsOneWidget);
+      expect(find.text('Tất cả học kỳ · còn nợ'), findsOneWidget);
       expect(find.text('1.500.000 đ'), findsOneWidget);
+      expect(find.text('Còn nợ học phí'), findsOneWidget); // Dự thi pill
       expect(find.byType(OweBanner), findsNothing);
       expect(find.text('10:15 13/10'), findsOneWidget);
       oneVoice(tester);
@@ -127,7 +128,8 @@ void main() {
       final s = TeacherCareStudent.fromJson(json);
       await detail(tester, s, WidgetCareRepository()..read = () async => s);
       await tester.pumpAndSettle();
-      expect(find.text('Đang đối chiếu'), findsNWidgets(2));
+      // Current term + all terms (money), plus the unknown attendance line.
+      expect(find.text('Đang đối chiếu'), findsNWidgets(3));
       expect(find.textContaining(RegExp(r'\d đ')), findsNothing);
       expect(find.text('Vắng'), findsNothing);
       expect(find.text('Cần chú ý'), findsNothing);

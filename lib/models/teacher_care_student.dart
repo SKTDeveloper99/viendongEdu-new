@@ -10,6 +10,11 @@
 /// viên) KHÔNG được đọc ở đây.
 library;
 
+import 'exam_status_models.dart';
+import 'teacher_care_money.dart';
+
+export 'teacher_care_money.dart';
+
 num? _num(Object? v) {
   if (v is num) return v.isFinite ? v : null;
   if (v is String) {
@@ -32,79 +37,6 @@ String? _str(Object? v) {
 Map<String, dynamic> _map(Object? v) =>
     v is Map ? v.cast<String, dynamic>() : const <String, dynamic>{};
 
-/// Học phí theo `dossier.money_one`. Hoặc biết đủ cả ba số, hoặc không biết.
-class CareMoney {
-  final bool known;
-  final num? owedTotal;
-  final num? paid;
-  final num? balance;
-
-  /// Còn nợ tính tới hạn giữa kỳ — chỉ khi máy chủ nói `owes: true`.
-  final bool owes;
-  final DateTime? asOf;
-  final bool stale;
-
-  bool get overpaid => known && balance == 0 && paid! > owedTotal!;
-
-  const CareMoney._(
-    this.known,
-    this.owedTotal,
-    this.paid,
-    this.balance,
-    this.owes,
-    this.asOf,
-    this.stale,
-  );
-
-  static const unknown = CareMoney._(
-    false,
-    null,
-    null,
-    null,
-    false,
-    null,
-    false,
-  );
-
-  factory CareMoney.fromJson(Object? raw) {
-    if (raw is! Map) return unknown;
-    final j = raw.cast<String, dynamic>();
-    if (j['money_known'] != true) return unknown;
-    final owed = _num(j['owedTotal']);
-    final paid = _num(j['paid']);
-    final bal = _num(j['balance']);
-    if ([
-      owed,
-      paid,
-      bal,
-    ].any((n) => n == null || n < 0 || n != n.roundToDouble())) {
-      return unknown;
-    }
-    return CareMoney._(
-      true,
-      owed,
-      paid,
-      bal,
-      j['owes'] == true,
-      DateTime.tryParse('${j['as_of'] ?? ''}'),
-      j['stale'] == true,
-    );
-  }
-
-  Map<String, dynamic> toJson() => known
-      ? {
-          'money_known': true,
-          'owedTotal': owedTotal,
-          'paid': paid,
-          'balance': balance,
-          'owes': owes,
-          'as_of': ?asOf?.toUtc().toIso8601String(),
-          'stale': stale,
-        }
-      : {'money_known': false};
-}
-
-/// Một lớp học phần của sinh viên (`dossier.sections[]`).
 class CareSection {
   final String sectionId;
   final String? sectionCode;
@@ -183,6 +115,13 @@ class TeacherCareStudent {
   final List<String> mySectionIds;
   final CareMoney money;
 
+  /// Current term, one student only (detail read); unknown on list rows.
+  final CareTermMoney term;
+
+  /// "Được thi" / "Còn nợ HK …" / "Chưa có dữ liệu" (status only).
+  final ExamMoneyStatus examStatus;
+  final List<String> examOwesSemesters;
+
   /// `dossier.freshness` — false/thiếu nghĩa là dữ liệu nguồn chưa cập nhật
   /// trong 26 giờ qua, nên mục đó hiện "Đang đối chiếu".
   final bool attendanceFresh;
@@ -198,6 +137,9 @@ class TeacherCareStudent {
     this.sections = const [],
     this.mySectionIds = const [],
     this.money = CareMoney.unknown,
+    this.term = CareTermMoney.unknown,
+    this.examStatus = ExamMoneyStatus.noData,
+    this.examOwesSemesters = const [],
     this.attendanceFresh = false,
     this.gradesFresh = false,
     this.hasFailedSubjects = false,
@@ -205,6 +147,8 @@ class TeacherCareStudent {
 
   factory TeacherCareStudent.fromJson(Map<String, dynamic> j) {
     final d = _map(j['dossier']);
+    final money = CareMoney.fromJson(d['money_one']);
+    final gate = careExamGate(d, money);
     final fresh = _map(d['freshness']);
     final checks = j['checks'] is List ? j['checks'] as List : const [];
     return TeacherCareStudent(
@@ -222,7 +166,10 @@ class TeacherCareStudent {
                   : const [])
               .map((e) => e.toString())
               .toList(),
-      money: CareMoney.fromJson(d['money_one']),
+      money: money,
+      term: CareTermMoney.fromJson(d['money_term']),
+      examStatus: gate.status,
+      examOwesSemesters: gate.owesSemesters,
       attendanceFresh: fresh['attendance'] == true,
       gradesFresh: fresh['grades'] == true,
       hasFailedSubjects: checks.whereType<Map>().any(
@@ -244,9 +191,34 @@ class TeacherCareStudent {
       'class_code': ?classCode,
       'sections': sections.map((s) => s.toJson()).toList(),
       'money_one': money.toJson(),
+      'exam_gate': {
+        'status': ExamStudentStatus(
+          mssv: mssv,
+          fullName: name,
+          status: examStatus,
+        ).toJson()['status'],
+        'owes_semesters': examOwesSemesters,
+      },
       'freshness': {'attendance': attendanceFresh, 'grades': gradesFresh},
     },
   };
+
+  /// A list row: status kept, every amount dropped (owner 2026-11-10: no
+  /// class-wide money on the phone; M-18). Amounts come only with the
+  /// one-student detail read.
+  TeacherCareStudent forList() => TeacherCareStudent(
+    mssv: mssv,
+    name: name,
+    classCode: classCode,
+    sections: sections,
+    mySectionIds: mySectionIds,
+    money: money.withoutFigures(),
+    examStatus: examStatus,
+    examOwesSemesters: examOwesSemesters,
+    attendanceFresh: attendanceFresh,
+    gradesFresh: gradesFresh,
+    hasFailedSubjects: hasFailedSubjects,
+  );
 
   CareSection? section(String sectionId) {
     for (final s in sections) {
