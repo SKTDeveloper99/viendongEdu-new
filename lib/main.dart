@@ -24,6 +24,7 @@ import 'features/teacher_students/teacher_students_screen.dart';
 import 'features/teacher_home/teacher_home_screen.dart';
 import 'screens/gv_schedule_screen.dart';
 import 'screens/gv_lophoc_screen.dart';
+import 'features/exam_list/exam_list_screen.dart';
 import 'screens/gv_lichthi_screen.dart';
 import 'features/class_manager/class_manager_screen.dart';
 import 'features/teacher_conversations/conversation_inbox_screen.dart';
@@ -156,6 +157,7 @@ class MyApp extends StatelessWidget {
         '/gv_quanly_lop': (context) => const GvQuanLyLopScreen(),
         '/teacher_my_day': (context) => const TeacherMyDayScreen(),
         '/gv_sinh_vien': (context) => const TeacherStudentsScreen(),
+        '/gv_danh_sach_thi': (context) => const ExamListScreen(),
         '/capbu': (context) => const CapBuScreen(),
         '/change_password': (context) => const ChangePasswordScreen(),
         '/registration': (context) => const RegistrationScreen(),
