@@ -32,6 +32,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Ứng dụng dùng camera để quét mã QR khi điểm danh và khi làm nhiệm vụ Viễn Đông Infinite.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ứng dụng dùng thư viện ảnh để bạn chọn ảnh đính kèm khi báo cáo công việc.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
