@@ -5,15 +5,13 @@ import '../data/api/student_cases_api.dart';
 import '../theme/vd_tokens.dart';
 import '../core/school_calendar.dart';
 import '../components/teacher_day_summary_number.dart';
+import '../features/teaching_report/widgets/pending_reports_card.dart';
 
 typedef TeacherSessionsLoader =
     Future<List<EmsSession>> Function({String? date});
 
-/// Một mặt làm việc duy nhất cho giảng viên: buổi dạy hôm nay từ EMS và các
-/// ca sinh viên đang chờ chính người này phản hồi từ Student Cases.
-///
-/// Hai phần tải độc lập. Lịch điểm danh hỏng không được che hàng đợi sinh viên,
-/// và hàng đợi hỏng cũng không được làm biến mất lịch dạy.
+/// Giảng viên: buổi dạy hôm nay, buổi chưa báo cáo giảng dạy (T-28) và ca
+/// sinh viên chờ phản hồi. Mỗi phần tải độc lập, lỗi phần này không che phần kia.
 class TeacherMyDayScreen extends StatefulWidget {
   final SchoolCalendar? calendar;
   final TeacherSessionsLoader? loadSessions;
@@ -31,6 +29,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
   String? _sessionsError;
   String? _casesError;
   final Set<String> _answering = {};
+  int _reloads = 0;
 
   bool get _loading => _sessions == null && _cases == null;
 
@@ -46,6 +45,7 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
       setState(() {
         _sessionsError = null;
         _casesError = null;
+        _reloads++;
       });
     }
     await Future.wait([_loadSessions(), _loadCases()]);
@@ -184,11 +184,13 @@ class _TeacherMyDayScreenState extends State<TeacherMyDayScreen> {
               if (sessions.isEmpty && _sessionsError == null)
                 const _EmptyBlock(
                   icon: Icons.event_available,
-                  text: 'Hôm nay không có buổi dạy trong lịch EMS.',
+                  text: 'Hôm nay không có buổi dạy trong lịch.',
                 )
               else
                 ...sessions.map(_sessionCard),
             ],
+            const SizedBox(height: 22),
+            PendingTeachingReports(reloadSignal: _reloads),
             const SizedBox(height: 22),
             _SectionTitle(
               icon: Icons.support_agent,

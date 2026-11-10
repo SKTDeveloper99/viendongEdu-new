@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../data/teacher_attendance_repository.dart';
 import '../../services/ems_api_service.dart';
+import '../teaching_report/teaching_report_flow.dart';
 import 'attendance_outbox.dart';
 import 'roster_view_model.dart';
 import 'save_status.dart';
@@ -92,6 +93,16 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
       );
   }
 
+  /// T-28: once the marks are stored (or queued offline), ask for the
+  /// session's teaching report in the same visit.
+  Future<void> _saveThenReport() async {
+    await _vm.save(_prompts);
+    if (!mounted) return;
+    if (_vm.saveStatus == RosterSaveStatus.saved || _vm.queued) {
+      await offerTeachingReport(context, widget.session);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -132,7 +143,7 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
                 absentCount: _vm.absentCount,
                 unmarkedCount: _vm.unmarkedCount,
                 saving: _vm.saving,
-                onSave: () => _vm.save(_prompts),
+                onSave: _saveThenReport,
                 saveStatus: _vm.saveStatus,
                 savedAt: _vm.savedAt,
               ),

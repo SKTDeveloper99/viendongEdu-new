@@ -120,6 +120,13 @@ void main() {
           headers: {'content-type': 'application/json'},
         );
       }
+      if (request.url.path.endsWith('/teaching-reports')) {
+        return http.Response(
+          jsonEncode({'semester': '261', 'pending': []}),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
       if (request.method == 'POST' && request.url.path.endsWith('/answer')) {
         posts.add(jsonDecode(request.body) as Map<String, dynamic>);
         answered = true;
@@ -166,6 +173,9 @@ void main() {
     expect(find.text('Vắng học liên tiếp'), findsOneWidget);
     expect(find.textContaining('Nguyễn Văn A'), findsOneWidget);
 
+    expect(find.text('Buổi chưa báo cáo giảng dạy'), findsOneWidget);
+    await tester.ensureVisible(find.text('Phản hồi ca sinh viên'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Phản hồi ca sinh viên'));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -202,7 +212,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Hôm nay không có buổi dạy trong lịch EMS.'),
+      find.text('Hôm nay không có buổi dạy trong lịch.'),
       findsOneWidget,
     );
     expect(find.text('Thử lại'), findsOneWidget);

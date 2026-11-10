@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../data/teacher_attendance_repository.dart';
+import '../../data/teaching_report_repository.dart';
 import '../../services/app_session.dart';
 import '../../services/ems_api_service.dart';
 import 'attendance_sender.dart';
@@ -16,6 +17,7 @@ import 'draft_merge.dart';
 class AttendanceOutbox with WidgetsBindingObserver {
   AttendanceOutbox({
     this.repository = const TeacherAttendanceRepository(),
+    this.reports = const TeachingReportRepository(),
     this.interval = const Duration(seconds: 30),
     bool Function()? isEligible,
     Stream<List<ConnectivityResult>>? connectivity,
@@ -25,6 +27,7 @@ class AttendanceOutbox with WidgetsBindingObserver {
   static final AttendanceOutbox instance = AttendanceOutbox();
 
   final TeacherAttendanceRepository repository;
+  final TeachingReportRepository reports;
   final Duration interval;
   final bool Function() _isEligible;
   final Stream<List<ConnectivityResult>>? _connectivity;
@@ -121,6 +124,8 @@ class AttendanceOutbox with WidgetsBindingObserver {
         }
       }
       if (gen == _generation) await refreshCount();
+      // Queued T-28 teaching reports ride the same triggers.
+      if (gen == _generation) await reports.drain();
     } catch (_) {
       // Storage/network hiccup: next tick retries.
     } finally {
