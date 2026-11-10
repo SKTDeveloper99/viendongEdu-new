@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'app_session.dart';
+import '../core/crm_web/crm_web_target.dart';
 import 'conversation_push_route.dart';
 import '../theme/vd_tokens.dart';
 
@@ -46,14 +47,12 @@ class NotificationService {
     if (!_initialMessageReady.isCompleted) _initialMessageReady.complete();
 
     // Xin permission — trên iOS bước này hiện hộp thoại, phải await.
-    // (Sửa của tdat535 11/09, lấy lại sạch từ bản có xung đột trên upstream.)
     try {
       await _fcm.requestPermission(alert: true, badge: true, sound: true);
     } catch (_) {
       // Permission/plugin failure must not abort startup or token refresh.
     } finally {
-      // Dù người dùng chọn "Cho phép" hay "Từ chối", vẫn báo done
-      // để registerToken không bị chờ mãi mãi.
+      // Cho phép hay từ chối đều báo done, để registerToken không chờ mãi.
       if (!_permissionReady.isCompleted) _permissionReady.complete();
     }
 
@@ -81,8 +80,7 @@ class NotificationService {
       }
     }, onError: (Object _) {});
 
-    // FCM xoay token (cài lại app, khôi phục iCloud, xoay định kỳ) →
-    // đăng ký lại ngay, nếu không thì server giữ token cũ và notification chết im lặng
+    // FCM xoay token → đăng ký lại ngay, kẻo server giữ token cũ.
     _fcm.onTokenRefresh.listen((token) {
       debugPrint('[FCM] token refreshed');
       final id = _lastHocVienId;
@@ -116,6 +114,10 @@ class NotificationService {
   /// (CRM), học viên → Bảng tin (Vercel noti-backend đã gỡ, 2026-09-25).
   String _routeFor(RemoteMessage message) {
     if (message.data['route'] == '/student/board') return '/student_board';
+    final isTeacher = AppSession.instance.isGiangVien;
+    // Task pushes (CRM route /tasks or /nhom) open that page in the app (T1).
+    final crm = CrmTarget.fromPush(message.data, isTeacher: isTeacher);
+    if (crm != null) return crm.routeName;
     return conversationPushRoute(message.data) ??
         (AppSession.instance.isGiangVien ? '/notifications' : '/student_board');
   }
@@ -178,8 +180,7 @@ class NotificationService {
     }
   }
 
-  /// Hỏi APNs token nhiều lần — ngay sau khi cài app, iOS cần vài giây
-  /// để đăng ký với APNs xong.
+  /// Hỏi APNs token nhiều lần — sau khi cài app, iOS cần vài giây.
   Future<String?> _waitForApnsToken() async {
     for (var i = 0; i < 10; i++) {
       final apns = await _fcm.getAPNSToken().timeout(const Duration(seconds: 1), onTimeout: () => null);
@@ -204,9 +205,7 @@ class NotificationService {
     _lastNgaysinh = ngaysinh;
     _lastUserid = userid;
 
-    // Trên iOS: phải đợi requestPermission hoàn tất trước khi lấy APNs token.
-    // Nếu init() vẫn đang chờ người dùng bấm hộp thoại, getToken() sẽ trả null.
-    // Timeout 30s phòng trường hợp init() gặp lỗi bất ngờ.
+    // iOS: đợi requestPermission xong mới lấy APNs token (timeout 30s).
     await _permissionReady.future.timeout(
       const Duration(seconds: 30),
       onTimeout: () {},

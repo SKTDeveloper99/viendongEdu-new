@@ -54,6 +54,14 @@ dependencies:
   firebase_auth: 6.6.1
   cloud_firestore: 6.9.0
   crypto: 3.0.7
+  # T1 (owner to confirm before any build): CRM pages inside the app.
+  # webview_flutter_android is part of webview_flutter (already in the lock);
+  # listed only to set file access and the photo chooser on Android.
+  webview_flutter: 4.14.1
+  webview_flutter_android: 4.14.1
+  # Android photo chooser for the web view only; removable in one commit
+  # (lib/features/crm_web/android_photo_picker.dart).
+  image_picker: 1.2.4
 
 dev_dependencies:
   flutter_test:

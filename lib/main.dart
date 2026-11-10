@@ -24,6 +24,7 @@ import 'features/teacher_students/teacher_students_screen.dart';
 import 'features/teacher_home/teacher_home_screen.dart';
 import 'screens/gv_schedule_screen.dart';
 import 'screens/gv_lophoc_screen.dart';
+import 'features/crm_web/crm_web_routes.dart';
 import 'features/exam_list/exam_list_screen.dart';
 import 'screens/gv_lichthi_screen.dart';
 import 'features/class_manager/class_manager_screen.dart';
@@ -177,6 +178,8 @@ class MyApp extends StatelessWidget {
       },
       // Push deep link: '/teacher_conversations/<id>' opens that thread.
       onGenerateRoute: (settings) {
+        final crm = crmPageRoute(settings);
+        if (crm != null) return crm;
         const prefix = '/teacher_conversations/';
         final name = settings.name ?? '';
         if (!name.startsWith(prefix)) return null;

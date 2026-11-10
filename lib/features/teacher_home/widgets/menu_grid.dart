@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/menu_item.dart';
+import '../../../core/crm_web/crm_web_target.dart';
 import '../../teacher_attendance/widgets/pending_send_badge.dart';
 import '../../teacher_conversations/widgets/messages_tile.dart';
 
@@ -60,6 +61,20 @@ class MenuGrid extends StatelessWidget {
           icon: Icons.how_to_reg_outlined,
           label: 'Danh sách thi',
           onTap: () => Navigator.pushNamed(context, '/gv_danh_sach_thi'),
+        ),
+        MenuItemWidget(
+          index: 7,
+          icon: Icons.task_alt,
+          label: 'Việc của tôi',
+          onTap: () =>
+              Navigator.pushNamed(context, CrmTarget.tasks().routeName),
+        ),
+        MenuItemWidget(
+          index: 8,
+          icon: Icons.groups_2_outlined,
+          label: 'Nhóm',
+          onTap: () =>
+              Navigator.pushNamed(context, CrmTarget.groups().routeName),
         ),
       ],
     );

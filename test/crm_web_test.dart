@@ -69,6 +69,7 @@ void main() {
     expect(nav('intent://scan/#Intent;end'), CrmNav.block);
     expect(nav('javascript:alert(1)'), CrmNav.block);
     expect(nav('about:blank'), CrmNav.allow);
+    expect(nav('data:text/html,<script>x</script>'), CrmNav.block);
   });
 
   group('pass and screen', () {
