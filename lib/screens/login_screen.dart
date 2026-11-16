@@ -200,6 +200,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   key: ValueKey(_role),
                   controller: _idCtrl,
                   keyboardType: TextInputType.text,
+                  // A sign-in name is never a word: no autocorrect ("tthai"
+                  // became "Thai" on iOS), no capitals, no suggestions.
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.next,
                   enabled: !_loading,
                   decoration: InputDecoration(
