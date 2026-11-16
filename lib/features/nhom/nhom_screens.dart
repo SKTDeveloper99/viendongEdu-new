@@ -8,6 +8,8 @@ import '../../utils/snack.dart';
 import '../work/piece_screen.dart';
 import '../work/work_api.dart';
 import 'nhom_api.dart';
+import 'small_group_api.dart';
+import 'small_group_screens.dart';
 
 Future<void> _guard(
   BuildContext context,
@@ -74,6 +76,32 @@ class _NhomListScreenState extends State<NhomListScreen> {
     return Scaffold(
       backgroundColor: vd.bg,
       appBar: AppBar(title: const Text('Nhóm')),
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.group_add_outlined),
+        label: const Text('Nhóm mới'),
+        onPressed: () async {
+          final id = await Navigator.push<String?>(
+            context,
+            MaterialPageRoute(builder: (_) => const NewGroupScreen()),
+          );
+          await _load();
+          if (id != null && mounted) {
+            final row = _rows?.firstWhere(
+              (s) => '${s['id']}' == id,
+              orElse: () => {'name': ''},
+            );
+            if (!mounted) return;
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    NhomScreen(spaceId: id, name: '${row?['name'] ?? ''}'),
+              ),
+            );
+            _load();
+          }
+        },
+      ),
       body: _error != null
           ? Center(child: Text(_error!))
           : rows == null
@@ -156,6 +184,7 @@ class _NhomScreenState extends State<NhomScreen> {
   Map<String, dynamic>? _one;
   List<Map<String, dynamic>> _feed = const [];
   List<Map<String, dynamic>> _work = const [];
+  List<Map<String, dynamic>> _lists = const [];
   String? _error;
   final _postCtrl = TextEditingController();
 
@@ -177,12 +206,16 @@ class _NhomScreenState extends State<NhomScreen> {
         NhomApi.one(widget.spaceId),
         NhomApi.feed(widget.spaceId),
         NhomApi.work(widget.spaceId),
+        SmallGroupApi.lists(
+          widget.spaceId,
+        ).catchError((_) => <Map<String, dynamic>>[]),
       ]);
       if (!mounted) return;
       setState(() {
         _one = r[0] as Map<String, dynamic>;
         _feed = r[1] as List<Map<String, dynamic>>;
         _work = r[2] as List<Map<String, dynamic>>;
+        _lists = r[3] as List<Map<String, dynamic>>;
         _error = null;
       });
     } catch (e) {
@@ -224,7 +257,7 @@ class _NhomScreenState extends State<NhomScreen> {
   Widget build(BuildContext context) {
     final vd = context.vd;
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: vd.bg,
         appBar: AppBar(
@@ -242,8 +275,11 @@ class _NhomScreenState extends State<NhomScreen> {
               Tab(
                 text: 'Việc (${_work.map((a) => a['task_id']).toSet().length})',
               ),
+              Tab(text: 'Danh sách (${_lists.length})'),
               Tab(text: 'Thành viên (${_members.length})'),
             ],
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
           ),
         ),
         floatingActionButton: _one == null
@@ -262,8 +298,21 @@ class _NhomScreenState extends State<NhomScreen> {
               )
             : _one == null
             ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                children: [_feedTab(vd), _workTab(vd), _membersTab(vd)],
+            : Column(
+                children: [
+                  if (_temporary && _space['archived_at'] == null)
+                    _keepBanner(vd),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _feedTab(vd),
+                        _workTab(vd),
+                        _listsTab(vd),
+                        _membersTab(vd),
+                      ],
+                    ),
+                  ),
+                ],
               ),
       ),
     );
@@ -396,6 +445,157 @@ class _NhomScreenState extends State<NhomScreen> {
       ),
     );
   }
+
+  Map<String, dynamic> get _space =>
+      ((_one?['space'] as Map?) ?? const {}).cast<String, dynamic>();
+  bool get _isHead => ((_one?['me'] as Map?)?['is_lead']) == true;
+  bool get _temporary =>
+      _space['kept_at'] == null &&
+      (_space['is_temporary'] == true ||
+          _space['source_task_id'] != null ||
+          _space['calendar_line_id'] != null);
+
+  Widget _keepBanner(VdTokens vd) => Container(
+    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: vd.warningSoft,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.timelapse, color: vd.warning),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            _space['source_task_id'] != null
+                ? 'Nhóm tạm của một việc: tự đóng khi việc xong.'
+                : 'Nhóm tạm: tự đóng khi mọi việc trong nhóm xong.',
+            style: TextStyle(color: vd.ink, fontSize: 13),
+          ),
+        ),
+        if (_isHead)
+          TextButton(
+            onPressed: () async {
+              try {
+                await SmallGroupApi.keep(widget.spaceId);
+                if (mounted)
+                  showSuccessSnack(
+                    context,
+                    'Đã giữ nhóm. Nhóm không tự đóng nữa.',
+                  );
+                await _load();
+              } catch (e) {
+                if (mounted)
+                  await _guard(context, e, (m) => showErrorSnack(context, m));
+              }
+            },
+            child: const Text('Giữ nhóm này'),
+          ),
+      ],
+    ),
+  );
+
+  Future<void> _newList() async {
+    final ctrl = TextEditingController();
+    final title = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Danh sách mới'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Tên danh sách'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Thôi'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Tạo'),
+          ),
+        ],
+      ),
+    );
+    if (title == null || title.isEmpty) return;
+    try {
+      final r = await SmallGroupApi.createList(widget.spaceId, title);
+      final id = (r['list'] as Map?)?['id']?.toString();
+      await _load();
+      if (id != null && mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                TableScreen(spaceId: widget.spaceId, listId: id, title: title),
+          ),
+        );
+        _load();
+      }
+    } catch (e) {
+      if (mounted) await _guard(context, e, (m) => showErrorSnack(context, m));
+    }
+  }
+
+  Widget _listsTab(VdTokens vd) => RefreshIndicator(
+    onRefresh: _load,
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      children: [
+        OutlinedButton.icon(
+          onPressed: _newList,
+          icon: const Icon(Icons.table_chart_outlined),
+          label: const Text('Danh sách mới'),
+        ),
+        const SizedBox(height: 8),
+        if (_lists.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Text(
+                'Chưa có danh sách nào.',
+                style: TextStyle(color: vd.inkMuted),
+              ),
+            ),
+          ),
+        for (final l in _lists)
+          Card(
+            elevation: 0,
+            color: vd.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: vd.hairline),
+            ),
+            child: ListTile(
+              leading: Icon(Icons.table_rows_outlined, color: vd.accent),
+              title: Text(
+                '${l['title'] ?? ''}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                '${l['students'] ?? 0} dòng · ${l['reporters'] ?? 0} người điền · ${l['created_by_name'] ?? ''}',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TableScreen(
+                      spaceId: widget.spaceId,
+                      listId: '${l['id']}',
+                      title: '${l['title'] ?? ''}',
+                    ),
+                  ),
+                );
+                _load();
+              },
+            ),
+          ),
+      ],
+    ),
+  );
 
   Widget _membersTab(VdTokens vd) => ListView(
     padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),

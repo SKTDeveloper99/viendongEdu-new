@@ -6,6 +6,9 @@ import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
 import '../../utils/snack.dart';
 import 'work_api.dart';
+import '../nhom/nhom_screens.dart';
+import '../nhom/small_group_api.dart';
+import '../nhom/small_group_screens.dart';
 
 /// One piece of work on ONE screen (Overlord slice): what it is, where it
 /// came from (a calendar line, a Nhóm), its files, each person's part with
@@ -213,6 +216,97 @@ class _PieceScreenState extends State<PieceScreen> {
     });
   }
 
+  Future<void> _delegate() async {
+    final done = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DelegateScreen(
+          taskId: widget.taskId,
+          pieceTitle: '${_task?['title'] ?? ''}',
+        ),
+      ),
+    );
+    if (done == true) await _load();
+  }
+
+  List<Widget> _smallGroup(VdTokens vd, Map<String, dynamic> g) {
+    final id = g['space_id']?.toString();
+    final kept = g['kept_at'] != null;
+    final closed = g['archived_at'] != null;
+    return [
+      _section(vd, 'Nhóm nhỏ của việc này'),
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: vd.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: vd.hairline),
+        ),
+        child: id == null
+            ? Text(
+                'Người nhận đã mở một nhóm nhỏ (${g['member_count'] ?? 0} người) để chia việc.',
+                style: TextStyle(color: vd.inkMuted),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${g['name'] ?? ''}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: vd.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      '${g['member_count'] ?? 0} người',
+                      closed
+                          ? 'đã đóng'
+                          : (kept
+                                ? 'nhóm lâu dài'
+                                : 'nhóm tạm, tự đóng khi việc xong'),
+                    ].join(' · '),
+                    style: TextStyle(color: vd.inkMuted, fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.groups_2_outlined, size: 18),
+                        label: const Text('Mở nhóm'),
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => NhomScreen(
+                                spaceId: id,
+                                name: '${g['name'] ?? ''}',
+                              ),
+                            ),
+                          );
+                          _load();
+                        },
+                      ),
+                      if (g['can_keep'] == true)
+                        TextButton.icon(
+                          icon: const Icon(Icons.push_pin_outlined, size: 18),
+                          label: const Text('Giữ nhóm này'),
+                          onPressed: () => _run(
+                            'Đã giữ nhóm. Nhóm không tự đóng nữa.',
+                            () => SmallGroupApi.keep(id),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    ];
+  }
+
   Future<void> _sendComment() async {
     final body = _commentCtrl.text.trim();
     if (body.isEmpty) return;
@@ -305,6 +399,8 @@ class _PieceScreenState extends State<PieceScreen> {
           for (final f in files) _fileRow(vd, f),
         ],
         if (mine != null) ...[_section(vd, 'Phần của tôi'), _myPart(vd, mine)],
+        if (t['small_group'] is Map)
+          ..._smallGroup(vd, (t['small_group'] as Map).cast<String, dynamic>()),
         if (_iGave || AppSession.instance.isStaff && mine == null) ...[
           _section(vd, 'Người nhận ($total)'),
           for (final a in _assignments) _person(vd, a),
@@ -553,6 +649,13 @@ class _PieceScreenState extends State<PieceScreen> {
                 FilledButton(
                   onPressed: () => _handIn(a),
                   child: const Text('Nộp'),
+                ),
+              // Overlord slice: pass part of this piece to others, from here.
+              if (s == 'assigned' || s == 'in_progress')
+                OutlinedButton.icon(
+                  onPressed: _delegate,
+                  icon: const Icon(Icons.call_split, size: 18),
+                  label: const Text('Giao một phần'),
                 ),
             ],
           ),

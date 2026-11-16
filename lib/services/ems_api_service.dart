@@ -272,6 +272,8 @@ class EmsApiService {
                   ? client.post(uri, headers: headers, body: encoded)
                   : method == 'PATCH'
                   ? client.patch(uri, headers: headers, body: encoded)
+                  : method == 'PUT'
+                  ? client.put(uri, headers: headers, body: encoded)
                   : method == 'DELETE'
                   ? client.delete(uri, headers: headers, body: encoded)
                   : client.get(uri, headers: headers))
