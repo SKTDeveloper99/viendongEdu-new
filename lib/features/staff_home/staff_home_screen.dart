@@ -62,7 +62,7 @@ List<StaffTile> staffTiles(
         'Chờ duyệt',
         native: true,
         count: c('to_review'),
-        onTap: () => push(const MyWorkScreen(initialTab: 2)),
+        onTap: () => push(const MyWorkScreen(initialTab: 1)),
       ),
     StaffTile(
       Icons.notifications_none,

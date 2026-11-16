@@ -10,7 +10,9 @@ import '../../../theme/vd_tokens.dart';
 class ProfileTab extends StatelessWidget {
   final String name;
   final String code;
-  final VoidCallback onOpenInfo;
+
+  /// Null for an office account (no teacher record to show).
+  final VoidCallback? onOpenInfo;
   final VoidCallback onLogout;
   const ProfileTab({
     super.key,
@@ -90,12 +92,14 @@ class ProfileTab extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
               child: Column(
                 children: [
-                  ProfileMenuCard(
-                    icon: Icons.person_outline,
-                    label: 'Thông tin cá nhân',
-                    onTap: onOpenInfo,
-                  ),
-                  const SizedBox(height: 10),
+                  if (onOpenInfo != null) ...[
+                    ProfileMenuCard(
+                      icon: Icons.person_outline,
+                      label: 'Thông tin cá nhân',
+                      onTap: onOpenInfo!,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   ProfileMenuCard(
                     icon: Icons.lock_outline,
                     label: 'Đổi mật khẩu',

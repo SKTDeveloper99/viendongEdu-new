@@ -19,6 +19,8 @@ class CrmTarget {
   static const weekPath = '/lich-tuan';
   static const congVanPath = '/cong-van';
   static const workLogPath = '/nhat-ky';
+  static const studentsPath = '/sinh-vien';
+  static const vivaPath = '/viva';
 
   static const allowedPaths = {
     tasksPath,
@@ -26,11 +28,15 @@ class CrmTarget {
     weekPath,
     congVanPath,
     workLogPath,
+    studentsPath,
+    vivaPath,
   };
 
   const CrmTarget.week() : this._(weekPath);
   const CrmTarget.congVan() : this._(congVanPath);
   const CrmTarget.workLog() : this._(workLogPath);
+  const CrmTarget.students() : this._(studentsPath);
+  const CrmTarget.viva() : this._(vivaPath);
 
   static final RegExp _id = RegExp(r'^[A-Za-z0-9-]{1,64}$');
 
@@ -67,6 +73,8 @@ class CrmTarget {
       weekPath => const CrmTarget.week(),
       congVanPath => const CrmTarget.congVan(),
       workLogPath => const CrmTarget.workLog(),
+      studentsPath => const CrmTarget.students(),
+      vivaPath => const CrmTarget.viva(),
       _ => null,
     };
   }
@@ -95,6 +103,8 @@ class CrmTarget {
     weekPath => 'Lịch tuần',
     congVanPath => 'Công văn',
     workLogPath => 'Nhật ký làm việc',
+    studentsPath => 'Tra cứu sinh viên',
+    vivaPath => 'Viva',
     _ => 'Nhóm',
   };
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../services/app_session.dart';
 import '../../services/crm_session_guard.dart';
 import '../../services/ems_api_service.dart';
+import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
 import '../../utils/snack.dart';
 import 'work_api.dart';
@@ -93,6 +95,126 @@ class _PieceScreenState extends State<PieceScreen> {
     return null;
   }
 
+  // ── Action effects (Overlord home, agreed 2026-11-16) ─────────────────────
+  // Each action button shows progress while its request runs, then a check
+  // with a haptic; a person whose part is settled leaves the list over 200 ms
+  // instead of the whole list jumping; a failure says what happened in one
+  // line with "Thử lại". All durations come from VdMotion (zero under Reduce
+  // Motion).
+  final Map<String, String> _act = {}; // key → busy | done | error message
+  final Map<String, Future<void> Function()> _retry = {};
+  final Set<String> _leaving = {};
+
+  Future<void> _action(
+    String key,
+    Future<void> Function() fn, {
+    String? leave,
+  }) async {
+    setState(() {
+      _act[key] = 'busy';
+      _retry[key] = () => _action(key, fn, leave: leave);
+    });
+    try {
+      await fn();
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      setState(() => _act[key] = 'done');
+      final m = VdMotion.of(context);
+      await Future.delayed(
+        m.reduced ? Duration.zero : const Duration(milliseconds: 450),
+      );
+      if (!mounted) return;
+      if (leave != null) {
+        setState(() => _leaving.add(leave));
+        await Future.delayed(m.standard);
+      }
+      if (!mounted) return;
+      await _load();
+      if (mounted)
+        setState(() {
+          _act.remove(key);
+          _retry.remove(key);
+          _leaving.remove(leave);
+        });
+    } on EmsException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 401) {
+        handleCrmAuthError(context, e);
+        return;
+      }
+      setState(() => _act[key] = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _act[key] = 'Không kết nối được máy chủ.');
+    }
+  }
+
+  /// A button that answers its own action: spinner, then a check.
+  Widget _actButton(
+    String key,
+    String label,
+    VoidCallback onPressed, {
+    bool filled = false,
+    IconData? icon,
+  }) {
+    final st = _act[key];
+    final busy = st == 'busy';
+    final done = st == 'done';
+    final Widget child = AnimatedSwitcher(
+      duration: VdMotion.of(context).quick,
+      child: busy
+          ? const SizedBox(
+              key: ValueKey('b'),
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : done
+          ? const Icon(Icons.check, key: ValueKey('d'), size: 20)
+          : Row(
+              key: const ValueKey('l'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 18),
+                  const SizedBox(width: 6),
+                ],
+                Text(label),
+              ],
+            ),
+    );
+    final press = (busy || done) ? () {} : onPressed;
+    return filled
+        ? FilledButton(onPressed: press, child: child)
+        : OutlinedButton(onPressed: press, child: child);
+  }
+
+  /// One line under a card's buttons when an action failed, with a retry.
+  Widget _actError(VdTokens vd, List<String> keys) {
+    for (final k in keys) {
+      final st = _act[k];
+      if (st != null && st != 'busy' && st != 'done') {
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  st,
+                  style: TextStyle(color: vd.danger, fontSize: 13),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _retry[k]?.call(),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+    return const SizedBox.shrink();
+  }
+
   Future<void> _run(String done, Future<void> Function() action) async {
     setState(() => _busy = true);
     try {
@@ -168,9 +290,10 @@ class _PieceScreenState extends State<PieceScreen> {
     );
   }
 
-  Future<void> _approve(Map<String, dynamic> a) => _run(
-    'Đã duyệt phần của ${a['teacher_name'] ?? 'người này'}.',
+  Future<void> _approve(Map<String, dynamic> a) => _action(
+    'approve:${a['id']}',
     () => WorkApi.approve(widget.taskId, '${a['id']}', '${a['status']}'),
+    leave: '${a['id']}',
   );
 
   Future<void> _giveBack(Map<String, dynamic> a) async {
@@ -180,9 +303,10 @@ class _PieceScreenState extends State<PieceScreen> {
       action: 'Trả lại',
     );
     if (note == null || note.isEmpty) return;
-    await _run(
-      'Đã trả lại.',
+    await _action(
+      'return:${a['id']}',
       () => WorkApi.giveBack(widget.taskId, '${a['id']}', note),
+      leave: '${a['id']}',
     );
   }
 
@@ -194,8 +318,8 @@ class _PieceScreenState extends State<PieceScreen> {
       required: false,
     );
     if (msg == null) return;
-    await _run(
-      'Đã nhắc.',
+    await _action(
+      'nudge:${a['id']}',
       () => WorkApi.nudge(widget.taskId, '${a['id']}', msg),
     );
   }
@@ -209,7 +333,7 @@ class _PieceScreenState extends State<PieceScreen> {
     );
     if (note == null) return;
     final to = _task?['requires_review'] == true ? 'submitted' : 'done';
-    await _run('Đã nộp.', () async {
+    await _action('handin:${a['id']}', () async {
       if (a['status'] == 'assigned')
         await WorkApi.move('${a['id']}', 'in_progress');
       await WorkApi.move('${a['id']}', to, note: note);
@@ -501,6 +625,31 @@ class _PieceScreenState extends State<PieceScreen> {
     final last = attempts.isNotEmpty ? attempts.last : null;
     final handedFiles = ((a['attachments'] as List?) ?? const []).cast<Map>();
     final returned = asInt(a['returned_count']);
+    final m = VdMotion.of(context);
+    final gone = _leaving.contains('${a['id']}');
+    return AnimatedSize(
+      duration: m.standard,
+      curve: VdMotion.curve,
+      child: AnimatedOpacity(
+        duration: m.standard,
+        opacity: gone ? 0 : 1,
+        child: gone
+            ? const SizedBox(width: double.infinity)
+            : _personCard(vd, a, s, open, review, last, handedFiles, returned),
+      ),
+    );
+  }
+
+  Widget _personCard(
+    VdTokens vd,
+    Map<String, dynamic> a,
+    String s,
+    bool open,
+    bool review,
+    Map? last,
+    List<Map> handedFiles,
+    int returned,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -568,27 +717,33 @@ class _PieceScreenState extends State<PieceScreen> {
                 runSpacing: 6,
                 children: [
                   if (review)
-                    FilledButton(
-                      onPressed: () => _approve(a),
-                      child: const Text('Duyệt'),
+                    _actButton(
+                      'approve:${a['id']}',
+                      'Duyệt',
+                      () => _approve(a),
+                      filled: true,
                     ),
                   if (review)
-                    OutlinedButton(
-                      onPressed: () => _giveBack(a),
-                      child: const Text('Trả lại'),
+                    _actButton(
+                      'return:${a['id']}',
+                      'Trả lại',
+                      () => _giveBack(a),
                     ),
                   if (!review)
-                    OutlinedButton.icon(
-                      onPressed: () => _nudge(a),
-                      icon: const Icon(
-                        Icons.notifications_active_outlined,
-                        size: 18,
-                      ),
-                      label: const Text('Nhắc'),
+                    _actButton(
+                      'nudge:${a['id']}',
+                      'Nhắc',
+                      () => _nudge(a),
+                      icon: Icons.notifications_active_outlined,
                     ),
                 ],
               ),
             ),
+          _actError(vd, [
+            'approve:${a['id']}',
+            'return:${a['id']}',
+            'nudge:${a['id']}',
+          ]),
         ],
       ),
     );
@@ -638,17 +793,20 @@ class _PieceScreenState extends State<PieceScreen> {
             runSpacing: 6,
             children: [
               if (s == 'assigned' && a['acknowledged_at'] == null)
-                OutlinedButton(
-                  onPressed: () => _run(
-                    'Đã nhận việc.',
+                _actButton(
+                  'ack:${a['id']}',
+                  'Đã nhận',
+                  () => _action(
+                    'ack:${a['id']}',
                     () => WorkApi.acknowledge('${a['id']}'),
                   ),
-                  child: const Text('Đã nhận'),
                 ),
               if (s == 'assigned' || s == 'in_progress')
-                FilledButton(
-                  onPressed: () => _handIn(a),
-                  child: const Text('Nộp'),
+                _actButton(
+                  'handin:${a['id']}',
+                  'Nộp',
+                  () => _handIn(a),
+                  filled: true,
                 ),
               // Overlord slice: pass part of this piece to others, from here.
               if (s == 'assigned' || s == 'in_progress')
@@ -659,6 +817,7 @@ class _PieceScreenState extends State<PieceScreen> {
                 ),
             ],
           ),
+          _actError(vd, ['ack:${a['id']}', 'handin:${a['id']}']),
         ],
       ),
     );

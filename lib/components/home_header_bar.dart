@@ -1,3 +1,4 @@
+import 'rolling_count.dart';
 import 'package:flutter/material.dart';
 
 import '../core/greeting.dart';
@@ -14,6 +15,13 @@ class HomeHeaderBar extends StatelessWidget {
   final List<String> chips;
   final int unreadCount;
   final VoidCallback onBell;
+
+  /// Round buttons placed before the bell (Overlord home: Tin nhắn for a
+  /// teacher, the account initials when the home has no bottom bar).
+  final List<Widget> actions;
+
+  /// One plain status line under the chips (Overlord home).
+  final String? status;
   const HomeHeaderBar({
     super.key,
     required this.now,
@@ -21,6 +29,8 @@ class HomeHeaderBar extends StatelessWidget {
     required this.chips,
     required this.unreadCount,
     required this.onBell,
+    this.actions = const [],
+    this.status,
   });
 
   @override
@@ -90,10 +100,23 @@ class HomeHeaderBar extends StatelessWidget {
               runSpacing: 6,
               children: [for (final c in chips) _chip(t, c)],
             ),
+            if (status != null && status!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                status!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: t.onHeader.withValues(alpha: 0.9),
+                ),
+              ),
+            ],
           ],
         ),
       ),
       const SizedBox(width: 8),
+      for (final a in actions) ...[a, const SizedBox(width: 6)],
       _bell(t),
     ],
   );
@@ -158,9 +181,8 @@ class HomeHeaderBar extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: ExcludeSemantics(
-                        child: Text(
+                        child: RollingCount(
                           unreadCount > 99 ? '99+' : '$unreadCount',
-                          textAlign: TextAlign.center,
                           style: TextStyle(
                             color: t.onHeader,
                             fontSize: 10,

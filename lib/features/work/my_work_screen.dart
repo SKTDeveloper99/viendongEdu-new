@@ -5,6 +5,7 @@ import '../../services/crm_session_guard.dart';
 import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
 import 'piece_screen.dart';
+import '../work_home/hub_screens.dart' show GiveTaskScreen;
 import 'work_api.dart';
 
 /// "Việc của tôi", native (Overlord slice): work I received, work I gave,
@@ -96,14 +97,15 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
         text:
             'Tôi nhận${_received == null ? '' : ' (${_openReceived.length})'}',
       ),
-      if (_gives)
-        Tab(
-          text: 'Tôi giao${_given == null ? '' : ' (${_activeGiven.length})'}',
-        ),
+      // Order agreed for the Overlord home: Tôi nhận / Chờ duyệt / Tôi giao.
       if (_gives)
         Tab(
           text:
               'Chờ duyệt${_given == null ? '' : ' (${_toReview.fold<int>(0, (s, t) => s + _waiting(t))})'}',
+        ),
+      if (_gives)
+        Tab(
+          text: 'Tôi giao${_given == null ? '' : ' (${_activeGiven.length})'}',
         ),
     ];
     return DefaultTabController(
@@ -111,6 +113,20 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
       initialIndex: widget.initialTab.clamp(0, tabs.length - 1),
       child: Scaffold(
         backgroundColor: vd.bg,
+        // "+ Giao việc" is also here, for those who can give work.
+        floatingActionButton: AppSession.instance.canAssign
+            ? FloatingActionButton.extended(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const GiveTaskScreen()),
+                  );
+                  _load();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Giao việc'),
+              )
+            : null,
         appBar: AppBar(
           title: const Text('Việc của tôi'),
           bottom: TabBar(
@@ -125,8 +141,8 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
         body: TabBarView(
           children: [
             _receivedTab(),
-            if (_gives) _givenTab(),
             if (_gives) _reviewTab(),
+            if (_gives) _givenTab(),
           ],
         ),
       ),

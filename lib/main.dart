@@ -1,6 +1,7 @@
 import 'features/staff_home/staff_home_screen.dart';
 import 'features/work/my_work_screen.dart';
 import 'features/work/piece_screen.dart';
+import 'features/work_home/work_home_screen.dart';
 import 'features/nhom/nhom_screens.dart';
 import 'features/bell/bell_screen.dart';
 import 'services/crm_session_guard.dart';
@@ -156,9 +157,10 @@ class MyApp extends StatelessWidget {
         '/grades': (context) => const GradesScreen(),
         '/classes': (context) => const ClassesScreen(),
         '/lephi': (context) => const LePhiScreen(),
-        '/gv_home': (context) => const GvHomeScreen(),
+        // Overlord slice: one home for teachers, office accounts and both.
+        '/gv_home': (context) => const WorkHomeScreen(),
         // Overlord slice: office accounts (no teacher profile).
-        '/staff_home': (context) => const StaffHomeScreen(),
+        '/staff_home': (context) => const WorkHomeScreen(),
         '/work': (context) => const MyWorkScreen(),
         '/gv_schedule': (context) => const GvScheduleScreen(),
         '/gv_lophoc': (context) => const GvLopHocScreen(),
