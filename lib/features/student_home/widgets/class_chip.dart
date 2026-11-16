@@ -28,8 +28,7 @@ class ClassChip extends StatelessWidget {
     final classCode = data.sectionCode;
     final room = data.room.trim();
     final teacher = data.teacherName;
-    String hhmm(String? t) =>
-        (t ?? '').length > 5 ? t!.substring(0, 5) : t ?? '';
+    String hhmm(String? t) => (t ?? '').length > 5 ? t!.substring(0, 5) : t ?? '';
     final start = hhmm(data.startTime);
     final end = hhmm(data.endTime);
     final buoi = buoiInfo(start, context.vd);
@@ -41,11 +40,7 @@ class ClassChip extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: context.vd.shadow,
-            blurRadius: 6,
-            offset: Offset(0, 3),
-          ),
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
         border: Border(left: BorderSide(color: buoi.color, width: 4)),
       ),
@@ -93,7 +88,10 @@ class ClassChip extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 1),
                 child: Text(
                   classCode,
-                  style: TextStyle(fontSize: 10, color: context.vd.inkFaint),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: context.vd.inkFaint,
+                  ),
                 ),
               ),
             const SizedBox(height: 5),
@@ -110,7 +108,11 @@ class ClassChip extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Icon(Icons.person_outline, size: 12, color: context.vd.primary),
+                Icon(
+                  Icons.person_outline,
+                  size: 12,
+                  color: context.vd.primary,
+                ),
                 const SizedBox(width: 3),
                 Expanded(
                   child: Text(

@@ -26,10 +26,7 @@ class MiniStat extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: context.vd.shadow,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
+                color: context.vd.shadow, blurRadius: 4, offset: Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -37,19 +34,14 @@ class MiniStat extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 18),
             const SizedBox(height: 6),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
+            Text(value,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color)),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(fontSize: 10, color: context.vd.inkMuted),
-            ),
+            Text(label,
+                style: TextStyle(fontSize: 10, color: context.vd.inkMuted)),
           ],
         ),
       ),

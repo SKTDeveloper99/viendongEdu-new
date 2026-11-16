@@ -5,11 +5,8 @@ import '../../../theme/vd_tokens.dart';
 class ClassesErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const ClassesErrorView({
-    super.key,
-    required this.message,
-    required this.onRetry,
-  });
+  const ClassesErrorView(
+      {super.key, required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -24,12 +21,8 @@ class ClassesErrorView extends StatelessWidget {
           ElevatedButton(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
-              backgroundColor: context.vd.primary,
-            ),
-            child: Text(
-              'Thử lại',
-              style: TextStyle(color: context.vd.onPrimary),
-            ),
+                backgroundColor: context.vd.primary),
+            child: Text('Thử lại', style: TextStyle(color: context.vd.onPrimary)),
           ),
         ],
       ),
@@ -49,10 +42,7 @@ class ClassesEmptyView extends StatelessWidget {
         children: [
           Icon(Icons.school_outlined, size: 64, color: context.vd.inkFaint),
           SizedBox(height: 12),
-          Text(
-            'Không có lớp học',
-            style: TextStyle(color: context.vd.inkMuted),
-          ),
+          Text('Không có lớp học', style: TextStyle(color: context.vd.inkMuted)),
         ],
       ),
     );

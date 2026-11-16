@@ -57,20 +57,15 @@ class GradeDistribution extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: context.vd.shadow,
-            blurRadius: 6,
-            offset: Offset(0, 3),
-          ),
+              color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Phân bổ điểm chữ',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-          ),
+          const Text('Phân bổ điểm chữ',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -96,18 +91,13 @@ class GradeDistribution extends StatelessWidget {
                         Text(
                           '$total',
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: context.vd.ink,
-                          ),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: context.vd.ink),
                         ),
-                        Text(
-                          'môn',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: context.vd.inkMuted,
-                          ),
-                        ),
+                        Text('môn',
+                            style: TextStyle(
+                                fontSize: 11, color: context.vd.inkMuted)),
                       ],
                     ),
                   ],
@@ -118,8 +108,7 @@ class GradeDistribution extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: entries.map((e) {
-                    final color =
-                        _colorsOf(context.vd)[e.key] ?? context.vd.inkMuted;
+                    final color = _colorsOf(context.vd)[e.key] ?? context.vd.inkMuted;
                     final pct = (e.value / total * 100).round();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 9),
@@ -134,25 +123,18 @@ class GradeDistribution extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Loại ${e.key}',
-                              style: const TextStyle(
+                          Expanded(child: Text(
+                            'Loại ${e.key}',
+                            style: const TextStyle(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
+                                fontWeight: FontWeight.w600),
+                          )),
                           const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              '${e.value} môn · $pct%',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: context.vd.inkMuted,
-                              ),
-                            ),
-                          ),
+                          Flexible(child: Text(
+                            '${e.value} môn · $pct%',
+                            style: TextStyle(
+                                fontSize: 11, color: context.vd.inkMuted),
+                          )),
                         ],
                       ),
                     );

@@ -28,10 +28,7 @@ class ClassList extends StatelessWidget {
             itemCount: classes.length,
             itemBuilder: (ctx, i) => VdFadeIn(
               index: i,
-              child: ClassCard(
-                lop: classes[i],
-                onTap: () => onOpen(classes[i]),
-              ),
+              child: ClassCard(lop: classes[i], onTap: () => onOpen(classes[i])),
             ),
           ),
         ),

@@ -39,11 +39,8 @@ class ClassesHeader extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Icon(
-                  Icons.arrow_back_ios,
-                  color: context.vd.onPrimary,
-                  size: 20,
-                ),
+                child: Icon(Icons.arrow_back_ios,
+                    color: context.vd.onPrimary, size: 20),
               ),
               const SizedBox(width: 8),
               Text(
@@ -71,11 +68,7 @@ class ClassesHeader extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
-            color: context.vd.shadow,
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 2))
         ],
       ),
       child: DropdownButtonHideUnderline(
@@ -87,23 +80,17 @@ class ClassesHeader extends StatelessWidget {
           icon: const Icon(Icons.expand_more_rounded, size: 20),
           isDense: true,
           style: TextStyle(
-            color: context.vd.ink,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
+              color: context.vd.ink,
+              fontSize: 13,
+              fontWeight: FontWeight.w500),
           selectedItemBuilder: (_) => semesters
-              .map(
-                (s) => Center(
-                  child: Text(
-                    s.ten,
-                    style: TextStyle(
-                      color: context.vd.primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              )
+              .map((s) => Center(
+                    child: Text(s.ten,
+                        style: TextStyle(
+                            color: context.vd.primary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
+                  ))
               .toList(),
           items: semesters
               .map((s) => DropdownMenuItem(value: s, child: Text(s.ten)))

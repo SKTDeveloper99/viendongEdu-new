@@ -110,24 +110,22 @@ class ClassManagerViewModel extends ChangeNotifier {
     _notify();
     try {
       final results = await Future.wait([
-        repository
-            .classes(
-              semester: sem.ma,
-              onStored: (c, at) {
-                if (_disposed || _selected != sem) return;
-                _staleAt = at;
-                _classes = c;
-                _loadingClasses = false;
-                _notify();
-              },
-            )
-            .then((cached) {
-              if (!_disposed && _selected == sem) {
-                _classes = cached.data;
-                _staleAt = cached.fresh ? null : cached.savedAt;
-              }
-              return cached;
-            }),
+        repository.classes(
+          semester: sem.ma,
+          onStored: (c, at) {
+            if (_disposed || _selected != sem) return;
+            _staleAt = at;
+            _classes = c;
+            _loadingClasses = false;
+            _notify();
+          },
+        ).then((cached) {
+          if (!_disposed && _selected == sem) {
+            _classes = cached.data;
+            _staleAt = cached.fresh ? null : cached.savedAt;
+          }
+          return cached;
+        }),
         repository.schedule(sem.ma),
       ]);
       if (_disposed || _selected != sem) return;

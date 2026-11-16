@@ -30,10 +30,7 @@ class ClassManagerErrorView extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: context.vd.primary,
             ),
-            child: Text(
-              'Thử lại',
-              style: TextStyle(color: context.vd.onPrimary),
-            ),
+            child: Text('Thử lại', style: TextStyle(color: context.vd.onPrimary)),
           ),
         ],
       ),
@@ -50,11 +47,7 @@ class ClassManagerEmptyView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.manage_accounts_outlined,
-            size: 64,
-            color: context.vd.inkFaint,
-          ),
+          Icon(Icons.manage_accounts_outlined, size: 64, color: context.vd.inkFaint),
           SizedBox(height: 12),
           Text('Không có lớp', style: TextStyle(color: context.vd.inkMuted)),
         ],
@@ -89,7 +82,10 @@ class SheetErrorView extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton(
             onPressed: onRetry,
-            child: Text('Thử lại', style: TextStyle(color: context.vd.primary)),
+            child: Text(
+              'Thử lại',
+              style: TextStyle(color: context.vd.primary),
+            ),
           ),
         ],
       ),
@@ -102,7 +98,9 @@ class SheetLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: CircularProgressIndicator(color: context.vd.primary));
+    return Center(
+      child: CircularProgressIndicator(color: context.vd.primary),
+    );
   }
 }
 

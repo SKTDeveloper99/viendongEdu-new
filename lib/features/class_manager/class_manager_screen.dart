@@ -66,13 +66,11 @@ class _GvQuanLyLopScreenState extends State<GvQuanLyLopScreen> {
     }
     if (_vm.loadingClasses) return skeletonList();
     if (_vm.classes.isEmpty) {
-      return Column(
-        children: [
-          if (_vm.staleAt != null) StaleNote(_vm.staleAt!),
-          TextButton(onPressed: _vm.retry, child: const Text('Thử lại')),
-          const Expanded(child: ClassManagerEmptyView()),
-        ],
-      );
+      return Column(children: [
+        if (_vm.staleAt != null) StaleNote(_vm.staleAt!),
+        TextButton(onPressed: _vm.retry, child: const Text('Thử lại')),
+        const Expanded(child: ClassManagerEmptyView()),
+      ]);
     }
     return Column(
       children: [
