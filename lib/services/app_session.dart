@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/crm_identity.dart';
+import 'ems_api_service.dart';
 import 'ems_attendance_cache.dart';
 import 'notification_service.dart';
 import 'offline_snapshot.dart';
@@ -251,20 +252,42 @@ class AppSession {
     await BoardApi.revokeStudentDevice(fcmToken);
   }
 
+  /// The phone of any signed-in staff or teacher account (Overlord slice):
+  /// `POST /auth/app/devices`; a server without that route (404) falls back to
+  /// the teacher route for a teacher.
   Future<void> registerTeacherDeviceToken(String fcmToken) async {
-    if (role != CrmRole.teacher || !hasEms) return;
-    await TeacherNotificationsApi.registerTeacherDevice(
-      fcmToken,
-      platform: defaultTargetPlatform == TargetPlatform.iOS
-          ? 'ios'
-          : defaultTargetPlatform == TargetPlatform.android
-          ? 'android'
-          : 'web',
-    );
+    if ((role != CrmRole.teacher && role != CrmRole.staff) || !hasEms) return;
+    final platform = defaultTargetPlatform == TargetPlatform.iOS
+        ? 'ios'
+        : defaultTargetPlatform == TargetPlatform.android
+        ? 'android'
+        : 'web';
+    try {
+      await EmsApiService.sendMap(
+        'POST',
+        '/auth/app/devices',
+        body: {'fcm_token': fcmToken, 'platform': platform},
+      );
+    } on EmsException catch (e) {
+      if (e.statusCode != 404 || role != CrmRole.teacher) rethrow;
+      await TeacherNotificationsApi.registerTeacherDevice(
+        fcmToken,
+        platform: platform,
+      );
+    }
   }
 
   Future<void> revokeTeacherDeviceToken(String fcmToken) async {
-    if (role != CrmRole.teacher || !hasEms) return;
-    await TeacherNotificationsApi.revokeTeacherDevice(fcmToken);
+    if ((role != CrmRole.teacher && role != CrmRole.staff) || !hasEms) return;
+    try {
+      await EmsApiService.sendMap(
+        'DELETE',
+        '/auth/app/devices',
+        body: {'fcm_token': fcmToken},
+      );
+    } on EmsException catch (e) {
+      if (e.statusCode != 404 || role != CrmRole.teacher) rethrow;
+      await TeacherNotificationsApi.revokeTeacherDevice(fcmToken);
+    }
   }
 }

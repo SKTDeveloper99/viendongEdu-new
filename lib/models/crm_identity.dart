@@ -107,7 +107,7 @@ class CrmIdentity {
   /// tiền tố 'hv_'/'gv_' mà server thông báo cũ (`_notiBase`) đã dùng.
   String get notificationId => isStudent
       ? 'hv_${mssv ?? ''}'
-      : (isStaffOnly ? '' : 'gv_${teacherCode ?? ''}');
+      : (isStaffOnly ? 'st_${userId ?? ''}' : 'gv_${teacherCode ?? ''}');
 
   /// MSSV hoặc mã giáo viên — dùng khi màn hình cần MỘT chuỗi định danh
   /// chung, không quan tâm vai trò.

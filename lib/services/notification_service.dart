@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'app_session.dart';
+import '../models/crm_identity.dart';
 import '../core/crm_web/crm_web_target.dart';
 import 'conversation_push_route.dart';
 import '../theme/vd_tokens.dart';
@@ -13,6 +14,7 @@ import '../theme/vd_tokens.dart';
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   // Firebase đã tự hiển thị notification khi app ở background/terminated
 }
+
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -40,7 +42,9 @@ class NotificationService {
     // Đọc initial message TRƯỚC tiên và báo cho splash biết ngay,
     // để splash không phải chờ requestPermission (người dùng có thể để yên hộp thoại)
     try {
-      _pendingInitialMessage = await _fcm.getInitialMessage().timeout(const Duration(seconds: 3));
+      _pendingInitialMessage = await _fcm.getInitialMessage().timeout(
+        const Duration(seconds: 3),
+      );
     } catch (e) {
       debugPrint('[FCM] getInitialMessage error: $e');
     }
@@ -61,11 +65,13 @@ class NotificationService {
 
     // Foreground: hiển thị notification khi app đang mở
     try {
-      await _fcm.setForegroundNotificationPresentationOptions(
-        alert: false,
-        badge: true,
-        sound: true,
-      ).timeout(const Duration(seconds: 3));
+      await _fcm
+          .setForegroundNotificationPresentationOptions(
+            alert: false,
+            badge: true,
+            sound: true,
+          )
+          .timeout(const Duration(seconds: 3));
     } catch (_) {
       // Push is optional; foreground listeners may still work.
     }
@@ -96,7 +102,10 @@ class NotificationService {
     }, onError: (Object _) {});
 
     // Người dùng bấm vào notification khi app đang ở background
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap, onError: (Object _) {});
+    FirebaseMessaging.onMessageOpenedApp.listen(
+      _handleNotificationTap,
+      onError: (Object _) {},
+    );
   }
 
   RemoteMessage? _pendingInitialMessage;
@@ -114,6 +123,17 @@ class NotificationService {
   /// (CRM), học viên → Bảng tin (Vercel noti-backend đã gỡ, 2026-09-25).
   String _routeFor(RemoteMessage message) {
     if (message.data['route'] == '/student/board') return '/student_board';
+    // Overlord slice: a work push opens the item natively — a piece on its one
+    // screen, a group post on its group — for teachers and office accounts.
+    final session = AppSession.instance;
+    if (session.isGiangVien || session.isStaff) {
+      final id = RegExp(r'^[A-Za-z0-9-]{1,64}$');
+      final taskId = message.data['task_id']?.toString();
+      final spaceId = message.data['space_id']?.toString();
+      if (taskId != null && id.hasMatch(taskId)) return '/piece/$taskId';
+      if (spaceId != null && id.hasMatch(spaceId)) return '/group/$spaceId';
+      if (session.role == CrmRole.staff) return '/bell';
+    }
     final isTeacher = AppSession.instance.isGiangVien;
     // Task pushes (CRM route /tasks or /nhom) open that page in the app (T1).
     final crm = CrmTarget.fromPush(message.data, isTeacher: isTeacher);
@@ -183,7 +203,10 @@ class NotificationService {
   /// Hỏi APNs token nhiều lần — sau khi cài app, iOS cần vài giây.
   Future<String?> _waitForApnsToken() async {
     for (var i = 0; i < 10; i++) {
-      final apns = await _fcm.getAPNSToken().timeout(const Duration(seconds: 1), onTimeout: () => null);
+      final apns = await _fcm.getAPNSToken().timeout(
+        const Duration(seconds: 1),
+        onTimeout: () => null,
+      );
       if (apns != null) return apns;
       await Future.delayed(const Duration(seconds: 1));
     }
@@ -243,7 +266,7 @@ class NotificationService {
       } catch (e) {
         debugPrint('[FCM] EMS register token error: $e');
       }
-    } else if (hocVienId.startsWith('gv_')) {
+    } else if (hocVienId.startsWith('gv_') || hocVienId.startsWith('st_')) {
       try {
         await _emsTeacherRegister?.call(token);
       } catch (e) {
@@ -266,7 +289,7 @@ class NotificationService {
       try {
         await _emsStudentRevoke?.call(token);
       } catch (_) {}
-    } else if (hocVienId.startsWith('gv_')) {
+    } else if (hocVienId.startsWith('gv_') || hocVienId.startsWith('st_')) {
       try {
         await _emsTeacherRevoke?.call(token);
       } catch (_) {}

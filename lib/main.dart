@@ -1,5 +1,8 @@
 import 'features/staff_home/staff_home_screen.dart';
 import 'features/work/my_work_screen.dart';
+import 'features/work/piece_screen.dart';
+import 'features/nhom/nhom_screens.dart';
+import 'features/bell/bell_screen.dart';
 import 'services/crm_session_guard.dart';
 import 'dart:async';
 
@@ -185,6 +188,29 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         final crm = crmPageRoute(settings);
         if (crm != null) return crm;
+        // Overlord slice: push taps open the item natively.
+        final n = settings.name ?? '';
+        if (n.startsWith('/piece/')) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => PieceScreen(taskId: n.substring('/piece/'.length)),
+          );
+        }
+        if (n.startsWith('/group/')) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => NhomScreen(
+              spaceId: n.substring('/group/'.length),
+              name: 'Nhóm',
+            ),
+          );
+        }
+        if (n == '/bell') {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => const BellScreen(),
+          );
+        }
         const prefix = '/teacher_conversations/';
         final name = settings.name ?? '';
         if (!name.startsWith(prefix)) return null;
