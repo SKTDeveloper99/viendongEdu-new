@@ -1,3 +1,5 @@
+import 'features/staff_home/staff_home_screen.dart';
+import 'features/work/my_work_screen.dart';
 import 'services/crm_session_guard.dart';
 import 'dart:async';
 
@@ -152,6 +154,9 @@ class MyApp extends StatelessWidget {
         '/classes': (context) => const ClassesScreen(),
         '/lephi': (context) => const LePhiScreen(),
         '/gv_home': (context) => const GvHomeScreen(),
+        // Overlord slice: office accounts (no teacher profile).
+        '/staff_home': (context) => const StaffHomeScreen(),
+        '/work': (context) => const MyWorkScreen(),
         '/gv_schedule': (context) => const GvScheduleScreen(),
         '/gv_lophoc': (context) => const GvLopHocScreen(),
         '/gv_lichthi': (context) => const GvLichThiScreen(),

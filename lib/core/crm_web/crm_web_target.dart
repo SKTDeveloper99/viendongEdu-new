@@ -15,7 +15,22 @@ class CrmTarget {
   /// "Nhóm" (CRM group boards).
   static const groupsPath = '/nhom';
 
-  static const allowedPaths = {tasksPath, groupsPath};
+  /// Viva pages inside the app for office accounts (Overlord slice).
+  static const weekPath = '/lich-tuan';
+  static const congVanPath = '/cong-van';
+  static const workLogPath = '/nhat-ky';
+
+  static const allowedPaths = {
+    tasksPath,
+    groupsPath,
+    weekPath,
+    congVanPath,
+    workLogPath,
+  };
+
+  const CrmTarget.week() : this._(weekPath);
+  const CrmTarget.congVan() : this._(congVanPath);
+  const CrmTarget.workLog() : this._(workLogPath);
 
   static final RegExp _id = RegExp(r'^[A-Za-z0-9-]{1,64}$');
 
@@ -49,6 +64,9 @@ class CrmTarget {
         taskId: q['task_id'],
         spaceId: q['space_id'],
       ),
+      weekPath => const CrmTarget.week(),
+      congVanPath => const CrmTarget.congVan(),
+      workLogPath => const CrmTarget.workLog(),
       _ => null,
     };
   }
@@ -72,5 +90,11 @@ class CrmTarget {
     };
   }
 
-  String get title => path == tasksPath ? 'Việc của tôi' : 'Nhóm';
+  String get title => switch (path) {
+    tasksPath => 'Việc của tôi',
+    weekPath => 'Lịch tuần',
+    congVanPath => 'Công văn',
+    workLogPath => 'Nhật ký làm việc',
+    _ => 'Nhóm',
+  };
 }

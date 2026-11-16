@@ -15,7 +15,8 @@ bool _attached = false;
 /// teachers only, allow-listed pages only; anything else is not a route.
 Route<void>? crmPageRoute(RouteSettings settings) {
   final target = CrmTarget.fromRouteName(settings.name ?? '');
-  if (target == null || !AppSession.instance.isGiangVien) return null;
+  final s = AppSession.instance;
+  if (target == null || !(s.isGiangVien || s.isStaff)) return null;
   if (!_attached) {
     _attached = true;
     CrmWebSession.instance.attach(wipeCrmWebStorage);

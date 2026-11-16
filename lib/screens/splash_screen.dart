@@ -37,13 +37,15 @@ class _SplashScreenState extends State<SplashScreen> {
       // thể đã xoay từ lần đăng nhập trước (xem
       // NotificationService._postToken). Một sự cố Firebase/mạng ở đây
       // không được chặn việc vào app.
-      try {
-        NotificationService.instance.registerToken(
-          identity.notificationId,
-          mssv: identity.loginId,
-          hoTen: identity.fullName,
-        );
-      } catch (_) {}
+      if (identity.notificationId.isNotEmpty) {
+        try {
+          NotificationService.instance.registerToken(
+            identity.notificationId,
+            mssv: identity.loginId,
+            hoTen: identity.fullName,
+          );
+        } catch (_) {}
+      }
 
       if (AppSession.instance.mustChangePassword) {
         Navigator.pushReplacement(
@@ -55,8 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
         return;
       }
 
-      final route = AppSession.instance.isGiangVien ? '/gv_home' : '/home';
-      Navigator.pushReplacementNamed(context, route);
+      Navigator.pushReplacementNamed(context, AppSession.instance.homeRoute);
 
       // Nếu app được mở bằng cách bấm vào notification (app đã tắt hẳn),
       // vào thẳng màn hình thông báo — sau khi đã vào home để nút back còn hoạt động

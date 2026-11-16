@@ -51,7 +51,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       _error = null;
     });
     try {
-      final isTeacher = AppSession.instance.role == CrmRole.teacher;
+      // Teachers and office accounts share POST /auth/change-password.
+      final isTeacher = AppSession.instance.role != CrmRole.student;
       final current = _oldCtrl.text.trim();
       final next = _newCtrl.text.trim();
       if (isTeacher) {
@@ -71,8 +72,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       if (!mounted) return;
       showSuccessSnack(context, 'Đổi mật khẩu thành công!');
       if (widget.forced) {
-        final route = isTeacher ? '/gv_home' : '/home';
-        Navigator.pushReplacementNamed(context, route);
+        Navigator.pushReplacementNamed(context, AppSession.instance.homeRoute);
       } else {
         Navigator.pop(context);
       }

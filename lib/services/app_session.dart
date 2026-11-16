@@ -34,6 +34,20 @@ class AppSession {
   String? fullName;
   bool mustChangePassword = false;
 
+  /// Overlord slice: Viva user id, office kind and display hints.
+  String? userId;
+  bool isStaff = false;
+  bool canAssign = false;
+  bool trienKhai = false;
+
+  /// The home this person lands on: teacher home (also for a teacher with
+  /// office duties), the office home, or the student home.
+  String get homeRoute => switch (role) {
+    CrmRole.teacher => '/gv_home',
+    CrmRole.staff => '/staff_home',
+    _ => '/home',
+  };
+
   /// Server-authoritative student data gate from GET /student/me; null means
   /// an older server has not supplied the field and the prefix rule applies.
   bool? dataOpen;
@@ -69,6 +83,10 @@ class AppSession {
       teacherCode: teacherCode,
       fullName: fullName ?? '',
       mustChangePassword: mustChangePassword,
+      userId: userId,
+      isStaff: isStaff,
+      canAssign: canAssign,
+      trienKhai: trienKhai,
     );
   }
 
@@ -81,6 +99,10 @@ class AppSession {
     teacherCode = id.teacherCode;
     fullName = id.fullName;
     mustChangePassword = id.mustChangePassword;
+    userId = id.userId;
+    isStaff = id.isStaff;
+    canAssign = id.canAssign;
+    trienKhai = id.trienKhai;
     dataOpen = null;
     emsDenied = false;
   }
@@ -151,6 +173,10 @@ class AppSession {
     teacherCode = id.teacherCode;
     fullName = id.fullName;
     mustChangePassword = id.mustChangePassword;
+    userId = id.userId;
+    isStaff = id.isStaff;
+    canAssign = id.canAssign;
+    trienKhai = id.trienKhai;
     dataOpen = null;
     try {
       await EmsAttendanceCache.migrateLegacyForRestoredAccount();
@@ -179,6 +205,10 @@ class AppSession {
     teacherCode = null;
     fullName = null;
     mustChangePassword = false;
+    userId = null;
+    isStaff = false;
+    canAssign = false;
+    trienKhai = false;
     dataOpen = null;
     try {
       final prefs = await SharedPreferences.getInstance();

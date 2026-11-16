@@ -1,3 +1,4 @@
+import '../../core/crm_web/crm_web_policy.dart';
 import '../../core/crm_web/crm_web_target.dart';
 import '../../services/ems_api_service.dart';
 
@@ -23,7 +24,7 @@ abstract final class WebPassApi {
     final seconds = int.tryParse('${body['expires_in'] ?? ''}') ?? 60;
     // Never open anything but our own host with a pass in the fragment.
     if (url == null ||
-        url.scheme != 'https' ||
+        (url.scheme != 'https' && !crmDebugLoopback(url)) ||
         url.host != crmHost ||
         url.fragment.isEmpty) {
       throw EmsException('Không mở được trang. Vui lòng thử lại.');

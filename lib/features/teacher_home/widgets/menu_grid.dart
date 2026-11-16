@@ -4,6 +4,8 @@ import '../../../components/menu_item.dart';
 import '../../../core/crm_web/crm_web_target.dart';
 import '../../teacher_attendance/widgets/pending_send_badge.dart';
 import '../../teacher_conversations/widgets/messages_tile.dart';
+import '../../../services/app_session.dart';
+import '../../staff_home/staff_home_screen.dart';
 
 /// Navigation tiles of the teacher home.
 class MenuGrid extends StatelessWidget {
@@ -62,12 +64,12 @@ class MenuGrid extends StatelessWidget {
           label: 'Danh sách thi',
           onTap: () => Navigator.pushNamed(context, '/gv_danh_sach_thi'),
         ),
+        // Overlord slice: Việc của tôi is native (one piece on one screen).
         MenuItemWidget(
           index: 7,
           icon: Icons.task_alt,
           label: 'Việc của tôi',
-          onTap: () =>
-              Navigator.pushNamed(context, CrmTarget.tasks().routeName),
+          onTap: () => Navigator.pushNamed(context, '/work'),
         ),
         MenuItemWidget(
           index: 8,
@@ -76,6 +78,19 @@ class MenuGrid extends StatelessWidget {
           onTap: () =>
               Navigator.pushNamed(context, CrmTarget.groups().routeName),
         ),
+        // A teacher with office duties also gets the office tiles the
+        // server says she holds (one account, one sign-in).
+        if (AppSession.instance.isStaff)
+          for (final (i, t)
+              in staffTiles(context, null)
+                  .where((t) => t.label != 'Việc của tôi' && t.label != 'Nhóm')
+                  .indexed)
+            MenuItemWidget(
+              index: 9 + i,
+              icon: t.icon,
+              label: t.label,
+              onTap: t.onTap,
+            ),
       ],
     );
   }

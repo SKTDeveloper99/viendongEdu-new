@@ -34,8 +34,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  String get _idLabel =>
-      _role == CrmRole.student ? 'Mã số sinh viên (MSSV)' : 'Mã giảng viên';
+  String get _idLabel => _role == CrmRole.student
+      ? 'Mã số sinh viên (MSSV)'
+      : 'Tên đăng nhập Viva hoặc mã GV';
 
   Future<void> _login() async {
     final loginId = _idCtrl.text.trim();
@@ -55,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         await Future.delayed(StartupPace.forAccount(loginId, windowMs: 700));
         // Đăng nhập trước; thiết bị nhận thông báo đăng ký sau ở nền.
-        identity = await AuthApi.teacherLogin(
+        identity = await AuthApi.appLogin(
           loginId,
           pass,
           platform: defaultTargetPlatform == TargetPlatform.iOS
@@ -75,13 +76,15 @@ class _LoginScreenState extends State<LoginScreen> {
       // NotificationService._postToken). Một sự cố Firebase/mạng ở đây
       // không được phép chặn đăng nhập (cùng nguyên tắc với
       // AppSession._refreshEmsTokenOnce trước đây).
-      try {
-        NotificationService.instance.registerToken(
-          identity.notificationId,
-          mssv: identity.loginId,
-          hoTen: identity.fullName,
-        );
-      } catch (_) {}
+      if (identity.notificationId.isNotEmpty) {
+        try {
+          NotificationService.instance.registerToken(
+            identity.notificationId,
+            mssv: identity.loginId,
+            hoTen: identity.fullName,
+          );
+        } catch (_) {}
+      }
 
       if (!mounted) return;
 
@@ -95,8 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final route = identity.isTeacher ? '/gv_home' : '/home';
-      Navigator.pushReplacementNamed(context, route);
+      Navigator.pushReplacementNamed(context, AppSession.instance.homeRoute);
     } on EmsException catch (e) {
       _showError(e.message);
     } catch (e) {
@@ -122,10 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Thử lại',
-              style: TextStyle(color: context.vd.accent),
-            ),
+            child: Text('Thử lại', style: TextStyle(color: context.vd.accent)),
           ),
         ],
       ),
@@ -183,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     Expanded(
                       child: _RoleTab(
-                        label: 'Giảng viên',
+                        label: 'Cán bộ, GV',
                         selected: _role == CrmRole.teacher,
                         enabled: !_loading,
                         onTap: () => setState(() => _role = CrmRole.teacher),

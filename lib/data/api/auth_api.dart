@@ -52,6 +52,32 @@ abstract final class AuthApi {
     return identity;
   }
 
+  /// `POST /auth/app/login {login, password, fcm_token?, platform?}` — any
+  /// active Viva account: Viva username (office) or mã GV (Overlord slice).
+  static Future<CrmIdentity> appLogin(
+    String login,
+    String password, {
+    String? fcmToken,
+    String? platform,
+  }) async {
+    final body = await EmsApiService.sendMap(
+      'POST',
+      '/auth/app/login',
+      body: {
+        'login': login,
+        'password': password,
+        'fcm_token': ?fcmToken,
+        'platform': ?platform,
+      },
+      auth: false,
+    );
+    final identity = EmsApiService.parse(() => CrmIdentity.fromAppLogin(body));
+    if (identity.token.isEmpty) {
+      throw EmsException('Máy chủ không cấp được phiên đăng nhập.');
+    }
+    return identity;
+  }
+
   /// Đổi mật khẩu bắt buộc/tự chọn của học viên.
   /// `POST /student/me/password {current_password, new_password}`.
   static Future<void> changeStudentPassword({

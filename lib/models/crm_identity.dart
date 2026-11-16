@@ -4,7 +4,8 @@
 /// IMS vẫn còn trong app (các màn hình khác dùng `ApiService`/`HocVien`/
 /// `GiangVien` cho tới sóng 2), nhưng ĐĂNG NHẬP không còn đi qua IMS: một
 /// phiên hợp lệ bây giờ là một [CrmIdentity], không phải một token IMS.
-enum CrmRole { student, teacher }
+/// [staff]: an office account with no teacher profile (Overlord slice).
+enum CrmRole { student, teacher, staff }
 
 class CrmIdentity {
   final CrmRole role;
@@ -20,7 +21,20 @@ class CrmIdentity {
   final String fullName;
   final bool mustChangePassword;
 
+  /// Viva user id and what the server says the person is (`kinds`:
+  /// teacher, staff or both) — from `POST /auth/app/login`.
+  final String? userId;
+  final bool isStaff;
+
+  /// Display hints from the server's capabilities; the server re-checks.
+  final bool canAssign;
+  final bool trienKhai;
+
   const CrmIdentity({
+    this.userId,
+    this.isStaff = false,
+    this.canAssign = false,
+    this.trienKhai = false,
     required this.role,
     required this.token,
     required this.fullName,
@@ -32,6 +46,34 @@ class CrmIdentity {
 
   bool get isStudent => role == CrmRole.student;
   bool get isTeacher => role == CrmRole.teacher;
+  bool get isStaffOnly => role == CrmRole.staff;
+
+  /// `POST /auth/app/login` (any active Viva account): `{token, teacher|null,
+  /// user:{id, full_name, role}, kinds:[teacher|staff], permissions, counts}`.
+  /// A teacher-linked account is a teacher here (teacher home, attendance)
+  /// and also staff when `kinds` says so.
+  factory CrmIdentity.fromAppLogin(Map<String, dynamic> body) {
+    final t = (body['teacher'] as Map?)?.cast<String, dynamic>();
+    final u = (body['user'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final kinds = ((body['kinds'] as List?) ?? const [])
+        .map((e) => '$e')
+        .toSet();
+    final p =
+        (body['permissions'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final teacher = t != null && kinds.contains('teacher');
+    return CrmIdentity(
+      role: teacher ? CrmRole.teacher : CrmRole.staff,
+      token: body['token']?.toString() ?? '',
+      teacherId: t?['teacher_id']?.toString(),
+      teacherCode: t?['teacher_code']?.toString(),
+      fullName: (t?['full_name'] ?? u['full_name'])?.toString() ?? '',
+      mustChangePassword: body['must_change_password'] == true,
+      userId: u['id']?.toString(),
+      isStaff: kinds.contains('staff'),
+      canAssign: p['canAssignTasks'] == true,
+      trienKhai: p['trienKhai'] == true,
+    );
+  }
 
   /// Dựng từ phản hồi `POST /auth/student/login`:
   /// `{token, student:{mssv, full_name, must_change_password}}`.
@@ -63,8 +105,9 @@ class CrmIdentity {
 
   /// Định danh dùng để đăng ký/huỷ đăng ký FCM token và cho log — theo đúng
   /// tiền tố 'hv_'/'gv_' mà server thông báo cũ (`_notiBase`) đã dùng.
-  String get notificationId =>
-      isStudent ? 'hv_${mssv ?? ''}' : 'gv_${teacherCode ?? ''}';
+  String get notificationId => isStudent
+      ? 'hv_${mssv ?? ''}'
+      : (isStaffOnly ? '' : 'gv_${teacherCode ?? ''}');
 
   /// MSSV hoặc mã giáo viên — dùng khi màn hình cần MỘT chuỗi định danh
   /// chung, không quan tâm vai trò.
@@ -79,6 +122,10 @@ class CrmIdentity {
         teacherCode: teacherCode,
         fullName: fullName,
         mustChangePassword: mustChangePassword ?? this.mustChangePassword,
+        userId: userId,
+        isStaff: isStaff,
+        canAssign: canAssign,
+        trienKhai: trienKhai,
       );
 
   Map<String, dynamic> toPrefsJson() => {
@@ -88,17 +135,22 @@ class CrmIdentity {
     'teacher_code': teacherCode,
     'full_name': fullName,
     'must_change_password': mustChangePassword,
+    'user_id': userId,
+    'is_staff': isStaff,
+    'can_assign': canAssign,
+    'trien_khai': trienKhai,
   };
 
   /// Dựng lại từ SharedPreferences. [token] tới từ khoá 'ems_token' riêng
   /// (đã có sẵn từ trước khi CRM là danh tính chính).
-  static CrmIdentity? fromPrefsJson(
-    Map<String, dynamic>? j,
-    String? token,
-  ) {
+  static CrmIdentity? fromPrefsJson(Map<String, dynamic>? j, String? token) {
     if (j == null || token == null || token.isEmpty) return null;
     final roleStr = j['role']?.toString();
-    final role = roleStr == 'teacher' ? CrmRole.teacher : CrmRole.student;
+    final role = switch (roleStr) {
+      'teacher' => CrmRole.teacher,
+      'staff' => CrmRole.staff,
+      _ => CrmRole.student,
+    };
     return CrmIdentity(
       role: role,
       token: token,
@@ -107,6 +159,10 @@ class CrmIdentity {
       teacherCode: j['teacher_code']?.toString(),
       fullName: j['full_name']?.toString() ?? '',
       mustChangePassword: j['must_change_password'] == true,
+      userId: j['user_id']?.toString(),
+      isStaff: j['is_staff'] == true,
+      canAssign: j['can_assign'] == true,
+      trienKhai: j['trien_khai'] == true,
     );
   }
 }
