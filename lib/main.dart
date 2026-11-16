@@ -4,6 +4,7 @@ import 'features/work/piece_screen.dart';
 import 'features/work_home/work_home_screen.dart';
 import 'features/nhom/nhom_screens.dart';
 import 'features/bell/bell_screen.dart';
+import 'features/notices/notice_screens.dart';
 import 'services/crm_session_guard.dart';
 import 'dart:async';
 
@@ -205,6 +206,13 @@ class MyApp extends StatelessWidget {
               spaceId: n.substring('/group/'.length),
               name: 'Nhóm',
             ),
+          );
+        }
+        if (n.startsWith('/notice/')) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) =>
+                NoticeDetailScreen(id: n.substring('/notice/'.length)),
           );
         }
         if (n == '/bell') {

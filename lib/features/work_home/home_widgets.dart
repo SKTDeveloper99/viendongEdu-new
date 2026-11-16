@@ -29,10 +29,15 @@ class HomeTileGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cols = tiles.length >= 5 ? 3 : 2;
+    final rows = (tiles.length / cols).ceil();
     return LayoutBuilder(
       builder: (context, c) {
         const gap = 12.0;
         final w = (c.maxWidth - gap * (cols - 1)) / cols;
+        // Tiles take the height that is left, within sensible bounds.
+        final h = c.maxHeight.isFinite
+            ? ((c.maxHeight - gap * (rows - 1)) / rows).clamp(64.0, 132.0)
+            : (cols == 3 ? 104.0 : 92.0);
         return Wrap(
           spacing: gap,
           runSpacing: gap,
@@ -41,8 +46,8 @@ class HomeTileGrid extends StatelessWidget {
             for (final t in tiles)
               SizedBox(
                 width: w,
-                height: cols == 3 ? 104 : 92,
-                child: HomeTile(spec: t, wide: cols == 2),
+                height: h,
+                child: HomeTile(spec: t, wide: cols == 2, compact: h < 92),
               ),
           ],
         );
@@ -54,16 +59,23 @@ class HomeTileGrid extends StatelessWidget {
 class HomeTile extends StatelessWidget {
   final HomeTileSpec spec;
   final bool wide;
-  const HomeTile({super.key, required this.spec, this.wide = false});
+  final bool compact;
+  const HomeTile({
+    super.key,
+    required this.spec,
+    this.wide = false,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = context.vd;
+    final d = compact ? 36.0 : 44.0;
     final icon = Container(
-      width: 44,
-      height: 44,
+      width: d,
+      height: d,
       decoration: BoxDecoration(color: t.accentSoft, shape: BoxShape.circle),
-      child: Icon(spec.icon, color: t.primary, size: 24),
+      child: Icon(spec.icon, color: t.primary, size: compact ? 20 : 24),
     );
     final label = Text(
       spec.label,
@@ -165,179 +177,36 @@ class OfficeFocusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.vd;
     final c = counts;
-    final review = asInt(c?['to_review']);
-    final first = c?['first_review'] as Map?;
-    final due = c?['next_due'] as Map?;
-    Widget body;
-    VoidCallback? tap;
-    if (c == null) {
-      body = Container(
-        height: 64,
-        decoration: BoxDecoration(
-          color: t.surfaceAlt,
-          borderRadius: BorderRadius.circular(12),
-        ),
-      );
-    } else if (review > 0) {
-      tap = onReview;
-      body = _filled(
-        t,
-        'Chờ bạn duyệt',
-        '$review bài nộp',
-        '${first?['title'] ?? ''}',
-        first == null
+    if (c == null) return const FocusSkeleton();
+    final review = asInt(c['to_review']);
+    final first = c['first_review'] as Map?;
+    final due = c['next_due'] as Map?;
+    if (review > 0) {
+      return CompactFocusCard(
+        chip: 'Chờ bạn duyệt',
+        warn: true,
+        right: '$review bài nộp',
+        title: '${first?['title'] ?? ''}',
+        line: first == null
             ? ''
             : '${first['person'] ?? ''} · nộp lúc ${whenLabel(first['submitted_at'])}',
-        t.warning,
-        t.warningSoft,
-        'Xem bài nộp',
-        tap,
-      );
-    } else if (due != null) {
-      tap = () => onPiece('${due['task_id']}');
-      body = _filled(
-        t,
-        'Sắp đến hạn',
-        '',
-        '${due['title'] ?? ''}',
-        dueLabel(due['due_at']),
-        t.primary,
-        t.accentSoft,
-        'Mở việc',
-        tap,
-      );
-    } else {
-      body = Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: t.accentSoft,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.check_circle_outline, color: t.primary, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Không có việc nào đang chờ bạn.',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: t.ink,
-              ),
-            ),
-          ),
-        ],
+        action: 'Duyệt',
+        onAction: onReview,
       );
     }
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      decoration: BoxDecoration(
-        color: t.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: t.hairline),
-        boxShadow: [
-          BoxShadow(
-            color: t.shadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: tap,
-          child: Padding(padding: const EdgeInsets.all(16), child: body),
-        ),
-      ),
-    );
+    if (due != null) {
+      return CompactFocusCard(
+        chip: 'Sắp đến hạn',
+        right: dueLabel(due['due_at']),
+        title: '${due['title'] ?? ''}',
+        line: '',
+        action: 'Mở',
+        onAction: () => onPiece('${due['task_id']}'),
+      );
+    }
+    return const CalmFocusCard(text: 'Không có việc nào đang chờ bạn.');
   }
-
-  Widget _filled(
-    VdTokens t,
-    String chip,
-    String right,
-    String title,
-    String line,
-    Color tone,
-    Color soft,
-    String action,
-    VoidCallback? onAction,
-  ) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: soft,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.circle, size: 8, color: tone),
-                const SizedBox(width: 6),
-                Text(
-                  chip,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: tone,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              right,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: t.ink,
-              ),
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Text(
-        title,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: t.ink,
-        ),
-      ),
-      if (line.isNotEmpty) ...[
-        const SizedBox(height: 6),
-        Text(
-          line,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 13, color: t.inkMuted),
-        ),
-      ],
-      const SizedBox(height: 12),
-      SizedBox(
-        width: double.infinity,
-        child: FilledButton(onPressed: onAction, child: Text(action)),
-      ),
-    ],
-  );
 }
 
 /// A round header button (Tin nhắn, account initials) matching the bell.
@@ -487,4 +356,210 @@ String initialsOf(String name) {
   return (parts[parts.length - 2].characters.first +
           parts.last.characters.first)
       .toUpperCase();
+}
+
+/// Placeholder while today's classes load (static; no shimmer).
+class FocusSkeleton extends StatelessWidget {
+  const FocusSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 96,
+    margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+    decoration: BoxDecoration(
+      color: context.vd.surfaceAlt,
+      borderRadius: BorderRadius.circular(18),
+    ),
+  );
+}
+
+BoxDecoration _cardDeco(VdTokens t) => BoxDecoration(
+  color: t.surface,
+  borderRadius: BorderRadius.circular(18),
+  border: Border.all(color: t.hairline),
+  boxShadow: [
+    BoxShadow(color: t.shadow, blurRadius: 10, offset: const Offset(0, 4)),
+  ],
+);
+
+/// One calm line when nothing waits.
+class CalmFocusCard extends StatelessWidget {
+  final String text;
+  final IconData icon;
+  const CalmFocusCard({
+    super.key,
+    required this.text,
+    this.icon = Icons.check_circle_outline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.vd;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: _cardDeco(t),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: t.accentSoft,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: t.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: t.ink,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The home's focus card, compact so the home never scrolls on a small phone:
+/// a status chip and a right-hand note, one title line, one detail line, and
+/// the action beside them.
+class CompactFocusCard extends StatelessWidget {
+  final String chip;
+  final bool live;
+  final bool warn;
+  final String right;
+  final String title;
+  final String line;
+  final String action;
+  final VoidCallback onAction;
+  const CompactFocusCard({
+    super.key,
+    required this.chip,
+    this.live = false,
+    this.warn = false,
+    required this.right,
+    required this.title,
+    required this.line,
+    required this.action,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.vd;
+    final tone = warn ? t.warning : (live ? t.success : t.primary);
+    final soft = warn ? t.warningSoft : (live ? t.successSoft : t.accentSoft);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      decoration: _cardDeco(t),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onAction,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: soft,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.circle, size: 7, color: tone),
+                          const SizedBox(width: 6),
+                          Text(
+                            chip,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: tone,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        right,
+                        textAlign: TextAlign.end,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: t.ink,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: t.ink,
+                            ),
+                          ),
+                          if (line.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              line,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13, color: t.inkMuted),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    FilledButton(
+                      onPressed: onAction,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        minimumSize: const Size(0, 40),
+                      ),
+                      child: Text(action),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

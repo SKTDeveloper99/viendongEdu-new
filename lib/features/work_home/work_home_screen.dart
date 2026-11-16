@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../components/home_header_bar.dart';
-import '../../components/next_up_card.dart';
 import '../../core/crm_web/crm_web_target.dart';
 import '../../core/schedule/next_up.dart';
 import '../../data/api/teacher_conversations_api.dart';
@@ -28,6 +27,7 @@ import '../work/work_api.dart';
 import 'home_prefs.dart';
 import 'home_widgets.dart';
 import 'hub_screens.dart';
+import '../notices/notice_screens.dart';
 
 /// One home for teachers, office accounts and accounts that are both
 /// (Overlord slice, agreed with the chief of staff 2026-11-16): the header the
@@ -54,7 +54,6 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
   @override
   void initState() {
     super.initState();
-    HomePrefs.load();
     if (_teacher) {
       _vm = TeacherHomeViewModel(const TeacherHomeRepository())..start();
       _vm!.addListener(_onVm);
@@ -201,22 +200,28 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
     );
     if (vm == null) return office;
     if (vm.scheduleLoading && !vm.scheduleFailed) {
-      return Container(
-        height: 120,
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        decoration: BoxDecoration(
-          color: context.vd.surfaceAlt,
-          borderRadius: BorderRadius.circular(20),
-        ),
-      );
+      return const FocusSkeleton();
     }
     final next = vm.upNext;
-    final classCard = NextUpCard(
-      state: next,
-      emptyText: teacherNextUpEmpty,
-      showClassCode: true,
-      onAttendance: () => _goNamed('/ems_attendance_gv'),
-    );
+    final e = next.entry;
+    final classCard = e == null
+        ? const CalmFocusCard(
+            text: teacherNextUpEmpty,
+            icon: Icons.event_available,
+          )
+        : CompactFocusCard(
+            chip: next.statusLabel,
+            live: next.phase == NextUpPhase.ongoing,
+            right: next.countdown,
+            title: e.subject,
+            line: [
+              next.timeRange,
+              if (e.room.isNotEmpty) e.room,
+              if (e.classCode.isNotEmpty) e.classCode,
+            ].join(' · '),
+            action: 'Điểm danh',
+            onAction: () => _goNamed('/ems_attendance_gv'),
+          );
     if (!_staff) return classCard;
     return _classWins(next) ? classCard : office;
   }
@@ -235,9 +240,6 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
   }
 
   Widget _homeBody() {
-    final t = context.vd;
-    final bar = HomePrefs.bottomBar.value;
-    final canGive = _can['give_work'] == true;
     return Column(
       children: [
         HomeHeaderBar(
@@ -255,45 +257,41 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
                 label: 'Tin nhắn',
                 onTap: () => _goNamed('/teacher_conversations'),
               ),
-            if (!bar)
-              HeaderRoundButton(
-                initials: initialsOf(_name),
-                label: 'Tài khoản',
-                onTap: () => _go(_profile(asPage: true)),
-              ),
           ],
         ),
+        // Tight: focus card, one action and the places fill the screen; the
+        // tiles take the height that is left (no empty band on a tall phone,
+        // no scrolling on 360 × 640 dp). Pull to refresh still works.
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              await Future.wait([
-                _refresh(),
-                if (_vm != null) _vm!.loadOverview(),
-              ]);
-            },
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _focus(),
-                if (canGive)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _go(const GiveTaskScreen()),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Giao việc'),
-                      ),
+          child: LayoutBuilder(
+            builder: (context, box) => RefreshIndicator(
+              onRefresh: () async {
+                await Future.wait([
+                  _refresh(),
+                  if (_vm != null) _vm!.loadOverview(),
+                ]);
+              },
+              child: ListView(
+                padding: EdgeInsets.zero,
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: box.maxHeight,
+                    child: Column(
+                      children: [
+                        _focus(),
+                        _createAction(),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                            child: HomeTileGrid(tiles: _tiles),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  child: HomeTileGrid(tiles: _tiles),
-                ),
-                if (kDebugMode) _debugSwitch(t, bar),
-                const SizedBox(height: 24),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -301,34 +299,62 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
     );
   }
 
-  Widget _debugSwitch(VdTokens t, bool bar) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: Material(
-      color: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: t.hairline),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: SwitchListTile(
-        dense: true,
-        title: Text(
-          'DEBUG · ${bar ? 'Có thanh dưới' : 'Không thanh dưới'}',
-          style: TextStyle(color: t.inkMuted, fontSize: 13),
+  /// "+ Tạo": Giao việc and Gửi thông báo, each only if the person may do it;
+  /// with one choice the button does that one thing and carries its name.
+  Widget _createAction() {
+    final canGive = _can['give_work'] == true;
+    final canNotice = _teacher || _staff;
+    final choices = <(IconData, String, VoidCallback)>[
+      if (canGive)
+        (Icons.task_alt, 'Giao việc', () => _go(const GiveTaskScreen())),
+      if (canNotice)
+        (
+          Icons.campaign_outlined,
+          'Gửi thông báo',
+          () => _go(const NoticeComposeScreen()),
         ),
-        value: bar,
-        onChanged: (v) async {
-          await HomePrefs.setBottomBar(v);
-          if (mounted) setState(() => _tab = 0);
-        },
+    ];
+    if (choices.isEmpty) return const SizedBox(height: 4);
+    final one = choices.length == 1;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 44,
+        child: OutlinedButton.icon(
+          onPressed: one
+              ? choices.first.$3
+              : () => showModalBottomSheet<void>(
+                  context: context,
+                  showDragHandle: true,
+                  builder: (ctx) => SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final c in choices)
+                          ListTile(
+                            leading: Icon(c.$1),
+                            title: Text(c.$2),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              c.$3();
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+          icon: Icon(one ? choices.first.$1 : Icons.add),
+          label: Text(one ? choices.first.$2 : 'Tạo'),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   String get _kindsLabel =>
       [if (_teacher) 'Giảng viên', if (_staff) 'Văn phòng'].join(' · ');
 
-  Widget _profile({bool asPage = false}) {
+  Widget _profile() {
     final code = _vm != null && _vm!.teacherCode != '–'
         ? 'Mã GV ${_vm!.teacherCode} · $_kindsLabel'
         : _kindsLabel;
@@ -349,11 +375,7 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
           : null,
       onLogout: _logout,
     );
-    if (!asPage) return tab;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Tài khoản')),
-      body: tab,
-    );
+    return tab;
   }
 
   Future<void> _logout() async {
@@ -369,41 +391,34 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final vd = context.vd;
-    return ValueListenableBuilder<bool>(
-      valueListenable: HomePrefs.bottomBar,
-      builder: (context, bar, _) {
-        final showProfile = bar && _tab == 1;
-        final listen = _vm == null ? null : _vm!;
-        Widget body() => showProfile ? _profile() : _homeBody();
-        return Scaffold(
-          backgroundColor: vd.bg,
-          body: PageTransitionSwitcher(
-            duration: VdMotion.of(context).standard,
-            transitionBuilder: (child, primary, secondary) =>
-                FadeThroughTransition(
-                  animation: primary,
-                  secondaryAnimation: secondary,
-                  fillColor: vd.bg,
-                  child: child,
+    final showProfile = _tab == 1;
+    final listen = _vm;
+    Widget body() => showProfile ? _profile() : _homeBody();
+    return Scaffold(
+      backgroundColor: vd.bg,
+      body: PageTransitionSwitcher(
+        duration: VdMotion.of(context).standard,
+        transitionBuilder: (child, primary, secondary) => FadeThroughTransition(
+          animation: primary,
+          secondaryAnimation: secondary,
+          fillColor: vd.bg,
+          child: child,
+        ),
+        child: KeyedSubtree(
+          key: ValueKey(showProfile),
+          child: listen == null
+              ? body()
+              : ListenableBuilder(
+                  listenable: listen,
+                  builder: (_, _) => body(),
                 ),
-            child: KeyedSubtree(
-              key: ValueKey(showProfile),
-              child: listen == null
-                  ? body()
-                  : ListenableBuilder(
-                      listenable: listen,
-                      builder: (_, _) => body(),
-                    ),
-            ),
-          ),
-          bottomNavigationBar: bar
-              ? GvBottomNav(
-                  currentIndex: _tab,
-                  onSelect: (i) => setState(() => _tab = i),
-                )
-              : null,
-        );
-      },
+        ),
+      ),
+      // Owner 2026-11-16: the two-tab bar stays on every home.
+      bottomNavigationBar: GvBottomNav(
+        currentIndex: _tab,
+        onSelect: (i) => setState(() => _tab = i),
+      ),
     );
   }
 }

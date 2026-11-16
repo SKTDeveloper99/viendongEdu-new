@@ -5,6 +5,8 @@ import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
 import '../work/piece_screen.dart';
 import '../work/work_api.dart';
+import '../nhom/nhom_screens.dart';
+import '../notices/notice_screens.dart';
 
 /// The bell for office accounts and teachers with office duties (Overlord
 /// slice): `GET /v1/notifications?work=1` (work bells only; system rows stay
@@ -69,11 +71,18 @@ class _BellScreenState extends State<BellScreen> {
     }
     final p = (n['payload'] as Map?) ?? const {};
     final taskId = p['task_id']?.toString();
+    final spaceId = p['space_id']?.toString();
+    final noticeId = p['notice_id']?.toString();
+    Widget? to;
     if (taskId != null && taskId.isNotEmpty) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => PieceScreen(taskId: taskId)),
-      );
+      to = PieceScreen(taskId: taskId);
+    } else if (spaceId != null && spaceId.isNotEmpty) {
+      to = NhomScreen(spaceId: spaceId, name: 'Nhóm');
+    } else if (noticeId != null && noticeId.isNotEmpty) {
+      to = NoticeDetailScreen(id: noticeId);
+    }
+    if (to != null) {
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => to!));
     }
   }
 
@@ -110,12 +119,18 @@ class _BellScreenState extends State<BellScreen> {
                       itemBuilder: (_, i) {
                         final n = rows[i];
                         final unread = n['read_at'] == null;
+                        final pl = (n['payload'] as Map?) ?? const {};
+                        final notice = n['category'] == 'notice';
                         final hasPiece =
-                            ((n['payload'] as Map?)?['task_id']) != null;
+                            pl['task_id'] != null ||
+                            pl['space_id'] != null ||
+                            pl['notice_id'] != null;
                         return ListTile(
                           onTap: () => _open(n),
                           leading: Icon(
-                            hasPiece
+                            notice
+                                ? Icons.campaign_outlined
+                                : hasPiece
                                 ? Icons.task_alt
                                 : Icons.notifications_none,
                             color: unread ? vd.accent : vd.inkFaint,

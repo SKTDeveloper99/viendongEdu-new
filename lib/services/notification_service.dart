@@ -132,6 +132,8 @@ class NotificationService {
       final spaceId = message.data['space_id']?.toString();
       if (taskId != null && id.hasMatch(taskId)) return '/piece/$taskId';
       if (spaceId != null && id.hasMatch(spaceId)) return '/group/$spaceId';
+      final noticeId = message.data['notice_id']?.toString();
+      if (noticeId != null && id.hasMatch(noticeId)) return '/notice/$noticeId';
       if (session.role == CrmRole.staff) return '/bell';
     }
     final isTeacher = AppSession.instance.isGiangVien;

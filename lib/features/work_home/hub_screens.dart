@@ -14,6 +14,7 @@ import '../teacher_home/widgets/week_strip.dart';
 import '../work/piece_screen.dart';
 import '../work/work_api.dart';
 import 'home_prefs.dart';
+import '../notices/notice_screens.dart';
 import 'home_widgets.dart';
 
 Future<void> openWeekPage(BuildContext context) async {
@@ -227,6 +228,15 @@ class VanPhongScreen extends StatelessWidget {
               const CrmTarget.congVan().routeName,
             ),
           ),
+        HubRow(
+          icon: Icons.campaign_outlined,
+          title: 'Thông báo đã gửi',
+          subtitle: 'Đã xem bao nhiêu người',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SentNoticesScreen()),
+          ),
+        ),
         HubRow(
           icon: Icons.edit_note,
           title: 'Nhật ký làm việc',

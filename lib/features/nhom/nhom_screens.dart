@@ -10,6 +10,7 @@ import '../work/work_api.dart';
 import 'nhom_api.dart';
 import 'small_group_api.dart';
 import 'small_group_screens.dart';
+import '../notices/notice_screens.dart';
 
 Future<void> _guard(
   BuildContext context,
@@ -187,6 +188,7 @@ class _NhomScreenState extends State<NhomScreen> {
   List<Map<String, dynamic>> _lists = const [];
   String? _error;
   final _postCtrl = TextEditingController();
+  bool _postUrgent = false;
 
   @override
   void initState() {
@@ -230,9 +232,17 @@ class _NhomScreenState extends State<NhomScreen> {
     final text = _postCtrl.text.trim();
     if (text.isEmpty) return;
     try {
-      await NhomApi.post(widget.spaceId, text);
+      final r = await NhomApi.post(widget.spaceId, text, urgent: _postUrgent);
       _postCtrl.clear();
-      if (mounted) showSuccessSnack(context, 'Đã đăng.');
+      if (mounted) {
+        showSuccessSnack(
+          context,
+          r['urgent_error'] != null
+              ? 'Đã đăng; chưa đổ chuông: ${r['urgent_error']}'
+              : (_postUrgent ? 'Đã đăng và đổ chuông cả nhóm.' : 'Đã đăng.'),
+        );
+        setState(() => _postUrgent = false);
+      }
       await _load();
     } catch (e) {
       if (mounted) await _guard(context, e, (m) => showErrorSnack(context, m));
@@ -339,6 +349,33 @@ class _NhomScreenState extends State<NhomScreen> {
             ),
             const SizedBox(width: 8),
             IconButton.filled(onPressed: _post, icon: const Icon(Icons.send)),
+          ],
+        ),
+        // An ordinary post is a badge only; "Cần xem ngay" rings the group.
+        Row(
+          children: [
+            FilterChip(
+              label: const Text('Cần xem ngay'),
+              selected: _postUrgent,
+              onSelected: (v) => setState(() => _postUrgent = v),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => NoticeComposeScreen(
+                    preset: {
+                      'kind': 'space',
+                      'id': widget.spaceId,
+                      'name': widget.name,
+                    },
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.campaign_outlined, size: 18),
+              label: const Text('Gửi thông báo'),
+            ),
           ],
         ),
         const SizedBox(height: 12),

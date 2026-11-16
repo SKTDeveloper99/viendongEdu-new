@@ -21,10 +21,15 @@ abstract final class NhomApi {
     return EmsApiService.rows(b['assignments'] ?? const []);
   }
 
-  static Future<void> post(String id, String body) => EmsApiService.sendMap(
+  /// urgent: "Cần xem ngay" (a banner to the group, the sender's daily cap).
+  static Future<Map<String, dynamic>> post(
+    String id,
+    String body, {
+    bool urgent = false,
+  }) => EmsApiService.sendMap(
     'POST',
     '/spaces/$id/posts',
-    body: {'kind': 'discussion', 'body': body},
+    body: {'kind': 'discussion', 'body': body, if (urgent) 'urgent': true},
   );
 
   /// `POST /spaces/:id/tasks {title, description?, due_at?, assignee_user_ids?}`
