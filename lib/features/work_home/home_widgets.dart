@@ -36,7 +36,7 @@ class HomeTileGrid extends StatelessWidget {
         final w = (c.maxWidth - gap * (cols - 1)) / cols;
         // Tiles take the height that is left, within sensible bounds.
         final h = c.maxHeight.isFinite
-            ? ((c.maxHeight - gap * (rows - 1)) / rows).clamp(64.0, 132.0)
+            ? ((c.maxHeight - gap * (rows - 1)) / rows).clamp(64.0, 240.0)
             : (cols == 3 ? 104.0 : 92.0);
         return Wrap(
           spacing: gap,
@@ -47,7 +47,12 @@ class HomeTileGrid extends StatelessWidget {
               SizedBox(
                 width: w,
                 height: h,
-                child: HomeTile(spec: t, wide: cols == 2, compact: h < 92),
+                child: HomeTile(
+                  spec: t,
+                  wide: cols == 2,
+                  compact: h < 92,
+                  scale: (h / 112).clamp(0.8, 1.6),
+                ),
               ),
           ],
         );
@@ -60,22 +65,28 @@ class HomeTile extends StatelessWidget {
   final HomeTileSpec spec;
   final bool wide;
   final bool compact;
+  final double scale;
   const HomeTile({
     super.key,
     required this.spec,
     this.wide = false,
     this.compact = false,
+    this.scale = 1,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.vd;
-    final d = compact ? 36.0 : 44.0;
+    final d = (compact ? 36.0 : 44.0) * (scale > 1 ? scale : 1);
     final icon = Container(
       width: d,
       height: d,
       decoration: BoxDecoration(color: t.accentSoft, shape: BoxShape.circle),
-      child: Icon(spec.icon, color: t.primary, size: compact ? 20 : 24),
+      child: Icon(
+        spec.icon,
+        color: t.primary,
+        size: (compact ? 20.0 : 24.0) * (scale > 1 ? scale : 1),
+      ),
     );
     final label = Text(
       spec.label,
@@ -559,6 +570,89 @@ class CompactFocusCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "Tiếp theo": what waits after the focus card, on a phone tall enough.
+class NextList extends StatelessWidget {
+  final List<Map> items;
+  final void Function(String taskId) onOpen;
+  const NextList({super.key, required this.items, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.vd;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 18,
+            child: Text(
+              'TIẾP THEO',
+              style: TextStyle(
+                fontSize: 12,
+                letterSpacing: 0.6,
+                fontWeight: FontWeight.w700,
+                color: t.inkMuted,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          for (final q in items)
+            SizedBox(
+              height: 52,
+              child: VdPressable(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => onOpen('${q['task_id']}'),
+                  child: Row(
+                    children: [
+                      Icon(
+                        q['kind'] == 'review'
+                            ? Icons.fact_check_outlined
+                            : Icons.schedule,
+                        size: 20,
+                        color: q['kind'] == 'review' ? t.warning : t.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${q['title'] ?? ''}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: t.ink,
+                              ),
+                            ),
+                            Text(
+                              q['kind'] == 'review'
+                                  ? 'Chờ duyệt · ${q['person'] ?? ''}'
+                                  : (dueLabel(q['at']).isEmpty
+                                        ? 'Việc của tôi'
+                                        : dueLabel(q['at'])),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12, color: t.inkMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: t.inkFaint),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

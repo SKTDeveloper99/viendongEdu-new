@@ -281,12 +281,7 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
                       children: [
                         _focus(),
                         _createAction(),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                            child: HomeTileGrid(tiles: _tiles),
-                          ),
-                        ),
+                        Expanded(child: _placesAndNext()),
                       ],
                     ),
                   ),
@@ -296,6 +291,46 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Tight home: on a small phone the tiles take what is left (no scrolling);
+  /// on a tall phone the spare height lists what comes next instead of
+  /// stretching the tiles or leaving an empty band.
+  Widget _placesAndNext() {
+    final tiles = _tiles;
+    final rows = tiles.length >= 5 ? 2 : (tiles.length / 2).ceil();
+    final shown =
+        '${(_counts?['first_review'] as Map?)?['task_id'] ?? (_counts?['next_due'] as Map?)?['task_id'] ?? ''}';
+    final next = ((_counts?['queue'] as List?) ?? const [])
+        .cast<Map>()
+        .where((q) => '${q['task_id']}' != shown)
+        .toList();
+    return LayoutBuilder(
+      builder: (context, box) {
+        const rowH = 52.0;
+        const headH = 30.0;
+        final idealGrid = rows * 112.0 + 12 * (rows - 1) + 24;
+        final extra = box.maxHeight - idealGrid;
+        final n = extra > headH + rowH
+            ? ((extra - headH) / rowH).floor().clamp(0, next.length)
+            : 0;
+        return Column(
+          children: [
+            if (n > 0)
+              NextList(
+                items: next.take(n).toList(),
+                onOpen: (id) => _go(PieceScreen(taskId: id)),
+              ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: HomeTileGrid(tiles: tiles),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
