@@ -303,11 +303,13 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
 
   Widget _debugSwitch(VdTokens t, bool bar) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: t.hairline),
+    child: Material(
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: t.hairline),
         borderRadius: BorderRadius.circular(12),
       ),
+      clipBehavior: Clip.antiAlias,
       child: SwitchListTile(
         dense: true,
         title: Text(

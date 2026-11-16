@@ -18,6 +18,9 @@ class BellScreen extends StatefulWidget {
 
 class _BellScreenState extends State<BellScreen> {
   List<Map<String, dynamic>>? _rows;
+
+  /// The same number the home shows: /auth/app/me counts.bell_work_unread.
+  int? _unread;
   String? _error;
 
   @override
@@ -34,6 +37,10 @@ class _BellScreenState extends State<BellScreen> {
         query: const {'limit': '50', 'work': '1'},
       );
       final rows = EmsApiService.rows(b['notifications'] ?? const []);
+      try {
+        final me = await EmsApiService.sendMap('GET', '/auth/app/me');
+        _unread = asInt((me['counts'] as Map?)?['bell_work_unread']);
+      } catch (_) {}
       if (mounted)
         setState(() {
           _rows = rows;
@@ -55,7 +62,10 @@ class _BellScreenState extends State<BellScreen> {
         'PATCH',
         '/v1/notifications/${n['kind']}/${n['id']}/read',
       ).catchError((_) => <String, dynamic>{});
-      setState(() => n['read_at'] = DateTime.now().toIso8601String());
+      setState(() {
+        n['read_at'] = DateTime.now().toIso8601String();
+        if (_unread != null && _unread! > 0) _unread = _unread! - 1;
+      });
     }
     final p = (n['payload'] as Map?) ?? const {};
     final taskId = p['task_id']?.toString();
@@ -73,7 +83,13 @@ class _BellScreenState extends State<BellScreen> {
     final rows = _rows;
     return Scaffold(
       backgroundColor: vd.bg,
-      appBar: AppBar(title: const Text('Thông báo')),
+      appBar: AppBar(
+        title: Text(
+          _unread == null || _unread == 0
+              ? 'Thông báo'
+              : 'Thông báo · $_unread chưa đọc',
+        ),
+      ),
       body: _error != null
           ? Center(child: Text(_error!))
           : rows == null
