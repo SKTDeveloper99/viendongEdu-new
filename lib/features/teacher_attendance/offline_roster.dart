@@ -15,7 +15,8 @@ OfflineRosterState? offlineRosterFromFailure(
   EmsSession session,
 ) {
   final status = error.statusCode;
-  final transient = status == null || status >= 500 || error.code == 'invalid_response';
+  final transient =
+      status == null || status >= 500 || error.code == 'invalid_response';
   if (!transient ||
       draft == null ||
       draft.students.isEmpty ||

@@ -19,7 +19,10 @@ class ClassStudentsTab extends StatelessWidget {
     final students = vm.students;
     if (students.isEmpty) {
       return Center(
-        child: Text('Không có học viên', style: TextStyle(color: context.vd.inkMuted)),
+        child: Text(
+          'Không có học viên',
+          style: TextStyle(color: context.vd.inkMuted),
+        ),
       );
     }
     return Column(
@@ -28,11 +31,7 @@ class ClassStudentsTab extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Row(
             children: [
-              Icon(
-                Icons.people_outline,
-                size: 15,
-                color: context.vd.primary,
-              ),
+              Icon(Icons.people_outline, size: 15, color: context.vd.primary),
               const SizedBox(width: 6),
               Text(
                 'Tổng: ${students.length} sinh viên',

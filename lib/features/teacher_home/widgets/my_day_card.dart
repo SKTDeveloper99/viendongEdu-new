@@ -21,11 +21,7 @@ class MyDayCard extends StatelessWidget {
             padding: EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(
-                  Icons.today_outlined,
-                  color: context.vd.primary,
-                  size: 30,
-                ),
+                Icon(Icons.today_outlined, color: context.vd.primary, size: 30),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -38,7 +34,10 @@ class MyDayCard extends StatelessWidget {
                       SizedBox(height: 3),
                       Text(
                         'Lịch dạy, điểm danh và sinh viên cần phản hồi',
-                        style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.vd.inkMuted,
+                        ),
                       ),
                     ],
                   ),

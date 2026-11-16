@@ -63,9 +63,20 @@ class _PieceScreenState extends State<PieceScreen> {
     }
   }
 
-  List<Map<String, dynamic>> get _assignments =>
-      ((_task?['assignments'] as List?) ?? const [])
-          .cast<Map<String, dynamic>>();
+  // Hand-ins waiting for a check first, then open parts, then finished ones.
+  List<Map<String, dynamic>> get _assignments {
+    final list = ((_task?['assignments'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>()
+        .toList();
+    int rank(Map a) => switch ('${a['status']}') {
+      'submitted' || 'in_review' => 0,
+      'in_progress' || 'blocked' => 1,
+      'assigned' => 2,
+      _ => 3,
+    };
+    list.sort((a, b) => rank(a).compareTo(rank(b)));
+    return list;
+  }
 
   bool get _iGave => _task != null && '${_task!['created_by']}' == _me;
 
@@ -115,7 +126,9 @@ class _PieceScreenState extends State<PieceScreen> {
           16,
           0,
           16,
-          MediaQuery.of(ctx).viewInsets.bottom + 16,
+          MediaQuery.of(ctx).viewInsets.bottom +
+              MediaQuery.paddingOf(ctx).bottom +
+              16,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -445,6 +458,8 @@ class _PieceScreenState extends State<PieceScreen> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(
                 '“${last['note']}”',
+                maxLines: 6,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: vd.ink, fontStyle: FontStyle.italic),
               ),
             ),

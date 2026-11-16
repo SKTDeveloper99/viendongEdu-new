@@ -6,6 +6,7 @@ import '../../services/crm_session_guard.dart';
 import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
 import '../bell/bell_screen.dart';
+import '../nhom/nhom_screens.dart';
 import '../work/my_work_screen.dart';
 
 /// `GET /auth/app/me` → `{kinds, permissions, counts}` (Overlord slice).
@@ -80,8 +81,8 @@ List<StaffTile> staffTiles(
     StaffTile(
       Icons.groups_2_outlined,
       'Nhóm',
-      native: false,
-      onTap: () => Navigator.pushNamed(context, CrmTarget.groups().routeName),
+      native: true,
+      onTap: () => push(const NhomListScreen()),
     ),
     StaffTile(
       Icons.description_outlined,

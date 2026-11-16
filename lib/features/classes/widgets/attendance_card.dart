@@ -38,15 +38,21 @@ class AttendanceCard extends StatelessWidget {
         color: context.vd.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: context.vd.shadow, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(
+            color: context.vd.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Thống kê điểm danh',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const Text(
+            'Thống kê điểm danh',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -85,13 +91,18 @@ class AttendanceCard extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(pct == null ? '—' : '$pct%',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: context.vd.ink)),
-              Text('có mặt',
-                  style: TextStyle(fontSize: 10, color: context.vd.inkMuted)),
+              Text(
+                pct == null ? '—' : '$pct%',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: context.vd.ink,
+                ),
+              ),
+              Text(
+                'có mặt',
+                style: TextStyle(fontSize: 10, color: context.vd.inkMuted),
+              ),
             ],
           ),
         ],
@@ -100,11 +111,11 @@ class AttendanceCard extends StatelessWidget {
   }
 
   PieChartSectionData _slice(int value, Color color) => PieChartSectionData(
-        value: value.toDouble(),
-        color: color,
-        radius: 28,
-        showTitle: false,
-      );
+    value: value.toDouble(),
+    color: color,
+    radius: 28,
+    showTitle: false,
+  );
 
   Widget _legend(BuildContext context) {
     return Column(
@@ -129,12 +140,12 @@ class AttendanceCard extends StatelessWidget {
         const Divider(height: 20),
         Row(
           children: [
-            Icon(Icons.layers_outlined,
-                size: 15, color: context.vd.primary),
+            Icon(Icons.layers_outlined, size: 15, color: context.vd.primary),
             const SizedBox(width: 6),
-            Text('Tổng: $total buổi',
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(
+              'Tổng: $total buổi',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
           ],
         ),
       ],
@@ -154,7 +165,9 @@ class _LegendRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = total;
-    final suffix = t == null || t == 0 ? '' : '  (${(count / t * 100).round()}%)';
+    final suffix = t == null || t == 0
+        ? ''
+        : '  (${(count / t * 100).round()}%)';
     return Row(
       children: [
         Container(
@@ -164,14 +177,19 @@ class _LegendRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(label,
-              style: TextStyle(fontSize: 12, color: context.vd.inkMuted)),
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+          ),
         ),
-        Text('$count$suffix',
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: total == null ? context.vd.inkMuted : color)),
+        Text(
+          '$count$suffix',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: total == null ? context.vd.inkMuted : color,
+          ),
+        ),
       ],
     );
   }

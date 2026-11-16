@@ -113,7 +113,14 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
         backgroundColor: vd.bg,
         appBar: AppBar(
           title: const Text('Việc của tôi'),
-          bottom: TabBar(tabs: tabs, isScrollable: false),
+          bottom: TabBar(
+            tabs: tabs,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            labelColor: vd.onHeader,
+            unselectedLabelColor: vd.onHeader.withValues(alpha: 0.7),
+            indicatorColor: vd.onHeader,
+          ),
         ),
         body: TabBarView(
           children: [

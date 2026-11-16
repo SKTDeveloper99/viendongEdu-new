@@ -62,7 +62,10 @@ class SessionStudentList extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       s.mssv ?? '',
-                      style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.vd.inkMuted,
+                      ),
                     ),
                   ],
                 ),

@@ -15,106 +15,108 @@ class ClassCard extends StatelessWidget {
     final mhten = lop.subjectName ?? '';
     final mhma = lop.subjectCode ?? '';
     final sotinchi = lop.credits ?? 0;
-    return VdPressable(child: GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: context.vd.surface,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: context.vd.shadow,
-              blurRadius: 5,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text.rich(
-                      TextSpan(
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.vd.ink,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: mhma,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: context.vd.primary,
+    return VdPressable(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: context.vd.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: context.vd.shadow,
+                blurRadius: 5,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text.rich(
+                        TextSpan(
+                          style: TextStyle(fontSize: 14, color: context.vd.ink),
+                          children: [
+                            TextSpan(
+                              text: mhma,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: context.vd.primary,
+                              ),
                             ),
-                          ),
-                          const TextSpan(text: ' · '),
-                          TextSpan(
-                            text: mhten,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ],
+                            const TextSpan(text: ' · '),
+                            TextSpan(
+                              text: mhten,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      lop.sectionCode,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.vd.ink,
+                      const SizedBox(height: 4),
+                      Text(
+                        lop.sectionCode,
+                        style: TextStyle(fontSize: 12, color: context.vd.ink),
+                        softWrap: true,
                       ),
-                      softWrap: true,
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        if (sotinchi > 0) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          if (sotinchi > 0) ...[
+                            Icon(
+                              Icons.school_outlined,
+                              size: 13,
+                              color: context.vd.inkMuted,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$sotinchi tín chỉ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.vd.inkMuted,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
                           Icon(
-                            Icons.school_outlined,
+                            Icons.people_outline,
                             size: 13,
                             color: context.vd.inkMuted,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '$sotinchi tín chỉ',
+                            '${lop.enrolledStudents} SV',
                             style: TextStyle(
                               fontSize: 12,
                               color: context.vd.inkMuted,
                             ),
                           ),
-                          const SizedBox(width: 12),
                         ],
-                        Icon(
-                          Icons.people_outline,
-                          size: 13,
-                          color: context.vd.inkMuted,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${lop.enrolledStudents} SV',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.vd.inkMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: Icon(Icons.chevron_right, color: context.vd.inkFaint, size: 20),
-            ),
-          ],
+              Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: context.vd.inkFaint,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }

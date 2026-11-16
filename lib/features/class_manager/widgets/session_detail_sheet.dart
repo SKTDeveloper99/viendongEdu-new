@@ -88,7 +88,10 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
                     ),
                     Text(
                       '${b.startTime ?? ''} – ${fmtTime(b.endTime)}',
-                      style: TextStyle(fontSize: 13, color: context.vd.inkMuted),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.vd.inkMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -133,7 +136,10 @@ class _SessionDetailSheetState extends State<SessionDetailSheet> {
     final students = _vm.students;
     if (students.isEmpty) {
       return Center(
-        child: Text('Không có học viên', style: TextStyle(color: context.vd.inkMuted)),
+        child: Text(
+          'Không có học viên',
+          style: TextStyle(color: context.vd.inkMuted),
+        ),
       );
     }
     return SessionStudentList(vm: _vm);

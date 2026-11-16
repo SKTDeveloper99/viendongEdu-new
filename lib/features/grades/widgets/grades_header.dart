@@ -26,16 +26,20 @@ class GradesHeader extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Icon(Icons.arrow_back_ios,
-                    color: context.vd.onPrimary, size: 20),
+                child: Icon(
+                  Icons.arrow_back_ios,
+                  color: context.vd.onPrimary,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
                 'Bảng điểm',
                 style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: context.vd.onPrimary),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: context.vd.onPrimary,
+                ),
               ),
             ],
           ),
@@ -47,8 +51,10 @@ class GradesHeader extends StatelessWidget {
             labelColor: context.vd.onPrimary,
             unselectedLabelColor: context.vd.onPrimary.withValues(alpha: 0.75),
             labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-            labelStyle:
-                const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            labelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
             tabs: const [
               Tab(text: 'Tổng quan'),
               Tab(text: 'Chi tiết'),

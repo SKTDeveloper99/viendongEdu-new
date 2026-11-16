@@ -14,7 +14,8 @@ class ClassInfoTab extends StatelessWidget {
     final sotinchi = lop.credits ?? 0;
     // IMS leaves start == end on classes that run all term: those dates and
     // the exam date beside them are placeholders, so unknown (N/A).
-    final placeholder = (lop.ngayBatDau ?? '').isNotEmpty &&
+    final placeholder =
+        (lop.ngayBatDau ?? '').isNotEmpty &&
         fmtDate(lop.ngayBatDau) == fmtDate(lop.ngayKetThuc);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),

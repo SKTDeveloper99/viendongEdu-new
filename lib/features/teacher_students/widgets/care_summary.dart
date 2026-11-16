@@ -18,10 +18,7 @@ class CareSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _Tile(
-            value: owing,
-            label: 'sinh viên còn nợ học phí',
-          ),
+          child: _Tile(value: owing, label: 'sinh viên còn nợ học phí'),
         ),
         const SizedBox(width: 10),
         Expanded(

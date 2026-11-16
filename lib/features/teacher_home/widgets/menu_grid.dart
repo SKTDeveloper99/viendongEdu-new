@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/menu_item.dart';
-import '../../../core/crm_web/crm_web_target.dart';
 import '../../teacher_attendance/widgets/pending_send_badge.dart';
 import '../../teacher_conversations/widgets/messages_tile.dart';
 import '../../../services/app_session.dart';
 import '../../staff_home/staff_home_screen.dart';
+import '../../nhom/nhom_screens.dart';
 
 /// Navigation tiles of the teacher home.
 class MenuGrid extends StatelessWidget {
@@ -75,8 +75,10 @@ class MenuGrid extends StatelessWidget {
           index: 8,
           icon: Icons.groups_2_outlined,
           label: 'Nhóm',
-          onTap: () =>
-              Navigator.pushNamed(context, CrmTarget.groups().routeName),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NhomListScreen()),
+          ),
         ),
         // A teacher with office duties also gets the office tiles the
         // server says she holds (one account, one sign-in).

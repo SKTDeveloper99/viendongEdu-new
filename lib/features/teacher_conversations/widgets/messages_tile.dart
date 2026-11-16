@@ -33,7 +33,11 @@ class _MessagesTileState extends State<MessagesTile> {
     try {
       final n =
           await (widget.loadCount ?? TeacherConversationsApi.unreadCount)();
-      if (mounted) setState(() { _unread = n; _failed = false; });
+      if (mounted)
+        setState(() {
+          _unread = n;
+          _failed = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     }
