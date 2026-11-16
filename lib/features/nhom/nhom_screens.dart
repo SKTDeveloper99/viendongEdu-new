@@ -232,7 +232,7 @@ class _NhomScreenState extends State<NhomScreen> {
     final text = _postCtrl.text.trim();
     if (text.isEmpty) return;
     try {
-      final r = await NhomApi.post(widget.spaceId, text, urgent: _postUrgent);
+      final r = await NhomApi.post(widget.spaceId, text, urgent: false);
       _postCtrl.clear();
       if (mounted) {
         showSuccessSnack(
@@ -351,14 +351,9 @@ class _NhomScreenState extends State<NhomScreen> {
             IconButton.filled(onPressed: _post, icon: const Icon(Icons.send)),
           ],
         ),
-        // An ordinary post is a badge only; "Cần xem ngay" rings the group.
+        // A post rings every other member (bell row and banner).
         Row(
           children: [
-            FilterChip(
-              label: const Text('Cần xem ngay'),
-              selected: _postUrgent,
-              onSelected: (v) => setState(() => _postUrgent = v),
-            ),
             const Spacer(),
             TextButton.icon(
               onPressed: () => Navigator.push(

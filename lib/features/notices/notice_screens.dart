@@ -115,7 +115,6 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
       final r = await NoticeApi.send({
         'body': _body.text.trim(),
         'to': to,
-        if (_many) 'level': _urgent ? 'urgent' : 'normal',
         'confirm_count': ?confirm,
       });
       if (!mounted) return;
@@ -144,9 +143,7 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
           builder: (ctx) => AlertDialog(
             title: Text(e.message),
             content: Text(
-              _urgent
-                  ? 'Mỗi người sẽ nhận chuông trên điện thoại.'
-                  : 'Mỗi người thấy trong mục Thông báo; điện thoại không đổ chuông.',
+              'Mỗi người sẽ nhận chuông trên điện thoại.',
             ),
             actions: [
               TextButton(
@@ -349,46 +346,10 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-          if (_many) ...[
-            const SizedBox(height: 4),
-            Text(
-              'MỨC',
-              style: TextStyle(
-                fontSize: 12,
-                letterSpacing: 0.6,
-                fontWeight: FontWeight.w700,
-                color: vd.inkMuted,
-              ),
-            ),
-            RadioListTile<bool>(
-              contentPadding: EdgeInsets.zero,
-              value: false,
-              groupValue: _urgent,
-              onChanged: (v) => setState(() => _urgent = false),
-              title: const Text('Thường'),
-              subtitle: const Text(
-                'Hiện trong mục Thông báo, điện thoại không đổ chuông.',
-              ),
-            ),
-            RadioListTile<bool>(
-              contentPadding: EdgeInsets.zero,
-              value: true,
-              groupValue: _urgent,
-              onChanged: _urgentLeft > 0
-                  ? (v) => setState(() => _urgent = true)
-                  : null,
-              title: const Text('Cần xem ngay'),
-              subtitle: Text(
-                _urgentLeft > 0
-                    ? 'Điện thoại mỗi người đổ chuông. Hôm nay bạn còn $_urgentLeft lần.'
-                    : 'Hôm nay bạn đã dùng hết lượt.',
-              ),
-            ),
-          ] else
-            Text(
-              'Người nhận sẽ thấy trên điện thoại.',
-              style: TextStyle(color: vd.inkMuted, fontSize: 13),
-            ),
+          Text(
+            'Mỗi người nhận có chuông trên điện thoại và một dòng trong mục Thông báo.',
+            style: TextStyle(color: context.vd.inkMuted, fontSize: 13),
+          ),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: ready ? _send : null,
@@ -556,7 +517,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
     final seen = ((d?['seen_people'] as List?) ?? const []).cast<Map>();
     final many = n['scope_kind'] != 'person';
     final canRing =
-        mine && notSeen.isNotEmpty && (!many || n['level'] == 'urgent');
+        mine && notSeen.isNotEmpty;
     return Scaffold(
       backgroundColor: vd.bg,
       appBar: AppBar(title: const Text('Thông báo')),
@@ -638,14 +599,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
                           'Nhắc lại ${notSeen.length} người chưa xem',
                         ),
                       ),
-                    ] else if (mine && notSeen.isNotEmpty && many)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Thông báo "Thường" không đổ chuông; người nhận vẫn thấy trong mục Thông báo.',
-                          style: TextStyle(color: vd.inkMuted, fontSize: 13),
-                        ),
-                      ),
+                    ],
                     const SizedBox(height: 16),
                     Text(
                       'CHƯA XEM (${notSeen.length})',
