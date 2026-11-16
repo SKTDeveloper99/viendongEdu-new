@@ -35,9 +35,12 @@ class HomeHeaderBar extends StatelessWidget {
 
   // The doodle beside the greeting only when the name fits beside it (a
   // shorter limit with one more round button; never with two). The name wins.
-  bool get _doodleFits =>
-      actions.length < 2 &&
-      name.characters.length <= (actions.isEmpty ? 24 : 18);
+  bool _doodleFits(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 400;
+    final n = name.characters.length;
+    if (actions.isEmpty) return n <= (wide ? 24 : 20);
+    return actions.length == 1 && wide && n <= 18;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +62,7 @@ class HomeHeaderBar extends StatelessWidget {
         children: [
           // With two or more extra round buttons the doodle would squeeze the
           // name; the name wins.
-          if (_doodleFits)
+          if (_doodleFits(context))
             Positioned(
               // Clear of the bell and of any extra round buttons beside it.
               right: 52 + 54.0 * actions.length,
@@ -69,13 +72,13 @@ class HomeHeaderBar extends StatelessWidget {
                 color: t.onHeader.withValues(alpha: 0.55),
               ),
             ),
-          _content(t),
+          _content(t, _doodleFits(context)),
         ],
       ),
     );
   }
 
-  Widget _content(VdTokens t) => Row(
+  Widget _content(VdTokens t, bool fits) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Expanded(
@@ -92,7 +95,7 @@ class HomeHeaderBar extends StatelessWidget {
             const SizedBox(height: 2),
             // A long name ellipsizes before reaching the doodle.
             Padding(
-              padding: EdgeInsets.only(right: _doodleFits ? 64 : 0),
+              padding: EdgeInsets.only(right: fits ? 64 : 0),
               child: Text(
                 name,
                 maxLines: 1,
