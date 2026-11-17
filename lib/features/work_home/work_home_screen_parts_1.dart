@@ -255,14 +255,23 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
         .cast<Map>()
         .where((q) => '${q['task_id']}' != shown)
         .toList();
+    // Owner 2026-11-17 ("make it look good, no hard laws"): Tiếp theo rows
+    // where there is room (never crowding the tiles, at most four), tiles a
+    // little taller when the phone is tall, and any space left sits above the
+    // tiles so they stay by the thumb and no band opens under them.
     return LayoutBuilder(
       builder: (context, box) {
         const rowH = 52.0;
         const headH = 30.0;
-        final idealGrid = rows * homeTileHeight + 12 * (rows - 1) + 24;
-        final extra = box.maxHeight - idealGrid;
-        final n = homeShowsNextList && extra > headH + rowH
-            ? ((extra - headH) / rowH).floor().clamp(0, next.length)
+        const gap = 12.0;
+        const pad = EdgeInsets.fromLTRB(16, 16, 16, 16);
+        final grid = rows * homeTileHeight + gap * (rows - 1);
+        final room = box.maxHeight - grid - pad.vertical;
+        final int n = homeShowsNextList && room >= headH + rowH + 8
+            ? ((room - headH - 8) / rowH)
+                  .floor()
+                  .clamp(0, math.min(next.length, 4))
+                  .toInt()
             : 0;
         return Column(
           children: [
@@ -271,10 +280,26 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
                 items: next.take(n).toList(),
                 onOpen: (id) => _go(PieceScreen(taskId: id)),
               ),
+            // The tiles take their height from what is really left: up to
+            // homeTileHeightTall, anchored at the bottom by the thumb.
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: HomeTileGrid(tiles: tiles),
+              child: LayoutBuilder(
+                builder: (context, c) {
+                  final h = rows == 0
+                      ? homeTileHeight
+                      : ((c.maxHeight - pad.vertical - gap * (rows - 1)) / rows)
+                            .clamp(64.0, homeTileHeightTall);
+                  return Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: pad,
+                      child: SizedBox(
+                        height: rows * h + gap * (rows - 1),
+                        child: HomeTileGrid(tiles: tiles, maxTileHeight: h),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

@@ -10,6 +10,7 @@ part 'home_widgets_parts_1.dart';
 /// The home tiles' comfortable height (three across / two across).
 const double homeTileHeight = 112;
 const double homeTileHeightWide = 96;
+const double homeTileHeightTall = 136; // tallest, on a tall phone with room
 
 /// One place the home offers: icon, one word, a badge only for what waits.
 class HomeTileSpec {
@@ -30,7 +31,10 @@ class HomeTileSpec {
 /// short set reads as intended, never as a hole.
 class HomeTileGrid extends StatelessWidget {
   final List<HomeTileSpec> tiles;
-  const HomeTileGrid({super.key, required this.tiles});
+
+  /// Tallest a tile may be (default: the comfortable height).
+  final double? maxTileHeight;
+  const HomeTileGrid({super.key, required this.tiles, this.maxTileHeight});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +47,8 @@ class HomeTileGrid extends StatelessWidget {
         // Owner 2026-11-17: tiles keep one comfortable height and never
         // stretch on an empty home; they shrink only when a small phone has
         // less room than that.
-        final comfortable = cols == 3 ? homeTileHeight : homeTileHeightWide;
+        final comfortable =
+            maxTileHeight ?? (cols == 3 ? homeTileHeight : homeTileHeightWide);
         final h = c.maxHeight.isFinite
             ? ((c.maxHeight - gap * (rows - 1)) / rows).clamp(64.0, comfortable)
             : comfortable;

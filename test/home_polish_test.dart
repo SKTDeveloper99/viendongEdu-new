@@ -60,4 +60,19 @@ void main() {
     final oneLine = (text.style?.fontSize ?? 17) * 1.6;
     expect(t.getSize(find.text(long)).height, greaterThan(oneLine));
   });
+
+  testWidgets('on a tall phone tiles grow to the tall cap, never beyond', (
+    t,
+  ) async {
+    await t.pumpWidget(
+      _app(
+        SizedBox(
+          width: 390,
+          height: 900,
+          child: HomeTileGrid(tiles: _six(), maxTileHeight: homeTileHeightTall),
+        ),
+      ),
+    );
+    expect(t.getSize(find.byType(HomeTile).first).height, homeTileHeightTall);
+  });
 }
