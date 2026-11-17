@@ -36,6 +36,7 @@ void main() {
     expect(body, contains('name="assignment_id"'));
     expect(body, contains('A1'));
     expect(body, contains('name="file"; filename="anh.jpg"'));
+    expect(body, contains('content-type: image/jpeg'));
     await dir.delete(recursive: true);
   });
 
@@ -44,7 +45,7 @@ void main() {
     final f = File('${dir.path}/a.jpg')..writeAsBytesSync([1]);
     EmsApiService.client = MockClient(
       (_) async => http.Response.bytes(
-        utf8.encode('{"error":"Tệp quá lớn"}'),
+        utf8.encode('{"error":"file_too_large"}'),
         413,
         headers: {'content-type': 'application/json; charset=utf-8'},
       ),
@@ -53,7 +54,11 @@ void main() {
       WorkApi.attach('T1', 'A1', f.path),
       throwsA(
         isA<EmsException>()
-            .having((e) => e.message, 'message', 'Tệp quá lớn')
+            .having(
+              (e) => e.message,
+              'message',
+              'Tệp quá lớn (tối đa 25 MB mỗi tệp).',
+            )
             .having((e) => e.statusCode, 'status', 413),
       ),
     );
@@ -73,6 +78,7 @@ void main() {
               onPressed: () async => got = await showHandInSheet(
                 ctx,
                 pick: () async => [(path: '/tmp/x.jpg', name: 'x.jpg')],
+                attach: true,
               ),
               child: const Text('open'),
             ),
@@ -91,5 +97,42 @@ void main() {
     await t.pumpAndSettle();
     expect(got?.note, 'xong');
     expect(got?.files.single.name, 'x.jpg');
+  });
+
+  test('a PDF keeps its name and type', () async {
+    final dir = await Directory.systemTemp.createTemp('handin');
+    final f = File('${dir.path}/Báo cáo.pdf')..writeAsBytesSync([37, 80]);
+    late http.Request seen;
+    EmsApiService.client = MockClient((req) async {
+      seen = req;
+      return http.Response('{"ok":true}', 201);
+    });
+    await WorkApi.attach('T1', 'A1', f.path, filename: 'bao-cao.pdf');
+    expect(seen.body, contains('filename="bao-cao.pdf"'));
+    expect(seen.body, contains('content-type: application/pdf'));
+    await dir.delete(recursive: true);
+  });
+
+  testWidgets('attachments are switched off: no Đính kèm in the sheet', (
+    t,
+  ) async {
+    expect(handInAttachEnabled, isFalse);
+    await t.pumpWidget(
+      MaterialApp(
+        theme: VdTheme.light(),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            body: TextButton(
+              onPressed: () => showHandInSheet(ctx),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await t.tap(find.text('open'));
+    await t.pumpAndSettle();
+    expect(find.text('Nộp phần việc'), findsOneWidget);
+    expect(find.byKey(const ValueKey('handin-attach')), findsNothing);
   });
 }

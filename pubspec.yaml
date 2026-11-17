@@ -62,6 +62,8 @@ dependencies:
   # Android photo chooser for the web view only; removable in one commit
   # (lib/features/crm_web/android_photo_picker.dart).
   image_picker: 1.2.4
+  mime: ^2.1.0
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:
