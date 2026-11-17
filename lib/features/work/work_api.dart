@@ -1,4 +1,5 @@
 import '../../services/ems_api_service.dart';
+import '../../services/ems_upload.dart';
 
 /// Native "Việc của tôi" (Overlord slice) on the JSON Viva's web already uses:
 /// `routes/tasks/tasks.js` under `/api/v1/tasks`.
@@ -74,6 +75,20 @@ abstract final class WorkApi {
         '/v1/tasks/$id/nudge-one',
         body: {'assignment_id': assignmentId, 'message': message},
       );
+
+  /// A file on my part of a piece, as the web sends it:
+  /// `POST /v1/tasks/:id/attachments` (multipart `file` + `assignment_id`).
+  static Future<Map<String, dynamic>> attach(
+    String id,
+    String assignmentId,
+    String filePath, {
+    String? filename,
+  }) => EmsUpload.file(
+    '/v1/tasks/$id/attachments',
+    filePath: filePath,
+    filename: filename,
+    fields: {'assignment_id': assignmentId},
+  );
 
   /// Receiver side: "Đã nhận", then start / hand in.
   static Future<void> acknowledge(String assignmentId) =>

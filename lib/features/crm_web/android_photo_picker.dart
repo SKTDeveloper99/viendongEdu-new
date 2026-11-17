@@ -2,9 +2,21 @@ import 'package:image_picker/image_picker.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 // The only file that uses image_picker (owner to confirm before any build).
-// Removing the package = delete this file and the one line in
-// crm_web_routes.dart that passes [pickPhotosForWebView]; Android then
-// does nothing on the page's attach button (iOS is unaffected).
+// Removing the package = delete this file, the one line in
+// crm_web_routes.dart that passes [pickPhotosForWebView] (Android then does
+// nothing on the page's attach button; iOS is unaffected) and the default
+// picker of the hand-in sheet (lib/features/work/hand_in_sheet.dart), whose
+// "Đính kèm ảnh" then has nothing to open.
+
+/// Photos for a hand-in (native "Đính kèm ảnh", iOS and Android): the system
+/// photo picker, several at once. Returns (path, name); empty = cancelled.
+Future<List<({String path, String name})>> pickPhotosForHandIn() async {
+  final picked = await ImagePicker().pickMultiImage(
+    imageQuality: 85,
+    maxWidth: 2400,
+  );
+  return [for (final f in picked) (path: f.path, name: f.name)];
+}
 
 /// Android web view `<input type=file>`: photos only (camera when the page
 /// asks for capture, else the system photo picker). Returns file URIs; an
