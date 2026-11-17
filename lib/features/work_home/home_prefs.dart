@@ -19,4 +19,21 @@ abstract final class HomePrefs {
       (await SharedPreferences.getInstance()).setString(_lichKey, v);
     } catch (_) {}
   }
+
+  /// The id of the last day card closed on this phone (ids carry the date).
+  static const _dayCardKey = 'work_home.day_card_closed';
+
+  static Future<String?> dayCardDismissed() async {
+    try {
+      return (await SharedPreferences.getInstance()).getString(_dayCardKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> setDayCardDismissed(String id) async {
+    try {
+      await (await SharedPreferences.getInstance()).setString(_dayCardKey, id);
+    } catch (_) {}
+  }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,7 @@ import '../../screens/gv_profile_info_screen.dart';
 import '../work/my_work_screen.dart';
 import '../work/piece_screen.dart';
 import '../work/work_api.dart';
+import 'day_card.dart';
 import 'home_prefs.dart';
 import 'home_widgets.dart';
 import 'hub_screens.dart';
@@ -109,6 +112,8 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
   Map<String, dynamic> get _can =>
       ((_me?['can'] as Map?) ?? const {}).cast<String, dynamic>();
   int _c(String k) => asInt(_counts?[k]);
+  Map<String, dynamic>? get _dayCard =>
+      (_me?['day_card'] as Map?)?.cast<String, dynamic>();
 
   String get _name {
     final vmName = _vm?.displayName;
@@ -276,9 +281,17 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   SizedBox(
-                    height: box.maxHeight,
+                    // On the day of a greeting a small phone may scroll a
+                    // little rather than squeeze the places below their
+                    // smallest size; the focus card stays on screen.
+                    height: _dayCard == null
+                        ? box.maxHeight
+                        : math.max(box.maxHeight, 520.0),
                     child: Column(
                       children: [
+                        // A greeting on the day the server names; nothing
+                        // on other days (lib/features/work_home/day_card.dart).
+                        DayCardSlot(card: _dayCard),
                         _focus(),
                         _createAction(),
                         Expanded(child: _placesAndNext()),
