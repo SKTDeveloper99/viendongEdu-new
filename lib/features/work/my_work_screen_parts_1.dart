@@ -11,11 +11,12 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
   Future<void> _loadReceived() async {
     try {
       final r = await WorkApi.received();
-      if (mounted)
+      if (mounted) {
         _set(() {
           _received = r;
           _receivedError = null;
         });
+      }
     } on EmsException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {
@@ -29,11 +30,12 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
   Future<void> _loadGiven() async {
     try {
       final g = await WorkApi.given();
-      if (mounted)
+      if (mounted) {
         _set(() {
           _given = g;
           _givenError = null;
         });
+      }
     } on EmsException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {
@@ -91,8 +93,9 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
 
   Widget _receivedTab() {
     if (_receivedError != null) return _error(_receivedError!, _loadReceived);
-    if (_received == null)
+    if (_received == null) {
       return const Center(child: CircularProgressIndicator());
+    }
     final open = _openReceived;
     final closed = _received!.where((a) => !open.contains(a)).toList();
     return RefreshIndicator(

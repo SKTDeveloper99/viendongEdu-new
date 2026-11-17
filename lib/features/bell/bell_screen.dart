@@ -40,11 +40,12 @@ class _BellScreenState extends State<BellScreen> {
         final me = await AppMeApi.me();
         _unread = asInt((me['counts'] as Map?)?['bell_work_unread']);
       } catch (_) {}
-      if (mounted)
+      if (mounted) {
         setState(() {
           _rows = rows;
           _error = null;
         });
+      }
     } on EmsException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {

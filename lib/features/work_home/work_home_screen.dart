@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:animations/animations.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../components/home_header_bar.dart';

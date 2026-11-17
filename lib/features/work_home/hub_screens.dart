@@ -378,8 +378,9 @@ class _GiveTaskScreenState extends State<GiveTaskScreen> {
                 lastDate: now.add(const Duration(days: 365)),
                 initialDate: now.add(const Duration(days: 2)),
               );
-              if (d != null)
+              if (d != null) {
                 setState(() => _due = DateTime(d.year, d.month, d.day, 17));
+              }
             },
             icon: const Icon(Icons.event),
             label: Text(

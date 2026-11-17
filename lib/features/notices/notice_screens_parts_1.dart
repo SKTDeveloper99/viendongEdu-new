@@ -12,8 +12,9 @@ class _SentNoticesScreenState extends State<SentNoticesScreen> {
   Future<void> _load() async {
     try {
       final r = await NoticeApi.sent();
-      if (mounted)
+      if (mounted) {
         setState(() => _rows = EmsApiService.rows(r['notices'] ?? const []));
+      }
     } catch (e) {
       if (mounted) await _fail(context, e);
     }
@@ -117,8 +118,9 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
     setState(() => _busy = true);
     try {
       final r = await NoticeApi.resend(widget.id);
-      if (mounted)
+      if (mounted) {
         showSuccessSnack(context, 'Đã nhắc lại ${r['resent']} người chưa xem.');
+      }
       await _load();
     } catch (e) {
       if (mounted) await _fail(context, e);
@@ -134,8 +136,9 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
       'space' => NhomScreen(spaceId: id, name: 'Nhóm'),
       _ => null,
     };
-    if (w != null)
+    if (w != null) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => w));
+    }
   }
 
   @override
@@ -146,7 +149,6 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
     final mine = d?['mine'] == true;
     final notSeen = ((d?['not_seen'] as List?) ?? const []).cast<Map>();
     final seen = ((d?['seen_people'] as List?) ?? const []).cast<Map>();
-    final many = n['scope_kind'] != 'person';
     final canRing = mine && notSeen.isNotEmpty;
     return Scaffold(
       backgroundColor: vd.bg,

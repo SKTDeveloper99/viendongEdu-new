@@ -35,8 +35,9 @@ extension _TableScreenStatePart1 on _TableScreenState {
   String _show(String kind, String? v) {
     if (v == null || v.isEmpty) return '';
     if (kind == 'yes_no') return v == 'yes' ? 'Có' : 'Không';
-    if (kind == 'date' && v.length >= 10)
+    if (kind == 'date' && v.length >= 10) {
       return '${v.substring(8, 10)}/${v.substring(5, 7)}/${v.substring(0, 4)}';
+    }
     return v;
   }
 
@@ -310,11 +311,12 @@ extension _TableScreenStatePart1 on _TableScreenState {
       );
       final results = ((r['results'] as List?) ?? const []).cast<Map>();
       final bad = results.where((x) => x['status'] != 'added').length;
-      if (mounted && bad > 0)
+      if (mounted && bad > 0) {
         showErrorSnack(
           context,
           '$bad dòng không thêm được (không tìm thấy hoặc đã có).',
         );
+      }
       await _load();
     } catch (e) {
       if (mounted) await _fail(context, e);

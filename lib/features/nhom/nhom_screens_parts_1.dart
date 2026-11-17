@@ -247,15 +247,17 @@ extension _NhomScreenStatePart1 on _NhomScreenState {
             onPressed: () async {
               try {
                 await SmallGroupApi.keep(widget.spaceId);
-                if (mounted)
+                if (mounted) {
                   showSuccessSnack(
                     context,
                     'Đã giữ nhóm. Nhóm không tự đóng nữa.',
                   );
+                }
                 await _load();
               } catch (e) {
-                if (mounted)
+                if (mounted) {
                   await _guard(context, e, (m) => showErrorSnack(context, m));
+                }
               }
             },
             child: const Text('Giữ nhóm này'),

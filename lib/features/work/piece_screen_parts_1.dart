@@ -11,12 +11,13 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
       final c = await WorkApi.comments(
         widget.taskId,
       ).catchError((_) => <Map<String, dynamic>>[]);
-      if (mounted)
+      if (mounted) {
         _set(() {
           _task = t;
           _comments = c;
           _error = null;
         });
+      }
     } on EmsException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {
@@ -79,12 +80,13 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
       }
       if (!mounted) return;
       await _load();
-      if (mounted)
+      if (mounted) {
         _set(() {
           _act.remove(key);
           _retry.remove(key);
           _leaving.remove(leave);
         });
+      }
     } on EmsException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {

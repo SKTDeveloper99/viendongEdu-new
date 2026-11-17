@@ -299,8 +299,9 @@ class _DelegateScreenState extends State<DelegateScreen> {
                 lastDate: now.add(const Duration(days: 365)),
                 initialDate: now.add(const Duration(days: 1)),
               );
-              if (d != null)
+              if (d != null) {
                 setState(() => _due = DateTime(d.year, d.month, d.day, 17));
+              }
             },
             icon: const Icon(Icons.event),
             label: Text(
@@ -312,8 +313,9 @@ class _DelegateScreenState extends State<DelegateScreen> {
             value: _withList,
             onChanged: (v) => setState(() {
               _withList = v;
-              if (v && _cols.isEmpty)
+              if (v && _cols.isEmpty) {
                 _cols.add((TextEditingController(), 'yes_no'));
+              }
             }),
             title: const Text('Kèm danh sách cần điền'),
           ),

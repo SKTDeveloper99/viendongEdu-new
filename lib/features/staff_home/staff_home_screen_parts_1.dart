@@ -12,10 +12,11 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   Future<void> _load() async {
     try {
       final me = await AppMeApi.me();
-      if (mounted)
+      if (mounted) {
         setState(
           () => _counts = (me['counts'] as Map?)?.cast<String, dynamic>(),
         );
+      }
     } on EmsException catch (e) {
       if (mounted && e.statusCode == 401) handleCrmAuthError(context, e);
     }

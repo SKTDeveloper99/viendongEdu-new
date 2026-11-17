@@ -34,11 +34,12 @@ Future<void> _fail(BuildContext context, Object e) async {
     await handleCrmAuthError(context, e);
     return;
   }
-  if (context.mounted)
+  if (context.mounted) {
     showErrorSnack(
       context,
       e is EmsException ? e.message : 'Không kết nối được máy chủ.',
     );
+  }
 }
 
 String _scopeLabel(String? k) => switch (k) {
@@ -70,8 +71,6 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
   String? _placeName;
 
   Map<String, String> _people = {};
-
-  bool _urgent = false;
 
   bool _busy = false;
 
@@ -153,7 +152,6 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
                     _placeId = null;
                     _placeName = null;
                     _people = {};
-                    _urgent = false;
                   }),
                 ),
             ],
@@ -217,10 +215,6 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
 }
 
 extension _NoticeComposeScreenStatePart1 on _NoticeComposeScreenState {
-  bool get _many => _kind != 'person';
-
-  int get _urgentLeft => asInt(_t?['urgent_left_today']);
-
   List<Map<String, dynamic>> _list(String k) =>
       ((_t?[k] as List?) ?? const []).cast<Map<String, dynamic>>();
 
@@ -347,11 +341,12 @@ extension _NoticeComposeScreenStatePart1 on _NoticeComposeScreenState {
         ),
       ),
     );
-    if (r != null)
+    if (r != null) {
       _set(() {
         _placeId = r.$1;
         _placeName = r.$2;
       });
+    }
   }
 
   Future<void> _pickPeople() async {
@@ -368,8 +363,9 @@ extension _NoticeComposeScreenStatePart1 on _NoticeComposeScreenState {
     if (r == null) return;
     _set(() {
       _people = _kind == 'person' ? r : {..._people, ...r};
-      if (_people.length > 20)
+      if (_people.length > 20) {
         _people = Map.fromEntries(_people.entries.take(20));
+      }
     });
   }
 }

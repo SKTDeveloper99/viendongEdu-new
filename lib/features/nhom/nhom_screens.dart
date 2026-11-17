@@ -59,11 +59,12 @@ class _NhomListScreenState extends State<NhomListScreen> {
           '${a['last_activity_at'] ?? ''}',
         );
       });
-      if (mounted)
+      if (mounted) {
         setState(() {
           _rows = rows;
           _error = null;
         });
+      }
     } catch (e) {
       if (mounted) await _guard(context, e, (m) => setState(() => _error = m));
     }
@@ -96,7 +97,7 @@ class _NhomListScreenState extends State<NhomListScreen> {
             );
             if (!mounted) return;
             await Navigator.push(
-              context,
+              this.context,
               MaterialPageRoute(
                 builder: (_) =>
                     NhomScreen(spaceId: id, name: '${row?['name'] ?? ''}'),
