@@ -22,7 +22,6 @@ const Map<String, int> _allowlist = {
   'lib/screens/student_board_screen.dart': 490,
   'lib/screens/tuition_screen.dart': 482,
   'lib/screens/gv_lichthi_screen.dart': 468,
-  'lib/services/notification_service.dart': 453,
   'lib/screens/gv_lophoc_screen.dart': 451,
 };
 
