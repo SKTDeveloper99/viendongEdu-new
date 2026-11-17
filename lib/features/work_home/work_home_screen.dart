@@ -16,7 +16,7 @@ import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
 import '../bell/bell_screen.dart';
 import '../nhom/nhom_screens.dart';
-import '../staff_home/staff_home_screen.dart' show AppMeApi;
+import 'app_me_api.dart';
 import '../teacher_attendance/attendance_outbox.dart';
 import '../teacher_home/next_up.dart';
 import '../teacher_home/teacher_home_view_model.dart';

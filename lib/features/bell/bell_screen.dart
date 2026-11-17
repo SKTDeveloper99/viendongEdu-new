@@ -5,6 +5,8 @@ import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
 import '../work/piece_screen.dart';
 import '../work/work_api.dart';
+import '../work_home/app_me_api.dart';
+import 'bell_api.dart';
 import '../nhom/nhom_screens.dart';
 import '../notices/notice_screens.dart';
 
@@ -33,14 +35,9 @@ class _BellScreenState extends State<BellScreen> {
 
   Future<void> _load() async {
     try {
-      final b = await EmsApiService.sendMap(
-        'GET',
-        '/v1/notifications',
-        query: const {'limit': '50', 'work': '1'},
-      );
-      final rows = EmsApiService.rows(b['notifications'] ?? const []);
+      final rows = await BellApi.workRows();
       try {
-        final me = await EmsApiService.sendMap('GET', '/auth/app/me');
+        final me = await AppMeApi.me();
         _unread = asInt((me['counts'] as Map?)?['bell_work_unread']);
       } catch (_) {}
       if (mounted)
@@ -60,10 +57,7 @@ class _BellScreenState extends State<BellScreen> {
 
   Future<void> _open(Map<String, dynamic> n) async {
     if (n['read_at'] == null) {
-      EmsApiService.sendMap(
-        'PATCH',
-        '/v1/notifications/${n['kind']}/${n['id']}/read',
-      ).catchError((_) => <String, dynamic>{});
+      BellApi.markRead('${n['kind']}', '${n['id']}');
       setState(() {
         n['read_at'] = DateTime.now().toIso8601String();
         if (_unread != null && _unread! > 0) _unread = _unread! - 1;

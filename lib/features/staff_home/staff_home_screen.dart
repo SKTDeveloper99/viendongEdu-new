@@ -8,12 +8,7 @@ import '../../theme/vd_tokens.dart';
 import '../bell/bell_screen.dart';
 import '../nhom/nhom_screens.dart';
 import '../work/my_work_screen.dart';
-
-/// `GET /auth/app/me` → `{kinds, permissions, counts}` (Overlord slice).
-abstract final class AppMeApi {
-  static Future<Map<String, dynamic>> me() =>
-      EmsApiService.sendMap('GET', '/auth/app/me');
-}
+import '../work_home/app_me_api.dart';
 
 /// One tile of a home built from what the server says the person holds.
 /// [native] false = the tile opens a Viva page inside the app.
