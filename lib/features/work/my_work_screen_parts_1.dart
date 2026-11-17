@@ -59,9 +59,12 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
   int _waiting(Map<String, dynamic> t) =>
       asInt(t['n_submitted']) + asInt(t['n_in_review']);
 
-  List<Map<String, dynamic>> get _openReceived => (_received ?? const [])
-      .where((a) => a['status'] != 'done' && a['status'] != 'cancelled')
-      .toList();
+  List<Map<String, dynamic>> get _openReceived {
+    final open = (_received ?? const [])
+        .where((a) => a['status'] != 'done' && a['status'] != 'cancelled')
+        .toList();
+    return myWorkUnopenedFirst ? unopenedFirst(open) : open;
+  }
 
   // Clean start: pieces nobody has touched yet are folded away, not lost.
   List<Map<String, dynamic>> get _activeGiven => (_given ?? const [])

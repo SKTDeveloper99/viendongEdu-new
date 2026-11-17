@@ -93,6 +93,34 @@ abstract final class WorkApi {
   );
 }
 
+/// THE SWITCH for Việc của tôi (2026-11-17): true = pieces the person has not
+/// opened yet come first, newest first, then the rest in the server's order;
+/// false = the server's order only. One line here, or
+/// --dart-define=MY_WORK_UNOPENED_FIRST=false.
+const bool myWorkUnopenedFirst = bool.fromEnvironment(
+  'MY_WORK_UNOPENED_FIRST',
+  defaultValue: true,
+);
+
+/// Not opened = still `assigned` and never acknowledged ("Chưa mở").
+bool isUnopened(Map<String, dynamic> a) =>
+    a['status'] == 'assigned' && a['acknowledged_at'] == null;
+
+/// Unopened pieces first (newest `assigned_at` first), the rest after them in
+/// the order given. Stable: equal items keep their order.
+List<Map<String, dynamic>> unopenedFirst(List<Map<String, dynamic>> rows) {
+  final fresh = rows.where(isUnopened).toList();
+  final rest = rows.where((a) => !isUnopened(a)).toList();
+  DateTime at(Map<String, dynamic> a) =>
+      DateTime.tryParse('${a['assigned_at'] ?? ''}') ?? DateTime(0);
+  final indexed = [for (var i = 0; i < fresh.length; i++) (i, fresh[i])];
+  indexed.sort((x, y) {
+    final c = at(y.$2).compareTo(at(x.$2));
+    return c != 0 ? c : x.$1.compareTo(y.$1);
+  });
+  return [for (final e in indexed) e.$2, ...rest];
+}
+
 int asInt(Object? v) => v is int ? v : int.tryParse('${v ?? ''}') ?? 0;
 
 /// Status words for one person's part, as the web board says them.

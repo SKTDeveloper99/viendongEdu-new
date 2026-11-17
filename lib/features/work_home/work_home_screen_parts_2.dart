@@ -26,6 +26,9 @@ extension _WorkHomeScreenStatePart2 on _WorkHomeScreenState {
   }
 
   Future<void> _logout() async {
+    // One tap is enough: a second tap while signing out does nothing.
+    if (_signingOut) return;
+    _signingOut = true;
     if (_vm != null) {
       await _vm!.logout();
     } else {

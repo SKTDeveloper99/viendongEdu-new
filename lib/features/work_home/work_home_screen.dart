@@ -65,6 +65,7 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
   int _tab = 0;
 
   bool _authHandled = false;
+  bool _signingOut = false;
 
   @override
   void initState() {

@@ -187,6 +187,16 @@ class AppSession {
     return true;
   }
 
+  /// Longest a sign-out waits for the phone's push token to be revoked. On a
+  /// phone without an Apple push token (simulator, notifications refused)
+  /// getToken polls for ~10 s, so one tap on Đăng xuất looked dead and people
+  /// tapped twice (found 2026-11-17). The revoke is best effort anyway.
+  static Duration deviceRevokeLimit = const Duration(seconds: 3);
+
+  /// Test seam for the device revoke (defaults to NotificationService).
+  @visibleForTesting
+  static Future<void> Function(String id)? revokeDeviceOverride;
+
   /// Xóa session khi đăng xuất, hoặc khi EMS trả 401 (phiên hết hạn).
   Future<void> clear({bool revokeDevice = true}) async {
     for (final hook in List.of(clearHooks)) {
@@ -196,7 +206,11 @@ class AppSession {
     // Xóa FCM token trước khi clear session.
     final id = identity?.notificationId;
     if (revokeDevice && id != null && id.isNotEmpty) {
-      await NotificationService.instance.unregisterToken(id);
+      final revoke =
+          revokeDeviceOverride ?? NotificationService.instance.unregisterToken;
+      try {
+        await revoke(id).timeout(deviceRevokeLimit, onTimeout: () {});
+      } catch (_) {}
     }
     emsToken = null;
     emsDenied = false;
