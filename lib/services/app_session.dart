@@ -108,6 +108,32 @@ class AppSession {
     emsDenied = false;
   }
 
+  /// Tops up the stored identity from `GET /auth/app/me`. A session restored
+  /// from an older build has no user id, office flag or give-work flag, so
+  /// Duyệt / Trả lại and the Tôi giao tab stayed hidden until the person
+  /// signed out and in (review 2026-11-17). True when anything changed.
+  bool applyAppMe(Map<String, dynamic> me) {
+    final u = (me['user'] as Map?) ?? const {};
+    final p = me['permissions'] as Map?;
+    final kinds = me['kinds'] as List?;
+    final id = u['id']?.toString();
+    final staff = kinds == null
+        ? isStaff
+        : kinds.map((e) => '$e').contains('staff');
+    final assign = p == null ? canAssign : p['canAssignTasks'] == true;
+    final trial = p == null ? trienKhai : p['trienKhai'] == true;
+    final changed =
+        (id != null && id.isNotEmpty && id != userId) ||
+        staff != isStaff ||
+        assign != canAssign ||
+        trial != trienKhai;
+    if (id != null && id.isNotEmpty) userId = id;
+    isStaff = staff;
+    canAssign = assign;
+    trienKhai = trial;
+    return changed;
+  }
+
   /// Lưu toàn bộ session vào SharedPreferences
   Future<void> persist() async {
     final prefs = await SharedPreferences.getInstance();

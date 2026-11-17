@@ -74,6 +74,10 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
 
   bool _busy = false;
 
+  /// The last send got no answer (timeout): it may have gone. The server has
+  /// no repeat guard for notices yet, so a resend asks first.
+  bool _unclear = false;
+
   final _body = TextEditingController();
 
   @override
@@ -229,7 +233,11 @@ extension _NoticeComposeScreenStatePart1 on _NoticeComposeScreenState {
 
   Future<void> _send({int? confirm}) async {
     final to = _to;
-    if (to == null || _body.text.trim().isEmpty) return;
+    if (to == null || _body.text.trim().isEmpty || _busy) return;
+    if (_unclear && confirm == null) {
+      final again = await _askResendUnclear(context);
+      if (again != true || !mounted) return;
+    }
     _set(() => _busy = true);
     try {
       final r = await NoticeApi.send({
@@ -237,6 +245,7 @@ extension _NoticeComposeScreenStatePart1 on _NoticeComposeScreenState {
         'to': to,
         'confirm_count': ?confirm,
       });
+      _unclear = false;
       if (!mounted) return;
       final n = (r['notice'] as Map?) ?? const {};
       final skipped = asInt(r['skipped']);
@@ -250,6 +259,8 @@ extension _NoticeComposeScreenStatePart1 on _NoticeComposeScreenState {
         MaterialPageRoute(builder: (_) => NoticeDetailScreen(id: '${n['id']}')),
       );
     } on EmsException catch (e) {
+      // No answer at all (timeout, connection lost): it may have gone.
+      if (e.statusCode == null) _unclear = true;
       if (!mounted) return;
       if (e.code == 'confirm_count' ||
           (e.statusCode == 409 && e.message.startsWith('Gửi cho'))) {

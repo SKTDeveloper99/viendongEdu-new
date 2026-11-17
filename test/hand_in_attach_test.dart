@@ -85,10 +85,10 @@ void main() {
               onPressed: () async => got = await showHandInSheet(
                 ctx,
                 pickPhotos: () async => [
-                  (name: 'x.jpg', read: () async => <int>[1]),
+                  (name: 'x.jpg', size: 1, read: () async => <int>[1]),
                 ],
                 pickFiles: () async => [
-                  (name: 'bao-cao.pdf', read: () async => <int>[2]),
+                  (name: 'bao-cao.pdf', size: 1, read: () async => <int>[2]),
                 ],
                 attach: true,
               ),
@@ -229,5 +229,45 @@ void main() {
       ),
     );
     expect(sent, isFalse);
+  });
+
+  testWidgets('a file over 25 MB is refused when picked, not read', (t) async {
+    var read = false;
+    await t.pumpWidget(
+      MaterialApp(
+        theme: VdTheme.light(),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            body: TextButton(
+              onPressed: () => showHandInSheet(
+                ctx,
+                attach: true,
+                pickPhotos: () async => const [],
+                pickFiles: () async => [
+                  (
+                    name: 'to.pdf',
+                    size: EmsUpload.maxFileBytes + 1,
+                    read: () async {
+                      read = true;
+                      return <int>[];
+                    },
+                  ),
+                ],
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await t.tap(find.text('open'));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('handin-attach')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('attach-file')));
+    await t.pumpAndSettle();
+    expect(find.text('to.pdf'), findsNothing);
+    expect(find.textContaining('Tệp quá lớn'), findsOneWidget);
+    expect(read, isFalse);
   });
 }

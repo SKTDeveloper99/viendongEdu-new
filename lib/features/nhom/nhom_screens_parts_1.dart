@@ -29,7 +29,8 @@ extension _NhomScreenStatePart1 on _NhomScreenState {
 
   Future<void> _post() async {
     final text = _postCtrl.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _posting) return;
+    _set(() => _posting = true);
     try {
       final r = await NhomApi.post(widget.spaceId, text, urgent: false);
       _postCtrl.clear();
@@ -45,6 +46,8 @@ extension _NhomScreenStatePart1 on _NhomScreenState {
       await _load();
     } catch (e) {
       if (mounted) await _guard(context, e, (m) => showErrorSnack(context, m));
+    } finally {
+      if (mounted) _set(() => _posting = false);
     }
   }
 
@@ -82,7 +85,10 @@ extension _NhomScreenStatePart1 on _NhomScreenState {
               ),
             ),
             const SizedBox(width: 8),
-            IconButton.filled(onPressed: _post, icon: const Icon(Icons.send)),
+            IconButton.filled(
+              onPressed: _posting ? null : _post,
+              icon: const Icon(Icons.send),
+            ),
           ],
         ),
         // A post rings every other member (bell row and banner).

@@ -275,3 +275,24 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
     );
   }
 }
+
+/// The last notice got no answer: ask before sending it again.
+Future<bool?> _askResendUnclear(BuildContext context) => showDialog<bool>(
+  context: context,
+  builder: (ctx) => AlertDialog(
+    title: const Text('Lần gửi trước chưa rõ đã tới chưa'),
+    content: const Text(
+      'Xem "Thông báo đã gửi" trước. Gửi lại có thể làm mọi người nhận hai lần.',
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(ctx, false),
+        child: const Text('Thôi'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(ctx, true),
+        child: const Text('Vẫn gửi'),
+      ),
+    ],
+  ),
+);

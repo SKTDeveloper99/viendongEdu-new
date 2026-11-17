@@ -280,6 +280,8 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
     if (r == null) return;
     final note = r.note;
     final to = _task?['requires_review'] == true ? 'submitted' : 'done';
+    // Files already sent survive a "Thử lại": only what failed goes again.
+    final sent = <int>{};
     await _action('handin:${a['id']}', () async {
       // Start first: the server itself moves an unopened part to in_progress
       // when a file arrives, so starting after the upload was refused
@@ -294,13 +296,16 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
         }
       }
       // Then the files, as the web sends them, so the hand-in carries them.
-      for (final f in r.files) {
+      for (var i = 0; i < r.files.length; i++) {
+        if (sent.contains(i)) continue;
+        final f = r.files[i];
         await WorkApi.attach(
           widget.taskId,
           '${a['id']}',
           await f.read(),
           filename: f.name,
         );
+        sent.add(i);
       }
       await WorkApi.move('${a['id']}', to, note: note);
     });

@@ -8,7 +8,10 @@ import 'hand_in_sheet.dart' show PickedFile;
 /// Any file for a hand-in (PDF, Word, Excel, …): the system document picker.
 Future<List<PickedFile>> pickFilesForHandIn() async {
   final picked = await FilePicker.pickFiles(type: FileType.any);
-  return [for (final f in picked) (name: f.name, read: f.readAsBytes)];
+  return [
+    for (final f in picked)
+      (name: f.name, size: f.lengthSync(), read: f.readAsBytes),
+  ];
 }
 
 /// Photos for a hand-in: the system photo picker (image_picker lives in one
@@ -18,7 +21,11 @@ Future<List<PickedFile>> pickPhotoFilesForHandIn() async {
   final names = photoNames([for (final f in picked) f.name], DateTime.now());
   return [
     for (var i = 0; i < picked.length; i++)
-      (name: names[i], read: () => File(picked[i].path).readAsBytes()),
+      (
+        name: names[i],
+        size: _sizeOf(picked[i].path),
+        read: () => File(picked[i].path).readAsBytes(),
+      ),
   ];
 }
 
@@ -39,4 +46,12 @@ String _ext(String name) {
   final dot = name.lastIndexOf('.');
   final ext = dot < 0 ? '' : name.substring(dot).toLowerCase();
   return ext.length > 1 && ext.length <= 6 ? ext : '.jpg';
+}
+
+int? _sizeOf(String path) {
+  try {
+    return File(path).lengthSync();
+  } catch (_) {
+    return null;
+  }
 }

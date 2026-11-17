@@ -188,6 +188,9 @@ class NhomScreen extends StatefulWidget {
 class _NhomScreenState extends State<NhomScreen> {
   Map<String, dynamic>? _one;
 
+  /// A post is on its way: a second tap does nothing (no double post).
+  bool _posting = false;
+
   List<Map<String, dynamic>> _feed = const [];
 
   List<Map<String, dynamic>> _work = const [];

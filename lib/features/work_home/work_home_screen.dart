@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:animations/animations.dart';
@@ -54,7 +55,8 @@ class WorkHomeScreen extends StatefulWidget {
   State<WorkHomeScreen> createState() => _WorkHomeScreenState();
 }
 
-class _WorkHomeScreenState extends State<WorkHomeScreen> {
+class _WorkHomeScreenState extends State<WorkHomeScreen>
+    with WidgetsBindingObserver {
   TeacherHomeViewModel? _vm;
 
   Map<String, dynamic>? _me;
@@ -74,11 +76,22 @@ class _WorkHomeScreenState extends State<WorkHomeScreen> {
       _vm!.addListener(_onVm);
       AttendanceOutbox.instance.start();
     }
+    WidgetsBinding.instance.addObserver(this);
     _refresh();
+  }
+
+  // Back to the front: counts, the next class and the day card are fresh
+  // again, as the old teacher home did (review 2026-11-17).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    _refresh();
+    _vm?.loadOverview();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _vm?.removeListener(_onVm);
     _vm?.stopClock();
     if (_vm != null) AttendanceOutbox.instance.stop();

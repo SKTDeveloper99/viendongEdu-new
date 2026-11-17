@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/ems_upload.dart';
 import '../../theme/vd_tokens.dart';
 import 'file_pick.dart';
 
@@ -14,7 +15,11 @@ const bool handInAttachEnabled = bool.fromEnvironment(
 
 /// One picked file: its name and a way to read its bytes (a photo path on
 /// iOS, a content URI on Android).
-typedef PickedFile = ({String name, Future<List<int>> Function() read});
+typedef PickedFile = ({
+  String name,
+  int? size,
+  Future<List<int>> Function() read,
+});
 
 /// What the person hands in: a note and the files picked ("Đính kèm").
 class HandInResult {
@@ -96,7 +101,24 @@ class _HandInSheetState extends State<HandInSheet> {
       final picked = await (which == 'photo'
           ? widget.pickPhotos()
           : widget.pickFiles());
-      if (mounted && picked.isNotEmpty) setState(() => _files.addAll(picked));
+      // Size checked here, before anything is read into memory: a file over
+      // the server's 25 MB ceiling is refused at once with its message.
+      final big = picked
+          .where((f) => (f.size ?? 0) > EmsUpload.maxFileBytes)
+          .toList();
+      final ok = picked.where((f) => !big.contains(f)).toList();
+      if (!mounted) return;
+      if (ok.isNotEmpty) setState(() => _files.addAll(ok));
+      if (big.isNotEmpty) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(
+              '${EmsUpload.refusal('file_too_large', 413)} '
+              '${big.map((f) => f.name).join(', ')}',
+            ),
+          ),
+        );
+      }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(

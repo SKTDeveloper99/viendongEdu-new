@@ -284,7 +284,7 @@ class _GiveTaskScreenState extends State<GiveTaskScreen> {
   Map<String, String> _people = {};
   DateTime? _due;
   bool _busy = false;
-
+  final _requestId = newRequestId(); // same id on a resend: made once
   @override
   void dispose() {
     _title.dispose();
@@ -304,6 +304,7 @@ class _GiveTaskScreenState extends State<GiveTaskScreen> {
           if (_due != null) 'due_at': _due!.toUtc().toIso8601String(),
           'assignee_user_ids': _people.keys.toList(),
           'requires_review': true,
+          'client_request_id': _requestId,
         },
       );
       if (!mounted) return;

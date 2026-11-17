@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../../services/ems_api_service.dart';
 import '../../services/ems_upload.dart';
 
@@ -134,6 +136,19 @@ List<Map<String, dynamic>> unopenedFirst(List<Map<String, dynamic>> rows) {
     return c != 0 ? c : x.$1.compareTo(y.$1);
   });
   return [for (final e in indexed) e.$2, ...rest];
+}
+
+/// A random v4 UUID for `client_request_id`: the same id on a resend lets
+/// the server answer once (POST /v1/tasks double-submit guard).
+String newRequestId() {
+  final r = Random.secure();
+  final b = List<int>.generate(16, (_) => r.nextInt(256));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  String h(int i) => b[i].toRadixString(16).padLeft(2, '0');
+  final x = [for (var i = 0; i < 16; i++) h(i)].join();
+  return '${x.substring(0, 8)}-${x.substring(8, 12)}-${x.substring(12, 16)}-'
+      '${x.substring(16, 20)}-${x.substring(20)}';
 }
 
 int asInt(Object? v) => v is int ? v : int.tryParse('${v ?? ''}') ?? 0;

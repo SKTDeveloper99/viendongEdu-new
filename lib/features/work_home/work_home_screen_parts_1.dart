@@ -18,6 +18,8 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
   Future<void> _refresh() async {
     try {
       final me = await AppMeApi.me();
+      // Older installs: fill the stored identity from the server and keep it.
+      if (_s.applyAppMe(me)) unawaited(_s.persist());
       if (mounted) _set(() => _me = me);
     } on EmsException catch (e) {
       if (mounted && e.statusCode == 401) handleCrmAuthError(context, e);
