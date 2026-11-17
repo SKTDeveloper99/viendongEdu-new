@@ -259,9 +259,9 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
       builder: (context, box) {
         const rowH = 52.0;
         const headH = 30.0;
-        final idealGrid = rows * 112.0 + 12 * (rows - 1) + 24;
+        final idealGrid = rows * homeTileHeight + 12 * (rows - 1) + 24;
         final extra = box.maxHeight - idealGrid;
-        final n = extra > headH + rowH
+        final n = homeShowsNextList && extra > headH + rowH
             ? ((extra - headH) / rowH).floor().clamp(0, next.length)
             : 0;
         return Column(

@@ -7,6 +7,10 @@ import '../work/work_api.dart';
 
 part 'home_widgets_parts_1.dart';
 
+/// The home tiles' comfortable height (three across / two across).
+const double homeTileHeight = 112;
+const double homeTileHeightWide = 96;
+
 /// One place the home offers: icon, one word, a badge only for what waits.
 class HomeTileSpec {
   final IconData icon;
@@ -36,10 +40,13 @@ class HomeTileGrid extends StatelessWidget {
       builder: (context, c) {
         const gap = 12.0;
         final w = (c.maxWidth - gap * (cols - 1)) / cols;
-        // Tiles take the height that is left, within sensible bounds.
+        // Owner 2026-11-17: tiles keep one comfortable height and never
+        // stretch on an empty home; they shrink only when a small phone has
+        // less room than that.
+        final comfortable = cols == 3 ? homeTileHeight : homeTileHeightWide;
         final h = c.maxHeight.isFinite
-            ? ((c.maxHeight - gap * (rows - 1)) / rows).clamp(64.0, 240.0)
-            : (cols == 3 ? 104.0 : 92.0);
+            ? ((c.maxHeight - gap * (rows - 1)) / rows).clamp(64.0, comfortable)
+            : comfortable;
         return Wrap(
           spacing: gap,
           runSpacing: gap,

@@ -98,7 +98,8 @@ class HomeHeaderBar extends StatelessWidget {
               padding: EdgeInsets.only(right: fits ? 64 : 0),
               child: Text(
                 name,
-                maxLines: 1,
+                // A long name wraps instead of being cut with "…".
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 20,

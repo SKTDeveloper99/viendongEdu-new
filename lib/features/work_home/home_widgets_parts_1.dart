@@ -149,9 +149,11 @@ class CompactFocusCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Owner 2026-11-17: a long title wraps to a second
+                          // line instead of being cut with "…".
                           Text(
                             title,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 17,

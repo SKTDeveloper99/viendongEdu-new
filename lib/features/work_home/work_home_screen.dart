@@ -35,6 +35,15 @@ import '../notices/notice_screens.dart';
 part 'work_home_screen_parts_1.dart';
 part 'work_home_screen_parts_2.dart';
 
+/// THE SWITCH for the owner's choice (open 2026-11-17): true = a tall phone
+/// lists the next few pieces ("Tiếp theo") under the focus card; false =
+/// no list, the home is only header, focus card, + Tạo and the tiles.
+/// Change the default here (or build with --dart-define=HOME_NEXT_LIST=false).
+const bool homeShowsNextList = bool.fromEnvironment(
+  'HOME_NEXT_LIST',
+  defaultValue: true,
+);
+
 /// One home for teachers, office accounts and accounts that are both
 /// (Overlord slice, agreed with the chief of staff 2026-11-16): the header the
 /// app already has, one focus card, at most six places, one "+ Giao việc";
