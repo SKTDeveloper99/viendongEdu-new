@@ -148,6 +148,8 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
                 style: TextStyle(color: vd.danger),
               ),
             ),
+          // My own handed-in files, so I can open what I sent.
+          for (final f in _myFiles(a)) _fileRow(vd, f),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -205,5 +207,17 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
         ],
       ),
     );
+  }
+
+  /// Files on my part: from the part itself, else the piece's files tagged
+  /// with my part's id (a receiver's view may carry them either way).
+  List<Map> _myFiles(Map<String, dynamic> a) {
+    final seen = <String>{};
+    return [
+      ...((a['attachments'] as List?) ?? const []),
+      ...((_task?['attachments'] as List?) ?? const []).where(
+        (f) => '${(f as Map)['assignment_id']}' == '${a['id']}',
+      ),
+    ].cast<Map>().where((f) => seen.add('${f['id']}')).toList();
   }
 }

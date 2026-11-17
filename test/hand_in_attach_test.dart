@@ -206,4 +206,28 @@ void main() {
       ],
     );
   });
+
+  test('a file over 25 MB is refused before sending', () async {
+    var sent = false;
+    EmsApiService.client = MockClient((_) async {
+      sent = true;
+      return http.Response('{}', 201);
+    });
+    await expectLater(
+      WorkApi.attach(
+        'T1',
+        'A1',
+        List<int>.filled(EmsUpload.maxFileBytes + 1, 0),
+        filename: 'to.pdf',
+      ),
+      throwsA(
+        isA<EmsException>().having(
+          (e) => e.message,
+          'message',
+          'Tệp quá lớn (tối đa 25 MB mỗi tệp).',
+        ),
+      ),
+    );
+    expect(sent, isFalse);
+  });
 }

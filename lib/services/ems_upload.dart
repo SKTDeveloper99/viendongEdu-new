@@ -13,6 +13,11 @@ import 'ems_api_service.dart';
 abstract final class EmsUpload {
   static Duration timeout = const Duration(seconds: 60);
 
+  /// The server's per-file ceiling (CRM lib/tasks/uploads.js MAX_SIZE_BYTES).
+  /// Checked before sending: on Android the server's early 413 arrives as a
+  /// broken connection, so the person saw "Kiểm tra mạng" instead of "quá lớn".
+  static const int maxFileBytes = 25 * 1024 * 1024;
+
   /// Content type from the file name (and first bytes); octet-stream if unknown.
   static String typeOf(String name, [List<int>? head]) =>
       lookupMimeType(name, headerBytes: head) ?? 'application/octet-stream';
@@ -27,6 +32,9 @@ abstract final class EmsUpload {
     String field = 'file',
     Map<String, String> fields = const {},
   }) async {
+    if (bytes.length > maxFileBytes) {
+      throw EmsException(refusal('file_too_large', 413), statusCode: 413);
+    }
     final req = http.MultipartRequest(
       'POST',
       Uri.parse('${EmsApiService.baseUrl}$path'),
