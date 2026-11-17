@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viendongedu2_flutter/core/crm_web/crm_web_target.dart';
 import 'package:viendongedu2_flutter/features/crm_web/crm_web_routes.dart';
+import 'package:viendongedu2_flutter/features/nhom/nhom_screens.dart';
 import 'package:viendongedu2_flutter/features/teacher_home/widgets/menu_grid.dart';
 import 'package:viendongedu2_flutter/models/crm_identity.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
@@ -71,7 +72,9 @@ void main() {
     });
   });
 
-  testWidgets('teacher home: Việc của tôi and Nhóm open their pages', (
+  // Owner 2026-11-16 (Overlord, one app): Việc của tôi and Nhóm are native
+  // now, no longer the CRM pages in a web view.
+  testWidgets('teacher home: Việc của tôi and Nhóm open their native pages', (
     t,
   ) async {
     final opened = <String>[];
@@ -89,7 +92,9 @@ void main() {
     await t.binding.handlePopRoute();
     await t.pumpAndSettle();
     await t.tap(find.text('Nhóm'));
-    await t.pumpAndSettle();
-    expect(opened, ['/crm/tasks', '/crm/nhom']);
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 400));
+    expect(opened, ['/work']);
+    expect(find.byType(NhomListScreen), findsOneWidget);
   });
 }

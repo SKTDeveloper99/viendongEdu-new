@@ -78,13 +78,14 @@ void main() {
     expect(AppSession.instance.mustChangePassword, isFalse);
   });
 
-  testWidgets('giảng viên chuyển vai trò rồi đăng nhập vào /gv_home', (
-    tester,
-  ) async {
+  // Owner 2026-11-16 (Overlord): one sign-in for office accounts and
+  // teachers ("Cán bộ, GV", POST /auth/app/login); a teacher lands on /gv_home.
+  testWidgets('giảng viên đăng nhập ở Cán bộ, GV vào /gv_home', (tester) async {
     EmsApiService.client = MockClient((req) async {
-      expect(req.url.path, '/api/auth/teacher/login');
+      expect(req.url.path, '/api/auth/app/login');
       final body = jsonDecode(req.body) as Map<String, dynamic>;
-      expect(body['teacher_code'], '0601030');
+      expect(body['login'], '0601030');
+      expect(body['password'], '0601030');
       return http.Response(
         jsonEncode({
           'token': 'crm-teacher-token',
@@ -92,9 +93,14 @@ void main() {
             'teacher_id': '9',
             'teacher_code': '0601030',
             'full_name': 'Thử Nghiệm Giáo Viên',
-            'must_change_password': false,
           },
-          'user': {'id': '9', 'role': 'teacher'},
+          'user': {
+            'id': '9',
+            'full_name': 'Thử Nghiệm Giáo Viên',
+            'role': 'teacher',
+          },
+          'kinds': ['teacher'],
+          'must_change_password': false,
         }),
         200,
         headers: {'content-type': 'application/json'},
@@ -102,7 +108,7 @@ void main() {
     });
 
     await tester.pumpWidget(testApp());
-    await tester.tap(find.text('Giảng viên'));
+    await tester.tap(find.text('Cán bộ, GV'));
     await tester.pump();
     await tester.enterText(find.byType(TextField).at(0), '0601030');
     await tester.enterText(find.byType(TextField).at(1), '0601030');

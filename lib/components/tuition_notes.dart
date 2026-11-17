@@ -32,7 +32,9 @@ class TuitionNotices extends StatelessWidget {
           TuitionOfflineNote(savedAt: r.offlineSavedAt!),
           const SizedBox(height: 12),
         ],
-        StudentNoticeList(notices: shown),
+        // Same clock as the filter above, so a test clock is not re-checked
+        // against the phone's date.
+        StudentNoticeList(notices: shown, now: now),
         if (shown.isEmpty && r.summary.owes) ...[
           const StudentNoticeBanner(
             level: StudentNoticeLevel.urgent,

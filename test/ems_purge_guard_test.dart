@@ -49,9 +49,13 @@ void main() {
     final src = read('lib/screens/splash_screen.dart');
     final gate = src.indexOf('AppUpdateGate.check(context)');
     final restore = src.indexOf('AppSession.instance.tryRestore()');
-    final route = src.indexOf('Navigator.pushReplacementNamed(context, route)');
+    // Overlord slice (owner 2026-11-16): one home route per account, so the
+    // first navigation is no longer `pushReplacementNamed(context, route)`.
+    // The gate must still come before ANY navigation out of the splash.
+    final route = src.indexOf('Navigator.');
     expect(gate, greaterThan(0));
     expect(restore, greaterThan(0));
+    expect(route, greaterThan(0));
     expect(gate, lessThan(route));
   });
 }
