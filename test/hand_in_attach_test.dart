@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:viendongedu2_flutter/features/work/file_pick.dart';
 import 'package:viendongedu2_flutter/features/work/hand_in_sheet.dart';
 import 'package:viendongedu2_flutter/features/work/work_api.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
@@ -188,6 +189,21 @@ void main() {
           'Tệp không còn trên máy chủ.',
         ),
       ),
+    );
+  });
+
+  test('picked photos get friendly names', () {
+    expect(
+      photoNames([
+        'image_picker_A1B2.jpg',
+        'scaled_1000000020.JPEG',
+        'x',
+      ], DateTime(2026, 11, 17, 12, 4)),
+      [
+        'Ảnh 17-11 12.04.jpg',
+        'Ảnh 17-11 12.04 (2).jpeg',
+        'Ảnh 17-11 12.04 (3).jpg',
+      ],
     );
   });
 }
