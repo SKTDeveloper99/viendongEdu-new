@@ -9,6 +9,7 @@ import 'package:viendongedu2_flutter/features/work/hand_in_sheet.dart';
 import 'package:viendongedu2_flutter/features/work/work_api.dart';
 import 'package:viendongedu2_flutter/services/app_session.dart';
 import 'package:viendongedu2_flutter/services/ems_api_service.dart';
+import 'package:viendongedu2_flutter/services/ems_upload.dart';
 import 'package:viendongedu2_flutter/theme/vd_theme.dart';
 
 void main() {
@@ -26,7 +27,12 @@ void main() {
       seen = req;
       return http.Response('{"ok":true,"attachment":{"id":"9"}}', 201);
     });
-    final r = await WorkApi.attach('T1', 'A1', f.path, filename: 'anh.jpg');
+    final r = await WorkApi.attach(
+      'T1',
+      'A1',
+      f.readAsBytesSync(),
+      filename: 'anh.jpg',
+    );
     expect(r['ok'], isTrue);
     expect(seen.method, 'POST');
     expect(seen.url.path, endsWith('/v1/tasks/T1/attachments'));
@@ -51,7 +57,7 @@ void main() {
       ),
     );
     await expectLater(
-      WorkApi.attach('T1', 'A1', f.path),
+      WorkApi.attach('T1', 'A1', f.readAsBytesSync(), filename: 'a.jpg'),
       throwsA(
         isA<EmsException>()
             .having(
@@ -77,7 +83,12 @@ void main() {
             body: TextButton(
               onPressed: () async => got = await showHandInSheet(
                 ctx,
-                pick: () async => [(path: '/tmp/x.jpg', name: 'x.jpg')],
+                pickPhotos: () async => [
+                  (name: 'x.jpg', read: () async => <int>[1]),
+                ],
+                pickFiles: () async => [
+                  (name: 'bao-cao.pdf', read: () async => <int>[2]),
+                ],
                 attach: true,
               ),
               child: const Text('open'),
@@ -88,15 +99,20 @@ void main() {
     );
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
-    expect(find.text('Đính kèm ảnh'), findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('handin-attach')));
-    await t.pumpAndSettle();
+    expect(find.text('Đính kèm'), findsOneWidget);
+    for (final k in ['attach-photo', 'attach-file']) {
+      await t.tap(find.byKey(const ValueKey('handin-attach')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(ValueKey(k)));
+      await t.pumpAndSettle();
+    }
     expect(find.text('x.jpg'), findsOneWidget);
+    expect(find.text('bao-cao.pdf'), findsOneWidget);
     await t.enterText(find.byType(TextField), 'xong');
-    await t.tap(find.text('Nộp kèm 1 ảnh'));
+    await t.tap(find.text('Nộp kèm 2 tệp'));
     await t.pumpAndSettle();
     expect(got?.note, 'xong');
-    expect(got?.files.single.name, 'x.jpg');
+    expect(got?.files.map((f) => f.name), ['x.jpg', 'bao-cao.pdf']);
   });
 
   test('a PDF keeps its name and type', () async {
@@ -107,23 +123,26 @@ void main() {
       seen = req;
       return http.Response('{"ok":true}', 201);
     });
-    await WorkApi.attach('T1', 'A1', f.path, filename: 'bao-cao.pdf');
+    await WorkApi.attach(
+      'T1',
+      'A1',
+      f.readAsBytesSync(),
+      filename: 'bao-cao.pdf',
+    );
     expect(seen.body, contains('filename="bao-cao.pdf"'));
     expect(seen.body, contains('content-type: application/pdf'));
     await dir.delete(recursive: true);
   });
 
-  testWidgets('attachments are switched off: no Đính kèm in the sheet', (
-    t,
-  ) async {
-    expect(handInAttachEnabled, isFalse);
+  testWidgets('switched off: no Đính kèm in the sheet', (t) async {
+    expect(handInAttachEnabled, isTrue);
     await t.pumpWidget(
       MaterialApp(
         theme: VdTheme.light(),
         home: Builder(
           builder: (ctx) => Scaffold(
             body: TextButton(
-              onPressed: () => showHandInSheet(ctx),
+              onPressed: () => showHandInSheet(ctx, attach: false),
               child: const Text('open'),
             ),
           ),
@@ -134,5 +153,41 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('Nộp phần việc'), findsOneWidget);
     expect(find.byKey(const ValueKey('handin-attach')), findsNothing);
+  });
+
+  test('a file opens from a download made with the session', () async {
+    AppSession.instance.emsToken = 'tok';
+    late http.Request seen;
+    EmsApiService.client = MockClient((req) async {
+      seen = req;
+      return http.Response.bytes([37, 80, 68, 70], 200);
+    });
+    final f = await EmsUpload.download(
+      '/v1/tasks/T1/attachments/9',
+      filename: 'Báo cáo.pdf',
+      key: '9',
+    );
+    expect(seen.method, 'GET');
+    expect(seen.url.path, endsWith('/v1/tasks/T1/attachments/9'));
+    expect(seen.headers['Authorization'], 'Bearer tok');
+    expect(f.path, endsWith('/vd_files/9/Báo cáo.pdf'));
+    expect(f.readAsBytesSync(), [37, 80, 68, 70]);
+    await f.delete();
+  });
+
+  test('a missing file reads plainly', () async {
+    EmsApiService.client = MockClient(
+      (_) async => http.Response('{"error":"file_missing"}', 404),
+    );
+    await expectLater(
+      EmsUpload.download('/v1/tasks/T1/attachments/9', filename: 'a', key: '9'),
+      throwsA(
+        isA<EmsException>().having(
+          (e) => e.message,
+          'message',
+          'Tệp không còn trên máy chủ.',
+        ),
+      ),
+    );
   });
 }

@@ -282,14 +282,21 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
       // Start first: the server itself moves an unopened part to in_progress
       // when a file arrives, so starting after the upload was refused
       // ("đã ở trạng thái này") and the hand-in never went (seen 17/11).
-      if (a['status'] == 'assigned')
-        await WorkApi.move('${a['id']}', 'in_progress');
+      if (a['status'] == 'assigned') {
+        try {
+          await WorkApi.move('${a['id']}', 'in_progress');
+        } on EmsException catch (e) {
+          // 409 "đã ở trạng thái này": already started (an earlier attempt,
+          // or the server on a file upload) — carry on with the hand-in.
+          if (e.statusCode != 409) rethrow;
+        }
+      }
       // Then the files, as the web sends them, so the hand-in carries them.
       for (final f in r.files) {
         await WorkApi.attach(
           widget.taskId,
           '${a['id']}',
-          f.path,
+          await f.read(),
           filename: f.name,
         );
       }

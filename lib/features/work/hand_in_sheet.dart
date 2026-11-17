@@ -1,47 +1,57 @@
 import 'package:flutter/material.dart';
-import '../../theme/vd_tokens.dart';
-import '../crm_web/android_photo_picker.dart' show pickPhotosForHandIn;
 
-/// THE SWITCH for attachments on a hand-in (owner 2026-11-17: any type of
-/// file or drop it). Off: the app can upload any file, but a giver cannot yet
-/// open a PDF or Word file from the piece screen on Android without a second
-/// package (open_filex) or native code, so no photo-only half version ships.
-/// The code stays; true (or --dart-define=HAND_IN_ATTACH=true) shows it.
+import '../../theme/vd_tokens.dart';
+import 'file_pick.dart';
+
+/// THE SWITCH for attachments on a hand-in (owner 2026-11-17: "any type of
+/// files"). On: "Đính kèm" offers Ảnh (photo picker) and Tệp (any file);
+/// files go up with the person's session and open from the piece screen.
+/// false (or --dart-define=HAND_IN_ATTACH=false) hides it again.
 const bool handInAttachEnabled = bool.fromEnvironment(
   'HAND_IN_ATTACH',
-  defaultValue: false,
+  defaultValue: true,
 );
 
-/// One picked file: where it is on the phone and its name.
-typedef PickedFile = ({String path, String name});
+/// One picked file: its name and a way to read its bytes (a photo path on
+/// iOS, a content URI on Android).
+typedef PickedFile = ({String name, Future<List<int>> Function() read});
 
-/// What the person hands in: a note and the photos picked ("Đính kèm").
+/// What the person hands in: a note and the files picked ("Đính kèm").
 class HandInResult {
   final String note;
   final List<PickedFile> files;
   const HandInResult(this.note, this.files);
 }
 
-/// Picks photos for a hand-in; tests replace it.
-typedef PickPhotos = Future<List<PickedFile>> Function();
+/// Picks files for a hand-in; tests replace it.
+typedef PickFiles = Future<List<PickedFile>> Function();
 
-/// The hand-in sheet: a note (optional) and "Đính kèm ảnh"; files go to the
-/// server the way the web sends them (WorkApi.attach) before the hand-in.
+/// The hand-in sheet: a note (optional) and "Đính kèm" (Ảnh or Tệp); files go
+/// to the server the way the web sends them (WorkApi.attach) before the
+/// hand-in.
 Future<HandInResult?> showHandInSheet(
   BuildContext context, {
-  PickPhotos pick = pickPhotosForHandIn,
+  PickFiles pickPhotos = pickPhotoFilesForHandIn,
+  PickFiles pickFiles = pickFilesForHandIn,
   bool attach = handInAttachEnabled,
 }) => showModalBottomSheet<HandInResult>(
   context: context,
   isScrollControlled: true,
   showDragHandle: true,
-  builder: (_) => HandInSheet(pick: pick, attach: attach),
+  builder: (_) =>
+      HandInSheet(pickPhotos: pickPhotos, pickFiles: pickFiles, attach: attach),
 );
 
 class HandInSheet extends StatefulWidget {
-  final PickPhotos pick;
+  final PickFiles pickPhotos;
+  final PickFiles pickFiles;
   final bool attach;
-  const HandInSheet({super.key, required this.pick, this.attach = false});
+  const HandInSheet({
+    super.key,
+    required this.pickPhotos,
+    required this.pickFiles,
+    this.attach = false,
+  });
 
   @override
   State<HandInSheet> createState() => _HandInSheetState();
@@ -58,13 +68,39 @@ class _HandInSheetState extends State<HandInSheet> {
   }
 
   Future<void> _attach() async {
+    final which = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: const ValueKey('attach-photo'),
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Ảnh'),
+              onTap: () => Navigator.pop(ctx, 'photo'),
+            ),
+            ListTile(
+              key: const ValueKey('attach-file'),
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Tệp (PDF, Word, Excel…)'),
+              onTap: () => Navigator.pop(ctx, 'file'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (which == null) return;
     try {
-      final picked = await widget.pick();
+      final picked = await (which == 'photo'
+          ? widget.pickPhotos()
+          : widget.pickFiles());
       if (mounted && picked.isNotEmpty) setState(() => _files.addAll(picked));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Không mở được thư viện ảnh.')),
+        const SnackBar(content: Text('Không mở được nơi chọn tệp.')),
       );
     }
   }
@@ -99,7 +135,7 @@ class _HandInSheetState extends State<HandInSheet> {
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.image_outlined, color: t.inkMuted),
+              leading: Icon(Icons.attach_file, color: t.inkMuted),
               title: Text(
                 _files[i].name,
                 maxLines: 1,
@@ -116,9 +152,7 @@ class _HandInSheetState extends State<HandInSheet> {
               key: const ValueKey('handin-attach'),
               onPressed: _attach,
               icon: const Icon(Icons.attach_file),
-              label: Text(
-                _files.isEmpty ? 'Đính kèm ảnh' : 'Đính kèm thêm ảnh',
-              ),
+              label: Text(_files.isEmpty ? 'Đính kèm' : 'Đính kèm thêm'),
             ),
           const SizedBox(height: 8),
           FilledButton(
@@ -128,7 +162,7 @@ class _HandInSheetState extends State<HandInSheet> {
               HandInResult(_note.text.trim(), List.of(_files)),
             ),
             child: Text(
-              _files.isEmpty ? 'Nộp' : 'Nộp kèm ${_files.length} ảnh',
+              _files.isEmpty ? 'Nộp' : 'Nộp kèm ${_files.length} tệp',
             ),
           ),
         ],

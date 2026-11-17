@@ -81,11 +81,11 @@ abstract final class WorkApi {
   static Future<Map<String, dynamic>> attach(
     String id,
     String assignmentId,
-    String filePath, {
-    String? filename,
+    List<int> bytes, {
+    required String filename,
   }) => EmsUpload.file(
     '/v1/tasks/$id/attachments',
-    filePath: filePath,
+    bytes: bytes,
     filename: filename,
     fields: {'assignment_id': assignmentId},
   );

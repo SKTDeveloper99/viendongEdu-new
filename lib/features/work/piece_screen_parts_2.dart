@@ -218,19 +218,29 @@ extension _PieceScreenStatePart2 on _PieceScreenState {
     ),
   );
 
+  // A tap opens the file: downloaded with the person's session, a photo in
+  // the app, anything else in the phone's viewer (open_attachment.dart).
   Widget _fileRow(VdTokens vd, Map f) => Padding(
     padding: const EdgeInsets.only(bottom: 6),
-    child: Row(
-      children: [
-        Icon(Icons.attach_file, size: 18, color: vd.inkMuted),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            '${f['filename'] ?? 'tệp'}',
-            style: TextStyle(color: vd.ink),
-          ),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => openAttachment(context, widget.taskId, f),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(Icons.attach_file, size: 18, color: vd.inkMuted),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '${f['filename'] ?? 'tệp'}',
+                style: TextStyle(color: vd.primary),
+              ),
+            ),
+            Icon(Icons.open_in_new, size: 16, color: vd.inkMuted),
+          ],
         ),
-      ],
+      ),
     ),
   );
 
