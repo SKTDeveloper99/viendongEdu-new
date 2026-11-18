@@ -14,8 +14,12 @@ extension _TableScreenStatePart1 on _TableScreenState {
   List<Map<String, dynamic>> get _cols =>
       ((_data?['columns'] as List?) ?? const []).cast<Map<String, dynamic>>();
 
-  List<Map<String, dynamic>> get _rows =>
-      ((_data?['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  /// My own row(s) first, the rest in the server's order.
+  List<Map<String, dynamic>> get _rows {
+    final all = ((_data?['rows'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>();
+    return [...all.where(_isMine), ...all.where((r) => !_isMine(r))];
+  }
 
   bool get _canShape => (_data?['list'] as Map?)?['can_edit_columns'] == true;
 
@@ -48,6 +52,7 @@ extension _TableScreenStatePart1 on _TableScreenState {
   ) async {
     final cell = ((row['cells'] as Map?) ?? const {})['${col['id']}'] as Map?;
     final kind = '${col['kind']}';
+    final cccd = isCccdColumn('${col['name']}');
     String? value = cell?['value']?.toString();
     final ctrl = TextEditingController(text: value ?? '');
     final result = await showModalBottomSheet<(bool, String?)>(
@@ -105,10 +110,16 @@ extension _TableScreenStatePart1 on _TableScreenState {
                 onPressed: () async {
                   final d = await showDatePicker(
                     context: ctx,
-                    firstDate: DateTime(2000),
+                    firstDate: DateTime(1900),
                     lastDate: DateTime(2100),
                     initialDate:
                         DateTime.tryParse(value ?? '') ?? DateTime.now(),
+                    // An empty cell opens on the years (a birth date is
+                    // decades back, not this month).
+                    initialDatePickerMode:
+                        DateTime.tryParse(value ?? '') == null
+                        ? DatePickerMode.year
+                        : DatePickerMode.day,
                   );
                   if (d != null && ctx.mounted) {
                     String two(int n) => n.toString().padLeft(2, '0');
@@ -124,7 +135,9 @@ extension _TableScreenStatePart1 on _TableScreenState {
                 controller: ctrl,
                 autofocus: true,
                 autocorrect: kind == 'text',
-                keyboardType: kind == 'number'
+                keyboardType: cccd
+                    ? TextInputType.number
+                    : kind == 'number'
                     ? const TextInputType.numberWithOptions(
                         decimal: true,
                         signed: true,
@@ -133,7 +146,11 @@ extension _TableScreenStatePart1 on _TableScreenState {
                     ? TextInputType.url
                     : TextInputType.text,
                 decoration: InputDecoration(
-                  hintText: kind == 'link' ? 'https://…' : null,
+                  hintText: cccd
+                      ? '12 chữ số'
+                      : kind == 'link'
+                      ? 'https://…'
+                      : null,
                   border: const OutlineInputBorder(),
                 ),
               ),
@@ -153,13 +170,21 @@ extension _TableScreenStatePart1 on _TableScreenState {
       ),
     );
     if (result == null || !result.$1) return;
+    var out = result.$2;
+    if (cccd && out != null && out.isNotEmpty) {
+      out = out.replaceAll(RegExp(r'[\s.]'), '');
+      if (!RegExp(r'^\d{12}$').hasMatch(out)) {
+        if (mounted) showErrorSnack(context, 'Số CCCD phải đủ 12 chữ số.');
+        return;
+      }
+    }
     try {
       await SmallGroupApi.setCell(
         widget.spaceId,
         widget.listId,
         '${row['id']}',
         '${col['id']}',
-        result.$2,
+        out,
       );
       await _load();
     } catch (e) {

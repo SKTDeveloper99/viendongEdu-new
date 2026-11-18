@@ -114,7 +114,7 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
       'person',
       'space',
       'line',
-      'khoa',
+      if (_t?['khoa_allowed'] != false) 'khoa',
       'people',
       if (_t?['school'] == true) 'school',
     ];
@@ -306,10 +306,9 @@ extension _NoticeComposeScreenStatePart1 on _NoticeComposeScreenState {
 
   Future<void> _pickPlace() async {
     final items = switch (_kind) {
-      'space' =>
-        _list('spaces')
-            .map((s) => ('${s['id']}', '${s['name']}', '${s['members']} người'))
-            .toList(),
+      'space' => _list(
+        'spaces',
+      ).map((s) => ('${s['id']}', '${s['name']}', _reachOf(_t, s))).toList(),
       'line' =>
         _list('lines')
             .map(

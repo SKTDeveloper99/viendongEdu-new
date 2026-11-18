@@ -191,7 +191,7 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
       lines: [
         '$total người · $done đã duyệt'
             '${waiting > 0 ? ' · $waiting chờ duyệt' : ''}'
-            '${unopened > 0 ? ' · $unopened chưa mở' : ''}',
+            '${unopened > 0 ? ' · $unopened ${taskShowsReceipt ? 'chưa mở' : 'chưa bắt đầu'}' : ''}',
         if (overdue > 0) '$overdue quá hạn',
       ],
       chip: review

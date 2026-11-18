@@ -155,7 +155,9 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
             spacing: 8,
             runSpacing: 6,
             children: [
-              if (s == 'assigned' && a['acknowledged_at'] == null)
+              if (taskShowsReceipt &&
+                  s == 'assigned' &&
+                  a['acknowledged_at'] == null)
                 _actButton(
                   'ack:${a['id']}',
                   'Đã nhận',

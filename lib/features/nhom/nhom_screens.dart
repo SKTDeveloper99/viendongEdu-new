@@ -40,6 +40,11 @@ class _NhomListScreenState extends State<NhomListScreen> {
   List<Map<String, dynamic>>? _rows;
   String? _error;
 
+  /// LAW P-32 ring limits for this account (`nhom_limits`), null for a lead
+  /// role or an older server; [_canCreate] false hides "Nhóm mới".
+  Map<String, dynamic>? _limits;
+  bool _canCreate = true;
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +69,8 @@ class _NhomListScreenState extends State<NhomListScreen> {
         setState(() {
           _rows = rows;
           _error = null;
+          _limits = (b['nhom_limits'] as Map?)?.cast<String, dynamic>();
+          _canCreate = b['can_create'] != false;
         });
       }
     } catch (e) {
@@ -90,32 +97,38 @@ class _NhomListScreenState extends State<NhomListScreen> {
     return Scaffold(
       backgroundColor: vd.bg,
       appBar: AppBar(title: const Text('Nhóm')),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.group_add_outlined),
-        label: const Text('Nhóm mới'),
-        onPressed: () async {
-          final id = await Navigator.push<String?>(
-            context,
-            MaterialPageRoute(builder: (_) => const NewGroupScreen()),
-          );
-          await _load();
-          if (id != null && mounted) {
-            final row = _rows?.firstWhere(
-              (s) => '${s['id']}' == id,
-              orElse: () => {'name': ''},
-            );
-            if (!mounted) return;
-            await Navigator.push(
-              this.context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    NhomScreen(spaceId: id, name: '${row?['name'] ?? ''}'),
-              ),
-            );
-            _load();
-          }
-        },
-      ),
+      floatingActionButton: !_canCreate
+          ? null
+          : FloatingActionButton.extended(
+              icon: const Icon(Icons.group_add_outlined),
+              label: const Text('Nhóm mới'),
+              onPressed: () async {
+                final id = await Navigator.push<String?>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NewGroupScreen(limits: _limits),
+                  ),
+                );
+                await _load();
+                if (id != null && mounted) {
+                  final row = _rows?.firstWhere(
+                    (s) => '${s['id']}' == id,
+                    orElse: () => {'name': ''},
+                  );
+                  if (!mounted) return;
+                  await Navigator.push(
+                    this.context,
+                    MaterialPageRoute(
+                      builder: (_) => NhomScreen(
+                        spaceId: id,
+                        name: '${row?['name'] ?? ''}',
+                      ),
+                    ),
+                  );
+                  _load();
+                }
+              },
+            ),
       body: _error != null
           ? LoadError(
               message: _error!,

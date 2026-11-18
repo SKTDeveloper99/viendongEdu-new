@@ -324,3 +324,13 @@ int _pickMaxOf(Map<String, dynamic>? targets) {
   final n = v is int ? v : int.tryParse('${v ?? ''}');
   return n != null && n > 0 ? n : 20;
 }
+
+/// A Nhóm's size in the place picker; past the sender's `per_send_max`
+/// (LAW P-45: 30 for an ordinary account) it says the send will be refused.
+String _reachOf(Map<String, dynamic>? targets, Map<String, dynamic> space) {
+  final n = int.tryParse('${space['members'] ?? ''}') ?? 0;
+  final cap = int.tryParse('${targets?['per_send_max'] ?? ''}');
+  return cap != null && n > cap
+      ? '$n người · quá $cap người một lần gửi'
+      : '$n người';
+}

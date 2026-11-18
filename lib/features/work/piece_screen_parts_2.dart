@@ -144,6 +144,17 @@ extension _PieceScreenStatePart2 on _PieceScreenState {
           for (final f in files) _fileRow(vd, f),
         ],
         if (mine != null) ...[_section(vd, 'Phần của tôi'), _myPart(vd, mine)],
+        // A Nhóm piece with a table: who filled what, "Mở dòng của bạn".
+        if (t['space_id'] != null)
+          PieceTableLink(
+            key: ValueKey(identityHashCode(t)),
+            spaceId: '${t['space_id']}',
+            taskId: widget.taskId,
+            mine: mine,
+            review: t['requires_review'] != false,
+            section: (title) => _section(vd, title),
+            onBack: _load,
+          ),
         if (t['small_group'] is Map)
           ..._smallGroup(vd, (t['small_group'] as Map).cast<String, dynamic>()),
         if (_iGave || AppSession.instance.isStaff && mine == null) ...[

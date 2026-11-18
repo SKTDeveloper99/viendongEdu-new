@@ -40,8 +40,9 @@ abstract final class WorkApi {
         body: {'body': body},
       );
 
-  /// Reviewer move: `POST /v1/tasks/:id/transition {assignment_id, to_status, note?}`.
-  static Future<void> review(
+  /// Reviewer move: `POST /v1/tasks/:id/transition {assignment_id, to_status, note?}`
+  /// → `{ok, assignment, event}`.
+  static Future<Map<String, dynamic>> review(
     String id,
     String assignmentId,
     String toStatus, {
@@ -57,20 +58,31 @@ abstract final class WorkApi {
   );
 
   /// Duyệt: a hand-in goes submitted → in_review → done (state machine).
+  /// In a Nhóm with a head (LAW T-46) each call is a signature: when the
+  /// giver is the head, the first call already finishes it (`done`); when a
+  /// second signer is still due, the second call answers 409 and the work
+  /// waits for them. Neither is an error for the person who signed.
   static Future<void> approve(
     String id,
     String assignmentId,
     String status,
   ) async {
+    var signed = false;
     if (status == 'submitted') {
       try {
-        await review(id, assignmentId, 'in_review');
+        final r = await review(id, assignmentId, 'in_review');
+        if ((r['assignment'] as Map?)?['status'] == 'done') return;
+        signed = true;
       } on EmsException catch (e) {
         // 409: already in_review (an earlier Duyệt got half way); go on.
         if (e.statusCode != 409) rethrow;
       }
     }
-    await review(id, assignmentId, 'done');
+    try {
+      await review(id, assignmentId, 'done');
+    } on EmsException catch (e) {
+      if (!(signed && e.statusCode == 409)) rethrow;
+    }
   }
 
   /// Trả lại with a reason: → in_progress.
@@ -137,7 +149,8 @@ abstract final class WorkApi {
     filename: filename,
   );
 
-  /// Receiver side: "Đã nhận", then start / hand in.
+  /// Receiver side: start / hand in. Behind [taskShowsReceipt] only: the
+  /// old "Đã nhận" (an acknowledge rings the giver).
   static Future<void> acknowledge(String assignmentId) =>
       EmsApiService.sendMap('POST', '/v1/tasks/my/$assignmentId/acknowledge');
 
@@ -164,9 +177,19 @@ const bool myWorkUnopenedFirst = bool.fromEnvironment(
   defaultValue: true,
 );
 
-/// Not opened = still `assigned` and never acknowledged ("Chưa mở").
-bool isUnopened(Map<String, dynamic> a) =>
-    a['status'] == 'assigned' && a['acknowledged_at'] == null;
+/// Proposed LAW T-59 (2026-11-18, server `34a61b2`): task screens show no
+/// "Đã nhận" button, no "Chưa nhận"/"Chưa mở" label and no receipt step; a new
+/// piece reads "Mới giao" until it is started. Notices keep their "Đã nhận".
+/// If the owner turns T-59 down: --dart-define=TASK_SHOWS_RECEIPT=true.
+const bool taskShowsReceipt = bool.fromEnvironment(
+  'TASK_SHOWS_RECEIPT',
+  defaultValue: false,
+);
+
+/// New = still `assigned` ("Mới giao"); with receipts shown, also never
+/// acknowledged ("Chưa mở").
+bool isUnopened(Map<String, dynamic> a, {bool receipts = taskShowsReceipt}) =>
+    a['status'] == 'assigned' && (!receipts || a['acknowledged_at'] == null);
 
 /// Unopened pieces first (newest `assigned_at` first), the rest after them in
 /// the order given. Stable: equal items keep their order.
@@ -203,8 +226,9 @@ String statusLabel(
   String? status, {
   bool acknowledged = false,
   int returned = 0,
+  bool receipts = taskShowsReceipt,
 }) => switch (status) {
-  'assigned' => acknowledged ? 'Đã nhận' : 'Chưa mở',
+  'assigned' => !receipts ? 'Mới giao' : (acknowledged ? 'Đã nhận' : 'Chưa mở'),
   'in_progress' => returned > 0 ? 'Bị trả lại' : 'Đang làm',
   'submitted' => 'Đã nộp',
   'in_review' => 'Đang xem',

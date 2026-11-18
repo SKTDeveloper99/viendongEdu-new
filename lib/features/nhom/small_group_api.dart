@@ -3,14 +3,31 @@ import '../../services/ems_api_service.dart';
 /// Small groups and tables (Overlord slice; server migrations 181–182).
 abstract final class SmallGroupApi {
   /// People the caller may give work to (`?work=1`), or everyone on staff.
-  static Future<List<Map<String, dynamic>>> people({bool work = true}) async {
+  /// [q]: the server's search (name, sign-in name, account or teacher code,
+  /// khoa; accents ignored; at most 50 people).
+  static Future<List<Map<String, dynamic>>> people({
+    bool work = true,
+    String? q,
+  }) async {
     final b = await EmsApiService.sendMap(
       'GET',
       '/v1/directory/report-recipients',
-      query: work ? const {'work': '1'} : null,
+      query: {
+        if (work) 'work': '1',
+        if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+      },
     );
     return EmsApiService.rows(b['people'] ?? const []);
   }
+
+  /// One Nhóm task with every person on it and, for list readers, the linked
+  /// table: `GET /spaces/:id/tasks/:taskId` → `{assignments, leads,
+  /// linked_list?, assignee_rows?}` (proposed LAW T-58: in an own-rows table a
+  /// member gets only their own line).
+  static Future<Map<String, dynamic>> boardTask(
+    String spaceId,
+    String taskId,
+  ) => EmsApiService.sendMap('GET', '/spaces/$spaceId/tasks/$taskId');
 
   /// "Giao một phần": `POST /week-calendar/pieces/:taskId/delegate`.
   /// Opens the piece's small group when there is none, adds the people,
@@ -61,13 +78,15 @@ abstract final class SmallGroupApi {
     return EmsApiService.rows(b['lists'] ?? const []);
   }
 
+  /// [ownRowsOnly]: "Mỗi người chỉ thấy và điền dòng của mình" (T-58).
   static Future<Map<String, dynamic>> createList(
     String spaceId,
-    String title,
-  ) => EmsApiService.sendMap(
+    String title, {
+    bool ownRowsOnly = false,
+  }) => EmsApiService.sendMap(
     'POST',
     '/spaces/$spaceId/student-lists',
-    body: {'title': title},
+    body: {'title': title, if (ownRowsOnly) 'own_rows_only': true},
   );
 
   static Future<Map<String, dynamic>> list(String spaceId, String listId) =>

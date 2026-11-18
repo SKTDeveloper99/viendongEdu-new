@@ -37,7 +37,9 @@ extension _NhomScreenStatePart2 on _NhomScreenState {
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               subtitle: Text(
-                '${l['students'] ?? 0} dòng · ${l['reporters'] ?? 0} người điền · ${l['created_by_name'] ?? ''}',
+                l['own_rows_only'] == true
+                    ? 'Mỗi người chỉ thấy và điền dòng của mình · ${l['created_by_name'] ?? ''}'
+                    : '${l['students'] ?? 0} dòng · ${l['reporters'] ?? 0} người điền · ${l['created_by_name'] ?? ''}',
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
@@ -48,6 +50,7 @@ extension _NhomScreenStatePart2 on _NhomScreenState {
                       spaceId: widget.spaceId,
                       listId: '${l['id']}',
                       title: '${l['title'] ?? ''}',
+                      handIn: tablePiecesOf(_work, '${l['id']}'),
                     ),
                   ),
                 );
@@ -82,10 +85,14 @@ extension _NhomScreenStatePart2 on _NhomScreenState {
 class GiveWorkScreen extends StatefulWidget {
   final String spaceId;
   final List<Map<String, dynamic>> people;
+
+  /// The group's tables; one may be linked so each receiver fills a row.
+  final List<Map<String, dynamic>> lists;
   const GiveWorkScreen({
     super.key,
     required this.spaceId,
     required this.people,
+    this.lists = const [],
   });
 
   @override
@@ -100,6 +107,7 @@ class _GiveWorkScreenState extends State<GiveWorkScreen> {
       .map((p) => '${p['user_id']}')
       .toSet();
   bool _busy = false;
+  String? _listId;
 
   @override
   void dispose() {
@@ -131,6 +139,7 @@ class _GiveWorkScreenState extends State<GiveWorkScreen> {
         assigneeIds: _picked.length == widget.people.length
             ? null
             : _picked.toList(),
+        listId: _listId,
       );
       if (!mounted) return;
       showSuccessSnack(context, 'Đã giao việc cho ${_picked.length} người.');
@@ -176,6 +185,32 @@ class _GiveWorkScreenState extends State<GiveWorkScreen> {
               _due == null ? 'Chọn hạn' : dueLabel(_due!.toIso8601String()),
             ),
           ),
+          if (widget.lists.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: _listId,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Bảng cần điền (không bắt buộc)',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Không gắn bảng'),
+                ),
+                for (final l in widget.lists)
+                  DropdownMenuItem(
+                    value: '${l['id']}',
+                    child: Text(
+                      '${l['title'] ?? ''}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (v) => setState(() => _listId = v),
+            ),
+          ],
           const SizedBox(height: 16),
           Text(
             'GIAO CHO (${_picked.length}/${widget.people.length})',

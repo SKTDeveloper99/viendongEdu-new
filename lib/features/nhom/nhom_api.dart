@@ -32,7 +32,7 @@ abstract final class NhomApi {
     body: {'kind': 'discussion', 'body': body, if (urgent) 'urgent': true},
   );
 
-  /// `POST /spaces/:id/tasks {title, description?, due_at?, assignee_user_ids?}`
+  /// `POST /spaces/:id/tasks {title, description?, due_at?, assignee_user_ids?, list_id?}`
   /// — without assignees, everyone else in the group receives it.
   static Future<Map<String, dynamic>> giveWork(
     String id, {
@@ -40,6 +40,7 @@ abstract final class NhomApi {
     String? description,
     DateTime? dueAt,
     List<String>? assigneeIds,
+    String? listId,
   }) => EmsApiService.sendMap(
     'POST',
     '/spaces/$id/tasks',
@@ -51,6 +52,8 @@ abstract final class NhomApi {
       if (assigneeIds != null && assigneeIds.isNotEmpty)
         'assignee_user_ids': assigneeIds,
       'requires_review': true,
+      // The table each receiver fills before "Nộp" (LAW T-49/T-58).
+      'list_id': ?listId,
     },
   );
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../services/app_session.dart';
@@ -7,11 +9,13 @@ import '../../theme/vd_tokens.dart';
 import '../../utils/snack.dart';
 import '../work/work_api.dart';
 import '../common/load_error.dart';
+import 'nhom_api.dart';
 import 'small_group_api.dart';
 
 part 'small_group_screens_parts_1.dart';
 part 'small_group_screens_parts_2.dart';
 part 'small_group_people_picker.dart';
+part 'small_group_table_parts.dart';
 
 Future<void> _fail(BuildContext context, Object e) async {
   if (e is EmsException && e.statusCode == 401) {
@@ -228,8 +232,11 @@ class _DelegateScreenState extends State<DelegateScreen> {
 }
 
 /// A small group with no piece: name, people, temporary by default.
+/// [limits]: the server's `nhom_limits` (LAW P-32): `member_max` people
+/// besides the opener, `open_left_today` of `open_per_day` (null: no cap).
 class NewGroupScreen extends StatefulWidget {
-  const NewGroupScreen({super.key});
+  final Map<String, dynamic>? limits;
+  const NewGroupScreen({super.key, this.limits});
 
   @override
   State<NewGroupScreen> createState() => _NewGroupScreenState();

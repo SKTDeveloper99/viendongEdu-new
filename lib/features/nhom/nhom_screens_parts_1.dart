@@ -67,7 +67,11 @@ extension _NhomScreenStatePart1 on _NhomScreenState {
     final done = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => GiveWorkScreen(spaceId: widget.spaceId, people: people),
+        builder: (_) => GiveWorkScreen(
+          spaceId: widget.spaceId,
+          people: people,
+          lists: _lists,
+        ),
       ),
     );
     if (done == true) await _load();
@@ -282,30 +286,51 @@ extension _NhomScreenStatePart1 on _NhomScreenState {
 
   Future<void> _newList() async {
     final ctrl = TextEditingController();
+    var ownRows = false;
     final title = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Danh sách mới'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Tên danh sách'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setInner) => AlertDialog(
+          title: const Text('Danh sách mới'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Tên danh sách'),
+              ),
+              const SizedBox(height: 8),
+              // Proposed LAW T-58: chosen once, when the table is made.
+              CheckboxListTile(
+                value: ownRows,
+                onChanged: (v) => setInner(() => ownRows = v == true),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('Mỗi người chỉ thấy và điền dòng của mình'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Thôi'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Tạo'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Thôi'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Tạo'),
-          ),
-        ],
       ),
     );
     if (title == null || title.isEmpty) return;
     try {
-      final r = await SmallGroupApi.createList(widget.spaceId, title);
+      final r = await SmallGroupApi.createList(
+        widget.spaceId,
+        title,
+        ownRowsOnly: ownRows,
+      );
       final id = (r['list'] as Map?)?['id']?.toString();
       await _load();
       if (id != null && mounted) {

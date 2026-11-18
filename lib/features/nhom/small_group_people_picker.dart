@@ -33,21 +33,27 @@ class _PeoplePickerState extends State<PeoplePicker> {
     _loadPeople();
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> _usable(List<Map<String, dynamic>> p) {
+    final me = AppSession.instance.userId;
+    return p
+        .where(
+          (x) =>
+              '${x['id']}' != me &&
+              (!widget.work || x['can_receive_work'] != false),
+        )
+        .toList();
+  }
+
   void _loadPeople() {
     SmallGroupApi.people(work: widget.work)
         .then((p) {
-          final me = AppSession.instance.userId;
-          if (mounted) {
-            setState(
-              () => _all = p
-                  .where(
-                    (x) =>
-                        '${x['id']}' != me &&
-                        (!widget.work || x['can_receive_work'] != false),
-                  )
-                  .toList(),
-            );
-          }
+          if (mounted) setState(() => _all = _usable(p));
         })
         .catchError((e) async {
           if (!mounted) return;
@@ -56,32 +62,44 @@ class _PeoplePickerState extends State<PeoplePicker> {
         });
   }
 
-  // "hoang tho" finds "Hoàng Thơ": search ignores Vietnamese marks. The
-  // sign-in name and teacher code ride in `hint`, so "manhdung" finds them.
-  static const _from =
-      'àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ';
-  static const _to =
-      'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd';
-  String _fold(String s) {
-    final low = s.toLowerCase();
-    final b = StringBuffer();
-    for (final ch in low.split('')) {
-      final i = _from.indexOf(ch);
-      b.write(i >= 0 ? _to[i] : ch);
-    }
-    return b.toString();
+  // The server's `?q=` (name, sign-in name, account or teacher code, khoa)
+  // answers what was typed; the local list shows matches meanwhile.
+  Timer? _debounce;
+  List<Map<String, dynamic>>? _found;
+  String _foundFor = '';
+
+  void _search(String v) {
+    setState(() => _q = v.trim());
+    _debounce?.cancel();
+    final q = _q;
+    if (q.length < 2) return;
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      try {
+        final p = await SmallGroupApi.people(work: widget.work, q: q);
+        if (mounted && _q == q) {
+          setState(() {
+            _found = _usable(p);
+            _foundFor = q;
+          });
+        }
+      } catch (_) {
+        // The local list stays; a failed search is not worth a message.
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final vd = context.vd;
-    final rows = (_all ?? const <Map<String, dynamic>>[])
+    final server = _q.length >= 2 && _foundFor == _q ? _found : null;
+    final rows = (server ?? _all ?? const <Map<String, dynamic>>[])
         .where(
           (p) =>
+              server != null ||
               _q.length < 2 ||
-              _fold(
+              _foldVi(
                 '${p['full_name']} ${p['hint'] ?? ''}',
-              ).contains(_fold(_q)),
+              ).contains(_foldVi(_q)),
         )
         .take(60)
         .toList();
@@ -111,11 +129,11 @@ class _PeoplePickerState extends State<PeoplePicker> {
               autocorrect: false,
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search),
-                hintText: 'Gõ tên (ít nhất 2 chữ)',
+                hintText: 'Gõ tên, tên đăng nhập hoặc mã (ít nhất 2 chữ)',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
-              onChanged: (v) => setState(() => _q = v.trim()),
+              onChanged: _search,
             ),
           ),
           if (_picked.isNotEmpty)
@@ -194,4 +212,19 @@ class _PeoplePickerState extends State<PeoplePicker> {
       ),
     );
   }
+}
+
+// "hoang tho" finds "Hoàng Thơ": search ignores Vietnamese marks. The
+// sign-in name and teacher code ride in `hint`, so "manhdung" finds them.
+const _viFrom =
+    'àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ';
+const _viTo =
+    'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd';
+String _foldVi(String s) {
+  final b = StringBuffer();
+  for (final ch in s.toLowerCase().split('')) {
+    final i = _viFrom.indexOf(ch);
+    b.write(i >= 0 ? _viTo[i] : ch);
+  }
+  return b.toString();
 }

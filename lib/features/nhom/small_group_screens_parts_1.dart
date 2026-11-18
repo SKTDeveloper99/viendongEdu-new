@@ -30,9 +30,20 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
     }
   }
 
+  int? get _memberMax => _limitOf('member_max');
+  int? get _leftToday => _limitOf('open_left_today');
+  int? _limitOf(String k) {
+    final v = widget.limits?[k];
+    return v is int ? v : int.tryParse('${v ?? ''}');
+  }
+
   @override
   Widget build(BuildContext context) {
     final vd = context.vd;
+    final max = _memberMax;
+    final left = _leftToday;
+    final perDay = _limitOf('open_per_day');
+    final closed = left != null && left <= 0;
     return Scaffold(
       backgroundColor: vd.bg,
       appBar: AppBar(title: const Text('Nhóm mới')),
@@ -53,8 +64,11 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
               final r = await Navigator.push<Map<String, String>>(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      const PeoplePicker(work: false, title: 'Thành viên'),
+                  builder: (_) => PeoplePicker(
+                    work: false,
+                    title: 'Thành viên',
+                    max: max == null ? null : max - _people.length,
+                  ),
                 ),
               );
               if (r != null) setState(() => _people = {..._people, ...r});
@@ -74,9 +88,23 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
               'Tự đóng khi mọi việc trong nhóm xong. Trưởng nhóm có thể "Giữ nhóm này" bất cứ lúc nào.',
             ),
           ),
+          if (max != null || perDay != null)
+            Text(
+              [
+                if (max != null) 'Tối đa $max người ngoài bạn',
+                if (perDay != null && left != null)
+                  'hôm nay còn mở được $left/$perDay nhóm',
+              ].join(' · '),
+              style: TextStyle(
+                color: closed ? vd.danger : vd.inkMuted,
+                fontSize: 12,
+              ),
+            ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: _name.text.trim().isEmpty || _busy ? null : _send,
+            onPressed: _name.text.trim().isEmpty || _busy || closed
+                ? null
+                : _send,
             child: Text(_busy ? 'Đang mở…' : 'Mở nhóm'),
           ),
         ],
@@ -91,11 +119,15 @@ class TableScreen extends StatefulWidget {
   final String spaceId;
   final String listId;
   final String title;
+
+  /// My open pieces this table is for: a "Nộp" bar under the table.
+  final List<TablePiece> handIn;
   const TableScreen({
     super.key,
     required this.spaceId,
     required this.listId,
     required this.title,
+    this.handIn = const [],
   });
 
   @override
@@ -105,6 +137,8 @@ class TableScreen extends StatefulWidget {
 class _TableScreenState extends State<TableScreen> {
   Map<String, dynamic>? _data;
   bool _failed = false;
+  final Set<String> _handed = {};
+  bool _handingIn = false;
 
   @override
   void initState() {
@@ -121,6 +155,12 @@ class _TableScreenState extends State<TableScreen> {
       appBar: AppBar(
         title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
+          if (_canShape && !_rows.any((r) => r['mssv'] != null))
+            IconButton(
+              tooltip: 'Thêm cả nhóm',
+              onPressed: _addAll,
+              icon: const Icon(Icons.group_add_outlined),
+            ),
           if (_canShape)
             IconButton(
               tooltip: 'Thêm cột',
@@ -129,7 +169,9 @@ class _TableScreenState extends State<TableScreen> {
             ),
         ],
       ),
-      floatingActionButton: _data == null
+      bottomNavigationBar: _handInBar(vd),
+      // Own-rows table (proposed LAW T-58): a member only fills their row.
+      floatingActionButton: _data == null || (_ownRows && !_canShape)
           ? null
           : FloatingActionButton.extended(
               onPressed: _addRow,
@@ -154,7 +196,13 @@ class _TableScreenState extends State<TableScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                     child: Text(
-                      '${_rows.length} dòng · ${cols.length} cột · chạm một ô để điền',
+                      [
+                        '${_rows.length} dòng · ${cols.length} cột · chạm một ô để điền',
+                        if (_ownRows)
+                          _canShape
+                              ? 'Mỗi người chỉ thấy và điền dòng của mình; bạn thấy cả bảng.'
+                              : 'Bạn chỉ thấy và điền dòng của mình.',
+                      ].join('\n'),
                       style: TextStyle(color: vd.inkMuted),
                     ),
                   ),
