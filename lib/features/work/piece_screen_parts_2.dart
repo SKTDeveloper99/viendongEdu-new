@@ -91,12 +91,7 @@ extension _PieceScreenStatePart2 on _PieceScreenState {
   Widget _body(VdTokens vd) {
     final t = _task!;
     final line = t['calendar_line'] as Map?;
-    final files = [
-      ...((t['instruction_attachments'] as List?) ?? const []),
-      ...((t['attachments'] as List?) ?? const []).where(
-        (f) => (f as Map)['assignment_id'] == null,
-      ),
-    ].cast<Map>();
+    final files = pieceFiles(t);
     final mine = _mine;
     final total = _assignments.length;
     final done = _assignments.where((a) => a['status'] == 'done').length;

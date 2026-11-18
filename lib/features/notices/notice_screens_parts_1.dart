@@ -2,6 +2,7 @@ part of 'notice_screens.dart';
 
 class _SentNoticesScreenState extends State<SentNoticesScreen> {
   List<Map<String, dynamic>>? _rows;
+  bool _failed = false;
 
   @override
   void initState() {
@@ -16,6 +17,7 @@ class _SentNoticesScreenState extends State<SentNoticesScreen> {
         setState(() => _rows = EmsApiService.rows(r['notices'] ?? const []));
       }
     } catch (e) {
+      if (mounted && _rows == null) setState(() => _failed = true);
       if (mounted) await _fail(context, e);
     }
   }
@@ -27,7 +29,15 @@ class _SentNoticesScreenState extends State<SentNoticesScreen> {
       backgroundColor: vd.bg,
       appBar: AppBar(title: const Text('Thông báo đã gửi')),
       body: _rows == null
-          ? const Center(child: CircularProgressIndicator())
+          ? (_failed
+                ? LoadError(
+                    message: 'Không tải được thông báo đã gửi.',
+                    onRetry: () {
+                      setState(() => _failed = false);
+                      _load();
+                    },
+                  )
+                : const Center(child: CircularProgressIndicator()))
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
@@ -98,6 +108,7 @@ class NoticeDetailScreen extends StatefulWidget {
 class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
   Map<String, dynamic>? _d;
   bool _busy = false;
+  bool _failed = false;
 
   @override
   void initState() {
@@ -110,6 +121,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
       final d = await NoticeApi.one(widget.id);
       if (mounted) setState(() => _d = d);
     } catch (e) {
+      if (mounted && _d == null) setState(() => _failed = true);
       if (mounted) await _fail(context, e);
     }
   }
@@ -154,7 +166,15 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
       backgroundColor: vd.bg,
       appBar: AppBar(title: const Text('Thông báo')),
       body: d == null
-          ? const Center(child: CircularProgressIndicator())
+          ? (_failed
+                ? LoadError(
+                    message: 'Không mở được thông báo này.',
+                    onRetry: () {
+                      setState(() => _failed = false);
+                      _load();
+                    },
+                  )
+                : const Center(child: CircularProgressIndicator()))
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
@@ -296,3 +316,11 @@ Future<bool?> _askResendUnclear(BuildContext context) => showDialog<bool>(
     ],
   ),
 );
+
+/// People one notice may name: the server's `pick_max` (20 on the slice, 30
+/// with the ring limits of 18/11), 20 when it says nothing.
+int _pickMaxOf(Map<String, dynamic>? targets) {
+  final v = targets?['pick_max'];
+  final n = v is int ? v : int.tryParse('${v ?? ''}');
+  return n != null && n > 0 ? n : 20;
+}

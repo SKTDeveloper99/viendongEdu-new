@@ -20,7 +20,15 @@ extension _NhomScreenStatePart1 on _NhomScreenState {
         _error = null;
       });
     } catch (e) {
-      if (mounted) await _guard(context, e, (m) => _set(() => _error = m));
+      if (mounted) {
+        await _guard(context, e, (m) {
+          if (_one == null) {
+            _set(() => _error = m);
+          } else {
+            showErrorSnack(context, m);
+          }
+        });
+      }
     }
   }
 

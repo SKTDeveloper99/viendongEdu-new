@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -7,6 +9,7 @@ import '../../services/ems_api_service.dart';
 import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
 import '../../utils/snack.dart';
+import '../common/load_error.dart';
 import 'hand_in_sheet.dart';
 import 'open_attachment.dart';
 import 'work_api.dart';
@@ -72,11 +75,12 @@ class _PieceScreenState extends State<PieceScreen> {
       backgroundColor: vd.bg,
       appBar: AppBar(title: const Text('Một việc')),
       body: _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(_error!, textAlign: TextAlign.center),
-              ),
+          ? LoadError(
+              message: _error!,
+              onRetry: () {
+                setState(() => _error = null);
+                _load();
+              },
             )
           : _task == null
           ? const Center(child: CircularProgressIndicator())

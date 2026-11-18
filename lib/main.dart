@@ -15,6 +15,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/app_session.dart';
+import 'services/ems_upload.dart';
 import 'services/theme_controller.dart';
 import 'theme/vd_theme.dart';
 import 'screens/splash_screen.dart';
@@ -104,6 +105,8 @@ void main() async {
     register: AppSession.instance.registerTeacherDeviceToken,
     revoke: AppSession.instance.revokeTeacherDeviceToken,
   );
+
+  EmsUpload.registerSignOutPurge();
 
   // Nạp lựa chọn Sáng/Tối đã lưu (mặc định Sáng; lỗi đọc → Sáng).
   await ThemeController.instance.load();

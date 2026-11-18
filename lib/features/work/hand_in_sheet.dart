@@ -73,58 +73,12 @@ class _HandInSheetState extends State<HandInSheet> {
   }
 
   Future<void> _attach() async {
-    final which = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              key: const ValueKey('attach-photo'),
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Ảnh'),
-              onTap: () => Navigator.pop(ctx, 'photo'),
-            ),
-            ListTile(
-              key: const ValueKey('attach-file'),
-              leading: const Icon(Icons.description_outlined),
-              title: const Text('Tệp (PDF, Word, Excel…)'),
-              onTap: () => Navigator.pop(ctx, 'file'),
-            ),
-          ],
-        ),
-      ),
+    final ok = await pickAttachments(
+      context,
+      pickPhotos: widget.pickPhotos,
+      pickFiles: widget.pickFiles,
     );
-    if (which == null) return;
-    try {
-      final picked = await (which == 'photo'
-          ? widget.pickPhotos()
-          : widget.pickFiles());
-      // Size checked here, before anything is read into memory: a file over
-      // the server's 25 MB ceiling is refused at once with its message.
-      final big = picked
-          .where((f) => (f.size ?? 0) > EmsUpload.maxFileBytes)
-          .toList();
-      final ok = picked.where((f) => !big.contains(f)).toList();
-      if (!mounted) return;
-      if (ok.isNotEmpty) setState(() => _files.addAll(ok));
-      if (big.isNotEmpty) {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(
-              '${EmsUpload.refusal('file_too_large', 413)} '
-              '${big.map((f) => f.name).join(', ')}',
-            ),
-          ),
-        );
-      }
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Không mở được nơi chọn tệp.')),
-      );
-    }
+    if (mounted && ok.isNotEmpty) setState(() => _files.addAll(ok));
   }
 
   @override
@@ -190,5 +144,64 @@ class _HandInSheetState extends State<HandInSheet> {
         ],
       ),
     );
+  }
+}
+
+/// "Đính kèm": asks Ảnh or Tệp, opens that picker and returns what may be
+/// sent. The size is checked here, before anything is read into memory: a
+/// file over the server's 25 MB ceiling is refused at once with its message.
+/// Used by the hand-in sheet and by Giao việc.
+Future<List<PickedFile>> pickAttachments(
+  BuildContext context, {
+  PickFiles pickPhotos = pickPhotoFilesForHandIn,
+  PickFiles pickFiles = pickFilesForHandIn,
+}) async {
+  final which = await showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            key: const ValueKey('attach-photo'),
+            leading: const Icon(Icons.photo_library_outlined),
+            title: const Text('Ảnh'),
+            onTap: () => Navigator.pop(ctx, 'photo'),
+          ),
+          ListTile(
+            key: const ValueKey('attach-file'),
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('Tệp (PDF, Word, Excel…)'),
+            onTap: () => Navigator.pop(ctx, 'file'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (which == null) return const [];
+  try {
+    final picked = await (which == 'photo' ? pickPhotos() : pickFiles());
+    final big = picked
+        .where((f) => (f.size ?? 0) > EmsUpload.maxFileBytes)
+        .toList();
+    if (big.isNotEmpty && context.mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(
+            '${EmsUpload.refusal('file_too_large', 413)} '
+            '${big.map((f) => f.name).join(', ')}',
+          ),
+        ),
+      );
+    }
+    return picked.where((f) => !big.contains(f)).toList();
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Không mở được nơi chọn tệp.')),
+      );
+    }
+    return const [];
   }
 }

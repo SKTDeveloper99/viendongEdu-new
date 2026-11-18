@@ -5,7 +5,8 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
 
   String? get _myTeacherId => AppSession.instance.teacherId;
 
-  Future<void> _load() async {
+  /// [quiet]: a reload after a failed action; its own failure says nothing.
+  Future<void> _load({bool quiet = false}) async {
     try {
       final t = await WorkApi.task(widget.taskId);
       final c = await WorkApi.comments(
@@ -24,7 +25,12 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
         handleCrmAuthError(context, e);
         return;
       }
-      _set(() => _error = e.message);
+      if (quiet) return;
+      if (_task == null) {
+        _set(() => _error = e.message);
+      } else {
+        showErrorSnack(context, e.message);
+      }
     }
   }
 
@@ -94,8 +100,12 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
         return;
       }
       _set(() => _act[key] = e.message);
+      unawaited(_load(quiet: true));
     } catch (_) {
-      if (mounted) _set(() => _act[key] = 'Không kết nối được máy chủ.');
+      if (mounted) {
+        _set(() => _act[key] = 'Không kết nối được máy chủ.');
+        unawaited(_load(quiet: true));
+      }
     }
   }
 

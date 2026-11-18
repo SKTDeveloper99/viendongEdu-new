@@ -4,6 +4,7 @@ import '../../services/crm_session_guard.dart';
 import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
 import '../../utils/snack.dart';
+import '../common/load_error.dart';
 import '../nhom/nhom_screens.dart';
 import '../nhom/small_group_screens.dart' show PeoplePicker;
 import '../work/piece_screen.dart';
@@ -13,7 +14,7 @@ part 'notice_screens_parts_1.dart';
 
 /// "Gửi thông báo" (Overlord; server `routes/notices.js`). One sentence to one
 /// person (always a phone banner) or to a place: a Nhóm, a calendar line, a
-/// khoa, up to 20 picked people, or the whole school for admin/vice admin.
+/// khoa, up to `pick_max` picked people, or the whole school for admin/vice admin.
 /// To many, "Thường" rings nobody (bell and badge only); "Cần xem ngay" is a
 /// banner, chosen on purpose, with a daily cap the server sets.
 abstract final class NoticeApi {
@@ -63,6 +64,8 @@ class NoticeComposeScreen extends StatefulWidget {
 
 class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
   Map<String, dynamic>? _t;
+
+  int get _pickMax => _pickMaxOf(_t);
 
   String _kind = 'person';
 
@@ -169,7 +172,7 @@ class _NoticeComposeScreenState extends State<NoticeComposeScreen> {
                 _people.isEmpty
                     ? (_kind == 'person'
                           ? 'Chọn người'
-                          : 'Chọn người (tối đa 20)')
+                          : 'Chọn người (tối đa $_pickMax)')
                     : _people.values.join(', '),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -361,22 +364,27 @@ extension _NoticeComposeScreenStatePart1 on _NoticeComposeScreenState {
   }
 
   Future<void> _pickPeople() async {
+    final room = _kind == 'person' ? 1 : _pickMax - _people.length;
+    if (room <= 0) {
+      showErrorSnack(context, 'Tối đa $_pickMax người mỗi lần gửi.');
+      return;
+    }
     final r = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
         builder: (_) => PeoplePicker(
           work: false,
-          title: _kind == 'person' ? 'Gửi cho ai?' : 'Chọn tối đa 20 người',
+          title: _kind == 'person'
+              ? 'Gửi cho ai?'
+              : 'Chọn tối đa $_pickMax người',
           single: _kind == 'person',
+          max: _kind == 'person' ? null : room,
         ),
       ),
     );
     if (r == null) return;
     _set(() {
       _people = _kind == 'person' ? r : {..._people, ...r};
-      if (_people.length > 20) {
-        _people = Map.fromEntries(_people.entries.take(20));
-      }
     });
   }
 }

@@ -2,20 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../components/next_up_card.dart';
 import '../../core/crm_web/crm_web_target.dart';
-import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
-import '../../utils/snack.dart';
-import '../nhom/small_group_screens.dart';
 import '../teacher_home/next_up.dart';
 import '../teacher_home/teacher_home_view_model.dart';
 import '../teacher_home/widgets/my_day_card.dart';
 import '../teacher_home/widgets/schedule_section.dart';
 import '../teacher_home/widgets/week_strip.dart';
-import '../work/piece_screen.dart';
-import '../work/work_api.dart';
 import 'home_prefs.dart';
 import '../notices/notice_screens.dart';
 import 'home_widgets.dart';
+
+export 'give_task_screen.dart';
 
 Future<void> openWeekPage(BuildContext context) async {
   await HomePrefs.setLichLast('week');
@@ -268,133 +265,4 @@ class ThemScreen extends StatelessWidget {
       ],
     ),
   );
-}
-
-/// "+ Giao việc": a new piece of work to one or more people.
-class GiveTaskScreen extends StatefulWidget {
-  const GiveTaskScreen({super.key});
-
-  @override
-  State<GiveTaskScreen> createState() => _GiveTaskScreenState();
-}
-
-class _GiveTaskScreenState extends State<GiveTaskScreen> {
-  final _title = TextEditingController();
-  final _desc = TextEditingController();
-  Map<String, String> _people = {};
-  DateTime? _due;
-  bool _busy = false;
-  final _requestId = newRequestId(); // same id on a resend: made once
-  @override
-  void dispose() {
-    _title.dispose();
-    _desc.dispose();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    setState(() => _busy = true);
-    try {
-      final r = await EmsApiService.sendMap(
-        'POST',
-        '/v1/tasks',
-        body: {
-          'title': _title.text.trim(),
-          if (_desc.text.trim().isNotEmpty) 'description': _desc.text.trim(),
-          if (_due != null) 'due_at': _due!.toUtc().toIso8601String(),
-          'assignee_user_ids': _people.keys.toList(),
-          'requires_review': true,
-          'client_request_id': _requestId,
-        },
-      );
-      if (!mounted) return;
-      showSuccessSnack(context, 'Đã giao việc cho ${_people.length} người.');
-      final id = (r['task'] as Map?)?['id']?.toString();
-      if (id != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => PieceScreen(taskId: id)),
-        );
-      } else {
-        Navigator.pop(context);
-      }
-    } on EmsException catch (e) {
-      if (mounted) showErrorSnack(context, e.message);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ok = _people.isNotEmpty && _title.text.trim().isNotEmpty && !_busy;
-    return Scaffold(
-      backgroundColor: context.vd.bg,
-      appBar: AppBar(title: const Text('Giao việc')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            controller: _title,
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'Việc cần làm',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _desc,
-            minLines: 2,
-            maxLines: 5,
-            decoration: const InputDecoration(
-              labelText: 'Mô tả (không bắt buộc)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () async {
-              final r = await Navigator.push<Map<String, String>>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PeoplePicker(title: 'Giao cho ai?'),
-                ),
-              );
-              if (r != null) setState(() => _people = {..._people, ...r});
-            },
-            icon: const Icon(Icons.person_add_alt),
-            label: Text(
-              _people.isEmpty ? 'Chọn người nhận' : _people.values.join(', '),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () async {
-              final now = DateTime.now();
-              final d = await showDatePicker(
-                context: context,
-                firstDate: now,
-                lastDate: now.add(const Duration(days: 365)),
-                initialDate: now.add(const Duration(days: 2)),
-              );
-              if (d != null) {
-                setState(() => _due = DateTime(d.year, d.month, d.day, 17));
-              }
-            },
-            icon: const Icon(Icons.event),
-            label: Text(
-              _due == null ? 'Chọn hạn' : dueLabel(_due!.toIso8601String()),
-            ),
-          ),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: ok ? _send : null,
-            child: Text(_busy ? 'Đang giao…' : 'Giao việc'),
-          ),
-        ],
-      ),
-    );
-  }
 }

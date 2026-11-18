@@ -62,7 +62,14 @@ abstract final class WorkApi {
     String assignmentId,
     String status,
   ) async {
-    if (status == 'submitted') await review(id, assignmentId, 'in_review');
+    if (status == 'submitted') {
+      try {
+        await review(id, assignmentId, 'in_review');
+      } on EmsException catch (e) {
+        // 409: already in_review (an earlier Duyệt got half way); go on.
+        if (e.statusCode != 409) rethrow;
+      }
+    }
     await review(id, assignmentId, 'done');
   }
 
@@ -90,6 +97,44 @@ abstract final class WorkApi {
     bytes: bytes,
     filename: filename,
     fields: {'assignment_id': assignmentId},
+  );
+
+  /// "+ Giao việc": `POST /v1/tasks`, reviewed by the giver. The same
+  /// [requestId] on a resend makes the server answer once. Returns the id.
+  static Future<String> give({
+    required String title,
+    String description = '',
+    DateTime? due,
+    required List<String> people,
+    required String requestId,
+  }) async {
+    final r = await EmsApiService.sendMap(
+      'POST',
+      '/v1/tasks',
+      body: {
+        'title': title,
+        if (description.isNotEmpty) 'description': description,
+        if (due != null) 'due_at': due.toUtc().toIso8601String(),
+        'assignee_user_ids': people,
+        'requires_review': true,
+        'client_request_id': requestId,
+      },
+    );
+    final id = (r['task'] as Map?)?['id']?.toString();
+    if (id == null) throw EmsException('Máy chủ không trả về việc vừa giao.');
+    return id;
+  }
+
+  /// A giver's file on the piece itself (no `assignment_id`): every receiver
+  /// sees it under "Tệp kèm", as on the web.
+  static Future<Map<String, dynamic>> attachToPiece(
+    String id,
+    List<int> bytes, {
+    required String filename,
+  }) => EmsUpload.file(
+    '/v1/tasks/$id/attachments',
+    bytes: bytes,
+    filename: filename,
   );
 
   /// Receiver side: "Đã nhận", then start / hand in.
@@ -181,4 +226,20 @@ String whenLabel(Object? iso) {
   if (d == null) return '';
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(d.hour)}:${two(d.minute)} ${two(d.day)}/${two(d.month)}';
+}
+
+/// The giver's files on a piece. The server sends them in both
+/// `instruction_attachments` and `attachments` (same ids), so each id is
+/// listed once; files on a person's part (`assignment_id` set) are not here.
+List<Map> pieceFiles(Map task) {
+  final seen = <String>{};
+  return [
+    for (final f in [
+      ...((task['instruction_attachments'] as List?) ?? const []),
+      ...((task['attachments'] as List?) ?? const []).where(
+        (f) => (f as Map)['assignment_id'] == null,
+      ),
+    ].cast<Map>())
+      if (seen.add('${f['id'] ?? f['storage_key'] ?? f['filename']}')) f,
+  ];
 }

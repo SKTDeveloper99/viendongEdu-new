@@ -31,24 +31,51 @@ Future<void> openAttachment(BuildContext context, String taskId, Map f) async {
             appBar: AppBar(title: Text(name)),
             body: InteractiveViewer(
               maxScale: 5,
-              child: Center(child: Image.file(file)),
+              child: Center(
+                child: Image.file(
+                  file,
+                  // HEIC / SVG on Android: the phone's own viewer may know it.
+                  errorBuilder: (ctx, _, _) => Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Máy không hiển thị được ảnh này trong ứng dụng.',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () => _openOutside(ctx, file.path, type),
+                          child: const Text('Mở bằng ứng dụng khác'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
       );
       return;
     }
-    final r = await OpenFilex.open(file.path, type: type);
-    if (!context.mounted || r.type == ResultType.done) return;
-    showErrorSnack(
-      context,
-      r.type == ResultType.noAppToOpen
-          ? 'Máy chưa có ứng dụng mở loại tệp này.'
-          : 'Không mở được tệp.',
-    );
+    await _openOutside(context, file.path, type);
   } on EmsException catch (e) {
     if (context.mounted) showErrorSnack(context, e.message);
   } catch (_) {
     if (context.mounted) showErrorSnack(context, 'Không mở được tệp.');
   }
+}
+
+/// Hands a saved file to the phone's own viewer (open_filex).
+Future<void> _openOutside(BuildContext context, String path, String type) async {
+  final r = await OpenFilex.open(path, type: type);
+  if (!context.mounted || r.type == ResultType.done) return;
+  showErrorSnack(
+    context,
+    r.type == ResultType.noAppToOpen
+        ? 'Máy chưa có ứng dụng mở loại tệp này.'
+        : 'Không mở được tệp.',
+  );
 }

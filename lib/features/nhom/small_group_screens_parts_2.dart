@@ -6,6 +6,7 @@ extension _TableScreenStatePart1 on _TableScreenState {
       final d = await SmallGroupApi.list(widget.spaceId, widget.listId);
       if (mounted) _set(() => _data = d);
     } catch (e) {
+      if (mounted && _data == null) _set(() => _failed = true);
       if (mounted) await _fail(context, e);
     }
   }

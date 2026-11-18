@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
@@ -99,12 +102,37 @@ abstract final class EmsUpload {
         requestToken: t,
       );
     }
-    final dir = Directory('${Directory.systemTemp.path}/vd_files/$key');
+    final dir = Directory('$filesRoot/$key');
     await dir.create(recursive: true);
     final safe = filename.replaceAll(RegExp(r'[/\\:\0]'), '_');
     final f = File('${dir.path}/$safe');
     await f.writeAsBytes(res.bodyBytes, flush: true);
     return f;
+  }
+
+  /// Where opened attachments are saved (one folder per attachment id).
+  @visibleForTesting
+  static String filesRoot = '${Directory.systemTemp.path}/vd_files';
+
+  /// Deletes every saved attachment and the picker's temporary copies. Never
+  /// throws and is not awaited by sign-out.
+  static Future<void> purgeSavedFiles() async {
+    try {
+      final d = Directory(filesRoot);
+      if (await d.exists()) await d.delete(recursive: true);
+    } catch (_) {}
+    try {
+      await FilePicker.clearTemporaryFiles();
+    } catch (_) {}
+  }
+
+  static bool _purgeHooked = false;
+
+  /// Registers [purgeSavedFiles] to run at sign-out (call once at startup).
+  static void registerSignOutPurge() {
+    if (_purgeHooked) return;
+    _purgeHooked = true;
+    AppSession.clearHooks.add(() => unawaited(purgeSavedFiles()));
   }
 
   static Map<String, dynamic> _json(String s) {

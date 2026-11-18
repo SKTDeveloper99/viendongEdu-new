@@ -5,6 +5,7 @@ import '../../services/crm_session_guard.dart';
 import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
 import '../../utils/snack.dart';
+import '../common/load_error.dart';
 import '../work/piece_screen.dart';
 import '../work/work_api.dart';
 import 'nhom_api.dart';
@@ -66,7 +67,15 @@ class _NhomListScreenState extends State<NhomListScreen> {
         });
       }
     } catch (e) {
-      if (mounted) await _guard(context, e, (m) => setState(() => _error = m));
+      if (mounted) {
+        await _guard(context, e, (m) {
+          if (_rows == null) {
+            setState(() => _error = m);
+          } else {
+            showErrorSnack(context, m);
+          }
+        });
+      }
     }
   }
 
@@ -108,7 +117,13 @@ class _NhomListScreenState extends State<NhomListScreen> {
         },
       ),
       body: _error != null
-          ? Center(child: Text(_error!))
+          ? LoadError(
+              message: _error!,
+              onRetry: () {
+                setState(() => _error = null);
+                _load();
+              },
+            )
           : rows == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -224,7 +239,11 @@ class _NhomScreenState extends State<NhomScreen> {
         backgroundColor: vd.bg,
         appBar: AppBar(
           title: Text(
-            widget.name,
+            // Opened from the bell, a push or a notice it is given no name:
+            // the loaded group's own name wins once it is here.
+            '${_space['name'] ?? ''}'.trim().isNotEmpty
+                ? '${_space['name']}'
+                : widget.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -252,11 +271,12 @@ class _NhomScreenState extends State<NhomScreen> {
                 label: const Text('Giao việc'),
               ),
         body: _error != null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(_error!),
-                ),
+            ? LoadError(
+                message: _error!,
+                onRetry: () {
+                  _set(() => _error = null);
+                  _load();
+                },
               )
             : _one == null
             ? const Center(child: CircularProgressIndicator())

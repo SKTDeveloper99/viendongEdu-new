@@ -104,6 +104,7 @@ class TableScreen extends StatefulWidget {
 
 class _TableScreenState extends State<TableScreen> {
   Map<String, dynamic>? _data;
+  bool _failed = false;
 
   @override
   void initState() {
@@ -136,7 +137,15 @@ class _TableScreenState extends State<TableScreen> {
               label: const Text('Thêm dòng'),
             ),
       body: _data == null
-          ? const Center(child: CircularProgressIndicator())
+          ? (_failed
+                ? LoadError(
+                    message: 'Không tải được bảng.',
+                    onRetry: () {
+                      _set(() => _failed = false);
+                      _load();
+                    },
+                  )
+                : const Center(child: CircularProgressIndicator()))
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(

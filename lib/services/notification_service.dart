@@ -80,7 +80,7 @@ class NotificationService {
 
     // Lắng nghe foreground message → hiện popup đẹp
     FirebaseMessaging.onMessage.listen((message) {
-      debugPrint('[FCM] foreground message: ${message.notification?.title}');
+      debugPrint('[FCM] foreground message');
       final title = message.notification?.title ?? '';
       final body = message.notification?.body ?? '';
       if (title.isNotEmpty || body.isNotEmpty) {
@@ -147,7 +147,7 @@ class NotificationService {
   }
 
   void _handleNotificationTap(RemoteMessage message) {
-    debugPrint('[FCM] notification tapped: ${message.notification?.title}');
+    debugPrint('[FCM] notification tapped');
     final nav = _globalNavigatorKey?.currentState;
     if (nav == null) return;
     nav.pushNamed(_routeFor(message));

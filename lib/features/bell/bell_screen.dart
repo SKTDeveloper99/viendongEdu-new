@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../services/crm_session_guard.dart';
 import '../../services/ems_api_service.dart';
 import '../../theme/vd_tokens.dart';
+import '../../utils/snack.dart';
+import '../common/load_error.dart';
 import '../work/piece_screen.dart';
 import '../work/work_api.dart';
 import '../work_home/app_me_api.dart';
@@ -52,7 +54,11 @@ class _BellScreenState extends State<BellScreen> {
         handleCrmAuthError(context, e);
         return;
       }
-      setState(() => _error = e.message);
+      if (_rows == null) {
+        setState(() => _error = e.message);
+      } else {
+        showErrorSnack(context, e.message);
+      }
     }
   }
 
@@ -95,7 +101,13 @@ class _BellScreenState extends State<BellScreen> {
         ),
       ),
       body: _error != null
-          ? Center(child: Text(_error!))
+          ? LoadError(
+              message: _error!,
+              onRetry: () {
+                setState(() => _error = null);
+                _load();
+              },
+            )
           : rows == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(

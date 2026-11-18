@@ -67,12 +67,7 @@ extension _NhomScreenStatePart2 on _NhomScreenState {
           leading: CircleAvatar(
             backgroundColor: vd.accentSoft,
             child: Text(
-              '${m['full_name'] ?? '?'}'
-                  .trim()
-                  .split(' ')
-                  .last
-                  .characters
-                  .first,
+              _initialOf('${m['full_name'] ?? ''}'),
               style: TextStyle(color: vd.accent),
             ),
           ),
@@ -212,4 +207,11 @@ class _GiveWorkScreenState extends State<GiveWorkScreen> {
       ),
     );
   }
+}
+
+/// First letter of the last word of a name; "?" for an empty or blank name.
+String _initialOf(String name) {
+  final words = name.trim().split(RegExp(r'\s+'));
+  final last = words.isEmpty ? '' : words.last;
+  return last.isEmpty ? '?' : last.characters.first;
 }
