@@ -86,4 +86,20 @@ void main() {
     expect(AppUpdateGate.isBuildOutdated('', 103), isFalse);
     expect(AppUpdateGate.isBuildOutdated('abc', 103), isFalse);
   });
+
+  test('the id0 placeholder or no link opens the download page, not a dead store page', () {
+    const page = AppUpdateGate.downloadPage;
+    expect(AppUpdateGate.storeLink('https://apps.apple.com/app/id0'), page);
+    expect(AppUpdateGate.storeLink(null), page);
+    expect(AppUpdateGate.storeLink('  '), page);
+    expect(AppUpdateGate.storeLink('not a link'), page);
+    expect(
+      AppUpdateGate.storeLink('https://apps.apple.com/app/id1234567890'),
+      'https://apps.apple.com/app/id1234567890',
+    );
+    expect(
+      AppUpdateGate.storeLink('https://testflight.apple.com/join/abcDEF12'),
+      'https://testflight.apple.com/join/abcDEF12',
+    );
+  });
 }

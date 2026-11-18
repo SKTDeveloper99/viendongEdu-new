@@ -50,9 +50,9 @@ class AppUpdateGate {
       return true;
     }
 
-    final url = ios
-        ? body['ios_url']?.toString()
-        : body['android_url']?.toString();
+    final url = storeLink(
+      ios ? body['ios_url']?.toString() : body['android_url']?.toString(),
+    );
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -66,9 +66,7 @@ class AppUpdateGate {
           ),
           actions: [
             FilledButton(
-              onPressed: url == null || url.isEmpty
-                  ? null
-                  : () => launchUrl(
+              onPressed: () => launchUrl(
                       Uri.parse(url),
                       mode: LaunchMode.externalApplication,
                     ),
@@ -79,6 +77,24 @@ class AppUpdateGate {
       ),
     );
     return false;
+  }
+
+  /// The school's own download page: it explains TestFlight on iPhone and
+  /// the Play testing track on Android, so it is always a working way out.
+  static const downloadPage = 'https://ems.viendong.edu.vn/taiapp';
+
+  /// The link "Cập nhật ngay" opens. The server's default iOS link is the
+  /// placeholder `https://apps.apple.com/app/id0` (config `APP_IOS_URL` not
+  /// set), which opens a dead App Store page and would leave a forced user
+  /// stuck; a missing, malformed or placeholder link opens [downloadPage].
+  static String storeLink(String? serverUrl) {
+    final url = serverUrl?.trim() ?? '';
+    final uri = Uri.tryParse(url);
+    if (url.isEmpty || uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      return downloadPage;
+    }
+    if (RegExp(r'/id0+$').hasMatch(uri.path)) return downloadPage;
+    return url;
   }
 
   /// Optional startup metadata: a bounded, fail-open read using the same
