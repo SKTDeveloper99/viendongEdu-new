@@ -84,12 +84,19 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter_launcher_icons:
+  # The school's crest, cut from the official artwork with no pixel changed
+  # (VP order 18/11: never redraw, recolour, tint or crop it; always on white).
   android: true
   ios: true
-  image_path: "assets/logo.png"
+  image_path: "tool/brand/icon-circle-on-white-1024.png"
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
   min_sdk_android: 21
-  adaptive_icon_background: "#FFD700"
-  adaptive_icon_foreground: "assets/logo.png"
+  # Adaptive icon: the circle alone on white, inset 22% so the whole circle
+  # (about 60 of 108 dp) sits inside the 66 dp safe zone of every mask.
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/brand/crest-circle-870.png"
+  adaptive_icon_foreground_inset: 22
 
 flutter:
 
@@ -99,6 +106,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/brand/
     - assets/infinite/
   fonts:
     - family: BeVietnamPro

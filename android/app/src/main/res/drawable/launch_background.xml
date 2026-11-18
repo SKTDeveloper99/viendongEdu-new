@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Cream launch screen with the settled Viễn Đông mark -->
+<!-- Launch screen: the school's crest, untouched, on white (VP order 18/11) -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/vd_cream" />
+    <item android:drawable="@color/vd_launch_paper" />
     <item>
         <bitmap
             android:gravity="center"

@@ -9,6 +9,7 @@ import '../services/startup_pace.dart';
 import 'change_password_screen.dart';
 import '../data/api/auth_api.dart';
 import '../theme/vd_tokens.dart';
+import '../components/vd_brand_lockup.dart';
 
 /// Đăng nhập CHỈ qua CRM (EMS) kể từ 6.1.0 — không còn đăng nhập IMS, không
 /// còn đối chiếu token. Học viên: MSSV + mật khẩu (mặc định = MSSV). Giảng
@@ -141,27 +142,9 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Logo ──
-              // The logo PNG is transparent with dark lettering: on the dark
-              // theme it sits on a surface-coloured rounded plate to stay legible.
-              Center(
-                child: Container(
-                  width: 200,
-                  height: 150,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? context.vd.onHeader
-                        : null,
-                    borderRadius: BorderRadius.circular(20),
-                    image: const DecorationImage(
-                      image: AssetImage('assets/logo2.png'),
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
+              // ── Biểu trưng ──
+              const Center(child: VdBrandLockup(crestSize: 104)),
+              const SizedBox(height: 32),
 
               // ── Vai trò: Sinh viên / Giảng viên ──
               Container(

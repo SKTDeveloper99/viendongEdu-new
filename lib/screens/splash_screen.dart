@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/vd_theme.dart';
+import 'package:flutter/services.dart';
+import '../components/vd_brand_lockup.dart';
 import '../services/app_session.dart';
 import '../services/app_update_gate.dart';
 import '../services/notification_service.dart';
@@ -84,49 +85,29 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.vd.bg,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Transparent PNG with dark lettering: plate it on dark theme.
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? context.vd.onHeader
-                    : null,
-                borderRadius: BorderRadius.circular(20),
+    // White in light and dark mode, like the launch screen before it, so the
+    // crest never jumps and always stands on white.
+    final vd = context.vd;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: vd.brandPaper,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const VdBrandLockup(crestSize: 132, plate: false),
+              const SizedBox(height: 40),
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: vd.brandInk.withValues(alpha: 0.3),
+                  strokeWidth: 2,
+                ),
               ),
-              child: Image.asset(
-                'assets/logo2.png',
-                width: 150,
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const VdSwoosh(width: 36, height: 4),
-            const SizedBox(height: 16),
-            Text(
-              'VIỄN ĐÔNG',
-              style: TextStyle(
-                fontSize: 23,
-                fontWeight: FontWeight.w700,
-                color: context.vd.ink,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(
-                color: context.vd.primary,
-                strokeWidth: 3,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

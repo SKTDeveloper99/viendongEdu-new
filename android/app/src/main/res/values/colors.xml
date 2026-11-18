@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFD700</color>
-    <color name="vd_cream">#FAF7F2</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- The crest always sits on white, in light and dark mode alike. -->
+    <color name="vd_launch_paper">#FFFFFF</color>
 </resources>

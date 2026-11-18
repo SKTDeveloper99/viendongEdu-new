@@ -68,6 +68,13 @@ class VdTokens extends ThemeExtension<VdTokens> {
   Color get qrInk => const Color(0xFF000000);
   Color get qrPaper => const Color(0xFFFFFFFF);
 
+  /// The school's brand colours. The crest always sits on white paper, in
+  /// light and dark mode alike (VP order 18/11), so these do not change with
+  /// the theme. [brandRed] is the red of the crest's name plate.
+  Color get brandPaper => const Color(0xFFFFFFFF);
+  Color get brandInk => const Color(0xFF1F1B18);
+  Color get brandRed => const Color(0xFFD92027);
+
   Color get announcementHighlight =>
       announcementHighlightFor(dark: bg.computeLuminance() < 0.5);
 
