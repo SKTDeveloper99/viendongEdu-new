@@ -192,7 +192,7 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
                 ),
             ],
           ),
-          _actError(vd, ['ack:${a['id']}', 'handin:${a['id']}']),
+          _actError(vd, ['ack:${a['id']}', 'handin:${a['id']}'], mine: a),
         ],
       ),
     );

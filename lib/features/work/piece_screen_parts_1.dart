@@ -150,9 +150,36 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
   }
 
   /// One line under a card's buttons when an action failed, with a retry.
-  Widget _actError(VdTokens vd, List<String> keys) {
+  Widget _actError(
+    VdTokens vd,
+    List<String> keys, {
+    Map<String, dynamic>? mine,
+  }) {
     for (final k in keys) {
       final st = _act[k];
+      final emptyRow =
+          mine != null &&
+          st != null &&
+          _linkedListId != null &&
+          st.contains('chưa điền dòng của mình');
+      if (emptyRow) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(st, style: TextStyle(color: vd.danger, fontSize: 13)),
+              const SizedBox(height: 6),
+              FilledButton.tonalIcon(
+                key: const ValueKey('open-my-row'),
+                onPressed: () => _openMyRow(mine),
+                icon: const Icon(Icons.edit_note, size: 18),
+                label: const Text('Mở dòng của bạn'),
+              ),
+            ],
+          ),
+        );
+      }
       if (st != null && st != 'busy' && st != 'done') {
         return Padding(
           padding: const EdgeInsets.only(top: 6),
@@ -283,88 +310,6 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
       'nudge:${a['id']}',
       () => WorkApi.nudge(widget.taskId, '${a['id']}', msg),
     );
-  }
-
-  Future<void> _handIn(Map<String, dynamic> a) async {
-    final aid = '${a['id']}';
-    final ReportRule rule;
-    try {
-      rule = await WorkApi.ruleFor(_task ?? const {}, aid);
-    } on EmsException catch (e) {
-      if (mounted) handleCrmAuthError(context, e);
-      return;
-    }
-    if (!mounted) return;
-    if (rule.needsReportSheet) return _handInReport(a, rule);
-    final r = await showHandInSheet(context);
-    if (r == null) return;
-    final note = r.note;
-    final to = _task?['requires_review'] == true ? 'submitted' : 'done';
-    // Files already sent survive a "Thử lại": only what failed goes again.
-    final sent = <int>{};
-    await _action('handin:${a['id']}', () async {
-      // Start first: the server itself moves an unopened part to in_progress
-      // when a file arrives, so starting after the upload was refused
-      // ("đã ở trạng thái này") and the hand-in never went (seen 17/11).
-      if (a['status'] == 'assigned') {
-        try {
-          await WorkApi.move('${a['id']}', 'in_progress');
-        } on EmsException catch (e) {
-          // 409 "đã ở trạng thái này": already started (an earlier attempt,
-          // or the server on a file upload) — carry on with the hand-in.
-          if (e.statusCode != 409) rethrow;
-        }
-      }
-      // Then the files, as the web sends them, so the hand-in carries them.
-      for (var i = 0; i < r.files.length; i++) {
-        if (sent.contains(i)) continue;
-        final f = r.files[i];
-        await WorkApi.attach(
-          widget.taskId,
-          '${a['id']}',
-          await f.read(),
-          filename: f.name,
-        );
-        sent.add(i);
-      }
-      await WorkApi.move('${a['id']}', to, note: note);
-    });
-  }
-
-  /// A duty report (or a piece with a word or photo minimum): the long text
-  /// and the photos go in ONE request, as the web's report form sends them;
-  /// the server checks the minimums and hands the part in.
-  Future<void> _handInReport(Map<String, dynamic> a, ReportRule rule) async {
-    final aid = '${a['id']}';
-    final onPart = _myFiles(a)
-        .where(
-          (f) =>
-              '${f['mime_type'] ?? ''}'.startsWith('image/') ||
-              RegExp(
-                r'\.(jpe?g|png|webp|heic|heif)$',
-                caseSensitive: false,
-              ).hasMatch('${f['filename'] ?? ''}'),
-        )
-        .length;
-    final r = await showReportSheet(
-      context,
-      assignmentId: aid,
-      rule: rule,
-      photosOnPart: onPart,
-      pickFiles: rule.isReport ? null : pickFilesForHandIn,
-    );
-    if (r == null) return;
-    await _action('handin:$aid', () async {
-      final files = [
-        for (final f in r.files) (bytes: await f.read(), filename: f.name),
-      ];
-      if (rule.isReport) {
-        await WorkApi.submitReport(aid, note: r.note, photos: files);
-      } else {
-        await WorkApi.submitWithNote(aid, note: r.note, files: files);
-      }
-      forgetReportDraft(aid);
-    });
   }
 
   Future<void> _delegate() async {

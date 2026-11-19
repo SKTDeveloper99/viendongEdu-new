@@ -23,6 +23,7 @@ import '../nhom/small_group_screens.dart';
 part 'piece_screen_parts_1.dart';
 part 'piece_screen_parts_2.dart';
 part 'piece_screen_parts_3.dart';
+part 'piece_screen_parts_4.dart';
 
 /// One piece of work on ONE screen (Overlord slice): what it is, where it
 /// came from (a calendar line, a Nhóm), its files, each person's part with

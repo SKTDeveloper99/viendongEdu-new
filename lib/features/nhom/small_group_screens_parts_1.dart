@@ -170,9 +170,20 @@ class _TableScreenState extends State<TableScreen> {
         ],
       ),
       bottomNavigationBar: _handInBar(vd),
-      // Own-rows table (proposed LAW T-58): a member only fills their row.
-      floatingActionButton: _data == null || (_ownRows && !_canShape)
+      // Own-rows table (proposed LAW T-58): a member only fills their row;
+      // one with no row yet adds it here (the server lets any member add a
+      // row for themself), so a linked hand-in is never stuck.
+      floatingActionButton: _data == null
           ? null
+          : _ownRows && !_canShape
+          ? (_rows.any(_isMine)
+                ? null
+                : FloatingActionButton.extended(
+                    key: const ValueKey('add-my-row'),
+                    onPressed: _addMyRow,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Thêm dòng của tôi'),
+                  ))
           : FloatingActionButton.extended(
               onPressed: _addRow,
               icon: const Icon(Icons.add),

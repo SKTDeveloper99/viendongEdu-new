@@ -66,6 +66,20 @@ extension _TableScreenOwnRows on _TableScreenState {
     return me != null && tableRowOwner(r) == me;
   }
 
+  /// "Thêm dòng của tôi": my own person row in an own-rows table.
+  Future<void> _addMyRow() async {
+    final me = AppSession.instance.userId;
+    if (me == null) return;
+    try {
+      await SmallGroupApi.addRows(widget.spaceId, widget.listId, [
+        {'user_id': me},
+      ]);
+      await _load();
+    } catch (e) {
+      if (mounted) await _fail(context, e);
+    }
+  }
+
   /// Every column of my row(s) has a value.
   bool get _ownComplete {
     final mine = _rows.where(_isMine).toList();

@@ -172,6 +172,45 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Nộp'), findsNothing);
   });
 
+  testWidgets('own-rows table, member with no row yet: "Thêm dòng của tôi" '
+      'adds my own person row', (tester) async {
+    final added = <Object?>[];
+    var rows = <Map<String, dynamic>>[];
+    EmsApiService.client = MockClient((req) async {
+      if (req.method == 'GET' && req.url.path.endsWith('/student-lists/L1')) {
+        return _json(_ownList(shape: false, rows: rows));
+      }
+      if (req.method == 'POST' && req.url.path.endsWith('/L1/rows')) {
+        added.add(jsonDecode(req.body)['rows']);
+        rows = [
+          {
+            'id': 'r1',
+            'kind': 'person',
+            'person_user_id': 'me',
+            'person_name': 'Tôi',
+            'cells': <String, dynamic>{},
+          },
+        ];
+        return _json({'added': 1});
+      }
+      return _json({'error': 'not here'}, 404);
+    });
+    await tester.pumpWidget(
+      _app(const TableScreen(spaceId: 'S1', listId: 'L1', title: 'x')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Thêm dòng'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('add-my-row')));
+    await tester.pumpAndSettle();
+    expect(added, [
+      [
+        {'user_id': 'me'},
+      ],
+    ]);
+    expect(find.text('Tôi'), findsOneWidget);
+    expect(find.byKey(const ValueKey('add-my-row')), findsNothing);
+  });
+
   testWidgets('a CCCD of 11 digits is refused on the phone, never sent', (
     tester,
   ) async {
