@@ -15,6 +15,11 @@ void main() {
     AppSession.instance.emsToken = null;
   });
 
+  test('names go plain for the report path', () {
+    expect(asciiName('Ảnh 19-11 (2).jpg'), 'Anh 19-11 (2).jpg');
+    expect(asciiName('Đường đi ✓.png'), 'Duong di _.png');
+  });
+
   test('words are counted as the server counts them', () {
     expect(wordCount(''), 0);
     expect(wordCount('  một   hai\nba\tbốn  '), 4);
@@ -63,13 +68,14 @@ void main() {
       note: 'nội dung',
       photos: [
         (bytes: [1], filename: 'a.jpg'),
-        (bytes: [2], filename: 'b.jpg'),
+        (bytes: [2], filename: 'Ảnh 19-11 15.08.jpg'),
       ],
     );
     expect(seen.url.path, endsWith('/v1/teacher/tasks/A1/report'));
     expect(seen.body, contains('name="note"'));
     expect(seen.body, contains('nội dung'));
     expect('name="photos"'.allMatches(seen.body).length, 2);
+    expect(seen.body, contains('filename="Anh 19-11 15.08.jpg"'));
   });
 
   testWidgets('the sheet holds Nộp until 200 words and 2 photos are there', (

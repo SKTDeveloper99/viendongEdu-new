@@ -121,7 +121,11 @@ abstract final class WorkApi {
     List<({List<int> bytes, String filename})> photos = const [],
   }) => EmsUpload.files(
     '/v1/teacher/tasks/$assignmentId/report',
-    files: photos,
+    // This path stores the multipart name as given, without the UTF-8
+    // decoding the other upload paths do ("Ảnh" came back "á°¢nh").
+    files: [
+      for (final p in photos) (bytes: p.bytes, filename: asciiName(p.filename)),
+    ],
     field: 'photos',
     fields: {'note': note},
   );
@@ -416,4 +420,33 @@ class ReportRule {
 int wordCount(String text) {
   final t = text.trim();
   return t.isEmpty ? 0 : t.split(RegExp(r'\s+')).length;
+}
+
+const _plain = {
+  'a': 'àáạảãâầấậẩẫăằắặẳẵ',
+  'e': 'èéẹẻẽêềếệểễ',
+  'i': 'ìíịỉĩ',
+  'o': 'òóọỏõôồốộổỗơờớợởỡ',
+  'u': 'ùúụủũưừứựửữ',
+  'y': 'ỳýỵỷỹ',
+  'd': 'đ',
+};
+
+/// A file name in plain ASCII: Vietnamese letters lose their marks
+/// ("Ảnh 19-11.jpg" → "Anh 19-11.jpg"), anything else outside ASCII is "_".
+String asciiName(String name) {
+  final out = StringBuffer();
+  for (final ch in name.runes.map(String.fromCharCode)) {
+    final low = ch.toLowerCase();
+    String? base;
+    for (final e in _plain.entries) {
+      if (e.value.contains(low)) base = e.key;
+    }
+    if (base != null) {
+      out.write(ch == low ? base : base.toUpperCase());
+    } else {
+      out.write(ch.codeUnitAt(0) < 128 ? ch : '_');
+    }
+  }
+  return out.toString();
 }
