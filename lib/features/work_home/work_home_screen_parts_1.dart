@@ -173,7 +173,15 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
     final vm = _vm;
     final office = OfficeFocusCard(
       counts: _counts,
-      onReview: () => _go(const MyWorkScreen(initialTab: 1)),
+      // One hand-in waiting: straight to it, where Duyệt is.
+      onReview: () {
+        final first = (_counts?['first_review'] as Map?)?['task_id'];
+        _go(
+          _c('to_review') == 1 && first != null
+              ? PieceScreen(taskId: '$first')
+              : const MyWorkScreen(initialTab: 1),
+        );
+      },
       onPiece: (id) => _go(PieceScreen(taskId: id)),
       onWork: _openWork,
     );

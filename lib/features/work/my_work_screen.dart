@@ -7,6 +7,7 @@ import '../../theme/vd_tokens.dart';
 import 'piece_screen.dart';
 import '../work_home/hub_screens.dart' show GiveTaskScreen;
 import 'work_api.dart';
+import '../work_home/app_me_api.dart';
 
 part 'my_work_screen_parts_1.dart';
 
@@ -30,6 +31,11 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
 
   String? _givenError;
 
+  /// Hand-ins waiting for me as the home lists them (`/auth/app/me`
+  /// counts.queue): pieces given inside a Nhóm, or past the first 200 of
+  /// `?created_by=me` (the server lists undated pieces last), are still here.
+  List<Map<String, dynamic>> _reviewQueue = const [];
+
   @override
   void initState() {
     super.initState();
@@ -48,7 +54,7 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
       if (_gives)
         Tab(
           text:
-              'Chờ duyệt${_given == null ? '' : ' (${_toReview.fold<int>(0, (s, t) => s + _waiting(t))})'}',
+              'Chờ duyệt${_given == null ? '' : ' (${_toReview.fold<int>(0, (s, t) => s + _waiting(t)) + _extraReviews.length})'}',
         ),
       if (_gives)
         Tab(

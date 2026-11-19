@@ -5,7 +5,39 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
       AppSession.instance.isStaff || AppSession.instance.canAssign;
 
   Future<void> _load() async {
-    await Future.wait([_loadReceived(), if (_gives) _loadGiven()]);
+    await Future.wait([
+      _loadReceived(),
+      if (_gives) _loadGiven(),
+      if (_gives) _loadReviewQueue(),
+    ]);
+  }
+
+  Future<void> _loadReviewQueue() async {
+    try {
+      final me = await AppMeApi.me();
+      final c = (me['counts'] as Map?) ?? const {};
+      final seen = <String>{};
+      final rows = <Map<String, dynamic>>[
+        for (final q in [
+          if (c['first_review'] is Map) c['first_review'] as Map,
+          ...((c['queue'] as List?) ?? const []).whereType<Map>().where(
+            (q) => q['kind'] == 'review',
+          ),
+        ])
+          if (seen.add('${q['task_id']}')) q.cast<String, dynamic>(),
+      ];
+      if (mounted) _set(() => _reviewQueue = rows);
+    } catch (_) {
+      // The list from ?created_by=me still shows.
+    }
+  }
+
+  /// Hand-ins from the home's queue that the given list does not hold.
+  List<Map<String, dynamic>> get _extraReviews {
+    final known = {for (final t in _toReview) '${t['id']}'};
+    return _reviewQueue
+        .where((q) => !known.contains('${q['task_id']}'))
+        .toList();
   }
 
   Future<void> _loadReceived() async {
@@ -155,13 +187,30 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
     if (_givenError != null) return _error(_givenError!, _loadGiven);
     if (_given == null) return const Center(child: CircularProgressIndicator());
     final list = _toReview;
+    final extra = _extraReviews;
     return RefreshIndicator(
-      onRefresh: _loadGiven,
+      onRefresh: () => Future.wait([_loadGiven(), _loadReviewQueue()]),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
-          if (list.isEmpty) _empty('Không có bài nộp nào chờ bạn duyệt.'),
+          if (list.isEmpty && extra.isEmpty)
+            _empty('Không có bài nộp nào chờ bạn duyệt.'),
           for (final t in list) _givenCard(t, review: true),
+          for (final q in extra)
+            _Card(
+              title: '${q['title'] ?? ''}',
+              lines: [
+                [
+                  if ('${q['person'] ?? ''}'.isNotEmpty) '${q['person']}',
+                  if (whenLabel(q['submitted_at'] ?? q['at']).isNotEmpty)
+                    'nộp lúc ${whenLabel(q['submitted_at'] ?? q['at'])}',
+                ].join(' · '),
+              ],
+              chip: 'Chờ duyệt',
+              chipTone: _Tone.warning,
+              trailing: '',
+              onTap: () => _open('${q['task_id']}'),
+            ),
         ],
       ),
     );
