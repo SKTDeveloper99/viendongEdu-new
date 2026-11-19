@@ -14,7 +14,15 @@ import '../core/password_policy.dart';
 ///    thành công thì đi thẳng vào app thay vì pop về màn trước).
 class ChangePasswordScreen extends StatefulWidget {
   final bool forced;
-  const ChangePasswordScreen({super.key, this.forced = false});
+
+  /// The password just typed at sign-in (forced change right after it): it
+  /// fills "Mật khẩu hiện tại", which is then not asked again.
+  final String? currentPassword;
+  const ChangePasswordScreen({
+    super.key,
+    this.forced = false,
+    this.currentPassword,
+  });
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -22,7 +30,11 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _oldCtrl = TextEditingController();
+  late final _oldCtrl = TextEditingController(text: widget.currentPassword);
+
+  bool get _knowsCurrent => (widget.currentPassword ?? '').isNotEmpty;
+
+  bool get _student => AppSession.instance.role == CrmRole.student;
   final _newCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
 
@@ -160,17 +172,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           ),
                           child: Column(
                             children: [
-                              _PassField(
-                                controller: _oldCtrl,
-                                label: 'Mật khẩu hiện tại',
-                                show: _showOld,
-                                onToggle: () =>
-                                    setState(() => _showOld = !_showOld),
-                                validator: (v) => (v == null || v.isEmpty)
-                                    ? 'Vui lòng nhập mật khẩu hiện tại.'
-                                    : null,
-                              ),
-                              const SizedBox(height: 16),
+                              if (!_knowsCurrent) ...[
+                                _PassField(
+                                  controller: _oldCtrl,
+                                  label: 'Mật khẩu hiện tại',
+                                  show: _showOld,
+                                  onToggle: () =>
+                                      setState(() => _showOld = !_showOld),
+                                  validator: (v) => (v == null || v.isEmpty)
+                                      ? 'Vui lòng nhập mật khẩu hiện tại.'
+                                      : null,
+                                ),
+                                const SizedBox(height: 16),
+                              ],
                               _PassField(
                                 controller: _newCtrl,
                                 label: 'Mật khẩu mới',
@@ -182,9 +196,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                     v ?? '',
                                     current: _oldCtrl.text.trim(),
                                     mssv: AppSession.instance.mssv,
-                                    student:
-                                        AppSession.instance.role !=
-                                        CrmRole.teacher,
+                                    student: _student,
                                   );
                                 },
                               ),
@@ -210,12 +222,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          'Mật khẩu mới: ít nhất 8 ký tự, có cả chữ và số, '
-                          'không chứa mã số sinh viên.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.vd.inkMuted,
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _student
+                                ? 'Mật khẩu mới: ít nhất 8 ký tự, có cả chữ và '
+                                      'số, không chứa mã số sinh viên.'
+                                : 'Mật khẩu mới: ít nhất 8 ký tự, khác mật khẩu '
+                                      'hiện tại.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.vd.inkMuted,
+                            ),
                           ),
                         ),
                         if (_error != null) ...[

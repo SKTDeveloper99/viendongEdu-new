@@ -175,6 +175,51 @@ void main() {
     expect(called, isFalse);
     expect(find.text('Vui lòng nhập lại mật khẩu xác nhận cho khớp'), findsOneWidget);
   });
+
+  testWidgets(
+    'right after sign-in the typed password is used, not asked again; a '
+    'wrong one is refused on the screen without signing out',
+    (tester) async {
+      AppSession.instance
+        ..emsToken = 'crm-token'
+        ..role = CrmRole.staff
+        ..mustChangePassword = true;
+      var expired = false;
+      final before = EmsApiService.onUnauthorized;
+      EmsApiService.onUnauthorized = (_) => expired = true;
+      addTearDown(() => EmsApiService.onUnauthorized = before);
+      final sent = <String>[];
+      EmsApiService.client = MockClient((req) async {
+        final body = jsonDecode(req.body) as Map<String, dynamic>;
+        sent.add('${body['current_password']}');
+        return http.Response.bytes(
+          utf8.encode(jsonEncode({'error': 'Mật khẩu hiện tại không đúng'})),
+          401,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          home: const ChangePasswordScreen(
+            forced: true,
+            currentPassword: 'first-pass',
+          ),
+          routes: {'/staff_home': _home},
+        ),
+      );
+      // Only the two new-password fields; staff get the staff rule.
+      expect(find.byType(TextFormField), findsNWidgets(2));
+      expect(find.textContaining('mã số sinh viên'), findsNothing);
+      await tester.enterText(find.byType(TextFormField).at(0), 'newpass-abc');
+      await tester.enterText(find.byType(TextFormField).at(1), 'newpass-abc');
+      await tester.tap(find.text('Xác nhận đổi mật khẩu'));
+      await tester.pumpAndSettle();
+      expect(sent, ['first-pass']);
+      expect(find.text('Mật khẩu hiện tại không đúng'), findsOneWidget);
+      expect(expired, isFalse);
+      expect(AppSession.instance.emsToken, 'crm-token');
+    },
+  );
 }
 
 Widget _forcedChange(BuildContext _) =>

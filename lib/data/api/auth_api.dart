@@ -105,6 +105,8 @@ abstract final class AuthApi {
       'POST',
       '/auth/change-password',
       body: {'current_password': currentPassword, 'new_password': newPassword},
+      // 401 here means "Mật khẩu hiện tại không đúng", not an ended session.
+      expireOn401: false,
     );
     final token = r['token'];
     return token is String && token.isNotEmpty ? token : null;

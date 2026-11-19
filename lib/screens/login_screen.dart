@@ -93,7 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => const ChangePasswordScreen(forced: true),
+            builder: (_) =>
+                ChangePasswordScreen(forced: true, currentPassword: pass),
           ),
         );
         return;
