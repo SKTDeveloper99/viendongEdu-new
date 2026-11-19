@@ -275,3 +275,77 @@ class NextList extends StatelessWidget {
     );
   }
 }
+
+/// The office state of the home's focus card, drawn like NextUpCard so the
+/// three homes read as one app: what waits for my check, else the piece due
+/// soonest, else one calm line.
+class OfficeFocusCard extends StatelessWidget {
+  final Map<String, dynamic>? counts;
+  final VoidCallback onReview;
+  final void Function(String taskId) onPiece;
+
+  /// Opens Việc: open pieces with no deadline still wait on the person.
+  final VoidCallback? onWork;
+  const OfficeFocusCard({
+    super.key,
+    required this.counts,
+    required this.onReview,
+    required this.onPiece,
+    this.onWork,
+  });
+
+  static String? statusOf(Map<String, dynamic>? c) {
+    if (c == null) return null;
+    final review = asInt(c['to_review']);
+    final due = c['next_due'] as Map?;
+    if (review > 0) return '$review bài nộp chờ bạn duyệt';
+    if (due != null) return 'Sắp đến hạn: ${due['title']}';
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = counts;
+    if (c == null) return const FocusSkeleton();
+    final review = asInt(c['to_review']);
+    final first = c['first_review'] as Map?;
+    final due = c['next_due'] as Map?;
+    if (review > 0) {
+      return CompactFocusCard(
+        chip: 'Chờ bạn duyệt',
+        warn: true,
+        right: '$review bài nộp',
+        title: '${first?['title'] ?? ''}',
+        line: first == null
+            ? ''
+            : '${first['person'] ?? ''} · nộp lúc ${whenLabel(first['submitted_at'])}',
+        action: 'Duyệt',
+        onAction: onReview,
+      );
+    }
+    if (due != null) {
+      return CompactFocusCard(
+        chip: 'Sắp đến hạn',
+        right: dueLabel(due['due_at']),
+        title: '${due['title'] ?? ''}',
+        line: '',
+        action: 'Mở',
+        onAction: () => onPiece('${due['task_id']}'),
+      );
+    }
+    // Open pieces with no deadline: never "nothing waits" while the
+    // header and the Việc badge count them.
+    final open = asInt(c['received_open']);
+    if (open > 0 && onWork != null) {
+      return CompactFocusCard(
+        chip: 'Việc của bạn',
+        right: '$open việc',
+        title: '$open việc đang chờ bạn',
+        line: 'Chưa có hạn',
+        action: 'Mở',
+        onAction: onWork!,
+      );
+    }
+    return const CalmFocusCard(text: 'Không có việc nào đang chờ bạn.');
+  }
+}

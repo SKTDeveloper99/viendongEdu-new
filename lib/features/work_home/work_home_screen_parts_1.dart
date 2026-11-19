@@ -175,6 +175,7 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
       counts: _counts,
       onReview: () => _go(const MyWorkScreen(initialTab: 1)),
       onPiece: (id) => _go(PieceScreen(taskId: id)),
+      onWork: _openWork,
     );
     if (vm == null) return office;
     if (vm.scheduleLoading && !vm.scheduleFailed) {
