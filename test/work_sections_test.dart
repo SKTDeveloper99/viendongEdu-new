@@ -105,4 +105,19 @@ void main() {
       'no-date',
     ]);
   });
+
+  test('a rich description reads as plain text, marker gone', () {
+    expect(
+      plainDescription('<!--task-rich-v1-->Đính kèm minh chứng'),
+      'Đính kèm minh chứng',
+    );
+    expect(
+      plainDescription(
+        '<!--task-rich-v1--><p><b>Một</b> &amp; hai</p><ul><li>ba</li></ul>'
+        '<!--task-link:https%3A%2F%2Fx.vn-->',
+      ),
+      'Một & hai\n• ba\nhttps://x.vn',
+    );
+    expect(plainDescription('dòng 1\ndòng 2'), 'dòng 1\ndòng 2');
+  });
 }

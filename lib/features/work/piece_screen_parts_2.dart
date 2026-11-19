@@ -132,10 +132,10 @@ extension _PieceScreenStatePart2 on _PieceScreenState {
             ],
           ),
         ],
-        if ('${t['description'] ?? ''}'.trim().isNotEmpty) ...[
+        if (plainDescription(t['description']).isNotEmpty) ...[
           const SizedBox(height: 14),
           Text(
-            '${t['description']}',
+            plainDescription(t['description']),
             style: TextStyle(color: vd.ink, height: 1.4),
           ),
         ],

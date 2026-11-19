@@ -450,3 +450,37 @@ String asciiName(String name) {
   }
   return out.toString();
 }
+
+/// A piece's description as plain text. The web's rich editor stores
+/// `<!--task-rich-v1-->` + HTML (b, i, br, p, div, li, a, …) and may end with
+/// `<!--task-link:…-->`; the phone shows the words, a line per block.
+String plainDescription(Object? raw) {
+  var s = '${raw ?? ''}';
+  String? link;
+  final m = RegExp(r'<!--task-link:([^>]*)-->\s*$').firstMatch(s);
+  if (m != null) {
+    try {
+      link = Uri.decodeComponent(m.group(1)!);
+    } catch (_) {}
+    s = s.substring(0, m.start);
+  }
+  const rich = '<!--task-rich-v1-->';
+  if (s.startsWith(rich)) {
+    s = s
+        .substring(rich.length)
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'</(p|div|li)>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'<li[^>]*>', caseSensitive: false), '• ')
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&amp;', '&')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n');
+  }
+  s = s.trim();
+  if (link != null && link.isNotEmpty) s = s.isEmpty ? link : '$s\n$link';
+  return s;
+}
