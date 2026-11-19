@@ -111,6 +111,58 @@ abstract final class WorkApi {
     fields: {'assignment_id': assignmentId},
   );
 
+  /// A report (duty report, recurring report) handed in the way the web's
+  /// report form does it: `POST /v1/teacher/tasks/:assignmentId/report`,
+  /// multipart `note` + up to 8 `photos`. The server starts the part, checks
+  /// the word and photo minimums and hands it in, all in one transaction.
+  static Future<Map<String, dynamic>> submitReport(
+    String assignmentId, {
+    required String note,
+    List<({List<int> bytes, String filename})> photos = const [],
+  }) => EmsUpload.files(
+    '/v1/teacher/tasks/$assignmentId/report',
+    files: photos,
+    field: 'photos',
+    fields: {'note': note},
+  );
+
+  /// An ordinary piece with a word or file minimum, handed in like the web:
+  /// `POST /v1/tasks/my/:assignmentId/submit`, multipart `note` + `files`.
+  /// (The bare transition never records the text the minimum is counted on.)
+  static Future<Map<String, dynamic>> submitWithNote(
+    String assignmentId, {
+    required String note,
+    List<({List<int> bytes, String filename})> files = const [],
+  }) => EmsUpload.files(
+    '/v1/tasks/my/$assignmentId/submit',
+    files: files,
+    field: 'files',
+    fields: {'note': note},
+  );
+
+  /// The hand-in rules of my part, from my own list (`GET /v1/tasks/my`,
+  /// where the server folds the template's minimums in); the piece itself
+  /// ([task]) is the fallback when the row is not there.
+  static Future<ReportRule> ruleFor(
+    Map<String, dynamic> task,
+    String assignmentId,
+  ) async {
+    try {
+      for (final r in await received()) {
+        if ('${r['assignment_id']}' == assignmentId) return ReportRule.of(r);
+      }
+    } on EmsException catch (e) {
+      if (e.statusCode == 401) rethrow;
+    }
+    return ReportRule.of({
+      'is_report': task['is_report'],
+      'min_words': task['report_min_words'],
+      'min_photos': task['report_min_photos'],
+      'max_photos': task['report_max_photos'],
+      'min_submission_files': task['min_submission_files'],
+    });
+  }
+
   /// "+ Giao việc": `POST /v1/tasks`, reviewed by the giver. The same
   /// [requestId] on a resend makes the server answer once. Returns the id.
   static Future<String> give({
@@ -266,4 +318,45 @@ List<Map> pieceFiles(Map task) {
     ].cast<Map>())
       if (seen.add('${f['id'] ?? f['storage_key'] ?? f['filename']}')) f,
   ];
+}
+
+/// What a hand-in must carry (CRM lib/tasks/report-policy.js): at least
+/// [minWords] words, at least [minPhotos] photos on the part, at most
+/// [maxPhotos] in one sending; [isReport] goes through the report form.
+class ReportRule {
+  final bool isReport;
+  final int minWords;
+  final int minPhotos;
+  final int? maxPhotos;
+  final int minFiles;
+  const ReportRule({
+    this.isReport = false,
+    this.minWords = 0,
+    this.minPhotos = 0,
+    this.maxPhotos,
+    this.minFiles = 0,
+  });
+
+  factory ReportRule.of(Map<String, dynamic> r) {
+    final max = asInt(r['max_photos']);
+    return ReportRule(
+      isReport: r['is_report'] == true,
+      minWords: asInt(r['min_words']),
+      minPhotos: asInt(r['min_photos']),
+      maxPhotos: max > 0 ? max : null,
+      minFiles: asInt(r['min_submission_files']),
+    );
+  }
+
+  /// A long text and photos: the report sheet, not the short note.
+  bool get needsReportSheet => isReport || minWords > 0 || minPhotos > 0;
+
+  /// The server's one request takes at most this many photos.
+  int get photoCap => maxPhotos == null ? 8 : (maxPhotos! < 8 ? maxPhotos! : 8);
+}
+
+/// Words as the server counts them: runs of non-space.
+int wordCount(String text) {
+  final t = text.trim();
+  return t.isEmpty ? 0 : t.split(RegExp(r'\s+')).length;
 }

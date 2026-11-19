@@ -286,6 +286,16 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
   }
 
   Future<void> _handIn(Map<String, dynamic> a) async {
+    final aid = '${a['id']}';
+    final ReportRule rule;
+    try {
+      rule = await WorkApi.ruleFor(_task ?? const {}, aid);
+    } on EmsException catch (e) {
+      if (mounted) handleCrmAuthError(context, e);
+      return;
+    }
+    if (!mounted) return;
+    if (rule.needsReportSheet) return _handInReport(a, rule);
     final r = await showHandInSheet(context);
     if (r == null) return;
     final note = r.note;
@@ -318,6 +328,42 @@ extension _PieceScreenStatePart1 on _PieceScreenState {
         sent.add(i);
       }
       await WorkApi.move('${a['id']}', to, note: note);
+    });
+  }
+
+  /// A duty report (or a piece with a word or photo minimum): the long text
+  /// and the photos go in ONE request, as the web's report form sends them;
+  /// the server checks the minimums and hands the part in.
+  Future<void> _handInReport(Map<String, dynamic> a, ReportRule rule) async {
+    final aid = '${a['id']}';
+    final onPart = _myFiles(a)
+        .where(
+          (f) =>
+              '${f['mime_type'] ?? ''}'.startsWith('image/') ||
+              RegExp(
+                r'\.(jpe?g|png|webp|heic|heif)$',
+                caseSensitive: false,
+              ).hasMatch('${f['filename'] ?? ''}'),
+        )
+        .length;
+    final r = await showReportSheet(
+      context,
+      assignmentId: aid,
+      rule: rule,
+      photosOnPart: onPart,
+      pickFiles: rule.isReport ? null : pickFilesForHandIn,
+    );
+    if (r == null) return;
+    await _action('handin:$aid', () async {
+      final files = [
+        for (final f in r.files) (bytes: await f.read(), filename: f.name),
+      ];
+      if (rule.isReport) {
+        await WorkApi.submitReport(aid, note: r.note, photos: files);
+      } else {
+        await WorkApi.submitWithNote(aid, note: r.note, files: files);
+      }
+      forgetReportDraft(aid);
     });
   }
 

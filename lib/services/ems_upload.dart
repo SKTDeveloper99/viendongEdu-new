@@ -34,8 +34,22 @@ abstract final class EmsUpload {
     required String filename,
     String field = 'file',
     Map<String, String> fields = const {},
+  }) => files(
+    path,
+    files: [(bytes: bytes, filename: filename)],
+    field: field,
+    fields: fields,
+  );
+
+  /// `POST path` with every file under the same [field] (+ [fields]), e.g. a
+  /// duty report's `photos` and `note` in one request. No file is fine.
+  static Future<Map<String, dynamic>> files(
+    String path, {
+    required List<({List<int> bytes, String filename})> files,
+    String field = 'file',
+    Map<String, String> fields = const {},
   }) async {
-    if (bytes.length > maxFileBytes) {
+    if (files.any((f) => f.bytes.length > maxFileBytes)) {
       throw EmsException(refusal('file_too_large', 413), statusCode: 413);
     }
     final req = http.MultipartRequest(
@@ -45,15 +59,17 @@ abstract final class EmsUpload {
     final t = AppSession.instance.emsToken;
     if (t != null && t.isNotEmpty) req.headers['Authorization'] = 'Bearer $t';
     req.fields.addAll(fields);
-    final head = bytes.length > 32 ? bytes.sublist(0, 32) : bytes;
-    req.files.add(
-      http.MultipartFile.fromBytes(
-        field,
-        bytes,
-        filename: filename,
-        contentType: MediaType.parse(typeOf(filename, head)),
-      ),
-    );
+    for (final f in files) {
+      final head = f.bytes.length > 32 ? f.bytes.sublist(0, 32) : f.bytes;
+      req.files.add(
+        http.MultipartFile.fromBytes(
+          field,
+          f.bytes,
+          filename: f.filename,
+          contentType: MediaType.parse(typeOf(f.filename, head)),
+        ),
+      );
+    }
     http.Response res;
     try {
       res = await http.Response.fromStream(
