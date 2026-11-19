@@ -101,13 +101,14 @@ abstract final class AuthApi {
     required String currentPassword,
     required String newPassword,
   }) async {
-    final r = await EmsApiService.sendMap(
+    // A 401 here means "Mật khẩu hiện tại không đúng", not an ended session.
+    final data = await EmsApiService.send(
       'POST',
       '/auth/change-password',
       body: {'current_password': currentPassword, 'new_password': newPassword},
-      // 401 here means "Mật khẩu hiện tại không đúng", not an ended session.
       expireOn401: false,
     );
+    final r = EmsApiService.parse(() => data as Map<String, dynamic>);
     final token = r['token'];
     return token is String && token.isNotEmpty ? token : null;
   }

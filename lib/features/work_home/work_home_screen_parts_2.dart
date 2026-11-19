@@ -38,3 +38,33 @@ extension _WorkHomeScreenStatePart2 on _WorkHomeScreenState {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 }
+
+extension _WorkHomeCounts on _WorkHomeScreenState {
+  Map<String, dynamic>? get _counts {
+    final c = (_me?['counts'] as Map?)?.cast<String, dynamic>();
+    final mine = _mine;
+    if (c == null || mine == null) return c;
+    // "Tiếp theo" and the focus card: the nearest deadline, never a part
+    // that is already locked (the server orders by the oldest deadline).
+    final next = nextDue(mine);
+    final dueRows = [
+      for (final a in next.where((a) => a['due_at'] != null).take(5))
+        {
+          'kind': 'due',
+          'task_id': a['task_id'],
+          'title': a['title'],
+          'due_at': a['due_at'],
+          'at': a['due_at'],
+        },
+    ];
+    final reviews = ((c['queue'] as List?) ?? const []).cast<Map>().where(
+      (q) => q['kind'] == 'review',
+    );
+    return {
+      ...c,
+      'received_open': stillOpen(mine).length,
+      'next_due': dueRows.isEmpty ? null : dueRows.first,
+      'queue': [...reviews, ...dueRows].take(6).toList(),
+    };
+  }
+}

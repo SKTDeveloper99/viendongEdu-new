@@ -75,13 +75,11 @@ class EmsApiService {
     return h;
   }
 
-  /// Decode object/array responses and normalize infrastructure failures.
-  /// Preserve Vietnamese validation messages and typed attendance conflicts.
+  /// Decode responses; keep Vietnamese refusals and attendance conflicts.
   static dynamic _decode(
     http.Response res, {
     String? requestToken,
     bool auth = true,
-    bool expireOn401 = true,
   }) {
     dynamic body;
     try {
@@ -104,7 +102,7 @@ class EmsApiService {
     final map = body is Map<String, dynamic> ? body : null;
     final rawError = map?['error']?.toString();
     final rawMessage = map?['message']?.toString();
-    if (res.statusCode == 401 && auth && expireOn401) {
+    if (res.statusCode == 401 && auth) {
       final error = EmsException(
         'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
         statusCode: 401,
@@ -176,7 +174,7 @@ class EmsApiService {
     Map<String, dynamic>? body,
     Map<String, String>? query,
     bool auth = true,
-    bool expireOn401 = true,
+    bool expireOn401 = true, // false: a 401 is the call's own refusal
   }) async {
     final uri = _buildUri(path, query);
     final token = auth ? AppSession.instance.emsToken : null;
@@ -187,8 +185,7 @@ class EmsApiService {
       return _decode(
         await _once(method, uri, body: body, auth: auth),
         requestToken: token,
-        auth: auth,
-        expireOn401: expireOn401,
+        auth: auth && expireOn401,
       );
     }
     // Identical in-flight GETs (same token + URL) share one request.
@@ -377,25 +374,14 @@ class EmsApiService {
   }
 
   /// [send] typed for endpoints that answer with a JSON object.
-  /// [expireOn401] false: a 401 is this call's own refusal (a wrong current
-  /// password), not an ended session; its message is shown, nobody is
-  /// signed out.
   static Future<Map<String, dynamic>> sendMap(
     String method,
     String path, {
     Map<String, dynamic>? body,
     bool auth = true,
     Map<String, String>? query,
-    bool expireOn401 = true,
   }) async {
-    final data = await send(
-      method,
-      path,
-      body: body,
-      auth: auth,
-      query: query,
-      expireOn401: expireOn401,
-    );
+    final data = await send(method, path, body: body, auth: auth, query: query);
     return parse(() => data as Map<String, dynamic>);
   }
 
