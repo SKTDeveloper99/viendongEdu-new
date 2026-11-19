@@ -16,6 +16,7 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
   }
 
   Future<void> _refresh() async {
+    unawaited(_refreshMine());
     try {
       final me = await AppMeApi.me();
       // Older installs: fill the stored identity from the server and keep it.
@@ -32,6 +33,15 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
     }
   }
 
+  Future<void> _refreshMine() async {
+    try {
+      final mine = await WorkApi.received();
+      if (mounted) _set(() => _mine = mine);
+    } catch (_) {
+      // The server's own counts stay on the home.
+    }
+  }
+
   Future<void> _go(Widget screen) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
     _refresh();
@@ -42,8 +52,12 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
     _refresh();
   }
 
-  Map<String, dynamic>? get _counts =>
-      (_me?['counts'] as Map?)?.cast<String, dynamic>();
+  Map<String, dynamic>? get _counts {
+    final c = (_me?['counts'] as Map?)?.cast<String, dynamic>();
+    final mine = _mine;
+    if (c == null || mine == null) return c;
+    return {...c, 'received_open': stillOpen(mine).length};
+  }
 
   Map<String, dynamic> get _can =>
       ((_me?['can'] as Map?) ?? const {}).cast<String, dynamic>();

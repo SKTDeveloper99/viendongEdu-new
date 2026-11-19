@@ -61,6 +61,11 @@ class _WorkHomeScreenState extends State<WorkHomeScreen>
 
   Map<String, dynamic>? _me;
 
+  /// My own parts (`GET /v1/tasks/my`): the home counts and lists only what
+  /// can still be handed in, as the web does (the server's counts also hold
+  /// parts locked under "Không hoàn thành").
+  List<Map<String, dynamic>>? _mine;
+
   int _messages = 0;
 
   int _tab = 0;

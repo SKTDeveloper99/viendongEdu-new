@@ -69,7 +69,11 @@ Future<void> openAttachment(BuildContext context, String taskId, Map f) async {
 }
 
 /// Hands a saved file to the phone's own viewer (open_filex).
-Future<void> _openOutside(BuildContext context, String path, String type) async {
+Future<void> _openOutside(
+  BuildContext context,
+  String path,
+  String type,
+) async {
   final r = await OpenFilex.open(path, type: type);
   if (!context.mounted || r.type == ResultType.done) return;
   showErrorSnack(

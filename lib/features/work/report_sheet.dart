@@ -77,9 +77,10 @@ class _ReportSheetState extends State<ReportSheet> {
     super.dispose();
   }
 
-  bool _isPhoto(String name) =>
-      RegExp(r'\.(jpe?g|png|webp|heic|heif)$', caseSensitive: false)
-          .hasMatch(name);
+  bool _isPhoto(String name) => RegExp(
+    r'\.(jpe?g|png|webp|heic|heif)$',
+    caseSensitive: false,
+  ).hasMatch(name);
 
   int get _photos =>
       widget.photosOnPart + _files.where((f) => _isPhoto(f.name)).length;

@@ -112,6 +112,11 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
 
   Widget _myPart(VdTokens vd, Map<String, dynamic> a) {
     final s = '${a['status']}';
+    // Locked like the web: three returns, or a week past the deadline.
+    final locked = (s == 'assigned' || s == 'in_progress' || s == 'blocked')
+        ? workLockReason(a, dueAt: _task?['due_at'])
+        : null;
+    final canAct = locked == null && (s == 'assigned' || s == 'in_progress');
     final returned = asInt(a['returned_count']);
     final lastReturn = ((a['history'] as List?) ?? const [])
         .cast<Map>()
@@ -148,6 +153,11 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
                 style: TextStyle(color: vd.danger),
               ),
             ),
+          if (locked != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(locked, style: TextStyle(color: vd.inkMuted)),
+            ),
           // My own handed-in files, so I can open what I sent.
           for (final f in _myFiles(a)) _fileRow(vd, f),
           const SizedBox(height: 8),
@@ -166,7 +176,7 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
                     () => WorkApi.acknowledge('${a['id']}'),
                   ),
                 ),
-              if (s == 'assigned' || s == 'in_progress')
+              if (canAct)
                 _actButton(
                   'handin:${a['id']}',
                   'Nộp',
@@ -174,7 +184,7 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
                   filled: true,
                 ),
               // Overlord slice: pass part of this piece to others, from here.
-              if (s == 'assigned' || s == 'in_progress')
+              if (canAct)
                 OutlinedButton.icon(
                   onPressed: _delegate,
                   icon: const Icon(Icons.call_split, size: 18),

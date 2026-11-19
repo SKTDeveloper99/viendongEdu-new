@@ -61,12 +61,15 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
   int _waiting(Map<String, dynamic> t) =>
       asInt(t['n_submitted']) + asInt(t['n_in_review']);
 
+  /// What can still be handed in (the web's "còn N việc"); handed-in,
+  /// finished and locked parts fold away below, as on the web.
   List<Map<String, dynamic>> get _openReceived {
-    final open = (_received ?? const [])
-        .where((a) => a['status'] != 'done' && a['status'] != 'cancelled')
-        .toList();
+    final open = stillOpen(_received ?? const []);
     return myWorkUnopenedFirst ? unopenedFirst(open) : open;
   }
+
+  List<Map<String, dynamic>> _receivedIn(String section) =>
+      (_received ?? const []).where((a) => workSection(a) == section).toList();
 
   // Clean start: pieces nobody has touched yet are folded away, not lost.
   List<Map<String, dynamic>> get _activeGiven => (_given ?? const [])
@@ -97,7 +100,18 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
       return const Center(child: CircularProgressIndicator());
     }
     final open = _openReceived;
-    final closed = _received!.where((a) => !open.contains(a)).toList();
+    Widget fold(String section, String title, [String? hint]) {
+      final rows = _receivedIn(section);
+      if (rows.isEmpty) return const SizedBox.shrink();
+      return ExpansionTile(
+        key: PageStorageKey('fold-$section'),
+        tilePadding: EdgeInsets.zero,
+        title: Text('$title (${rows.length})'),
+        subtitle: hint == null ? null : Text(hint),
+        children: [for (final a in rows) _receivedCard(a)],
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: _loadReceived,
       child: ListView(
@@ -105,12 +119,9 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
         children: [
           if (open.isEmpty) _empty('Không có việc nào đang chờ bạn.'),
           for (final a in open) _receivedCard(a),
-          if (closed.isNotEmpty)
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              title: Text('Đã xong (${closed.length})'),
-              children: [for (final a in closed) _receivedCard(a)],
-            ),
+          fold('wait', 'Đã nộp · chờ duyệt', 'Bạn không cần làm gì thêm'),
+          fold('done', 'Đã xong'),
+          fold('closed', 'Không hoàn thành', 'Đã chốt, không nộp lại được'),
         ],
       ),
     );
@@ -167,12 +178,16 @@ extension _MyWorkScreenStatePart1 on _MyWorkScreenState {
         if (returned && a['returned_note'] != null)
           'Lý do trả lại: ${a['returned_note']}',
       ],
-      chip: statusLabel(
-        '${a['status']}',
-        acknowledged: a['acknowledged_at'] != null,
-        returned: asInt(a['returned_count']),
-      ),
-      chipTone: returned || a['is_overdue'] == true
+      chip: workSection(a) == 'closed' && a['status'] != 'cancelled'
+          ? 'Không hoàn thành'
+          : statusLabel(
+              '${a['status']}',
+              acknowledged: a['acknowledged_at'] != null,
+              returned: asInt(a['returned_count']),
+            ),
+      chipTone: workSection(a) == 'closed'
+          ? _Tone.neutral
+          : returned || a['is_overdue'] == true
           ? _Tone.danger
           : _toneOf('${a['status']}'),
       trailing: dueLabel(a['due_at']),

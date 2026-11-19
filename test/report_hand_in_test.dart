@@ -34,20 +34,22 @@ void main() {
     expect(ReportRule.of({'max_photos': 20}).photoCap, 8);
   });
 
-  test('the rule comes from my own list, where the template is folded in',
-      () async {
-    EmsApiService.client = MockClient(
-      (_) async => http.Response(
-        '{"tasks":[{"assignment_id":"A1","is_report":true,'
-        '"min_words":200,"min_photos":2,"max_photos":8}]}',
-        200,
-      ),
-    );
-    final r = await WorkApi.ruleFor({'report_min_words': null}, 'A1');
-    expect(r.isReport, isTrue);
-    expect(r.minWords, 200);
-    expect(r.minPhotos, 2);
-  });
+  test(
+    'the rule comes from my own list, where the template is folded in',
+    () async {
+      EmsApiService.client = MockClient(
+        (_) async => http.Response(
+          '{"tasks":[{"assignment_id":"A1","is_report":true,'
+          '"min_words":200,"min_photos":2,"max_photos":8}]}',
+          200,
+        ),
+      );
+      final r = await WorkApi.ruleFor({'report_min_words': null}, 'A1');
+      expect(r.isReport, isTrue);
+      expect(r.minWords, 200);
+      expect(r.minPhotos, 2);
+    },
+  );
 
   test('a report goes in one request: note and photos to /report', () async {
     AppSession.instance.emsToken = 'tok';

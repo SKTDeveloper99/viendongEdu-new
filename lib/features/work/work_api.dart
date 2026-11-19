@@ -258,6 +258,46 @@ List<Map<String, dynamic>> unopenedFirst(List<Map<String, dynamic>> rows) {
   return [for (final e in indexed) e.$2, ...rest];
 }
 
+/// A part closes for good ("Không hoàn thành") after this many returns, or
+/// this long after its deadline (CRM lib/tasks/transition.js; the web's
+/// public/js/pages/myTasks.js mtSectionOf says the same).
+const int workStrikes = 3;
+const Duration workGrace = Duration(days: 7);
+
+/// Where one of my parts sits, as the web's "Nhiệm vụ của tôi" sorts it:
+/// `open` (can still be handed in), `wait` (handed in, with the reviewer),
+/// `done`, or `closed` (Không hoàn thành: locked, cancelled or denied).
+/// [dueAt] is the piece's deadline when [a] does not carry it.
+String workSection(Map a, {DateTime? now, Object? dueAt}) {
+  final status = '${a['status']}';
+  if (a['work_process_decision'] == 'denied') return 'closed';
+  if (status == 'done') return 'done';
+  if (status == 'cancelled') return 'closed';
+  if (workLockReason(a, now: now, dueAt: dueAt) != null) return 'closed';
+  if (status == 'submitted' || status == 'in_review') return 'wait';
+  return 'open';
+}
+
+/// Why a part can no longer be handed in, in the web's words; null if it can.
+String? workLockReason(Map a, {DateTime? now, Object? dueAt}) {
+  if (asInt(a['returned_count']) >= workStrikes) {
+    return 'Đã bị trả lại $workStrikes lần — việc đã chốt "Không hoàn thành", '
+        'không nộp lại được.';
+  }
+  final due = DateTime.tryParse('${a['due_at'] ?? dueAt ?? ''}');
+  if (due != null && (now ?? DateTime.now()).isAfter(due.add(workGrace))) {
+    return 'Đã quá hạn hơn 7 ngày — việc đã chốt "Không hoàn thành", '
+        'không nộp lại được.';
+  }
+  return null;
+}
+
+/// Parts that can still be handed in: the web's "còn N việc".
+List<Map<String, dynamic>> stillOpen(
+  List<Map<String, dynamic>> rows, {
+  DateTime? now,
+}) => rows.where((a) => workSection(a, now: now) == 'open').toList();
+
 /// A random v4 UUID for `client_request_id`: the same id on a resend lets
 /// the server answer once (POST /v1/tasks double-submit guard).
 String newRequestId() {
