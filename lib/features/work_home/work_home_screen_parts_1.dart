@@ -56,7 +56,28 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
     final c = (_me?['counts'] as Map?)?.cast<String, dynamic>();
     final mine = _mine;
     if (c == null || mine == null) return c;
-    return {...c, 'received_open': stillOpen(mine).length};
+    // "Tiếp theo" and the focus card: the nearest deadline, never a part
+    // that is already locked (the server orders by the oldest deadline).
+    final next = nextDue(mine);
+    final dueRows = [
+      for (final a in next.where((a) => a['due_at'] != null).take(5))
+        {
+          'kind': 'due',
+          'task_id': a['task_id'],
+          'title': a['title'],
+          'due_at': a['due_at'],
+          'at': a['due_at'],
+        },
+    ];
+    final reviews = ((c['queue'] as List?) ?? const []).cast<Map>().where(
+      (q) => q['kind'] == 'review',
+    );
+    return {
+      ...c,
+      'received_open': stillOpen(mine).length,
+      'next_due': dueRows.isEmpty ? null : dueRows.first,
+      'queue': [...reviews, ...dueRows].take(6).toList(),
+    };
   }
 
   Map<String, dynamic> get _can =>
@@ -265,8 +286,13 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
   Widget _placesAndNext() {
     final tiles = _tiles;
     final rows = tiles.length >= 5 ? 2 : (tiles.length / 2).ceil();
-    final shown =
-        '${(_counts?['first_review'] as Map?)?['task_id'] ?? (_counts?['next_due'] as Map?)?['task_id'] ?? ''}';
+    // The piece the office focus card already shows is not listed twice;
+    // when the class card holds the focus (a teacher), nothing is left out.
+    final vm = _vm;
+    final officeShown = vm == null || (_staff && !_classWins(vm.upNext));
+    final shown = !officeShown
+        ? ''
+        : '${(_counts?['first_review'] as Map?)?['task_id'] ?? (_counts?['next_due'] as Map?)?['task_id'] ?? ''}';
     final next = ((_counts?['queue'] as List?) ?? const [])
         .cast<Map>()
         .where((q) => '${q['task_id']}' != shown)

@@ -298,6 +298,23 @@ List<Map<String, dynamic>> stillOpen(
   DateTime? now,
 }) => rows.where((a) => workSection(a, now: now) == 'open').toList();
 
+/// What comes next among the parts that can still be handed in: the nearest
+/// deadline still ahead first, then those just past their deadline (most
+/// recent first, still within the grace), then those with no deadline.
+List<Map<String, dynamic>> nextDue(
+  List<Map<String, dynamic>> rows, {
+  DateTime? now,
+}) {
+  final at = now ?? DateTime.now();
+  DateTime? due(Map a) => DateTime.tryParse('${a['due_at'] ?? ''}');
+  final open = stillOpen(rows, now: at);
+  final ahead = open.where((a) => due(a)?.isBefore(at) == false).toList()
+    ..sort((x, y) => due(x)!.compareTo(due(y)!));
+  final late = open.where((a) => due(a)?.isBefore(at) == true).toList()
+    ..sort((x, y) => due(y)!.compareTo(due(x)!));
+  return [...ahead, ...late, ...open.where((a) => due(a) == null)];
+}
+
 /// A random v4 UUID for `client_request_id`: the same id on a resend lets
 /// the server answer once (POST /v1/tasks double-submit guard).
 String newRequestId() {

@@ -62,4 +62,47 @@ void main() {
     ];
     expect(stillOpen(rows, now: now).length, 2);
   });
+
+  test('Tiếp theo: the nearest deadline ahead, never the oldest overdue', () {
+    final rows = [
+      {
+        'task_id': 'two-months',
+        'status': 'assigned',
+        'due_at': '2026-09-19T10:00:00Z',
+      },
+      {
+        'task_id': 'tomorrow',
+        'status': 'assigned',
+        'due_at': '2026-11-20T15:30:00Z',
+      },
+      {
+        'task_id': 'tonight',
+        'status': 'in_progress',
+        'due_at': '2026-11-19T15:30:00Z',
+      },
+      {
+        'task_id': 'late-3d',
+        'status': 'assigned',
+        'due_at': '2026-11-16T14:00:00Z',
+      },
+      {
+        'task_id': 'late-1d',
+        'status': 'assigned',
+        'due_at': '2026-11-18T14:00:00Z',
+      },
+      {'task_id': 'no-date', 'status': 'assigned'},
+      {
+        'task_id': 'handed',
+        'status': 'submitted',
+        'due_at': '2026-11-19T09:00:00Z',
+      },
+    ];
+    expect(nextDue(rows, now: now).map((a) => a['task_id']), [
+      'tonight',
+      'tomorrow',
+      'late-1d',
+      'late-3d',
+      'no-date',
+    ]);
+  });
 }
