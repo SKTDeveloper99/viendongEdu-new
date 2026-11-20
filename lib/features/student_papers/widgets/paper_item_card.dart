@@ -14,12 +14,8 @@ class PaperItemCard extends StatelessWidget {
   final PaperItem item;
   final bool sending;
 
-  /// The upload's line while sending ("Mạng yếu, đang gửi lại (lần 2/3)…").
-  final String? status;
-
-  /// Picked files not sent yet after a network failure, and "Gửi tiếp".
-  final int left;
-  final VoidCallback? onResume;
+  /// Under the button: the upload's line, "Gửi tiếp" (PaperSendState).
+  final Widget? footer;
   final VoidCallback? onAdd;
   final void Function(PaperFile f) onOpen;
   const PaperItemCard({
@@ -28,9 +24,7 @@ class PaperItemCard extends StatelessWidget {
     required this.sending,
     required this.onAdd,
     required this.onOpen,
-    this.status,
-    this.left = 0,
-    this.onResume,
+    this.footer,
   });
 
   @override
@@ -130,25 +124,7 @@ class PaperItemCard extends StatelessWidget {
                 style: OutlinedButton.styleFrom(foregroundColor: vd.primary),
               ),
             ),
-            if (sending && status != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  status!,
-                  key: Key('paper-status-${item.code}'),
-                  style: TextStyle(color: vd.inkMuted, fontSize: 13),
-                ),
-              ),
-            if (!sending && left > 0)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  key: Key('paper-resume-${item.code}'),
-                  onPressed: onResume,
-                  icon: const Icon(Icons.refresh),
-                  label: Text('Gửi tiếp $left tệp chưa gửi'),
-                ),
-              ),
+            ?footer,
           ],
         ),
       ),
