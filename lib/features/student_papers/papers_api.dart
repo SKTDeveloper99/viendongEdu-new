@@ -99,6 +99,15 @@ class PapersPage {
 /// `POST /student/me/papers/:code/files` (one file per request, field
 /// `files[]`), `GET /student/me/papers/files/:id`.
 abstract final class StudentPapersApi {
+  /// A server from before "Nộp hồ sơ" (CRM S-57) answers its catch-all 404
+  /// `{error: 'Endpoint not found'}`: the feature is not open there yet, and
+  /// trying again will not help.
+  static bool notOnServer(EmsException e) =>
+      e.statusCode == 404 && e.code == 'Endpoint not found';
+  static const notOpenMessage =
+      'Mục Nộp hồ sơ chưa mở trên máy chủ của trường. Khi trường mở, '
+      'những giấy tờ cần nộp sẽ hiện ở đây.';
+
   static Future<PapersPage> list() async {
     final b = await EmsApiService.sendMap('GET', '/student/me/papers');
     return EmsApiService.parse(

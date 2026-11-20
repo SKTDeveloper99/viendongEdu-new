@@ -61,7 +61,13 @@ class _StudentPapersScreenState extends State<StudentPapersScreen> {
         _error = null;
       });
     } on EmsException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) {
+        setState(
+          () => _error = StudentPapersApi.notOnServer(e)
+              ? StudentPapersApi.notOpenMessage
+              : e.message,
+        );
+      }
     } catch (_) {
       if (mounted) setState(() => _error = 'Không tải được. Thử lại sau.');
     }
@@ -161,7 +167,9 @@ class _StudentPapersScreenState extends State<StudentPapersScreen> {
     if (page == null && _error == null) {
       body = const Center(child: CircularProgressIndicator());
     } else if (page == null) {
-      body = _message(Icons.cloud_off, _error!, retry: true);
+      body = _error == StudentPapersApi.notOpenMessage
+          ? _message(Icons.hourglass_empty, _error!)
+          : _message(Icons.cloud_off, _error!, retry: true);
     } else if (page.items.isEmpty) {
       body = _message(Icons.inbox_outlined, page.emptyMessage);
     } else {

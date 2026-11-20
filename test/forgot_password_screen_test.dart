@@ -124,4 +124,23 @@ void main() {
     expect(find.textContaining('ngày/tháng/năm'), findsWidgets);
     expect(find.byKey(const Key('forgot-error')), findsOneWidget);
   });
+
+  testWidgets(
+    'máy chủ chưa có Quên mật khẩu (404 chung): báo chưa mở, gặp GVCN/PĐT',
+    (tester) async {
+      EmsApiService.client = MockClient(
+        (_) async => json({'error': 'Endpoint not found'}, 404),
+      );
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ForgotPasswordScreen(initialMssv: 'TEST26APP09'),
+        ),
+      );
+      await tester.enterText(find.byKey(const Key('forgot-dob')), '09/03/2004');
+      await tester.tap(find.byKey(const Key('forgot-submit')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('chưa mở trên máy chủ'), findsOneWidget);
+      expect(find.textContaining('GVCN hoặc Phòng Đào tạo'), findsOneWidget);
+    },
+  );
 }

@@ -196,4 +196,20 @@ void main() {
     expect(sent, ['nho.pdf']);
     expect(find.text('Chỉ nhận ảnh hoặc tệp PDF.'), findsOneWidget);
   });
+
+  testWidgets('máy chủ chưa có Nộp hồ sơ (404 chung): nói rõ là chưa mở', (
+    tester,
+  ) async {
+    EmsApiService.client = MockClient(
+      (_) async => http.Response(
+        jsonEncode({'error': 'Endpoint not found'}),
+        404,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
+    await tester.pumpWidget(const MaterialApp(home: StudentPapersScreen()));
+    await tester.pumpAndSettle();
+    expect(find.text(StudentPapersApi.notOpenMessage), findsOneWidget);
+    expect(find.text('Thử lại'), findsNothing);
+  });
 }
