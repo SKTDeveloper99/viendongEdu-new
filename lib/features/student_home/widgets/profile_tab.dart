@@ -4,6 +4,7 @@ import '../../../screens/hv_profile_info_screen.dart';
 import '../../student_papers/papers_screen.dart';
 import '../student_home_view_model.dart';
 import 'profile_menu_card.dart';
+import 'student_id_qr_card.dart';
 import '../../../components/app_version_label.dart';
 import '../../../components/theme_mode_sheet.dart';
 import '../../../services/theme_controller.dart';
@@ -83,6 +84,16 @@ class ProfileTab extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
               child: Column(
                 children: [
+                  // Look-up QR of the MSSV; renders nothing for non-students
+                  // or an empty ID.
+                  if (vm.isStudent && StudentIdQrCard.hasId(vm.studentId)) ...[
+                    StudentIdQrCard(
+                      name: vm.name,
+                      studentId: vm.studentId,
+                      isStudent: vm.isStudent,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   ProfileMenuCard(
                     icon: Icons.person_outline,
                     label: 'Thông tin cá nhân',
