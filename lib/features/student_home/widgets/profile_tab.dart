@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../screens/hv_profile_info_screen.dart';
+import '../../student_papers/papers_screen.dart';
 import '../student_home_view_model.dart';
 import 'profile_menu_card.dart';
 import '../../../components/app_version_label.dart';
@@ -89,6 +90,20 @@ class ProfileTab extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => const HvProfileInfoScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Giấy tờ trường yêu cầu (CRM LAW S-57, đề xuất).
+                  ProfileMenuCard(
+                    key: const Key('profile-papers'),
+                    icon: Icons.upload_file_outlined,
+                    label: 'Nộp hồ sơ',
+                    subtitle: 'Gửi ảnh, giấy tờ trường yêu cầu',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const StudentPapersScreen(),
                       ),
                     ),
                   ),
