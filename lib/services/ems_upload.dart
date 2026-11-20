@@ -10,11 +10,25 @@ import 'package:mime/mime.dart';
 
 import 'app_session.dart';
 import 'ems_api_service.dart';
+import 'upload_sender.dart';
+
+export 'upload_sender.dart' show UploadStatus, PhotoShrink;
 
 /// Files to and from the CRM with the person's session: one file up as
 /// multipart (the web's FormData call), one file down into the app's cache.
 abstract final class EmsUpload {
+  /// Time limit of a download (uploads take theirs from the size).
   static Duration timeout = const Duration(seconds: 60);
+
+  /// Every attempt failed on the network.
+  static const networkMessage =
+      'Không gửi được tệp. Kiểm tra mạng rồi thử lại.';
+
+  /// The connection broke while the server was answering: it may have the
+  /// file already, so nothing is resent on its own.
+  static const answerLostMessage =
+      'Mạng chập chờn lúc máy chủ đang trả lời, chưa rõ tệp đã lên chưa. '
+      'Tải lại để xem trước khi gửi lại.';
 
   /// The server's per-file ceiling (CRM lib/tasks/uploads.js MAX_SIZE_BYTES).
   /// Checked before sending: on Android the server's early 413 arrives as a
@@ -34,18 +48,23 @@ abstract final class EmsUpload {
     required String filename,
     String field = 'file',
     Map<String, String> fields = const {},
+    void Function(UploadStatus)? onStatus,
   }) => files(
     path,
     files: [(bytes: bytes, filename: filename)],
     field: field,
     fields: fields,
+    onStatus: onStatus,
   );
 
   /// `POST path` with every file under the same [field] (+ [fields]), e.g. a
   /// duty report's `photos` and `note` in one request. No file is fine.
   /// [maxBytes]: the per-file ceiling when the server named one (a Nhóm
   /// table's `file_rules`). [onProgress]: bytes handed to the connection so
-  /// far, of the whole request.
+  /// far, of the whole request. [onStatus]: the same with the attempt, for
+  /// "Mạng yếu, đang gửi lại (lần 2/3)…". Sent through [UploadSender]: a
+  /// time limit by size and two resends after a network failure; any answer
+  /// of the server is final.
   static Future<Map<String, dynamic>> files(
     String path, {
     required List<({List<int> bytes, String filename})> files,
@@ -53,37 +72,52 @@ abstract final class EmsUpload {
     Map<String, String> fields = const {},
     int maxBytes = maxFileBytes,
     void Function(int sent, int total)? onProgress,
+    void Function(UploadStatus)? onStatus,
   }) async {
     if (files.any((f) => f.bytes.length > maxBytes)) {
       throw EmsException(refusal('file_too_large', 413), statusCode: 413);
     }
-    final req = http.MultipartRequest(
-      'POST',
-      Uri.parse('${EmsApiService.baseUrl}$path'),
-    );
     final t = AppSession.instance.emsToken;
-    if (t != null && t.isNotEmpty) req.headers['Authorization'] = 'Bearer $t';
-    req.fields.addAll(fields);
-    for (final f in files) {
-      final head = f.bytes.length > 32 ? f.bytes.sublist(0, 32) : f.bytes;
-      req.files.add(
-        http.MultipartFile.fromBytes(
-          field,
-          f.bytes,
-          filename: f.filename,
-          contentType: MediaType.parse(typeOf(f.filename, head)),
-        ),
+    // A fresh request for every attempt: a multipart body is read once.
+    http.MultipartRequest build() {
+      final req = http.MultipartRequest(
+        'POST',
+        Uri.parse('${EmsApiService.baseUrl}$path'),
       );
+      if (t != null && t.isNotEmpty) {
+        req.headers['Authorization'] = 'Bearer $t';
+      }
+      req.fields.addAll(fields);
+      for (final f in files) {
+        final head = f.bytes.length > 32 ? f.bytes.sublist(0, 32) : f.bytes;
+        req.files.add(
+          http.MultipartFile.fromBytes(
+            field,
+            f.bytes,
+            filename: f.filename,
+            contentType: MediaType.parse(typeOf(f.filename, head)),
+          ),
+        );
+      }
+      return req;
     }
+
+    final size = files.fold<int>(0, (n, f) => n + f.bytes.length);
     http.Response res;
     try {
-      res = await http.Response.fromStream(
-        await EmsApiService.client
-            .send(onProgress == null ? req : _Counted(req, onProgress))
-            .timeout(timeout),
+      res = await UploadSender.send(
+        build,
+        client: EmsApiService.client,
+        timeout: UploadSender.timeoutFor(size),
+        onStatus: (s) {
+          onStatus?.call(s);
+          if (onProgress != null && s.total > 0) onProgress(s.sent, s.total);
+        },
       );
+    } on UploadAnswerLost {
+      throw EmsException(answerLostMessage);
     } catch (_) {
-      throw EmsException('Không gửi được tệp. Kiểm tra mạng rồi thử lại.');
+      throw EmsException(networkMessage);
     }
     final body = _json(res.body);
     if (res.statusCode >= 400) {
@@ -177,37 +211,4 @@ abstract final class EmsUpload {
         'upload_failed' || '' => 'Không gửi được tệp ($status).',
         final m => m,
       };
-}
-
-/// A request that sends [inner]'s body in 64 KB slices and reports each one
-/// (upload progress). The connection pauses the slices it cannot take yet,
-/// so the count follows what has really left.
-class _Counted extends http.BaseRequest {
-  final http.MultipartRequest inner;
-  final void Function(int sent, int total) onProgress;
-  _Counted(this.inner, this.onProgress) : super(inner.method, inner.url);
-
-  @override
-  http.ByteStream finalize() {
-    final total = inner.contentLength;
-    final body = inner.finalize();
-    headers.addAll(inner.headers);
-    contentLength = total;
-    super.finalize();
-    return http.ByteStream(_slices(body, total));
-  }
-
-  Stream<List<int>> _slices(Stream<List<int>> body, int total) async* {
-    const step = 64 * 1024;
-    var sent = 0;
-    onProgress(0, total);
-    await for (final chunk in body) {
-      for (var i = 0; i < chunk.length; i += step) {
-        final end = i + step < chunk.length ? i + step : chunk.length;
-        yield chunk.sublist(i, end);
-        sent += end - i;
-        onProgress(sent, total);
-      }
-    }
-  }
 }
