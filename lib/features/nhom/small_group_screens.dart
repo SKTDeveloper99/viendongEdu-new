@@ -11,6 +11,8 @@ import '../work/work_api.dart';
 import '../common/load_error.dart';
 import 'nhom_api.dart';
 import 'small_group_api.dart';
+import 'table_file_cell.dart';
+import 'table_file_sheet.dart';
 
 part 'small_group_screens_parts_1.dart';
 part 'small_group_screens_parts_2.dart';

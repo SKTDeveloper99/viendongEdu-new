@@ -18,6 +18,17 @@ Future<List<({String path, String name})>> pickPhotosForHandIn() async {
   return [for (final f in picked) (path: f.path, name: f.name)];
 }
 
+/// "Chụp ảnh": one photo from the camera (null = cancelled). Throws when the
+/// phone has no camera or the person refused it.
+Future<({String path, String name})?> takePhotoForHandIn() async {
+  final shot = await ImagePicker().pickImage(
+    source: ImageSource.camera,
+    imageQuality: 85,
+    maxWidth: 2400,
+  );
+  return shot == null ? null : (path: shot.path, name: shot.name);
+}
+
 /// Android web view `<input type=file>`: photos only (camera when the page
 /// asks for capture, else the system photo picker). Returns file URIs; an
 /// empty list cancels. Documents (PDF, Word) cannot be chosen here.

@@ -139,6 +139,7 @@ class _TableScreenState extends State<TableScreen> {
   bool _failed = false;
   final Set<String> _handed = {};
   bool _handingIn = false;
+  final _thumbs = CellThumbs();
 
   @override
   void initState() {
@@ -263,37 +264,40 @@ class _TableScreenState extends State<TableScreen> {
                                 ),
                               ),
                               for (final c in cols)
-                                DataCell(
-                                  Builder(
-                                    builder: (_) {
-                                      final cell =
-                                          ((r['cells'] as Map?) ??
-                                                  const {})['${c['id']}']
-                                              as Map?;
-                                      final v = _show(
-                                        '${c['kind']}',
-                                        cell?['value']?.toString(),
-                                      );
-                                      return ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          minWidth: 56,
-                                          maxWidth: 160,
-                                        ),
-                                        child: Text(
-                                          v.isEmpty ? '—' : v,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: v.isEmpty
-                                                ? vd.inkFaint
-                                                : vd.ink,
+                                if (c['kind'] == 'file')
+                                  _fileCell(r, c)
+                                else
+                                  DataCell(
+                                    Builder(
+                                      builder: (_) {
+                                        final cell =
+                                            ((r['cells'] as Map?) ??
+                                                    const {})['${c['id']}']
+                                                as Map?;
+                                        final v = _show(
+                                          '${c['kind']}',
+                                          cell?['value']?.toString(),
+                                        );
+                                        return ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            minWidth: 56,
+                                            maxWidth: 160,
                                           ),
-                                        ),
-                                      );
-                                    },
+                                          child: Text(
+                                            v.isEmpty ? '—' : v,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: v.isEmpty
+                                                  ? vd.inkFaint
+                                                  : vd.ink,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    onTap: () => _editCell(r, c),
                                   ),
-                                  onTap: () => _editCell(r, c),
-                                ),
                             ],
                           ),
                       ],

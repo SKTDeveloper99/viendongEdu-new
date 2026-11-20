@@ -16,12 +16,27 @@ Future<void> openAttachment(BuildContext context, String taskId, Map f) async {
   final type = given.isEmpty || given == 'application/octet-stream'
       ? EmsUpload.typeOf(name)
       : given;
+  await openServerFile(
+    context,
+    '/v1/tasks/$taskId/attachments/$id',
+    name: name,
+    type: type,
+    key: id,
+  );
+}
+
+/// Downloads [path] with the person's session, then shows it: a photo in the
+/// app, anything else in the phone's own viewer. Used by a piece's files and
+/// by a Nhóm table's "Tệp / ảnh" cell.
+Future<void> openServerFile(
+  BuildContext context,
+  String path, {
+  required String name,
+  required String type,
+  required String key,
+}) async {
   try {
-    final file = await EmsUpload.download(
-      '/v1/tasks/$taskId/attachments/$id',
-      filename: name,
-      key: id,
-    );
+    final file = await EmsUpload.download(path, filename: name, key: key);
     if (!context.mounted) return;
     if (type.startsWith('image/')) {
       await Navigator.push(

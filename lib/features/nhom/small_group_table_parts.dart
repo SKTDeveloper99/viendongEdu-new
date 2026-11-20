@@ -59,6 +59,61 @@ String? tableRowOwner(Map r) {
 }
 
 extension _TableScreenOwnRows on _TableScreenState {
+  /// The server's `file_rules` (or today's values).
+  CellFileRules get _fileRules => CellFileRules.of(_data?['file_rules']);
+
+  /// Who may add files to a row's cell (the server's T-64 `canWrite`): any
+  /// reader of an ordinary table; the row's owner or a shaper of an own-rows
+  /// table. A full cell takes no more.
+  bool _canAddFiles(Map r, int count) =>
+      (!_ownRows || _isMine(r) || _canShape) && count < _fileRules.perCell;
+
+  /// A "Tệp / ảnh" cell (kind `file`): thumbnails, count, "+"; tapping the
+  /// cell lists its files to open or remove.
+  DataCell _fileCell(Map<String, dynamic> r, Map<String, dynamic> c) {
+    final files = cellFilesOf(
+      ((r['cells'] as Map?) ?? const {})['${c['id']}'] as Map?,
+    );
+    final api = CellFilesApi(
+      widget.spaceId,
+      widget.listId,
+      '${r['id']}',
+      '${c['id']}',
+    );
+    final canAdd = _canAddFiles(r, files.length);
+    Future<void> add() async {
+      final ok = await addCellFiles(
+        context,
+        api: api,
+        rules: _fileRules,
+        already: files.length,
+      );
+      if (ok && mounted) await _load();
+    }
+
+    return DataCell(
+      TableFileCell(
+        files: files,
+        canAdd: canAdd,
+        api: api,
+        thumbs: _thumbs,
+        onAdd: add,
+        onOpen: (f) => openCellFile(context, api, f),
+      ),
+      onTap: () async {
+        final changed = await showCellFilesSheet(
+          context,
+          title: '${c['name']}',
+          files: files,
+          api: api,
+          rules: _fileRules,
+          canAdd: canAdd,
+        );
+        if (changed && mounted) await _load();
+      },
+    );
+  }
+
   bool get _ownRows => (_data?['list'] as Map?)?['own_rows_only'] == true;
 
   bool _isMine(Map r) {

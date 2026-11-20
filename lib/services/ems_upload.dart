@@ -43,13 +43,18 @@ abstract final class EmsUpload {
 
   /// `POST path` with every file under the same [field] (+ [fields]), e.g. a
   /// duty report's `photos` and `note` in one request. No file is fine.
+  /// [maxBytes]: the per-file ceiling when the server named one (a Nhóm
+  /// table's `file_rules`). [onProgress]: bytes handed to the connection so
+  /// far, of the whole request.
   static Future<Map<String, dynamic>> files(
     String path, {
     required List<({List<int> bytes, String filename})> files,
     String field = 'file',
     Map<String, String> fields = const {},
+    int maxBytes = maxFileBytes,
+    void Function(int sent, int total)? onProgress,
   }) async {
-    if (files.any((f) => f.bytes.length > maxFileBytes)) {
+    if (files.any((f) => f.bytes.length > maxBytes)) {
       throw EmsException(refusal('file_too_large', 413), statusCode: 413);
     }
     final req = http.MultipartRequest(
@@ -73,7 +78,9 @@ abstract final class EmsUpload {
     http.Response res;
     try {
       res = await http.Response.fromStream(
-        await EmsApiService.client.send(req).timeout(timeout),
+        await EmsApiService.client
+            .send(onProgress == null ? req : _Counted(req, onProgress))
+            .timeout(timeout),
       );
     } catch (_) {
       throw EmsException('Không gửi được tệp. Kiểm tra mạng rồi thử lại.');
@@ -170,4 +177,37 @@ abstract final class EmsUpload {
         'upload_failed' || '' => 'Không gửi được tệp ($status).',
         final m => m,
       };
+}
+
+/// A request that sends [inner]'s body in 64 KB slices and reports each one
+/// (upload progress). The connection pauses the slices it cannot take yet,
+/// so the count follows what has really left.
+class _Counted extends http.BaseRequest {
+  final http.MultipartRequest inner;
+  final void Function(int sent, int total) onProgress;
+  _Counted(this.inner, this.onProgress) : super(inner.method, inner.url);
+
+  @override
+  http.ByteStream finalize() {
+    final total = inner.contentLength;
+    final body = inner.finalize();
+    headers.addAll(inner.headers);
+    contentLength = total;
+    super.finalize();
+    return http.ByteStream(_slices(body, total));
+  }
+
+  Stream<List<int>> _slices(Stream<List<int>> body, int total) async* {
+    const step = 64 * 1024;
+    var sent = 0;
+    onProgress(0, total);
+    await for (final chunk in body) {
+      for (var i = 0; i < chunk.length; i += step) {
+        final end = i + step < chunk.length ? i + step : chunk.length;
+        yield chunk.sublist(i, end);
+        sent += end - i;
+        onProgress(sent, total);
+      }
+    }
+  }
 }

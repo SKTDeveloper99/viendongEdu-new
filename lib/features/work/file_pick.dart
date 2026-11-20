@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 
-import '../crm_web/android_photo_picker.dart' show pickPhotosForHandIn;
+import '../crm_web/android_photo_picker.dart'
+    show pickPhotosForHandIn, takePhotoForHandIn;
 import 'hand_in_sheet.dart' show PickedFile;
 
 /// Any file for a hand-in (PDF, Word, Excel, …): the system document picker.
@@ -11,6 +12,33 @@ Future<List<PickedFile>> pickFilesForHandIn() async {
   return [
     for (final f in picked)
       (name: f.name, size: f.lengthSync(), read: f.readAsBytes),
+  ];
+}
+
+/// Files of the given extensions only (a Nhóm "Tệp / ảnh" cell: the
+/// server's `file_rules.accept`); any file when [extensions] is empty.
+Future<List<PickedFile>> pickFilesOfTypes(List<String> extensions) async {
+  final picked = await FilePicker.pickFiles(
+    type: extensions.isEmpty ? FileType.any : FileType.custom,
+    allowedExtensions: extensions.isEmpty ? null : extensions,
+  );
+  return [
+    for (final f in picked)
+      (name: f.name, size: f.lengthSync(), read: f.readAsBytes),
+  ];
+}
+
+/// "Chụp ảnh": one photo from the camera, named like a picked photo.
+Future<List<PickedFile>> takePhotoFile() async {
+  final shot = await takePhotoForHandIn();
+  if (shot == null) return const [];
+  final name = photoNames([shot.name], DateTime.now()).first;
+  return [
+    (
+      name: name,
+      size: _sizeOf(shot.path),
+      read: () => File(shot.path).readAsBytes(),
+    ),
   ];
 }
 
