@@ -143,4 +143,40 @@ void main() {
       expect(find.textContaining('GVCN hoặc Phòng Đào tạo'), findsOneWidget);
     },
   );
+
+  for (final typed in ['01/01/2099', '01/01/1930']) {
+    testWidgets('a typed birth date outside the calendar ($typed) still opens '
+        'the calendar instead of failing', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ForgotPasswordScreen(initialMssv: 'TEST26APP01'),
+        ),
+      );
+      await tester.enterText(find.byKey(const Key('forgot-dob')), typed);
+      await tester.tap(find.byTooltip('Chọn trên lịch'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Chọn ngày sinh'), findsOneWidget);
+    });
+  }
+
+  testWidgets(
+    'over the limit (429): the server\'s Vietnamese words are shown',
+    (tester) async {
+      const limit = 'Bạn đã thử quá nhiều lần. Vui lòng thử lại sau một giờ.';
+      EmsApiService.client = MockClient(
+        (_) async => json({'error': limit}, 429),
+      );
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ForgotPasswordScreen(initialMssv: 'TEST26APP01'),
+        ),
+      );
+      await tester.enterText(find.byKey(const Key('forgot-dob')), '09/03/2004');
+      await tester.tap(find.byKey(const Key('forgot-submit')));
+      await tester.pumpAndSettle();
+      expect(find.text(limit), findsOneWidget);
+      expect(find.byType(ForgotPasswordScreen), findsOneWidget);
+    },
+  );
 }
