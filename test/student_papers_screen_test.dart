@@ -4,6 +4,7 @@
 //
 //   flutter test test/student_papers_screen_test.dart
 //
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -195,6 +196,51 @@ void main() {
     await tester.pumpAndSettle();
     expect(sent, ['nho.pdf']);
     expect(find.text('Chỉ nhận ảnh hoặc tệp PDF.'), findsOneWidget);
+  });
+
+  testWidgets('leaving the screen while a photo is still sending does not '
+      'fail when the answer arrives', (tester) async {
+    final answer = Completer<PaperItem?>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => StudentPapersScreen(
+                    load: () async =>
+                        _page([_item('anh_the', 'Ảnh thẻ', 'photo')]),
+                    send: (code, bytes, name, max) => answer.future,
+                    pickPhotos: () async => [
+                      _file('Ảnh 20-11 09.00.jpg', 2000),
+                    ],
+                  ),
+                ),
+              ),
+              child: const Text('mở'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('mở'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('paper-add-anh_the')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('paper-source-photos')));
+    // The spinner keeps going while the answer is held back.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Đang gửi…'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('mở'), findsOneWidget);
+    answer.complete(null);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('máy chủ chưa có Nộp hồ sơ (404 chung): nói rõ là chưa mở', (

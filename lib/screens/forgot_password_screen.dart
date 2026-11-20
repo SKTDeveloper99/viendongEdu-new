@@ -54,12 +54,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
+    final first = DateTime(1940);
+    final typed = parseBirthDate(_dobCtrl.text);
+    var initial = typed != null
+        ? DateTime.parse(typed)
+        : DateTime(now.year - 19);
+    // A typed date outside the calendar's range (e.g. 01/01/2099 or a year
+    // before 1940) must not reach showDatePicker, which asserts on it.
+    if (initial.isAfter(now)) initial = now;
+    if (initial.isBefore(first)) initial = first;
     final picked = await showDatePicker(
       context: context,
-      initialDate: parseBirthDate(_dobCtrl.text) != null
-          ? DateTime.parse(parseBirthDate(_dobCtrl.text)!)
-          : DateTime(now.year - 19),
-      firstDate: DateTime(1940),
+      initialDate: initial,
+      firstDate: first,
       lastDate: now,
       initialDatePickerMode: DatePickerMode.year,
       helpText: 'Chọn ngày sinh',

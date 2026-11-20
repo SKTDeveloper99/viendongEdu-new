@@ -218,6 +218,63 @@ void main() {
     expect(find.byKey(const ValueKey('cell-upload-progress')), findsNothing);
   });
 
+  testWidgets(
+    'a photo of unknown size over the cell limit is refused with '
+    'the cell\'s own words, not the 25 MB default, and never sent',
+    (tester) async {
+      var sent = false;
+      EmsApiService.client = MockClient((_) async {
+        sent = true;
+        return _json({});
+      });
+      final rules = CellFileRules.of({
+        'file_bytes': 10,
+        'too_large_text': 'Mỗi tệp tối đa 10 MB.',
+      });
+      late BuildContext ctx;
+      await tester.pumpWidget(
+        _app(
+          Scaffold(
+            body: Builder(
+              builder: (c) {
+                ctx = c;
+                return const SizedBox();
+              },
+            ),
+          ),
+        ),
+      );
+      final done = addCellFiles(
+        ctx,
+        api: _api,
+        rules: rules,
+        already: 0,
+        pickers: CellPickers(
+          camera: () async => [
+            (
+              name: 'Ảnh 20-11 09.00.jpg',
+              size: null,
+              read: () async => List.filled(11, 1),
+            ),
+          ],
+          photos: () async => const [],
+          files: (_) async => const [],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('cell-pick-camera')));
+      await tester.pumpAndSettle();
+      expect(await done, isFalse);
+      expect(sent, isFalse);
+      expect(
+        find.text('Ảnh 20-11 09.00.jpg: Mỗi tệp tối đa 10 MB.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('25 MB'), findsNothing);
+      expect(find.byKey(const ValueKey('cell-upload-progress')), findsNothing);
+    },
+  );
+
   testWidgets('the table shows a file cell with its count and "+"; a full '
       'cell (server per_cell) has no "+"', (tester) async {
     EmsApiService.client = MockClient(

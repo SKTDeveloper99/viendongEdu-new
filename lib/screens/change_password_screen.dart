@@ -99,6 +99,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     }
   }
 
+  /// Leaves the forced change by signing out; the server still asks for a
+  /// new password at the next sign-in.
+  Future<void> _signOut() async {
+    setState(() => _loading = true);
+    await AppSession.instance.clear();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -278,6 +287,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   ),
                           ),
                         ),
+                        // The forced screen has no back: without this a
+                        // person who landed here by mistake (wrong account,
+                        // a reset they did not ask for) or who cannot pick a
+                        // password now had no way out but killing the app,
+                        // and the next start brought them back here.
+                        if (widget.forced) ...[
+                          const SizedBox(height: 8),
+                          TextButton(
+                            key: const Key('forced-change-sign-out'),
+                            onPressed: _loading ? null : _signOut,
+                            child: const Text('Đăng xuất'),
+                          ),
+                        ],
                       ],
                     ),
                   ),

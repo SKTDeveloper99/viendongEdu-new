@@ -144,6 +144,23 @@ Future<bool> addCellFiles(
     final bytes = [
       for (final f in c.ok) (bytes: await f.read(), filename: f.name),
     ];
+    // A picked file whose size was unknown before reading (camera or photo
+    // copy the phone could not measure) is checked here against the cell's
+    // own limit; otherwise EmsUpload refused it with its generic 25 MB text.
+    final big = [
+      for (final b in bytes)
+        if (b.bytes.length > rules.fileBytes) b.filename,
+    ];
+    if (big.isNotEmpty) {
+      nav.pop();
+      if (context.mounted) {
+        showErrorSnack(
+          context,
+          [for (final n in big) '$n: ${rules.tooLargeText}'].join('\n'),
+        );
+      }
+      return false;
+    }
     await api.add(
       bytes,
       maxBytes: rules.fileBytes,
