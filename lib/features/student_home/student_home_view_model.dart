@@ -116,6 +116,10 @@ class StudentHomeViewModel extends ChangeNotifier {
 
   String get name => _repository.fullName ?? '–';
   String get mssv => _repository.mssv ?? '–';
+
+  /// Raw student ID from the held sign-in identity ('' when none).
+  String get studentId => _repository.mssv?.trim() ?? '';
+  bool get isStudent => _repository.isStudent;
   String get classCode => _classCode ?? '–';
 
   List<StudentNotice> _notices = const [];

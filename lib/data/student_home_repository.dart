@@ -1,3 +1,4 @@
+import '../models/crm_identity.dart';
 import '../models/crm_student_schedule.dart';
 import '../models/crm_student_exams.dart';
 import '../models/student_notice.dart';
@@ -61,6 +62,9 @@ class StudentHomeRepository {
   // Identity always comes from the CRM login session.
   String? get fullName => AppSession.instance.fullName;
   String? get mssv => AppSession.instance.mssv;
+
+  /// True only for a student sign-in (not teacher or staff).
+  bool get isStudent => AppSession.instance.role == CrmRole.student;
   bool get hasEms => AppSession.instance.hasEms;
 
   /// True when EMS DELIBERATELY denied this student (no account/deactivated).
