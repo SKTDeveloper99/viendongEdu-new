@@ -1,6 +1,8 @@
 import 'package:image_picker/image_picker.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
+import '../../services/upload_sender.dart' show PhotoShrink;
+
 // The only file that uses image_picker (owner to confirm before any build).
 // Removing the package = delete this file, the one line in
 // crm_web_routes.dart that passes [pickPhotosForWebView] (Android then does
@@ -10,21 +12,28 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 /// Photos for a hand-in (native "Đính kèm ảnh", iOS and Android): the system
 /// photo picker, several at once. Returns (path, name); empty = cancelled.
-Future<List<({String path, String name})>> pickPhotosForHandIn() async {
-  final picked = await ImagePicker().pickMultiImage(
-    imageQuality: 85,
-    maxWidth: 2400,
+/// Shrunk on the phone to [PhotoShrink] before anything is sent.
+Future<List<({String path, String name})>> pickPhotosForHandIn({
+  ImagePicker? picker,
+}) async {
+  final picked = await (picker ?? ImagePicker()).pickMultiImage(
+    maxWidth: PhotoShrink.maxEdge,
+    maxHeight: PhotoShrink.maxEdge,
+    imageQuality: PhotoShrink.quality,
   );
   return [for (final f in picked) (path: f.path, name: f.name)];
 }
 
 /// "Chụp ảnh": one photo from the camera (null = cancelled). Throws when the
-/// phone has no camera or the person refused it.
-Future<({String path, String name})?> takePhotoForHandIn() async {
-  final shot = await ImagePicker().pickImage(
+/// phone has no camera or the person refused it. Shrunk like the above.
+Future<({String path, String name})?> takePhotoForHandIn({
+  ImagePicker? picker,
+}) async {
+  final shot = await (picker ?? ImagePicker()).pickImage(
     source: ImageSource.camera,
-    imageQuality: 85,
-    maxWidth: 2400,
+    maxWidth: PhotoShrink.maxEdge,
+    maxHeight: PhotoShrink.maxEdge,
+    imageQuality: PhotoShrink.quality,
   );
   return shot == null ? null : (path: shot.path, name: shot.name);
 }
