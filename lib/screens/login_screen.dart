@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kDebugMode, TargetPlatform;
 import 'package:flutter/material.dart';
+
 import '../models/crm_identity.dart';
 import '../services/ems_api_service.dart';
 import '../services/app_session.dart';
 import '../services/notification_service.dart';
 import '../services/startup_pace.dart';
 import 'change_password_screen.dart';
+import 'forgot_password_screen.dart';
 import '../data/api/auth_api.dart';
 import '../theme/vd_tokens.dart';
 import '../components/vd_brand_lockup.dart';
@@ -108,6 +110,20 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _openForgotPassword() async {
+    final mssv = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordScreen(initialMssv: _idCtrl.text.trim()),
+      ),
+    );
+    if (!mounted || mssv == null) return;
+    setState(() {
+      _idCtrl.text = mssv;
+      _passCtrl.clear();
+    });
   }
 
   void _showError(String msg) {
@@ -244,7 +260,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              // ── Quên mật khẩu: CHỈ học viên (LAW P-51, đề xuất) ──
+              if (_role == CrmRole.student)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    key: const Key('forgot-password-link'),
+                    onPressed: _loading ? null : _openForgotPassword,
+                    child: Text(
+                      'Quên mật khẩu?',
+                      style: TextStyle(color: context.vd.accent),
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // ── Nút đăng nhập ──
               SizedBox(
