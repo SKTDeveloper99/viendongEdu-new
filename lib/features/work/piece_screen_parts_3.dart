@@ -192,6 +192,15 @@ extension _PieceScreenStatePart3 on _PieceScreenState {
                 ),
             ],
           ),
+          if (_actLine['handin:${a['id']}'] case final line?)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                line,
+                key: const ValueKey('handin-line'),
+                style: TextStyle(color: vd.inkMuted, fontSize: 13),
+              ),
+            ),
           _actError(vd, ['ack:${a['id']}', 'handin:${a['id']}'], mine: a),
         ],
       ),

@@ -48,38 +48,45 @@ extension _PieceScreenStatePart4 on _PieceScreenState {
     }
     if (!mounted) return;
     if (rule.needsReportSheet) return _handInReport(a, rule);
-    final r = await showHandInSheet(context);
+    final r = await showHandInSheet(context, pickPhotos: widget.pickPhotos);
     if (r == null) return;
     final note = r.note;
     final to = _task?['requires_review'] == true ? 'submitted' : 'done';
+    final key = 'handin:${a['id']}';
     // Files already sent survive a "Thử lại": only what failed goes again.
-    final sent = <int>{};
-    await _action('handin:${a['id']}', () async {
-      // Start first: the server itself moves an unopened part to in_progress
-      // when a file arrives, so starting after the upload was refused
-      // ("đã ở trạng thái này") and the hand-in never went (seen 17/11).
-      if (a['status'] == 'assigned') {
-        try {
-          await WorkApi.move('${a['id']}', 'in_progress');
-        } on EmsException catch (e) {
-          // 409 "đã ở trạng thái này": already started (an earlier attempt,
-          // or the server on a file upload) — carry on with the hand-in.
-          if (e.statusCode != 409) rethrow;
+    final up = HandInUploads(r.files);
+    _line(key, null);
+    await _action(key, () async {
+      try {
+        // Start first: the server itself moves an unopened part to
+        // in_progress when a file arrives, so starting after the upload was
+        // refused ("đã ở trạng thái này") and the hand-in never went (17/11).
+        if (a['status'] == 'assigned') {
+          try {
+            await WorkApi.move('${a['id']}', 'in_progress');
+          } on EmsException catch (e) {
+            // 409 "đã ở trạng thái này": already started (an earlier
+            // attempt, or the server on a file upload) — carry on.
+            if (e.statusCode != 409) rethrow;
+          }
         }
-      }
-      // Then the files, as the web sends them, so the hand-in carries them.
-      for (var i = 0; i < r.files.length; i++) {
-        if (sent.contains(i)) continue;
-        final f = r.files[i];
-        await WorkApi.attach(
-          widget.taskId,
-          '${a['id']}',
-          await f.read(),
-          filename: f.name,
+        // Then the files, as the web sends them, so the hand-in carries them.
+        await up.sendRest(
+          (f, onStatus) async => WorkApi.attach(
+            widget.taskId,
+            '${a['id']}',
+            await f.read(),
+            filename: f.name,
+            onStatus: onStatus,
+          ),
+          onLine: (l) => _line(key, l),
         );
-        sent.add(i);
+        _line(key, null);
+        await WorkApi.move('${a['id']}', to, note: note);
+      } catch (_) {
+        _line(key, up.keptLine);
+        rethrow;
       }
-      await WorkApi.move('${a['id']}', to, note: note);
     });
   }
 
@@ -103,19 +110,37 @@ extension _PieceScreenStatePart4 on _PieceScreenState {
       assignmentId: aid,
       rule: rule,
       photosOnPart: onPart,
+      pickPhotos: widget.pickPhotos,
       pickFiles: rule.isReport ? null : pickFilesForHandIn,
     );
     if (r == null) return;
-    await _action('handin:$aid', () async {
-      final files = [
-        for (final f in r.files) (bytes: await f.read(), filename: f.name),
-      ];
-      if (rule.isReport) {
-        await WorkApi.submitReport(aid, note: r.note, photos: files);
-      } else {
-        await WorkApi.submitWithNote(aid, note: r.note, files: files);
+    final key = 'handin:$aid';
+    // One request (the server checks the minimums on all of it together).
+    void status(UploadStatus s) => _line(key, s.text);
+    await _action(key, () async {
+      try {
+        final files = [
+          for (final f in r.files) (bytes: await f.read(), filename: f.name),
+        ];
+        if (rule.isReport) {
+          await WorkApi.submitReport(
+            aid,
+            note: r.note,
+            photos: files,
+            onStatus: status,
+          );
+        } else {
+          await WorkApi.submitWithNote(
+            aid,
+            note: r.note,
+            files: files,
+            onStatus: status,
+          );
+        }
+        forgetReportDraft(aid);
+      } finally {
+        _line(key, null);
       }
-      forgetReportDraft(aid);
     });
   }
 }

@@ -6,11 +6,13 @@ import 'package:flutter/services.dart';
 import '../../services/app_session.dart';
 import '../../services/crm_session_guard.dart';
 import '../../services/ems_api_service.dart';
+import '../../services/upload_sender.dart' show UploadStatus;
 import '../../theme/vd_motion.dart';
 import '../../theme/vd_tokens.dart';
 import '../../utils/snack.dart';
 import '../common/load_error.dart';
 import 'hand_in_sheet.dart';
+import 'hand_in_uploads.dart';
 import 'open_attachment.dart';
 import 'file_pick.dart';
 import 'piece_table_link.dart';
@@ -31,7 +33,14 @@ part 'piece_screen_parts_4.dart';
 /// conversation. Every list, bell and line opens this same screen.
 class PieceScreen extends StatefulWidget {
   final String taskId;
-  const PieceScreen({super.key, required this.taskId});
+
+  /// "Chọn ảnh" of the hand-in and report sheets (tests replace it).
+  final PickFiles pickPhotos;
+  const PieceScreen({
+    super.key,
+    required this.taskId,
+    this.pickPhotos = pickPhotoFilesForHandIn,
+  });
 
   @override
   State<PieceScreen> createState() => _PieceScreenState();
@@ -67,6 +76,15 @@ class _PieceScreenState extends State<PieceScreen> {
   // line with "Thử lại". All durations come from VdMotion (zero under Reduce
   // Motion).
   final Map<String, String> _act = {}; // key → busy | done | error message
+
+  // key → the line under the buttons while files go ("Tệp 2/3: Mạng yếu,
+  // đang gửi lại (lần 2/3)…") and, after a failure, what already went.
+  final Map<String, String> _actLine = {};
+
+  void _line(String key, String? line) {
+    if (!mounted) return;
+    setState(() => line == null ? _actLine.remove(key) : _actLine[key] = line);
+  }
 
   final Map<String, Future<void> Function()> _retry = {};
 

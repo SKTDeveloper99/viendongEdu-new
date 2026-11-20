@@ -107,11 +107,13 @@ abstract final class WorkApi {
     String assignmentId,
     List<int> bytes, {
     required String filename,
+    void Function(UploadStatus)? onStatus,
   }) => EmsUpload.file(
     '/v1/tasks/$id/attachments',
     bytes: bytes,
     filename: filename,
     fields: {'assignment_id': assignmentId},
+    onStatus: onStatus,
   );
 
   /// A report (duty report, recurring report) handed in the way the web's
@@ -122,6 +124,7 @@ abstract final class WorkApi {
     String assignmentId, {
     required String note,
     List<({List<int> bytes, String filename})> photos = const [],
+    void Function(UploadStatus)? onStatus,
   }) => EmsUpload.files(
     '/v1/teacher/tasks/$assignmentId/report',
     // This path stores the multipart name as given, without the UTF-8
@@ -131,6 +134,7 @@ abstract final class WorkApi {
     ],
     field: 'photos',
     fields: {'note': note},
+    onStatus: onStatus,
   );
 
   /// An ordinary piece with a word or file minimum, handed in like the web:
@@ -140,11 +144,13 @@ abstract final class WorkApi {
     String assignmentId, {
     required String note,
     List<({List<int> bytes, String filename})> files = const [],
+    void Function(UploadStatus)? onStatus,
   }) => EmsUpload.files(
     '/v1/tasks/my/$assignmentId/submit',
     files: files,
     field: 'files',
     fields: {'note': note},
+    onStatus: onStatus,
   );
 
   /// The hand-in rules of my part, from my own list (`GET /v1/tasks/my`,
