@@ -190,9 +190,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
                 decoration: _field(
-                  'Ngày sinh (ngày/tháng/năm)',
+                  'Ngày sinh',
                   Icons.cake_outlined,
-                  hint: 'VD: 09/03/2004',
+                  hint: 'ngày/tháng/năm, VD 09/03/2004',
                   suffix: IconButton(
                     tooltip: 'Chọn trên lịch',
                     icon: Icon(Icons.calendar_month, color: vd.accent),
