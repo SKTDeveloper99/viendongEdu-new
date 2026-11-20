@@ -23,6 +23,8 @@ void main() {
 
   tearDown(() => EmsApiService.client = http.Client());
 
+  _signOutTests();
+
   Future<void> fillAndSubmit(WidgetTester tester) async {
     await tester.enterText(find.byType(TextFormField).at(0), 'oldpass');
     await tester.enterText(find.byType(TextFormField).at(1), 'newpass123');
@@ -173,7 +175,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(called, isFalse);
-    expect(find.text('Vui lòng nhập lại mật khẩu xác nhận cho khớp'), findsOneWidget);
+    expect(
+      find.text('Vui lòng nhập lại mật khẩu xác nhận cho khớp'),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -221,6 +226,55 @@ void main() {
     },
   );
 }
+
+void _signOutTests() {
+  testWidgets('forced change: "Đăng xuất" leaves to sign-in without sending '
+      'a password change, and the session is gone', (tester) async {
+    AppSession.instance
+      ..emsToken = 'crm-token'
+      ..role = CrmRole.student
+      ..mssv = 'TEST26APP01'
+      ..mustChangePassword = true;
+    final before = AppSession.revokeDeviceOverride;
+    AppSession.revokeDeviceOverride = (_) async {};
+    addTearDown(() => AppSession.revokeDeviceOverride = before);
+    var calls = 0;
+    EmsApiService.client = MockClient((_) async {
+      calls++;
+      return http.Response('{}', 200);
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: const ChangePasswordScreen(
+          forced: true,
+          currentPassword: 'TEST26APP01',
+        ),
+        routes: {'/login': _login},
+      ),
+    );
+    expect(find.byIcon(Icons.arrow_back_ios), findsNothing);
+    await tester.tap(find.byKey(const Key('forced-change-sign-out')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('login')), findsOneWidget);
+    expect(calls, 0);
+    expect(AppSession.instance.emsToken, isNull);
+  });
+
+  testWidgets('the normal (not forced) entry has no extra "Đăng xuất"', (
+    tester,
+  ) async {
+    AppSession.instance
+      ..emsToken = 'crm-token'
+      ..role = CrmRole.student
+      ..mssv = 'TEST26APP01'
+      ..mustChangePassword = false;
+    await tester.pumpWidget(const MaterialApp(home: ChangePasswordScreen()));
+    expect(find.byKey(const Key('forced-change-sign-out')), findsNothing);
+  });
+}
+
+Widget _login(BuildContext _) =>
+    const Scaffold(key: Key('login'), body: Text('login'));
 
 Widget _forcedChange(BuildContext _) =>
     const ChangePasswordScreen(forced: true);
