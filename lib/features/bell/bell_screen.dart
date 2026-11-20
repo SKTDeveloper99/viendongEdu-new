@@ -151,7 +151,9 @@ class _BellScreenState extends State<BellScreen> {
                             ),
                           ),
                           subtitle: Text(
-                            '${n['body'] ?? ''}\n${whenLabel(n['created_at'])}',
+                            // A Nhóm post comes from the web's rich editor
+                            // (`<!--task-rich-v1-->` + HTML): words only.
+                            '${plainDescription(n['body'])}\n${whenLabel(n['created_at'])}',
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                           ),
