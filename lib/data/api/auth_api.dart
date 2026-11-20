@@ -78,6 +78,27 @@ abstract final class AuthApi {
     return identity;
   }
 
+  /// Học viên quên mật khẩu: `POST /auth/student/forgot-password
+  /// {mssv, date_of_birth?}` (LAW P-51, đề xuất). Đúng thì máy chủ đặt lại
+  /// mật khẩu thành MSSV và bắt đổi ở lần đăng nhập sau; trả về câu báo của
+  /// máy chủ. Sai thì [EmsException] mang đúng một câu chung cho mọi trường hợp.
+  /// [dateOfBirth] dạng YYYY-MM-DD; null khi màn hình không hỏi ngày sinh.
+  static Future<String> forgotStudentPassword(
+    String mssv, {
+    String? dateOfBirth,
+  }) async {
+    final body = await EmsApiService.sendMap(
+      'POST',
+      '/auth/student/forgot-password',
+      body: {'mssv': mssv, 'date_of_birth': ?dateOfBirth},
+      auth: false,
+    );
+    final message = body['message']?.toString() ?? '';
+    return message.isNotEmpty
+        ? message
+        : 'Đã đặt lại mật khẩu. Hãy đăng nhập bằng mã số sinh viên.';
+  }
+
   /// Đổi mật khẩu bắt buộc/tự chọn của học viên.
   /// `POST /student/me/password {current_password, new_password}`.
   static Future<void> changeStudentPassword({
