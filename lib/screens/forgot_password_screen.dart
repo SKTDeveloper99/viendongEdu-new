@@ -14,8 +14,9 @@ const bool kForgotPasswordAsksBirthDate = true;
 /// "dd/mm/yyyy" (hoặc d/m/yyyy, dấu . hay -) → "yyyy-mm-dd"; null nếu không
 /// phải một ngày có thật.
 String? parseBirthDate(String raw) {
-  final m = RegExp(r'^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$')
-      .firstMatch(raw.trim());
+  final m = RegExp(
+    r'^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$',
+  ).firstMatch(raw.trim());
   if (m == null) return null;
   final d = int.parse(m.group(1)!);
   final mo = int.parse(m.group(2)!);
@@ -120,7 +121,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
       if (mounted) Navigator.pop(context, mssv);
     } on EmsException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      // A server from before P-51 answers its catch-all 404.
+      final missing = e.statusCode == 404 && e.code == 'Endpoint not found';
+      if (mounted) {
+        setState(
+          () => _error = missing
+              ? 'Chức năng Quên mật khẩu chưa mở trên máy chủ của trường. '
+                    'Vui lòng liên hệ GVCN hoặc Phòng Đào tạo để được hỗ trợ.'
+              : e.message,
+        );
+      }
     } catch (_) {
       if (mounted) setState(() => _error = 'Đã có lỗi xảy ra. Thử lại sau.');
     } finally {
