@@ -47,8 +47,9 @@ class CellPickers {
 }
 
 /// "+": Chụp ảnh / Chọn ảnh / Chọn tệp, the checks above, then one upload with
-/// a progress bar. True when the server took the files; a refusal shows the
-/// server's own message.
+/// a progress bar and, on a weak network, "Mạng yếu, đang gửi lại (lần 2/3)…".
+/// True when the server took the files; a refusal shows the server's own
+/// message.
 Future<bool> addCellFiles(
   BuildContext context, {
   required CellFilesApi api,
@@ -111,7 +112,7 @@ Future<bool> addCellFiles(
   final c = checkCellFiles(picked, rules, already);
   if (c.notes.isNotEmpty) showErrorSnack(context, c.notes.join('\n'));
   if (c.ok.isEmpty) return false;
-  final progress = ValueNotifier<double?>(null);
+  final progress = ValueNotifier<UploadStatus?>(null);
   final nav = Navigator.of(context, rootNavigator: true);
   showDialog<void>(
     context: context,
@@ -119,20 +120,25 @@ Future<bool> addCellFiles(
     builder: (_) => PopScope(
       canPop: false,
       child: AlertDialog(
-        content: ValueListenableBuilder<double?>(
+        content: ValueListenableBuilder<UploadStatus?>(
           valueListenable: progress,
-          builder: (_, v, _) => Column(
+          builder: (_, s, _) => Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 'Đang tải lên ${c.ok.length} tệp'
-                '${v == null ? '…' : ' · ${(v * 100).round()}%'}',
+                '${s?.fraction == null ? '…' : ' · ${(s!.fraction! * 100).round()}%'}',
               ),
+              if (s != null && s.resending)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(s.text, key: const ValueKey('cell-upload-retry')),
+                ),
               const SizedBox(height: 12),
               LinearProgressIndicator(
                 key: const ValueKey('cell-upload-progress'),
-                value: v,
+                value: s?.fraction,
               ),
             ],
           ),
@@ -147,8 +153,7 @@ Future<bool> addCellFiles(
     await api.add(
       bytes,
       maxBytes: rules.fileBytes,
-      onProgress: (sent, total) =>
-          progress.value = total > 0 ? sent / total : null,
+      onStatus: (s) => progress.value = s,
     );
     nav.pop();
     if (context.mounted) {

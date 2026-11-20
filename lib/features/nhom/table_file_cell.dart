@@ -90,12 +90,14 @@ class CellFilesApi {
     List<({List<int> bytes, String filename})> files, {
     required int maxBytes,
     void Function(int sent, int total)? onProgress,
+    void Function(UploadStatus)? onStatus,
   }) => EmsUpload.files(
     base,
     files: files,
     field: 'files',
     maxBytes: maxBytes,
     onProgress: onProgress,
+    onStatus: onStatus,
   );
 
   Future<void> remove(String fileId) =>
