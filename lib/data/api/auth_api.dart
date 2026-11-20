@@ -105,11 +105,28 @@ abstract final class AuthApi {
     required String currentPassword,
     required String newPassword,
   }) async {
-    await EmsApiService.sendMap(
-      'POST',
-      '/student/me/password',
-      body: {'current_password': currentPassword, 'new_password': newPassword},
-    );
+    // The server answers a wrong current password with 401 ("Mật khẩu hiện
+    // tại không đúng."). That is this form's own refusal, not an ended
+    // session: without this the student was signed out for a typing slip.
+    try {
+      final data = await EmsApiService.send(
+        'POST',
+        '/student/me/password',
+        body: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+        expireOn401: false,
+      );
+      EmsApiService.parse(() => data as Map<String, dynamic>);
+    } on EmsException catch (e) {
+      // A session the server itself ended (its text starts "Phiên đăng nhập")
+      // still signs the student out.
+      if (e.statusCode == 401 && e.message.startsWith('Phiên đăng nhập')) {
+        EmsApiService.onUnauthorized?.call(e);
+      }
+      rethrow;
+    }
   }
 
   /// Đổi mật khẩu của giảng viên (và mọi staff khác dùng chung route này).
