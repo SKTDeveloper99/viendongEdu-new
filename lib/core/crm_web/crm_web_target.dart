@@ -7,7 +7,10 @@ library;
 class CrmTarget {
   final String path;
   final Map<String, String> query;
-  const CrmTarget._(this.path, [this.query = const {}]);
+
+  /// The title the home gave this page (server-led home, proposed P-50).
+  final String? label;
+  const CrmTarget._(this.path, [this.query = const {}, this.label]);
 
   /// "Việc của tôi" (CRM Công việc).
   static const tasksPath = '/tasks';
@@ -39,6 +42,23 @@ class CrmTarget {
   const CrmTarget.viva() : this._(vivaPath);
 
   static final RegExp _id = RegExp(r'^[A-Za-z0-9-]{1,64}$');
+
+  /// Proposed P-50: any other Viva page the server lists, by its relative
+  /// path. Only a plain path passes (one leading slash, 1–4 segments of
+  /// letters, digits, `_` and `-`); the server refuses a pass for a path it
+  /// does not list, and the view loads only our own host.
+  static final RegExp _pagePath = RegExp(r'^(?:/[A-Za-z0-9_-]{1,40}){1,4}$');
+
+  static bool pagePathOk(String p) => p.length <= 120 && _pagePath.hasMatch(p);
+
+  /// A page by its path ([allowedPaths] keep their own targets), or null.
+  static CrmTarget? page(String path, {String? label}) {
+    if (!pagePathOk(path)) return null;
+    return fromRouteName('/crm$path')?.withLabel(label);
+  }
+
+  CrmTarget withLabel(String? l) =>
+      l == null || l.isEmpty ? this : CrmTarget._(path, query, l);
 
   factory CrmTarget.tasks({String? taskId}) =>
       CrmTarget._(tasksPath, _ids({'task_id': taskId}));
@@ -75,7 +95,10 @@ class CrmTarget {
       workLogPath => const CrmTarget.workLog(),
       studentsPath => const CrmTarget.students(),
       vivaPath => const CrmTarget.viva(),
-      _ => null,
+      _ =>
+        uri.query.isEmpty && uri.fragment.isEmpty && pagePathOk(uri.path)
+            ? CrmTarget._(uri.path)
+            : null,
     };
   }
 
@@ -98,13 +121,16 @@ class CrmTarget {
     };
   }
 
-  String get title => switch (path) {
+  String get title => label ?? _fixedTitle;
+
+  String get _fixedTitle => switch (path) {
     tasksPath => 'Việc của tôi',
     weekPath => 'Lịch tuần',
     congVanPath => 'Công văn',
     workLogPath => 'Nhật ký làm việc',
     studentsPath => 'Tra cứu sinh viên',
     vivaPath => 'Viva',
-    _ => 'Nhóm',
+    groupsPath => 'Nhóm',
+    _ => 'Viva',
   };
 }

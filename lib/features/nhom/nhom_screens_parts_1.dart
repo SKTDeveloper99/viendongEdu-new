@@ -153,7 +153,12 @@ extension _NhomScreenStatePart1 on _NhomScreenState {
                   style: TextStyle(color: vd.inkMuted, fontSize: 12),
                 ),
                 const SizedBox(height: 4),
-                Text('${p['body'] ?? ''}', style: TextStyle(color: vd.ink)),
+                // The web's rich editor stores `<!--task-rich-v1-->` + HTML;
+                // the phone shows the words only, a line per block.
+                Text(
+                  plainDescription(p['body']),
+                  style: TextStyle(color: vd.ink),
+                ),
                 if (p['task_id'] != null) ...[
                   const SizedBox(height: 8),
                   OutlinedButton.icon(

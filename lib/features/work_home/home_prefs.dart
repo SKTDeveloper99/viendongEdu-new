@@ -36,4 +36,27 @@ abstract final class HomePrefs {
       await (await SharedPreferences.getInstance()).setString(_dayCardKey, id);
     } catch (_) {}
   }
+
+  /// The last home the server sent (proposed P-50), with its account id, so
+  /// a cold start shows it before `/app/me` answers. Wiped at sign-out.
+  static const _homeKey = 'work_home.home_spec';
+
+  static Future<String?> homeSpec() async {
+    try {
+      return (await SharedPreferences.getInstance()).getString(_homeKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> setHomeSpec(String? v) async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      if (v == null) {
+        await p.remove(_homeKey);
+      } else {
+        await p.setString(_homeKey, v);
+      }
+    } catch (_) {}
+  }
 }

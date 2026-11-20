@@ -14,7 +14,10 @@ bool _attached = false;
 /// App routes `/crm/tasks…` and `/crm/nhom…` (tiles and task pushes):
 /// teachers only, allow-listed pages only; anything else is not a route.
 Route<void>? crmPageRoute(RouteSettings settings) {
-  final target = CrmTarget.fromRouteName(settings.name ?? '');
+  final named = CrmTarget.fromRouteName(settings.name ?? '');
+  // The home may pass the page's own title (server-led home, proposed P-50).
+  final arg = settings.arguments;
+  final target = named?.withLabel(arg is String ? arg : null);
   final s = AppSession.instance;
   if (target == null || !(s.isGiangVien || s.isStaff)) return null;
   if (!_attached) {

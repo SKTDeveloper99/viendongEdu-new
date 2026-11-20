@@ -27,13 +27,16 @@ import '../work/my_work_screen.dart';
 import '../work/piece_screen.dart';
 import '../work/work_api.dart';
 import 'day_card.dart';
+import 'home_icons.dart';
 import 'home_prefs.dart';
+import 'home_spec.dart';
 import 'home_widgets.dart';
 import 'hub_screens.dart';
 import '../notices/notice_screens.dart';
 
 part 'work_home_screen_parts_1.dart';
 part 'work_home_screen_parts_2.dart';
+part 'work_home_screen_parts_3.dart';
 
 /// THE SWITCH for the owner's choice (open 2026-11-17): true = a tall phone
 /// lists the next few pieces ("Tiếp theo") under the focus card; false =
@@ -61,6 +64,11 @@ class _WorkHomeScreenState extends State<WorkHomeScreen>
 
   Map<String, dynamic>? _me;
 
+  /// Server-led home (proposed P-50): this answer's spec, and the last one
+  /// kept on the phone for a cold start. Both null = the built-in home.
+  HomeSpec? _serverSpec;
+  HomeSpec? _cachedSpec;
+
   /// My own parts (`GET /v1/tasks/my`): the home counts and lists only what
   /// can still be handed in, as the web does (the server's counts also hold
   /// parts locked under "Không hoàn thành").
@@ -82,6 +90,7 @@ class _WorkHomeScreenState extends State<WorkHomeScreen>
       AttendanceOutbox.instance.start();
     }
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_loadCachedSpec());
     _refresh();
   }
 

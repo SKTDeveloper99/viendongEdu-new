@@ -21,7 +21,12 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
       final me = await AppMeApi.me();
       // Older installs: fill the stored identity from the server and keep it.
       if (_s.applyAppMe(me)) unawaited(_s.persist());
-      if (mounted) _set(() => _me = me);
+      if (mounted) {
+        _set(() {
+          _me = me;
+          _takeSpec(me);
+        });
+      }
     } on EmsException catch (e) {
       if (mounted && e.statusCode == 401) handleCrmAuthError(context, e);
     } catch (_) {}
@@ -101,7 +106,9 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
     await _go(LichScreen(vm: vm, openWeekFirst: last == 'week'));
   }
 
-  List<HomeTileSpec> get _tiles {
+  List<HomeTileSpec> get _tiles => _specTiles ?? _builtInTiles;
+
+  List<HomeTileSpec> get _builtInTiles {
     final lookup = _can['student_lookup'] == true;
     return [
       HomeTileSpec(
@@ -266,7 +273,8 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
   /// stretching the tiles or leaving an empty band.
   Widget _placesAndNext() {
     final tiles = _tiles;
-    final rows = tiles.length >= 5 ? 2 : (tiles.length / 2).ceil();
+    // Same columns as HomeTileGrid: three across from five tiles up.
+    final rows = (tiles.length / (tiles.length >= 5 ? 3 : 2)).ceil();
     // The piece the office focus card already shows is not listed twice;
     // when the class card holds the focus (a teacher), nothing is left out.
     final vm = _vm;
@@ -328,58 +336,6 @@ extension _WorkHomeScreenStatePart1 on _WorkHomeScreenState {
           ],
         );
       },
-    );
-  }
-
-  /// "+ Tạo": Giao việc and Gửi thông báo, each only if the person may do it;
-  /// with one choice the button does that one thing and carries its name.
-  Widget _createAction() {
-    final canGive = _can['give_work'] == true;
-    final canNotice = _teacher || _staff;
-    final choices = <(IconData, String, VoidCallback)>[
-      if (canGive)
-        (Icons.task_alt, 'Giao việc', () => _go(const GiveTaskScreen())),
-      if (canNotice)
-        (
-          Icons.campaign_outlined,
-          'Gửi thông báo',
-          () => _go(const NoticeComposeScreen()),
-        ),
-    ];
-    if (choices.isEmpty) return const SizedBox(height: 4);
-    final one = choices.length == 1;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: SizedBox(
-        width: double.infinity,
-        height: 44,
-        child: OutlinedButton.icon(
-          onPressed: one
-              ? choices.first.$3
-              : () => showModalBottomSheet<void>(
-                  context: context,
-                  showDragHandle: true,
-                  builder: (ctx) => SafeArea(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final c in choices)
-                          ListTile(
-                            leading: Icon(c.$1),
-                            title: Text(c.$2),
-                            onTap: () {
-                              Navigator.pop(ctx);
-                              c.$3();
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-          icon: Icon(one ? choices.first.$1 : Icons.add),
-          label: Text(one ? choices.first.$2 : 'Tạo'),
-        ),
-      ),
     );
   }
 

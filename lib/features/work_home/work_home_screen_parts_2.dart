@@ -29,6 +29,7 @@ extension _WorkHomeScreenStatePart2 on _WorkHomeScreenState {
     // One tap is enough: a second tap while signing out does nothing.
     if (_signingOut) return;
     _signingOut = true;
+    await HomePrefs.setHomeSpec(null);
     if (_vm != null) {
       await _vm!.logout();
     } else {

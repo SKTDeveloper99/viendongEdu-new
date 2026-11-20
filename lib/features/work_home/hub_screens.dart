@@ -8,7 +8,9 @@ import '../teacher_home/teacher_home_view_model.dart';
 import '../teacher_home/widgets/my_day_card.dart';
 import '../teacher_home/widgets/schedule_section.dart';
 import '../teacher_home/widgets/week_strip.dart';
+import 'home_icons.dart';
 import 'home_prefs.dart';
+import 'home_spec.dart';
 import '../notices/notice_screens.dart';
 import 'home_widgets.dart';
 
@@ -205,64 +207,109 @@ class LopScreen extends StatelessWidget {
   }
 }
 
-class VanPhongScreen extends StatelessWidget {
-  final bool congVan;
-  const VanPhongScreen({super.key, required this.congVan});
+/// The rows of a hub page as the server sent them (proposed P-50).
+class _SpecRows extends StatelessWidget {
+  final HomePage page;
+  final Future<void> Function(HomeItem) onOpen;
+  const _SpecRows({required this.page, required this.onOpen});
 
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: context.vd.bg,
-    appBar: AppBar(title: const Text('Văn phòng')),
+    appBar: AppBar(title: Text(page.title)),
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (congVan)
+        for (final r in page.rows)
           HubRow(
-            icon: Icons.description_outlined,
-            title: 'Công văn',
-            onTap: () => Navigator.pushNamed(
-              context,
-              const CrmTarget.congVan().routeName,
-            ),
+            icon: homeIcon(r.icon),
+            title: r.label,
+            subtitle: r.sub,
+            onTap: () => onOpen(r),
           ),
-        HubRow(
-          icon: Icons.campaign_outlined,
-          title: 'Thông báo đã gửi',
-          subtitle: 'Đã xem bao nhiêu người',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SentNoticesScreen()),
-          ),
-        ),
-        HubRow(
-          icon: Icons.edit_note,
-          title: 'Nhật ký làm việc',
-          onTap: () =>
-              Navigator.pushNamed(context, const CrmTarget.workLog().routeName),
-        ),
       ],
     ),
   );
 }
 
-class ThemScreen extends StatelessWidget {
-  const ThemScreen({super.key});
+class VanPhongScreen extends StatelessWidget {
+  final bool congVan;
+
+  /// Server-led rows (proposed P-50); null = the built-in rows below.
+  final HomePage? page;
+  final Future<void> Function(HomeItem)? onOpen;
+  const VanPhongScreen({
+    super.key,
+    required this.congVan,
+    this.page,
+    this.onOpen,
+  });
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: context.vd.bg,
-    appBar: AppBar(title: const Text('Thêm')),
-    body: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        HubRow(
-          icon: Icons.language,
-          title: 'Viva',
-          subtitle: 'Mọi trang Viva còn lại',
-          onTap: () =>
-              Navigator.pushNamed(context, const CrmTarget.viva().routeName),
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) => page != null && onOpen != null
+      ? _SpecRows(page: page!, onOpen: onOpen!)
+      : Scaffold(
+          backgroundColor: context.vd.bg,
+          appBar: AppBar(title: const Text('Văn phòng')),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (congVan)
+                HubRow(
+                  icon: Icons.description_outlined,
+                  title: 'Công văn',
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    const CrmTarget.congVan().routeName,
+                  ),
+                ),
+              HubRow(
+                icon: Icons.campaign_outlined,
+                title: 'Thông báo đã gửi',
+                subtitle: 'Đã xem bao nhiêu người',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SentNoticesScreen()),
+                ),
+              ),
+              HubRow(
+                icon: Icons.edit_note,
+                title: 'Nhật ký làm việc',
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  const CrmTarget.workLog().routeName,
+                ),
+              ),
+            ],
+          ),
+        );
+}
+
+class ThemScreen extends StatelessWidget {
+  /// Server-led rows (proposed P-50); null = the built-in rows below.
+  final HomePage? page;
+  final Future<void> Function(HomeItem)? onOpen;
+  const ThemScreen({super.key, this.page, this.onOpen});
+
+  @override
+  Widget build(BuildContext context) => page != null && onOpen != null
+      ? _SpecRows(page: page!, onOpen: onOpen!)
+      : Scaffold(
+          backgroundColor: context.vd.bg,
+          appBar: AppBar(title: const Text('Thêm')),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              HubRow(
+                icon: Icons.language,
+                title: 'Viva',
+                subtitle: 'Mọi trang Viva còn lại',
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  const CrmTarget.viva().routeName,
+                ),
+              ),
+            ],
+          ),
+        );
 }
