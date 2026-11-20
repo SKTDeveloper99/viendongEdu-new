@@ -128,12 +128,14 @@ abstract final class StudentPapersApi {
     required List<int> bytes,
     required String filename,
     required int maxBytes,
+    void Function(UploadStatus)? onStatus,
   }) async {
     final b = await EmsUpload.files(
       '/student/me/papers/${Uri.encodeComponent(code)}/files',
       files: [(bytes: bytes, filename: filename)],
       field: 'files[]',
       maxBytes: maxBytes,
+      onStatus: onStatus,
     );
     final item = b['item'];
     return item is Map

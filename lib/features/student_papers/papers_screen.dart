@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/ems_api_service.dart' show EmsException;
-import '../../services/ems_upload.dart' show EmsUpload;
+import '../../services/ems_upload.dart' show EmsUpload, UploadStatus;
 import '../../theme/vd_tokens.dart';
 import '../work/file_pick.dart';
 import '../work/hand_in_sheet.dart' show PickFiles, PickedFile;
@@ -17,21 +17,46 @@ typedef SendPaper =
       int maxBytes,
     );
 
-Future<PaperItem?> _send(String code, List<int> b, String n, int max) =>
-    StudentPapersApi.send(code, bytes: b, filename: n, maxBytes: max);
+/// [SendPaper] that also reports how the upload goes (resends included).
+typedef SendPaperWatched =
+    Future<PaperItem?> Function(
+      String code,
+      List<int> bytes,
+      String filename,
+      int maxBytes,
+      void Function(UploadStatus) onStatus,
+    );
+
+Future<PaperItem?> _send(
+  String code,
+  List<int> b,
+  String n,
+  int max,
+  void Function(UploadStatus) onStatus,
+) => StudentPapersApi.send(
+  code,
+  bytes: b,
+  filename: n,
+  maxBytes: max,
+  onStatus: onStatus,
+);
 
 /// "Nộp hồ sơ": what the school asks this student for (told by the server),
 /// each item's state, what was sent, and Chụp ảnh / Chọn ảnh / Chọn tệp.
 class StudentPapersScreen extends StatefulWidget {
   final Future<PapersPage> Function() load;
-  final SendPaper send;
+
+  /// A sender without status (tests); when null, [sendWatched] is used.
+  final SendPaper? send;
+  final SendPaperWatched sendWatched;
   final PickFiles takePhoto;
   final PickFiles pickPhotos;
   final Future<List<PickedFile>> Function(List<String> ext) pickFiles;
   const StudentPapersScreen({
     super.key,
     this.load = StudentPapersApi.list,
-    this.send = _send,
+    this.send,
+    this.sendWatched = _send,
     this.takePhoto = takePhotoFile,
     this.pickPhotos = pickPhotoFilesForHandIn,
     this.pickFiles = pickFilesOfTypes,
@@ -45,6 +70,14 @@ class _StudentPapersScreenState extends State<StudentPapersScreen> {
   PapersPage? _page;
   String? _error;
   String? _sending;
+
+  /// The line under the item being sent ("Tệp 2/3: Mạng yếu, đang gửi lại
+  /// (lần 2/3)…").
+  String? _status;
+
+  /// Per item: the picked files not sent yet after a network failure. "Gửi
+  /// tiếp" sends these only; what already went is not sent again.
+  final Map<String, List<PickedFile>> _left = {};
 
   @override
   void initState() {
@@ -128,26 +161,53 @@ class _StudentPapersScreenState extends State<StudentPapersScreen> {
 
   Future<void> _upload(PaperItem item, List<PickedFile> files) async {
     final max = _page?.maxFileBytes ?? 12 * 1024 * 1024;
-    setState(() => _sending = item.code);
+    setState(() {
+      _sending = item.code;
+      _status = null;
+      _left.remove(item.code);
+    });
     var sent = 0;
+    var i = 0;
+    void status(UploadStatus s) {
+      if (!mounted) return;
+      final n = files.length;
+      setState(() => _status = n == 1 ? s.text : 'Tệp ${i + 1}/$n: ${s.text}');
+    }
+
     try {
-      for (final f in files) {
+      for (; i < files.length; i++) {
+        final f = files[i];
         final bytes = await f.read();
         if (bytes.length > max) {
           _say('"${f.name}" quá lớn (tối đa ${max ~/ (1024 * 1024)} MB).');
           continue;
         }
-        await widget.send(item.code, bytes, f.name, max);
+        final plain = widget.send;
+        if (plain != null) {
+          await plain(item.code, bytes, f.name, max);
+        } else {
+          await widget.sendWatched(item.code, bytes, f.name, max, status);
+        }
         sent++;
       }
       if (sent > 0) _say(sent == 1 ? 'Đã gửi.' : 'Đã gửi $sent tệp.');
     } on EmsException catch (e) {
-      _say(e.message);
+      // No answer from the server (the network, after its resends): keep
+      // what is left for "Gửi tiếp". An answer (a refusal) is final.
+      if (e.statusCode == null && mounted) {
+        setState(() => _left[item.code] = files.sublist(i));
+      }
+      _say(sent > 0 ? '${e.message} Đã gửi $sent tệp.' : e.message);
     } catch (_) {
       _say('Không gửi được. Thử lại sau.');
     } finally {
       await _reload();
-      if (mounted) setState(() => _sending = null);
+      if (mounted) {
+        setState(() {
+          _sending = null;
+          _status = null;
+        });
+      }
     }
   }
 
@@ -189,6 +249,11 @@ class _StudentPapersScreenState extends State<StudentPapersScreen> {
               PaperItemCard(
                 item: item,
                 sending: _sending == item.code,
+                status: _sending == item.code ? _status : null,
+                left: _left[item.code]?.length ?? 0,
+                onResume: _sending == null && _left[item.code] != null
+                    ? () => _upload(item, _left[item.code]!)
+                    : null,
                 onAdd: _sending == null ? () => _add(item) : null,
                 onOpen: _open,
               ),
