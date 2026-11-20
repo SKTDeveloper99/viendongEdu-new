@@ -23,6 +23,7 @@ Future<HandInResult?> showReportSheet(
   int photosOnPart = 0,
   PickFiles pickPhotos = pickPhotoFilesForHandIn,
   PickFiles? pickFiles,
+  PickFiles takePhoto = takePhotoFile,
 }) => showModalBottomSheet<HandInResult>(
   context: context,
   isScrollControlled: true,
@@ -34,6 +35,7 @@ Future<HandInResult?> showReportSheet(
     photosOnPart: photosOnPart,
     pickPhotos: pickPhotos,
     pickFiles: pickFiles,
+    takePhoto: takePhoto,
   ),
 );
 
@@ -46,6 +48,9 @@ class ReportSheet extends StatefulWidget {
   /// Any file besides photos (ordinary pieces with a minimum); null = photos
   /// only (a report takes images only).
   final PickFiles? pickFiles;
+
+  /// "Chụp ảnh": the camera.
+  final PickFiles takePhoto;
   const ReportSheet({
     super.key,
     required this.assignmentId,
@@ -53,6 +58,7 @@ class ReportSheet extends StatefulWidget {
     required this.pickPhotos,
     this.photosOnPart = 0,
     this.pickFiles,
+    this.takePhoto = takePhotoFile,
   });
 
   @override
@@ -88,13 +94,13 @@ class _ReportSheetState extends State<ReportSheet> {
   int get _picked => _files.where((f) => _isPhoto(f.name)).length;
 
   Future<void> _add() async {
-    final more = widget.pickFiles == null
-        ? await widget.pickPhotos()
-        : await pickAttachments(
-            context,
-            pickPhotos: widget.pickPhotos,
-            pickFiles: widget.pickFiles!,
-          );
+    // Chụp ảnh / Chọn ảnh, and Chọn tệp when the piece takes any file.
+    final more = await pickAttachments(
+      context,
+      pickPhotos: widget.pickPhotos,
+      pickFiles: widget.pickFiles,
+      takePhoto: widget.takePhoto,
+    );
     if (!mounted || more.isEmpty) return;
     setState(() => _files.addAll(more));
   }

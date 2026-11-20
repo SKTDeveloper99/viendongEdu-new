@@ -125,6 +125,11 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('report-add-photo')));
     await t.pumpAndSettle();
+    // A report takes photos only: Chụp ảnh or Chọn ảnh, no Chọn tệp.
+    expect(find.byKey(const ValueKey('attach-camera')), findsOneWidget);
+    expect(find.byKey(const ValueKey('attach-file')), findsNothing);
+    await t.tap(find.byKey(const ValueKey('attach-photo')));
+    await t.pumpAndSettle();
     expect(send().onPressed, isNotNull);
     await t.ensureVisible(find.byKey(const ValueKey('report-send')));
     await t.pumpAndSettle();

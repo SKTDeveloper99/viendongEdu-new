@@ -38,23 +38,30 @@ Future<HandInResult?> showHandInSheet(
   BuildContext context, {
   PickFiles pickPhotos = pickPhotoFilesForHandIn,
   PickFiles pickFiles = pickFilesForHandIn,
+  PickFiles takePhoto = takePhotoFile,
   bool attach = handInAttachEnabled,
 }) => showModalBottomSheet<HandInResult>(
   context: context,
   isScrollControlled: true,
   showDragHandle: true,
-  builder: (_) =>
-      HandInSheet(pickPhotos: pickPhotos, pickFiles: pickFiles, attach: attach),
+  builder: (_) => HandInSheet(
+    pickPhotos: pickPhotos,
+    pickFiles: pickFiles,
+    takePhoto: takePhoto,
+    attach: attach,
+  ),
 );
 
 class HandInSheet extends StatefulWidget {
   final PickFiles pickPhotos;
   final PickFiles pickFiles;
+  final PickFiles takePhoto;
   final bool attach;
   const HandInSheet({
     super.key,
     required this.pickPhotos,
     required this.pickFiles,
+    this.takePhoto = takePhotoFile,
     this.attach = false,
   });
 
@@ -77,6 +84,7 @@ class _HandInSheetState extends State<HandInSheet> {
       context,
       pickPhotos: widget.pickPhotos,
       pickFiles: widget.pickFiles,
+      takePhoto: widget.takePhoto,
     );
     if (mounted && ok.isNotEmpty) setState(() => _files.addAll(ok));
   }
@@ -147,14 +155,17 @@ class _HandInSheetState extends State<HandInSheet> {
   }
 }
 
-/// "Đính kèm": asks Ảnh or Tệp, opens that picker and returns what may be
-/// sent. The size is checked here, before anything is read into memory: a
-/// file over the server's 25 MB ceiling is refused at once with its message.
-/// Used by the hand-in sheet and by Giao việc.
+/// "Đính kèm": asks Chụp ảnh, Chọn ảnh or Chọn tệp, opens that one and
+/// returns what may be sent. [pickFiles] null = photos only (a report).
+/// [takePhoto] null hides "Chụp ảnh". The size is checked here, before
+/// anything is read into memory: a file over the server's 25 MB ceiling is
+/// refused at once with its message. Used by the hand-in sheet, the report
+/// sheet and Giao việc.
 Future<List<PickedFile>> pickAttachments(
   BuildContext context, {
   PickFiles pickPhotos = pickPhotoFilesForHandIn,
-  PickFiles pickFiles = pickFilesForHandIn,
+  PickFiles? pickFiles = pickFilesForHandIn,
+  PickFiles? takePhoto = takePhotoFile,
 }) async {
   final which = await showModalBottomSheet<String>(
     context: context,
@@ -163,25 +174,37 @@ Future<List<PickedFile>> pickAttachments(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (takePhoto != null)
+            ListTile(
+              key: const ValueKey('attach-camera'),
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Chụp ảnh'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
           ListTile(
             key: const ValueKey('attach-photo'),
             leading: const Icon(Icons.photo_library_outlined),
-            title: const Text('Ảnh'),
+            title: const Text('Chọn ảnh'),
             onTap: () => Navigator.pop(ctx, 'photo'),
           ),
-          ListTile(
-            key: const ValueKey('attach-file'),
-            leading: const Icon(Icons.description_outlined),
-            title: const Text('Tệp (PDF, Word, Excel…)'),
-            onTap: () => Navigator.pop(ctx, 'file'),
-          ),
+          if (pickFiles != null)
+            ListTile(
+              key: const ValueKey('attach-file'),
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Chọn tệp (PDF, Word, Excel…)'),
+              onTap: () => Navigator.pop(ctx, 'file'),
+            ),
         ],
       ),
     ),
   );
   if (which == null) return const [];
   try {
-    final picked = await (which == 'photo' ? pickPhotos() : pickFiles());
+    final picked = await switch (which) {
+      'camera' => takePhoto!(),
+      'photo' => pickPhotos(),
+      _ => pickFiles!(),
+    };
     final big = picked
         .where((f) => (f.size ?? 0) > EmsUpload.maxFileBytes)
         .toList();
@@ -199,7 +222,13 @@ Future<List<PickedFile>> pickAttachments(
   } catch (_) {
     if (context.mounted) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Không mở được nơi chọn tệp.')),
+        SnackBar(
+          content: Text(
+            which == 'camera'
+                ? 'Không mở được máy ảnh trên máy này.'
+                : 'Không mở được nơi chọn tệp.',
+          ),
+        ),
       );
     }
     return const [];

@@ -31,7 +31,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Ứng dụng dùng camera để quét mã QR khi điểm danh và khi làm nhiệm vụ Viễn Đông Infinite.</string>
+	<string>Ứng dụng dùng camera để quét mã QR khi điểm danh và khi làm nhiệm vụ Viễn Đông Infinite, và để chụp ảnh đính kèm khi nộp việc, báo cáo hoặc điền bảng trong Nhóm.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Ứng dụng dùng thư viện ảnh để bạn chọn ảnh đính kèm khi báo cáo công việc.</string>
 	<key>UIApplicationSceneManifest</key>
