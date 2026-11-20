@@ -73,9 +73,13 @@ class _StudentPapersScreenState extends State<StudentPapersScreen> {
     }
   }
 
-  void _say(String text) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(text)));
+  // A send can finish after the student left the screen: no context then.
+  void _say(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
 
   Future<void> _add(PaperItem item) async {
     final source = await showModalBottomSheet<String>(
