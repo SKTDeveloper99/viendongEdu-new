@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/buoi_change_line.dart';
 import '../../../models/crm_student_schedule.dart';
 import '../../../theme/vd_tokens.dart';
 
@@ -31,7 +32,14 @@ class ClassChip extends StatelessWidget {
     String hhmm(String? t) => (t ?? '').length > 5 ? t!.substring(0, 5) : t ?? '';
     final start = hhmm(data.startTime);
     final end = hhmm(data.endTime);
-    final buoi = buoiInfo(start, context.vd);
+    final session = buoiInfo(start, context.vd);
+    // LAW A-29: báo nghỉ grey and struck through; học bù / đổi lịch badge.
+    final change = buoiChangeLook(data.buoi, context.vd);
+    final off = data.buoi?.isCancelled == true;
+    final buoi = (
+      label: change?.badge ?? session.label,
+      color: off ? context.vd.inkMuted : (change?.color ?? session.color),
+    );
 
     return Container(
       width: double.infinity,
@@ -55,9 +63,10 @@ class ClassChip extends StatelessWidget {
                 Expanded(
                   child: Text(
                     subject,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
+                      color: off ? context.vd.inkMuted : null,
                     ),
                   ),
                 ),
@@ -105,6 +114,7 @@ class ClassChip extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: buoi.color,
+                    decoration: off ? TextDecoration.lineThrough : null,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -137,6 +147,7 @@ class ClassChip extends StatelessWidget {
                 ),
               ],
             ),
+            if (change?.line != null) BuoiChangeText(change!.line!),
           ],
         ),
       ),

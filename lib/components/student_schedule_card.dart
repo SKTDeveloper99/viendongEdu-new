@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/crm_student_schedule.dart';
+import 'buoi_change_line.dart';
 import '../theme/vd_tokens.dart';
 
 // ── Schedule Card ────────────────────────────────────────
@@ -23,6 +24,11 @@ class StudentScheduleCard extends StatelessWidget {
     final teacher = data.teacherName;
     final start = data.startTime ?? '';
     final end = data.endTime ?? '';
+    // LAW A-29: a báo nghỉ meeting is grey and struck through whatever its
+    // attendance says; a makeup or changed meeting gets its own badge.
+    final change = buoiChangeLook(data.buoi, context.vd);
+    final off = data.buoi?.isCancelled == true;
+    final shownStatus = off ? 'cancelled' : status;
     // CRM /me/schedule chỉ trả buổi HỌC — lịch thi nằm ở /me/exams riêng
     // (xem exam_screen.dart), nên không còn khái niệm "loaitkb == lichthi"
     // trộn trong cùng một feed như IMS `tkbtheongay` nữa. `isLichThi` giữ lại
@@ -56,7 +62,7 @@ class StudentScheduleCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isLichThi
                     ? context.vd.evening
-                    : switch (status) {
+                    : switch (shownStatus) {
                         'present' => context.vd.success,
                         'absent' => context.vd.danger,
                         'excused' => context.vd.info,
@@ -79,9 +85,10 @@ class StudentScheduleCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             subject,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
+                              color: off ? context.vd.inkMuted : null,
                             ),
                           ),
                         ),
@@ -116,7 +123,21 @@ class StudentScheduleCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                        _StatusBadge(status: status),
+                        if (change != null && !off) ...[
+                          Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: change.color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              change.badge,
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: change.color),
+                            ),
+                          ),
+                        ],
+                        _StatusBadge(status: shownStatus),
                         const SizedBox(width: 12),
                       ],
                     ),
@@ -145,7 +166,8 @@ class StudentScheduleCard extends StatelessWidget {
                           end.isNotEmpty ? '$start – $end' : start,
                           style: TextStyle(
                             fontSize: 12,
-                            color: context.vd.ink,
+                            color: off ? context.vd.inkMuted : context.vd.ink,
+                            decoration: off ? TextDecoration.lineThrough : null,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -183,7 +205,8 @@ class StudentScheduleCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (data.skipsWeeks) ...[
+                    if (change?.line != null) BuoiChangeText(change!.line!),
+                    if (data.skipsWeeks && data.buoi == null) ...[
                       const SizedBox(height: 4),
                       Text(
                         'Lớp có tuần nghỉ — có thể không học tuần này, '
@@ -243,6 +266,13 @@ class _StatusBadge extends StatelessWidget {
         color: context.vd.danger,
         bg: context.vd.dangerSoft,
         icon: Icons.cancel_outlined,
+      ),
+      // LAW A-29: the school cancelled this meeting (not the student's absence).
+      'cancelled' => (
+        label: 'Nghỉ',
+        color: context.vd.inkMuted,
+        bg: context.vd.surfaceAlt,
+        icon: Icons.event_busy_outlined,
       ),
       'excused' => (
         label: 'Báo nghỉ',

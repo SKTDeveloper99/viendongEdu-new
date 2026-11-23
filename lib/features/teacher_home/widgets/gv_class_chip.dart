@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/schedule/buoi.dart';
 import '../../../core/schedule/next_up.dart' show parseMinutes;
 import '../../../theme/vd_tokens.dart';
 
@@ -32,17 +33,29 @@ class GvClassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subject = data['mhten']?.toString() ?? '';
+    // LAW A-29: báo nghỉ → grey, struck-through time and the reason;
+    // học bù / dạy thay → a badge. The title is always the plain subject.
+    final buoi = teacherBuoiOf(data);
+    final off = buoi.isCancelled;
+    final subject = buoi.title;
     final room = data['phongten']?.toString().trim() ?? '';
     final classCode = data['lmhma']?.toString() ?? '';
     final start = data['thoigianbd']?.toString() ?? '';
     final endRaw = data['thoigiankt'] as String? ?? '';
     final end = endRaw.length >= 16 ? endRaw.substring(11, 16) : endRaw;
-    final buoi = gvBuoiFor(
+    final session = gvBuoiFor(
       data['thoigianbd']?.toString(),
       data['buoi']?.toString(),
       context.vd,
     );
+    final tone = off ? context.vd.inkMuted : session.color;
+    final badge = switch (buoi.kind) {
+      BuoiKind.cancelled => ('Báo nghỉ', context.vd.inkMuted),
+      BuoiKind.makeup => ('Học bù', context.vd.success),
+      BuoiKind.standIn => ('Dạy thay', context.vd.warning),
+      BuoiKind.coveredBy => ('GV khác dạy', context.vd.info),
+      BuoiKind.normal => (session.label, session.color),
+    };
 
     return Container(
       width: double.infinity,
@@ -57,7 +70,7 @@ class GvClassChip extends StatelessWidget {
             offset: Offset(0, 3),
           ),
         ],
-        border: Border(left: BorderSide(color: buoi.color, width: 5)),
+        border: Border(left: BorderSide(color: tone, width: 5)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -71,13 +84,14 @@ class GvClassChip extends StatelessWidget {
                 Expanded(
                   child: Text(
                     subject,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
+                      color: off ? context.vd.inkMuted : null,
                     ),
                   ),
                 ),
-                if (buoi.label.isNotEmpty)
+                if (badge.$1.isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(left: 6),
                     padding: const EdgeInsets.symmetric(
@@ -85,15 +99,15 @@ class GvClassChip extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: buoi.color.withValues(alpha: 0.12),
+                      color: badge.$2.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      buoi.label,
+                      badge.$1,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: buoi.color,
+                        color: badge.$2,
                       ),
                     ),
                   ),
@@ -112,14 +126,15 @@ class GvClassChip extends StatelessWidget {
             // Giờ học
             Row(
               children: [
-                Icon(Icons.access_time, size: 13, color: buoi.color),
+                Icon(Icons.access_time, size: 13, color: tone),
                 const SizedBox(width: 4),
                 Text(
                   end.isNotEmpty ? '$start – $end' : start,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: buoi.color,
+                    color: tone,
+                    decoration: off ? TextDecoration.lineThrough : null,
                   ),
                 ),
               ],
@@ -139,6 +154,13 @@ class GvClassChip extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ],
+            if (buoi.note != null && (off || buoi.kind == BuoiKind.coveredBy)) ...[
+              const SizedBox(height: 4),
+              Text(
+                off ? 'Lý do: ${buoi.note}' : 'Dạy thay: ${buoi.note}',
+                style: TextStyle(fontSize: 12, color: context.vd.inkMuted),
               ),
             ],
           ],

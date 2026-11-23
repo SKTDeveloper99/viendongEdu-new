@@ -223,7 +223,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       }
       if (!mounted) return;
       setState(() {
-        _cache[key] = _fullSchedule!.where((s) => s.occursOn(date)).toList();
+        // LAW A-29: that day's báo nghỉ, makeups and room/time changes.
+        _cache[key] = _view.classesOn(date);
       });
     } catch (e) {
       if (!mounted) return;

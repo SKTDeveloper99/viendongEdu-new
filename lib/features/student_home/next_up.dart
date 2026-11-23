@@ -32,6 +32,7 @@ NextUp nextUp(
 }) {
   final entries = <NextUpEntry>[];
   for (final c in today) {
+    if (c.buoi?.isCancelled == true) continue; // LAW A-29: a báo nghỉ class is never next
     final start = parseMinutes(c.startTime);
     if (start == null) continue;
     entries.add(

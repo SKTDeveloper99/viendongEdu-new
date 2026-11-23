@@ -144,11 +144,53 @@ class CrmStudentScheduleView {
   /// Server notices for Lịch học (contract S3); empty when absent.
   final List<StudentNotice> notices;
 
+  /// Dated Buổi học changes for this student (server LAW A-29): cancelled,
+  /// makeup and changed meetings; empty from servers before 2026-11-23.
+  final List<CrmBuoiChange> buoiChanges;
+
   const CrmStudentScheduleView({
     this.schedule = const [],
     this.chuaCoLich = const [],
     this.notices = const [],
+    this.buoiChanges = const [],
   });
+
+  /// The classes of [date]: the weekly slots that meet that day, each with
+  /// its change for that date (room, time or teacher applied; a cancelled
+  /// one keeps its card and says so), plus that day's makeups, by start time.
+  List<CrmScheduleItem> classesOn(DateTime date) {
+    final day = _isoDay(date);
+    final todays = buoiChanges.where((c) => c.date == day).toList();
+    final used = <CrmBuoiChange>{};
+    final out = <CrmScheduleItem>[];
+    for (final s in schedule.where((s) => s.occursOn(date))) {
+      CrmBuoiChange? hit;
+      for (final c in todays) {
+        if (c.status == 'makeup' || used.contains(c)) continue;
+        if (c.sectionCode != s.sectionCode) continue;
+        final a = _hhmm(c.plannedStart);
+        final b = _hhmm(s.startTime);
+        if (a != null && b != null && a != b) continue;
+        hit = c;
+        break;
+      }
+      if (hit != null) used.add(hit);
+      out.add(hit == null ? s : s.withBuoi(hit));
+    }
+    for (final c in todays.where((c) => c.status == 'makeup')) {
+      out.add(CrmScheduleItem(
+        subjectName: c.subjectName,
+        sectionCode: c.sectionCode,
+        startTime: c.startTime,
+        endTime: c.endTime,
+        room: c.room ?? '',
+        teacherName: c.teacherName ?? '',
+        buoi: c,
+      ));
+    }
+    out.sort((x, y) => (_hhmm(x.startTime) ?? '99:99').compareTo(_hhmm(y.startTime) ?? '99:99'));
+    return out;
+  }
 
   factory CrmStudentScheduleView.fromJson(Map<String, dynamic> j) {
     final slots = j['schedule'];
@@ -167,8 +209,83 @@ class CrmStudentScheduleView {
                 .toList()
           : const [],
       notices: parseStudentNotices(j),
+      buoiChanges: j['buoi_changes'] is List
+          ? (j['buoi_changes'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(CrmBuoiChange.fromJson)
+                .where((c) => c.date.isNotEmpty)
+                .toList()
+          : const [],
     );
   }
+}
+
+String _isoDay(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+String? _hhmm(String? t) {
+  final m = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(t ?? '');
+  if (m == null) return null;
+  return '${m.group(1)!.padLeft(2, '0')}:${m.group(2)}';
+}
+
+/// One dated change to a class meeting (server LAW A-29, `buoi_changes`).
+/// status: cancelled | makeup | changed.
+class CrmBuoiChange {
+  final String date;
+  final String sectionCode;
+  final String status;
+  final String subjectName;
+  final String? plannedStart;
+  final String? startTime;
+  final String? endTime;
+  final String? room;
+  final String? teacherName;
+  final String? reason;
+
+  /// Makeup: the date it replaces. Cancelled: where it moved to, if anywhere.
+  final String? makeupFor;
+  final String? movedTo;
+  final String? movedToStart;
+
+  const CrmBuoiChange({
+    required this.date,
+    required this.sectionCode,
+    required this.status,
+    this.subjectName = '',
+    this.plannedStart,
+    this.startTime,
+    this.endTime,
+    this.room,
+    this.teacherName,
+    this.reason,
+    this.makeupFor,
+    this.movedTo,
+    this.movedToStart,
+  });
+
+  bool get isCancelled => status == 'cancelled';
+  bool get isMakeup => status == 'makeup';
+
+  /// "dd/mm" of a YYYY-MM-DD value, or ''.
+  static String ddmm(String? iso) =>
+      iso != null && iso.length >= 10 ? '${iso.substring(8, 10)}/${iso.substring(5, 7)}' : '';
+
+  factory CrmBuoiChange.fromJson(Map<String, dynamic> j) => CrmBuoiChange(
+    date: j['date']?.toString() ?? '',
+    sectionCode: j['section_code']?.toString() ?? '',
+    status: j['status']?.toString() ?? '',
+    subjectName: j['subject_name']?.toString() ?? '',
+    plannedStart: j['planned_start']?.toString(),
+    startTime: j['start_time']?.toString(),
+    endTime: j['end_time']?.toString(),
+    room: j['room']?.toString(),
+    teacherName: j['teacher_name']?.toString(),
+    reason: j['reason']?.toString(),
+    makeupFor: j['makeup_for']?.toString(),
+    movedTo: j['moved_to']?.toString(),
+    movedToStart: j['moved_to_start']?.toString(),
+  );
 }
 
 /// Mã thứ của `ref_days` (migrations/003_phase_a_teachers_schema.sql):
@@ -201,6 +318,10 @@ class CrmScheduleItem {
   final DateTime? startDate;
   final DateTime? endDate;
 
+  /// This meeting's Buổi học change on the shown date (from
+  /// [CrmStudentScheduleView.classesOn]); null = as the timetable says.
+  final CrmBuoiChange? buoi;
+
   const CrmScheduleItem({
     this.subjectCode = '',
     this.subjectName = '',
@@ -217,7 +338,29 @@ class CrmScheduleItem {
     this.weeksPattern,
     this.startDate,
     this.endDate,
+    this.buoi,
   });
+
+  /// The same slot on one date with [c] applied: room, time and teacher
+  /// from the change when it gives them.
+  CrmScheduleItem withBuoi(CrmBuoiChange c) => CrmScheduleItem(
+    subjectCode: subjectCode,
+    subjectName: subjectName,
+    semesterCode: semesterCode,
+    sectionCode: sectionCode,
+    dayCode: dayCode,
+    dayName: dayName,
+    periodStartName: periodStartName,
+    startTime: c.startTime ?? startTime,
+    endTime: c.endTime ?? endTime,
+    numPeriods: numPeriods,
+    room: (c.room ?? '').trim().isNotEmpty ? c.room! : room,
+    teacherName: (c.teacherName ?? '').trim().isNotEmpty ? c.teacherName! : teacherName,
+    weeksPattern: weeksPattern,
+    startDate: startDate,
+    endDate: endDate,
+    buoi: c,
+  );
 
   /// Buổi này có rơi vào [date] không: đúng thứ VÀ
   /// start_date ≤ [date] ≤ end_date, so sánh như NGÀY LỊCH (chỉ năm-tháng-ngày

@@ -31,6 +31,12 @@ class CrmScheduleSlot {
   final String? ngayTen;
   final bool baoNghiYn;
 
+  /// Buổi học (server LAW A-29): plain subject, state and reason/stand-in.
+  /// Null from servers before 2026-11-23; see `core/schedule/buoi.dart`.
+  final String? mhTenGoc;
+  final String? buoiStatus;
+  final String? buoiNote;
+
   // Theo ngày cụ thể.
   final String? thoiGianBd;
   final String? thoiGianKt;
@@ -50,6 +56,9 @@ class CrmScheduleSlot {
     this.ngayMa,
     this.ngayTen,
     this.baoNghiYn = false,
+    this.mhTenGoc,
+    this.buoiStatus,
+    this.buoiNote,
     this.thoiGianBd,
     this.thoiGianKt,
     this.ngay,
@@ -67,6 +76,9 @@ class CrmScheduleSlot {
     ngayMa: j['ngayma']?.toString(),
     ngayTen: j['ngayten']?.toString(),
     baoNghiYn: j['baonghiyn'] == true,
+    mhTenGoc: j['mhten_goc']?.toString(),
+    buoiStatus: j['buoi_status']?.toString(),
+    buoiNote: j['buoi_note']?.toString(),
     thoiGianBd: j['thoigianbd']?.toString(),
     thoiGianKt: j['thoigiankt']?.toString(),
     ngay: j['ngay']?.toString(),
@@ -84,6 +96,9 @@ class CrmScheduleSlot {
     'ngayma': ?ngayMa,
     'ngayten': ?ngayTen,
     'baonghiyn': baoNghiYn,
+    'mhten_goc': ?mhTenGoc,
+    'buoi_status': ?buoiStatus,
+    'buoi_note': ?buoiNote,
     'thoigianbd': ?thoiGianBd,
     'thoigiankt': ?thoiGianKt,
     'ngay': ?ngay,

@@ -20,12 +20,16 @@ class ScheduleBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final n = vm.todayClasses.length;
+    // LAW A-29: a báo nghỉ class is not counted as a class to attend.
+    final off = vm.todayClasses.where((c) => c.buoi?.isCancelled == true).length;
+    final n = vm.todayClasses.length - off;
     final summaryText = vm.scheduleFailed
         ? 'Chưa tải được lịch học từ máy chủ'
+        : n == 0 && off > 0
+        ? 'Hôm nay nghỉ học: $off buổi được báo nghỉ'
         : n == 0
         ? 'Hôm nay bạn không có lịch học nào 🎉'
-        : 'Hôm nay bạn có $n lịch học — nhấn để xem chi tiết';
+        : 'Hôm nay bạn có $n lịch học${off > 0 ? ', $off buổi báo nghỉ' : ''} — nhấn để xem chi tiết';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,9 +71,9 @@ class ScheduleBody extends StatelessWidget {
           )
         else if (vm.scheduleFailed)
           const SizedBox.shrink()
-        else if (n == 0 && vm.unscheduledSubjects > 0)
+        else if (vm.todayClasses.isEmpty && vm.unscheduledSubjects > 0)
           UnpublishedScheduleNote(count: vm.unscheduledSubjects)
-        else if (n == 0 &&
+        else if (vm.todayClasses.isEmpty &&
             (vm.examsLoading || vm.examsFailed || vm.hasExamToday))
           const SizedBox.shrink()
         else if (!scheduleExpanded)

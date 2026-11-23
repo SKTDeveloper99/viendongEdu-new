@@ -194,15 +194,13 @@ class StudentHomeViewModel extends ChangeNotifier {
         onStored: (view, at) {
           if (_disposed) return;
           _scheduleStaleAt = at;
-          _todayClasses = view.schedule
-              .where((s) => s.occursOn(today))
-              .toList();
+          _todayClasses = view.classesOn(today); // LAW A-29 changes applied
           _unscheduledSubjects = _countSubjects(view.chuaCoLich);
           _scheduleLoading = false;
           notifyListeners();
         },
       );
-      final todays = r.data.schedule.where((s) => s.occursOn(today)).toList();
+      final todays = r.data.classesOn(today); // LAW A-29 changes applied
       if (_disposed) return;
       _scheduleStaleAt = r.fresh ? null : r.savedAt;
       _todayClasses = todays;

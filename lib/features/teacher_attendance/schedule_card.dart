@@ -1,6 +1,8 @@
 import '../../core/network/ems_exception.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/schedule/buoi.dart';
+
 import '../../data/teacher_attendance_repository.dart';
 import '../../services/app_session.dart';
 import '../../utils/snack.dart';
@@ -113,7 +115,9 @@ class _ScheduleCardState extends State<ScheduleCard> {
   @override
   Widget build(BuildContext context) {
     final d = widget.data;
-    final subject = d['mhten']?.toString() ?? '';
+    // LAW A-29: plain subject; học bù / dạy thay as the badge.
+    final buoiState = teacherBuoiOf(d);
+    final subject = buoiState.title;
     final room = d['phongten']?.toString() ?? '';
     final classCode = d['lmhma']?.toString() ?? '';
     final start = d['thoigianbd']?.toString() ?? '';
@@ -121,7 +125,13 @@ class _ScheduleCardState extends State<ScheduleCard> {
     final end = endRaw.length >= 16 ? endRaw.substring(11, 16) : '';
     final buoi = _buoiInfo(context, d['buoi']?.toString());
     final baonghiyn = d['baonghiyn'];
-    final daBaoNghi = baonghiyn != null && baonghiyn != false && baonghiyn != 0;
+    final daBaoNghi = (baonghiyn != null && baonghiyn != false && baonghiyn != 0) || buoiState.isCancelled;
+    final kindBadge = switch (buoiState.kind) {
+      BuoiKind.makeup => ('Học bù', context.vd.success),
+      BuoiKind.standIn => ('Dạy thay', context.vd.warning),
+      BuoiKind.coveredBy => ('GV khác dạy${buoiState.note != null ? ': ${buoiState.note}' : ''}', context.vd.info),
+      _ => null,
+    };
 
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
@@ -228,15 +238,15 @@ class _ScheduleCardState extends State<ScheduleCard> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: buoi.color.withValues(alpha: 0.12),
+                                  color: (kindBadge?.$2 ?? buoi.color).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  buoi.label,
+                                  kindBadge?.$1 ?? buoi.label,
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: buoi.color,
+                                    color: kindBadge?.$2 ?? buoi.color,
                                   ),
                                 ),
                               ),

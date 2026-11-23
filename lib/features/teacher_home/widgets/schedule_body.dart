@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../components/skeleton.dart';
+import '../../../core/schedule/buoi.dart';
 import '../../../components/vd_fade_in.dart';
 import '../../../theme/vd_motion.dart';
 import 'gv_class_chip.dart';
@@ -39,9 +40,14 @@ class ScheduleBody extends StatelessWidget {
   }
 
   Widget _body(BuildContext context) {
-    final n = classes.length;
+    // LAW A-29: báo nghỉ meetings are not counted as teaching; say how many.
+    final off = classes.where((c) => teacherBuoiOf(c).isCancelled).length;
+    final n = classes.length - off;
+    final offText = off > 0 ? ', $off buổi báo nghỉ' : '';
     final summaryText = failed
         ? 'Chưa tải được lịch dạy từ máy chủ'
+        : n == 0 && off > 0
+        ? '${isToday ? 'Hôm nay' : 'Ngày này'} các buổi dạy đều báo nghỉ ($off buổi)'
         : n == 0
         ? (isToday
               ? 'Hôm nay bạn không có lịch dạy nào 🎉'
@@ -108,8 +114,8 @@ class ScheduleBody extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const TextSpan(
-                                text: ' lịch dạy — nhấn để xem chi tiết',
+                              TextSpan(
+                                text: ' lịch dạy$offText — nhấn để xem chi tiết',
                               ),
                             ],
                           ),
